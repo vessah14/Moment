@@ -1,3 +1,4 @@
+import { Star } from 'lucide-react'
 import Avatar from '../ui/Avatar'
 import BrandBackdrop from '../ui/BrandBackdrop'
 
@@ -37,7 +38,12 @@ export default function Testimonials() {
               key={t.name}
               className="rounded-2xl border border-border-soft bg-surface p-6"
             >
-              <blockquote className="text-sm text-muted">"{t.quote}"</blockquote>
+              <div className="flex gap-0.5 text-brand-orange">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star key={i} className="h-3.5 w-3.5 fill-current" />
+                ))}
+              </div>
+              <blockquote className="mt-3 text-sm text-muted">"{t.quote}"</blockquote>
               <figcaption className="mt-5 flex items-center gap-3">
                 <Avatar name={t.name} />
                 <div>

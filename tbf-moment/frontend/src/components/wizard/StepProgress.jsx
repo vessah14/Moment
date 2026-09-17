@@ -1,32 +1,24 @@
-const WIZARD_STEPS = ['Catégorie', 'Informations', 'Modèle', 'Publication']
+const TOTAL_STEPS = 8
 
-export default function StepProgress({ currentStep }) {
+export default function StepProgress({ currentStep, stepLabel }) {
+  const percent = Math.round(((currentStep + 1) / TOTAL_STEPS) * 100)
+
   return (
-    <div className="grid grid-cols-4 gap-3">
-      {WIZARD_STEPS.map((step, index) => {
-        const isDone = index < currentStep
-        const isCurrent = index === currentStep
-        return (
-          <div key={step}>
-            <div
-              className={`h-1 rounded-full ${
-                isDone
-                  ? 'bg-[linear-gradient(92deg,_var(--color-brand-orange),_var(--color-brand-pink))]'
-                  : isCurrent
-                    ? 'bg-[linear-gradient(92deg,_var(--color-brand-purple),_var(--color-brand-indigo))]'
-                    : 'bg-border-soft'
-              }`}
-            />
-            <p
-              className={`mt-2 truncate text-[11px] font-medium sm:text-xs ${
-                isCurrent ? 'text-ink' : isDone ? 'text-muted' : 'text-faint'
-              }`}
-            >
-              {step}
-            </p>
-          </div>
-        )
-      })}
+    <div>
+      <div className="flex items-center justify-between gap-4 text-xs font-medium">
+        <span className="text-brand-purple">
+          Étape {currentStep + 1} sur {TOTAL_STEPS}
+          <span className="text-faint"> · </span>
+          <span className="text-ink">{stepLabel}</span>
+        </span>
+        <span className="shrink-0 text-faint">{percent}% Complété</span>
+      </div>
+      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-border-soft">
+        <div
+          className="h-full rounded-full bg-[linear-gradient(92deg,_var(--color-brand-orange),_var(--color-brand-pink))] transition-all duration-300"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
     </div>
   )
 }

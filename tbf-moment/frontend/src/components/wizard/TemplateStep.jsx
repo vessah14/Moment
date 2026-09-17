@@ -1,25 +1,53 @@
 import { Check, Plus } from 'lucide-react'
+import { useState } from 'react'
 import { EVENT_CATEGORIES } from '../../data/eventCategories'
 import { TEMPLATES } from '../../data/templates'
 
+const FILTERS = ['Tous', 'Recommandés', 'Premium', 'Minimal']
+
 export default function TemplateStep({ category, selected, onSelect }) {
+  const [filter, setFilter] = useState('Recommandés')
+
   const templateCategory = EVENT_CATEGORIES.find(
     (c) => c.label === category,
   )?.templateCategory
 
-  const matches = templateCategory
-    ? TEMPLATES.filter((tpl) => tpl.category === templateCategory)
-    : []
+  const matches = TEMPLATES.filter((tpl) => {
+    if (filter === 'Recommandés') return tpl.category === templateCategory
+    if (filter === 'Premium') return tpl.badge === 'PREMIUM'
+    if (filter === 'Minimal') return Boolean(tpl.minimal)
+    return true
+  })
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-ink">
-        Choisissez un point de départ
-      </h2>
-      <p className="mt-2 text-sm text-muted">
-        Un modèle prêt à publier, ou une page vierge à composer librement
-        dans le Builder.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-ink">
+            Choisissez un point de départ
+          </h2>
+          <p className="mt-2 text-sm text-muted">
+            Un modèle prêt à publier, ou une page vierge à composer librement
+            dans le Builder.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {FILTERS.map((f) => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => setFilter(f)}
+              className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+                filter === f
+                  ? 'bg-[linear-gradient(92deg,_var(--color-brand-indigo),_var(--color-brand-purple))] text-white'
+                  : 'border border-border text-muted hover:border-faint hover:text-ink'
+              }`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3">
         {matches.map((tpl) => {
@@ -78,8 +106,8 @@ export default function TemplateStep({ category, selected, onSelect }) {
 
       {matches.length === 0 && (
         <p className="mt-4 text-xs text-faint">
-          Pas encore de modèle dédié à « {category} » — la page vierge reste
-          un excellent point de départ.
+          Pas encore de modèle dans ce filtre — la page vierge reste un
+          excellent point de départ.
         </p>
       )}
     </div>

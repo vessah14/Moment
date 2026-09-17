@@ -6,10 +6,11 @@ import StatCard from '../../components/dashboard/StatCard'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import Button from '../../components/ui/Button'
 import { INITIAL_CAGNOTTE, INITIAL_GIFTS } from '../../data/giftRegistry'
+import { useLocalStorageState } from '../../utils/useLocalStorageState'
 
 export default function GiftRegistry() {
-  const [gifts, setGifts] = useState(INITIAL_GIFTS)
-  const [cagnotte] = useState(INITIAL_CAGNOTTE)
+  const [gifts, setGifts] = useLocalStorageState('tbf_gifts', INITIAL_GIFTS)
+  const [cagnotte] = useLocalStorageState('tbf_cagnotte', INITIAL_CAGNOTTE)
   const [formOpen, setFormOpen] = useState(false)
 
   const handleAddGift = (e) => {

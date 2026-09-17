@@ -27,6 +27,7 @@ import SeatingPlan from './pages/dashboard/SeatingPlan'
 import Settings from './pages/dashboard/Settings'
 import Ticketing from './pages/dashboard/Ticketing'
 import Ecosystem from './pages/Ecosystem'
+import ForgotPassword from './pages/ForgotPassword'
 import GiftRegistryPublic from './pages/GiftRegistryPublic'
 import GuestInvitation from './pages/GuestInvitation'
 import Home from './pages/Home'
@@ -60,6 +61,7 @@ function App() {
         }
       />
       <Route path="/connexion" element={<Login />} />
+      <Route path="/mot-de-passe-oublie" element={<ForgotPassword />} />
       <Route path="/inscription" element={<Signup />} />
       <Route path="/modeles" element={<Templates />} />
       <Route path="/tarifs" element={<Pricing />} />

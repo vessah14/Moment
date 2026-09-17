@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { Camera } from 'lucide-react'
+import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import logoMark from '../../assets/logo-mark.png'
 import Button from '../ui/Button'
@@ -12,6 +13,15 @@ export default function SignupForm() {
   const [password, setPassword] = useState('')
   const [accountType, setAccountType] = useState('Particulier')
   const [submitting, setSubmitting] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState(null)
+  const avatarInputRef = useRef(null)
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (avatarUrl) URL.revokeObjectURL(avatarUrl)
+    setAvatarUrl(URL.createObjectURL(file))
+  }
 
   const emailIncomplete = email.length > 0 && !/^\S+@\S+\.\S+$/.test(email)
 
@@ -31,6 +41,34 @@ export default function SignupForm() {
       <h1 className="mt-6 text-3xl font-bold text-ink">Créer un compte</h1>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={() => avatarInputRef.current?.click()}
+            className="group relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-dashed border-border bg-surface-2 text-faint transition hover:border-brand-purple"
+          >
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <Camera className="h-5 w-5" />
+            )}
+            <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-white opacity-0 transition group-hover:opacity-100">
+              <Camera className="h-4 w-4" />
+            </span>
+          </button>
+          <div>
+            <p className="text-sm font-medium text-ink">Photo de profil</p>
+            <p className="text-xs text-faint">Optionnel · PNG ou JPG</p>
+          </div>
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/png,image/jpeg"
+            className="hidden"
+            onChange={handleAvatarChange}
+          />
+        </div>
+
         <div className="grid grid-cols-2 gap-4">
           <label className="block">
             <span className="text-sm font-medium text-ink">Prénom</span>

@@ -7,16 +7,17 @@ import StylePanel from '../components/builder/StylePanel'
 import Toggle from '../components/builder/Toggle'
 import Button from '../components/ui/Button'
 import { BLOCK_CONTENT_DEFAULTS } from '../data/blockDefaults'
+import { formatEventDate, formatTimeRange } from '../utils/formatDate'
 import { slugify } from '../utils/slugify'
 
 const PALETTE = ['#6549e8', '#ec4ec2', '#ff7a3d', '#f6c945', '#c026d3']
 
 const INITIAL_BLOCKS = ['Rebours', 'Histoire', 'Programme', 'RSVP', 'Galerie', 'Localisation']
 
-const DEFAULT_EVENT = {
-  name: 'Mariage Awa & Ibrahim',
-  date: '14 mars 2027',
-  time: '16:00',
+const DEFAULT_DISPLAY = {
+  eventTitle: 'Mariage Awa & Ibrahim',
+  heroTitle: 'Awa & Ibrahim',
+  heroSubtitle: '14 mars 2027 · 16:00',
 }
 
 function heroTitleFromName(name) {
@@ -27,16 +28,24 @@ export default function Builder() {
   const location = useLocation()
   const incomingEvent = location.state?.event
 
-  const eventTitle = incomingEvent?.name ?? DEFAULT_EVENT.name
+  const eventTitle = incomingEvent?.name ?? DEFAULT_DISPLAY.eventTitle
   const heroTitle = incomingEvent
     ? heroTitleFromName(incomingEvent.name)
-    : heroTitleFromName(DEFAULT_EVENT.name)
+    : DEFAULT_DISPLAY.heroTitle
   const heroSubtitle = incomingEvent
-    ? [incomingEvent.date, incomingEvent.time, incomingEvent.location]
+    ? [
+        formatEventDate(incomingEvent.date),
+        formatTimeRange(incomingEvent),
+        incomingEvent.location,
+      ]
         .filter(Boolean)
         .join(' · ')
-    : `${DEFAULT_EVENT.date} · ${DEFAULT_EVENT.time}`
+    : DEFAULT_DISPLAY.heroSubtitle
   const slug = slugify(heroTitle)
+  const eventDateTime =
+    incomingEvent?.date && incomingEvent?.timeStart
+      ? `${incomingEvent.date}T${incomingEvent.timeStart}`
+      : '2027-03-14T16:00'
 
   const [pageBlocks, setPageBlocks] = useState(INITIAL_BLOCKS)
   const [selectedBlock, setSelectedBlock] = useState('Hero')
@@ -66,6 +75,22 @@ export default function Builder() {
 
   const updateBlockContent = (block, patch) =>
     setBlockContent((prev) => ({ ...prev, [block]: { ...prev[block], ...patch } }))
+
+  const handleReorderBlock = (block, direction) => {
+    setPageBlocks((prev) => {
+      const index = prev.indexOf(block)
+      const nextIndex = index + direction
+      if (nextIndex < 0 || nextIndex >= prev.length) return prev
+      const next = [...prev]
+      ;[next[index], next[nextIndex]] = [next[nextIndex], next[index]]
+      return next
+    })
+  }
+
+  const handleRemoveBlock = (block) => {
+    setPageBlocks((prev) => prev.filter((b) => b !== block))
+    setSelectedBlock((prev) => (prev === block ? 'Hero' : prev))
+  }
 
   const handlePublishClick = () => {
     if (published) {
@@ -172,8 +197,12 @@ export default function Builder() {
           blockContent={blockContent}
           selectedBlock={previewMode ? null : selectedBlock}
           onSelectBlock={setSelectedBlock}
+          onChangeBlockContent={updateBlockContent}
+          onReorderBlock={handleReorderBlock}
+          onRemoveBlock={handleRemoveBlock}
           device={device}
           heroStyle={heroStyle}
+          eventDateTime={eventDateTime}
           readOnly={previewMode}
         />
         {!previewMode && (

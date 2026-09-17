@@ -1,14 +1,21 @@
 import QRCode from 'qrcode'
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import logoMark from '../assets/logo-mark.png'
 import Button from '../components/ui/Button'
+import { INITIAL_GUESTS } from '../data/guests'
+import { slugify } from '../utils/slugify'
+import { useLocalStorageState } from '../utils/useLocalStorageState'
 
-const TICKET_CODE = 'TBF-2027-0X4J91'
 const EVENT_LABEL = 'Mariage de Awa & Ibrahim'
 const EVENT_LOCATION = 'Dakar, Sénégal'
 
-function buildIcs() {
+function accompCount(accomp) {
+  if (!accomp || accomp === '–') return 0
+  return Number(accomp.replace('+', '')) || 0
+}
+
+function buildIcs(ticketCode) {
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -17,7 +24,7 @@ function buildIcs() {
     'DTSTART:20270314T160000',
     'DTEND:20270315T010000',
     `LOCATION:${EVENT_LOCATION}`,
-    `DESCRIPTION:Billet ${TICKET_CODE}`,
+    `DESCRIPTION:Billet ${ticketCode}`,
     'END:VEVENT',
     'END:VCALENDAR',
   ]
@@ -25,25 +32,31 @@ function buildIcs() {
 }
 
 export default function GuestInvitation() {
+  const { code } = useParams()
+  const [guests] = useLocalStorageState('tbf_guests', INITIAL_GUESTS)
+  const guest = guests.find((g) => slugify(g.name) === code) ?? guests[0]
+  const ticketCode = `TBF-2027-${code ? code.slice(0, 6).toUpperCase() : 'DEMO01'}`
+  const seats = 1 + accompCount(guest.accomp)
+
   const [rsvp, setRsvp] = useState(null)
   const [qrDataUrl, setQrDataUrl] = useState(null)
   const [shareMessage, setShareMessage] = useState('')
 
   useEffect(() => {
     if (rsvp !== 'confirmed') return
-    QRCode.toDataURL(TICKET_CODE, { margin: 1, width: 240 }).then(setQrDataUrl)
-  }, [rsvp])
+    QRCode.toDataURL(ticketCode, { margin: 1, width: 240 }).then(setQrDataUrl)
+  }, [rsvp, ticketCode])
 
   const handleSaveQr = () => {
     if (!qrDataUrl) return
     const link = document.createElement('a')
     link.href = qrDataUrl
-    link.download = `billet-${TICKET_CODE}.png`
+    link.download = `billet-${ticketCode}.png`
     link.click()
   }
 
   const handleAddToCalendar = () => {
-    const blob = new Blob([buildIcs()], { type: 'text/calendar;charset=utf-8' })
+    const blob = new Blob([buildIcs(ticketCode)], { type: 'text/calendar;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
@@ -86,8 +99,8 @@ export default function GuestInvitation() {
           <span className="h-2.5 w-2.5 rounded-full bg-brand-orange" />
           <span className="h-2.5 w-2.5 rounded-full bg-brand-pink" />
           <span className="h-2.5 w-2.5 rounded-full bg-brand-purple" />
-          <span className="ml-2 font-mono text-xs text-faint">
-            tbfmoment.com/awa-ibrahim/i/0X4J91
+          <span className="ml-2 truncate font-mono text-xs text-faint">
+            tbfmoment.com/awa-ibrahim/i/{code}
           </span>
         </div>
 
@@ -101,13 +114,13 @@ export default function GuestInvitation() {
               <span className="inline-flex items-center rounded-full border border-border px-3 py-1 text-[11px] font-semibold tracking-widest text-brand-purple uppercase">
                 Invitation personnelle
               </span>
-              <h1 className="mt-4 text-2xl font-bold text-ink">Fatou Ndiaye</h1>
+              <h1 className="mt-4 text-2xl font-bold text-ink">{guest.name}</h1>
               <p className="mt-3 text-sm text-muted">
                 Awa & Ibrahim ont le plaisir de vous convier le 14 mars 2027 à
                 16:00, à Dakar.
               </p>
               <p className="mt-4 border-t border-border-soft pt-4 text-sm text-faint">
-                Table réservée : 2 places
+                Table réservée : {seats} place{seats > 1 ? 's' : ''}
               </p>
 
               <div className="mt-5 space-y-3">
@@ -134,7 +147,9 @@ export default function GuestInvitation() {
               <div className="rounded-lg border border-success/30 bg-success/10 p-4">
                 <p className="font-semibold text-success">Présence confirmée</p>
                 <p className="mt-1 text-sm text-ink">
-                  Fatou Ndiaye + 2 accompagnants. Modifiable jusqu'au 1er mars.
+                  {guest.name}
+                  {seats > 1 ? ` + ${seats - 1} accompagnant${seats - 1 > 1 ? 's' : ''}` : ''}.
+                  Modifiable jusqu'au 1er mars.
                 </p>
               </div>
 
@@ -145,7 +160,7 @@ export default function GuestInvitation() {
               </div>
 
               <p className="mt-3 text-center font-mono text-sm text-ink">
-                {TICKET_CODE}
+                {ticketCode}
               </p>
               <p className="mt-1 text-center text-xs text-faint">
                 À présenter à l'entrée. Un seul scan autorisé par billet.

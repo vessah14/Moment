@@ -1,24 +1,26 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import BrandBackdrop from '../ui/BrandBackdrop'
-import Button from '../ui/Button'
 
 const QUESTIONS = [
   {
-    q: 'Puis-je créer un événement gratuitement ?',
-    a: 'Le plan Free couvre un événement actif, 50 invités, les modèles gratuits et le RSVP de base.',
+    q: "Est-il possible de créer un site d'événement gratuitement ?",
+    a: 'Oui, notre formule gratuite vous permet de créer un site d’événement complet avec RSVP et un nombre limité d’invités pour tester la plateforme.',
   },
   {
-    q: 'Comment fonctionnent les QR Codes ?',
-    a: "Chaque invité reçoit un QR unique scanné à l'entrée pour valider sa présence en temps réel.",
+    q: 'Comment fonctionne la collecte de billets payants ?',
+    a: 'La billetterie intégrée gère les tarifs, les quotas et les paiements en ligne sécurisés, avec versement automatique sur votre compte.',
   },
   {
-    q: 'Puis-je vendre des billets ?',
-    a: 'Oui, la billetterie intégrée gère les billets payants, les quotas et les remboursements.',
+    q: 'Puis-je utiliser mon propre nom de domaine ?',
+    a: 'Oui, sur les plans Premium et Business vous pouvez connecter un domaine personnalisé depuis Paramètres > Domaine.',
   },
   {
-    q: 'Mes données sont-elles isolées ?',
-    a: "Chaque événement est cloisonné : vos invités et vos statistiques restent privés à votre organisation.",
+    q: 'Les invitations envoyées sont-elles optimisées pour mobile ?',
+    a: "Oui, chaque mini-site et chaque invitation s'adaptent automatiquement aux mobiles, tablettes et ordinateurs.",
+  },
+  {
+    q: "Comment scanner les billets des invités le jour de l'événement ?",
+    a: "Utilisez le module Check-in QR depuis votre dashboard ou un smartphone : chaque billet est validé en un scan, avec alerte en cas de doublon.",
   },
 ]
 
@@ -28,54 +30,46 @@ export default function Faq() {
   return (
     <section className="relative overflow-hidden">
       <BrandBackdrop side="left" />
-      <div className="relative mx-auto grid max-w-7xl gap-10 px-6 py-20 lg:grid-cols-2">
-        <div>
-          <h2 className="text-3xl font-bold text-ink">Questions fréquentes</h2>
-          <div className="mt-8 space-y-3">
-            {QUESTIONS.map((item, index) => {
-              const isOpen = index === openIndex
-              return (
-                <div
-                  key={item.q}
-                  className="rounded-xl border border-border-soft bg-surface"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setOpenIndex(isOpen ? null : index)}
-                    className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
-                  >
-                    <span className="text-sm font-semibold text-ink">
-                      {item.q}
-                    </span>
-                    <span
-                      className={`text-faint transition ${isOpen ? 'rotate-45' : ''}`}
-                    >
-                      +
-                    </span>
-                  </button>
-                  {isOpen && (
-                    <p className="px-5 pb-4 text-sm text-muted">{item.a}</p>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </div>
+      <div className="relative mx-auto max-w-2xl px-6 py-20 text-center">
+        <span className="text-xs font-semibold tracking-widest text-brand-purple uppercase">
+          Questions
+        </span>
+        <h2 className="mt-3 text-3xl font-bold text-ink">
+          Foire Aux Questions
+        </h2>
+        <p className="mt-3 text-muted">
+          Tout ce que vous devez savoir pour démarrer sereinement sur notre
+          plateforme.
+        </p>
 
-        <div className="rounded-2xl border border-border-soft bg-[linear-gradient(160deg,_var(--color-surface),_var(--color-panel))] p-10">
-          <span className="text-xs font-semibold tracking-widest text-success uppercase">
-            Sans carte bancaire
-          </span>
-          <h3 className="mt-4 text-2xl font-bold text-ink">
-            Votre premier événement en ligne aujourd'hui
-          </h3>
-          <p className="mt-4 text-muted">
-            Choisissez un modèle, invitez vos proches, suivez les réponses.
-            Vous passez à un plan supérieur seulement si vous en avez besoin.
-          </p>
-          <Button as={Link} to="/inscription" variant="gradient" className="mt-6">
-            Créer mon événement
-          </Button>
+        <div className="mt-8 space-y-3 text-left">
+          {QUESTIONS.map((item, index) => {
+            const isOpen = index === openIndex
+            return (
+              <div
+                key={item.q}
+                className="rounded-xl border border-border-soft bg-surface"
+              >
+                <button
+                  type="button"
+                  onClick={() => setOpenIndex(isOpen ? null : index)}
+                  className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
+                >
+                  <span className="text-sm font-semibold text-ink">
+                    {item.q}
+                  </span>
+                  <span
+                    className={`shrink-0 text-faint transition ${isOpen ? 'rotate-45' : ''}`}
+                  >
+                    +
+                  </span>
+                </button>
+                {isOpen && (
+                  <p className="px-5 pb-4 text-sm text-muted">{item.a}</p>
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
     </section>

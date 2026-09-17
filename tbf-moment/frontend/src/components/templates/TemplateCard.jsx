@@ -1,9 +1,16 @@
 import { Link } from 'react-router-dom'
 
-export default function TemplateCard({ name, meta, badge }) {
+export default function TemplateCard({ name, meta, badge, image }) {
   return (
     <div className="group">
       <div className="relative aspect-4/5 overflow-hidden rounded-2xl bg-[linear-gradient(160deg,_var(--color-surface-2),_var(--color-panel))]">
+        {image && (
+          <img
+            src={image}
+            alt={name}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        )}
         <span
           className={`absolute top-3 right-3 rounded-full px-3 py-1 text-[11px] font-bold tracking-wide ${
             badge === 'PREMIUM'

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import heroPreview from '../../assets/img001.jpg'
 import BrandBackdrop from '../ui/BrandBackdrop'
 import Button from '../ui/Button'
 
@@ -64,8 +65,12 @@ export default function Hero() {
                 tbfmoment.com/awa-ibrahim
               </span>
             </div>
-            <div className="flex aspect-4/3 items-center justify-center bg-[linear-gradient(135deg,_var(--color-surface-2),_var(--color-panel))]">
-              <span className="text-sm text-faint">Aperçu photobooth</span>
+            <div className="aspect-4/3 overflow-hidden">
+              <img
+                src={heroPreview}
+                alt="Alliances de mariage"
+                className="h-full w-full object-cover"
+              />
             </div>
           </div>
 

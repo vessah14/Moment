@@ -41,7 +41,7 @@ export default function AdminSidebar({ open, onClose }) {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex h-svh w-64 shrink-0 flex-col border-r border-border-soft/60 bg-bg px-4 py-6 transition-transform lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex h-svh w-64 shrink-0 flex-col border-r border-border-soft/60 bg-bg px-4 py-6 transition-transform lg:sticky lg:top-0 lg:translate-x-0 ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

@@ -42,6 +42,20 @@ export default function Gallery() {
   const setStatus = (id, status) =>
     setMedia((prev) => prev.map((m) => (m.id === id ? { ...m, status } : m)))
 
+  const handleApproveAll = () => {
+    setMedia((prev) =>
+      prev.map((m) => (m.status === 'pending' ? { ...m, status: 'published' } : m)),
+    )
+    setFilter('Publiés')
+  }
+
+  const handleRejectAll = () => {
+    setMedia((prev) =>
+      prev.map((m) => (m.status === 'pending' ? { ...m, status: 'refused' } : m)),
+    )
+    setFilter('Refusées')
+  }
+
   const handleFilesSelected = (e) => {
     const files = Array.from(e.target.files ?? [])
     if (files.length === 0) return
@@ -82,6 +96,24 @@ export default function Gallery() {
           </Button>
         </div>
       </div>
+
+      {counts['En attente'] > 0 && (
+        <div className="mt-6 flex flex-wrap items-center gap-3 rounded-xl border border-brand-orange/30 bg-brand-orange/10 px-5 py-3">
+          <p className="text-sm text-ink">
+            <span className="font-semibold">Modération activée</span> ·{' '}
+            {counts['En attente']} nouvelles photos en attente de validation.
+            Approuvez-les ou rejetez-les avant publication.
+          </p>
+          <div className="ml-auto flex gap-2">
+            <Button variant="gradient" onClick={handleApproveAll}>
+              Tout approuver
+            </Button>
+            <Button variant="outline" onClick={handleRejectAll}>
+              Tout rejeter
+            </Button>
+          </div>
+        </div>
+      )}
 
       <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap gap-3">

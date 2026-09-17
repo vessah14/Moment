@@ -1,0 +1,38 @@
+export const INITIAL_GUESTS = [
+  {
+    name: 'Fatou Ndiaye',
+    role: 'Témoin',
+    contact: 'fatoun@mail.com',
+    group: 'Famille mariée',
+    status: 'Confirmé',
+    accomp: '+2',
+    invitation: 'Ouverte',
+  },
+  {
+    name: 'Moussa Traoré',
+    role: 'Invité',
+    contact: '+221 77 812 44 19',
+    group: 'Amis',
+    status: 'En attente',
+    accomp: '–',
+    invitation: 'Envoyée',
+  },
+  {
+    name: 'Aminata Bâ',
+    role: 'VIP',
+    contact: 'aminata@mail.com',
+    group: 'Collègues',
+    status: 'Refus',
+    accomp: '–',
+    invitation: 'Ouverte',
+  },
+  {
+    name: 'Ibrahima Sow',
+    role: 'Invité',
+    contact: 'isow@mail.com',
+    group: 'Voisins',
+    status: 'Confirmé',
+    accomp: '+1',
+    invitation: 'Ouverte',
+  },
+]

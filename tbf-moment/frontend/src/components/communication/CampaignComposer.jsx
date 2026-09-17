@@ -4,13 +4,20 @@ import Button from '../ui/Button'
 
 const TAGS = ['prénom', 'nom', 'date', 'lieu', 'lien']
 
-export default function CampaignComposer({ onCreate, onCancel }) {
+export default function CampaignComposer({ defaultChannel = 'E-mail', onCreate }) {
   const [name, setName] = useState('')
-  const [channel, setChannel] = useState('E-mail')
+  const [channel, setChannel] = useState(defaultChannel)
   const [audience, setAudience] = useState(AUDIENCES[0])
   const [message, setMessage] = useState('')
   const [timing, setTiming] = useState('now')
   const [scheduleDate, setScheduleDate] = useState('')
+
+  const reset = () => {
+    setName('')
+    setMessage('')
+    setTiming('now')
+    setScheduleDate('')
+  }
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -24,14 +31,15 @@ export default function CampaignComposer({ onCreate, onCancel }) {
       status: timing === 'now' ? 'Envoyée' : 'Programmée',
       scheduledLabel: timing === 'now' ? "À l'instant" : scheduleDate,
     })
+    reset()
   }
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="mb-6 rounded-2xl border border-brand-purple/40 bg-surface p-5"
+      className="rounded-2xl border border-border-soft bg-surface p-5"
     >
-      <h3 className="font-semibold text-ink">Nouvelle campagne</h3>
+      <h3 className="font-semibold text-ink">Nouveau message</h3>
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <label className="block">
@@ -146,11 +154,11 @@ export default function CampaignComposer({ onCreate, onCancel }) {
       </div>
 
       <div className="mt-5 flex justify-end gap-3">
-        <Button type="button" variant="ghost" onClick={onCancel}>
-          Annuler
+        <Button type="button" variant="ghost" onClick={reset}>
+          Réinitialiser
         </Button>
         <Button type="submit" variant="gradient">
-          {timing === 'now' ? 'Envoyer' : 'Programmer'}
+          {timing === 'now' ? 'Envoyer maintenant' : 'Planifier l’envoi'}
         </Button>
       </div>
     </form>

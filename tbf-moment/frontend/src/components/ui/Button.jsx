@@ -4,6 +4,7 @@ const VARIANTS = {
   solid: 'bg-brand-indigo text-white hover:bg-brand-purple',
   outline: 'border border-border text-ink hover:border-faint',
   ghost: 'text-ink hover:bg-surface-2',
+  white: 'bg-white text-brand-purple shadow-lg hover:opacity-90',
 }
 
 export default function Button({

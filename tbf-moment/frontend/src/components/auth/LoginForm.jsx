@@ -8,66 +8,11 @@ export default function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [resetOpen, setResetOpen] = useState(false)
-  const [resetEmail, setResetEmail] = useState('')
-  const [resetSent, setResetSent] = useState(false)
 
   const handleSubmit = (e) => {
     e.preventDefault()
     setSubmitting(true)
     setTimeout(() => navigate('/dashboard'), 600)
-  }
-
-  const handleResetSubmit = (e) => {
-    e.preventDefault()
-    setResetSent(true)
-  }
-
-  if (resetOpen) {
-    return (
-      <div className="w-full max-w-sm">
-        <img src={logoMark} alt="" className="h-10 w-10" />
-        <h1 className="mt-6 text-3xl font-bold text-ink">Mot de passe oublié</h1>
-        <p className="mt-2 text-sm text-muted">
-          Indiquez votre e-mail, nous vous envoyons un lien de réinitialisation.
-        </p>
-
-        {resetSent ? (
-          <p className="mt-6 rounded-lg border border-success/30 bg-success/10 p-4 text-sm text-success">
-            Un lien a été envoyé à {resetEmail}.
-          </p>
-        ) : (
-          <form onSubmit={handleResetSubmit} className="mt-8 space-y-5">
-            <label className="block">
-              <span className="text-sm font-medium text-ink">
-                Adresse e-mail
-              </span>
-              <input
-                type="email"
-                required
-                value={resetEmail}
-                onChange={(e) => setResetEmail(e.target.value)}
-                className="mt-2 w-full rounded-lg border border-border bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-brand-purple focus:ring-3 focus:ring-brand-purple/30"
-              />
-            </label>
-            <Button type="submit" variant="gradient" className="w-full">
-              Envoyer le lien
-            </Button>
-          </form>
-        )}
-
-        <button
-          type="button"
-          onClick={() => {
-            setResetOpen(false)
-            setResetSent(false)
-          }}
-          className="mt-6 text-sm font-medium text-brand-purple hover:underline"
-        >
-          Retour à la connexion
-        </button>
-      </div>
-    )
   }
 
   return (
@@ -111,13 +56,12 @@ export default function LoginForm() {
             />
             Se souvenir de moi
           </label>
-          <button
-            type="button"
-            onClick={() => setResetOpen(true)}
+          <Link
+            to="/mot-de-passe-oublie"
             className="text-brand-purple hover:underline"
           >
             Mot de passe oublié ?
-          </button>
+          </Link>
         </div>
 
         <Button

@@ -1,28 +1,23 @@
-export const SEATING_GUESTS = [
-  { id: 'g1', name: 'Fatou Ndiaye' },
-  { id: 'g2', name: 'Moussa Traoré' },
-  { id: 'g3', name: 'Aminata Bâ' },
-  { id: 'g4', name: 'Ibrahima Sow' },
-  { id: 'g5', name: 'Khadija Fall' },
-  { id: 'g6', name: 'Omar Diallo' },
-  { id: 'g7', name: 'Bineta Cissé' },
-  { id: 'g8', name: 'Cheikh Ndiaye' },
-  { id: 'g9', name: 'Awa Sarr' },
-  { id: 'g10', name: 'Modou Gueye' },
-]
+// Le plan de table s'appuie sur la même liste d'invités que la page
+// Participants (tbf_guests, partagée via useLocalStorageState), pas une
+// liste inventée séparée — sinon un invité ajouté dans "Participants" ne
+// serait jamais assignable à une table, et inversement.
+export function buildSeatingGuests(guests) {
+  return guests.map((guest) => ({ id: guest.name, name: guest.name }))
+}
 
 export const INITIAL_TABLES = [
   {
     id: 't1',
     name: 'Table 1 · Famille mariée',
     capacity: 8,
-    guestIds: ['g1', 'g4'],
+    guestIds: ['Fatou Ndiaye', 'Ibrahima Sow'],
   },
   {
     id: 't2',
     name: 'Table 2 · Amis',
     capacity: 6,
-    guestIds: ['g2'],
+    guestIds: ['Moussa Traoré'],
   },
   {
     id: 't3',

@@ -1,7 +1,9 @@
-import { Bell, Menu, Search } from 'lucide-react'
+import { Bell, Menu } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { buildDashboardSearchIndex } from '../../data/dashboardSearchIndex'
 import Button from '../ui/Button'
+import GlobalSearch from './GlobalSearch'
 
 const NOTIFICATIONS = [
   { text: '14 nouveaux RSVP sur le mariage', time: 'il y a 12 min' },
@@ -22,14 +24,10 @@ export default function DashboardTopbar({ onMenuClick }) {
         <Menu className="h-5 w-5" />
       </button>
 
-      <div className="relative min-w-0 flex-1 max-w-md">
-        <Search className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-faint" />
-        <input
-          type="search"
-          placeholder="Rechercher un événement, un invité..."
-          className="w-full rounded-lg border border-border bg-surface py-2.5 pr-4 pl-10 text-sm text-ink placeholder:text-faint outline-none focus:border-brand-purple"
-        />
-      </div>
+      <GlobalSearch
+        placeholder="Rechercher un événement, un invité..."
+        buildIndex={buildDashboardSearchIndex}
+      />
 
       <div className="ml-auto flex items-center gap-3 sm:gap-5">
         <div className="relative hidden sm:block">

@@ -5,6 +5,8 @@ const STYLES = {
   Envoyée: 'bg-success/15 text-success',
   Disponible: 'bg-success/15 text-success',
   Actif: 'bg-success/15 text-success',
+  Prêt: 'bg-success/15 text-success',
+  Payée: 'bg-success/15 text-success',
   Épuisé: 'bg-surface-2 text-muted',
   Offert: 'bg-surface-2 text-muted',
   'En vente': 'bg-success/15 text-success',

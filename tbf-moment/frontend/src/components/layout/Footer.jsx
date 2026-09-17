@@ -1,3 +1,4 @@
+import { Mail } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import logo from '../../assets/logo.png'
 
@@ -29,9 +30,11 @@ const COLUMNS = [
 ]
 
 export default function Footer() {
+  const year = new Date().getFullYear()
+
   return (
-    <footer className="border-t border-border-soft/60">
-      <div className="mx-auto max-w-7xl px-6 py-14">
+    <footer className="border-t border-border-soft/60 bg-panel/40">
+      <div className="mx-auto max-w-7xl px-6 py-16">
         <div className="grid gap-10 lg:grid-cols-[2fr_1fr_1fr_1fr]">
           <div>
             <img src={logo} alt="TBF Moment" className="h-9 w-auto" />
@@ -40,6 +43,13 @@ export default function Footer() {
               <br />
               Vos événements. Votre univers. Votre moment.
             </p>
+            <a
+              href="mailto:contact@tbfmoment.com"
+              className="mt-5 inline-flex items-center gap-2 text-sm text-muted transition hover:text-ink"
+            >
+              <Mail className="h-4 w-4" />
+              contact@tbfmoment.com
+            </a>
           </div>
 
           {COLUMNS.map((col) => (
@@ -61,6 +71,21 @@ export default function Footer() {
               </ul>
             </div>
           ))}
+        </div>
+
+        <div className="mt-14 flex flex-col gap-4 border-t border-border-soft/60 pt-6 text-sm text-faint sm:flex-row sm:items-center sm:justify-between">
+          <p>&copy; {year} TBF Moment. Tous droits réservés.</p>
+          <div className="flex flex-wrap gap-x-6 gap-y-2">
+            <Link to="/mentions-legales" className="transition hover:text-ink">
+              Mentions légales
+            </Link>
+            <Link to="/support" className="transition hover:text-ink">
+              Support
+            </Link>
+            <Link to="/tarifs" className="transition hover:text-ink">
+              Tarifs
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

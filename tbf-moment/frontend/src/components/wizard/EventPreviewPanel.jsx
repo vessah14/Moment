@@ -1,11 +1,12 @@
-import { EVENT_CATEGORIES } from '../../data/eventCategories'
+import { Link } from 'react-router-dom'
+import { EVENT_CATEGORIES, MODULE_LINKS } from '../../data/eventCategories'
+import { formatEventDate, formatTimeRange } from '../../utils/formatDate'
 import { slugify } from '../../utils/slugify'
 
 export default function EventPreviewPanel({ event }) {
   const slug = slugify(event.name.split(' de ').pop() || event.name)
   const categoryData = EVENT_CATEGORIES.find((c) => c.label === event.category)
   const modules = categoryData?.modules ?? []
-  const place = event.locations?.[0]?.name
 
   return (
     <aside className="h-fit rounded-2xl border border-border-soft bg-panel p-6 lg:sticky lg:top-8">
@@ -24,8 +25,8 @@ export default function EventPreviewPanel({ event }) {
 
       <h3 className="mt-4 font-semibold text-ink">{event.name}</h3>
       <p className="mt-1 text-sm text-muted">
-        {event.date} · {event.time}
-        {place && ` · ${place}`}
+        {formatEventDate(event.date)} · {formatTimeRange(event)}
+        {event.location && ` · ${event.location}`}
       </p>
 
       <dl className="mt-5 space-y-3 border-t border-border-soft pt-5 text-sm">
@@ -63,14 +64,23 @@ export default function EventPreviewPanel({ event }) {
             Modules suggérés
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
-            {modules.map((mod) => (
-              <span
-                key={mod}
-                className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted"
-              >
-                {mod}
-              </span>
-            ))}
+            {modules.map((mod) => {
+              const to = MODULE_LINKS[mod]
+              const className =
+                'rounded-full border px-3 py-1.5 text-xs font-medium transition ' +
+                (to
+                  ? 'border-brand-purple/50 text-brand-purple hover:bg-brand-purple/10'
+                  : 'border-border text-muted')
+              return to ? (
+                <Link key={mod} to={to} className={className}>
+                  {mod}
+                </Link>
+              ) : (
+                <span key={mod} className={className}>
+                  {mod}
+                </span>
+              )
+            })}
           </div>
         </>
       )}

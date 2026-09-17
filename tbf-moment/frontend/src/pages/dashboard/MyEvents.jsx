@@ -4,47 +4,9 @@ import { Link, useNavigate } from 'react-router-dom'
 import EventCard from '../../components/events/EventCard'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import Button from '../../components/ui/Button'
+import { INITIAL_EVENTS } from '../../data/myEvents'
 
 const FILTERS = ['Tous', 'Publiés', 'Brouillons', 'Passés']
-
-const INITIAL_EVENTS = [
-  {
-    id: 'mariage-awa-ibrahim',
-    name: 'Mariage Awa & Ibrahim',
-    status: 'Publié',
-    category: 'Mariage',
-    date: '14 mars 2027',
-    location: 'Dakar',
-    progressLabel: 'RSVP',
-    confirmed: 187,
-    total: 240,
-    barColor: 'bg-success',
-  },
-  {
-    id: 'tbf-summit-2027',
-    name: 'TBF Summit 2027',
-    status: 'Brouillon',
-    category: 'Conférence',
-    date: '02 juin 2027',
-    location: 'Dakar Arena',
-    progressLabel: 'Billets',
-    confirmed: 318,
-    total: 500,
-    barColor: 'bg-brand-gradient',
-  },
-  {
-    id: '40-ans-moussa',
-    name: '40 ans de Moussa',
-    status: 'Publié',
-    category: 'Anniversaire',
-    date: '21 déc. 2026',
-    location: 'Thiès',
-    progressLabel: 'RSVP',
-    confirmed: 129,
-    total: 140,
-    barColor: 'bg-success',
-  },
-]
 
 export default function MyEvents() {
   const navigate = useNavigate()

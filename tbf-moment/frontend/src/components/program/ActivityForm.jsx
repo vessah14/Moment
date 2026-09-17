@@ -1,16 +1,21 @@
 import { useState } from 'react'
 import Button from '../ui/Button'
 
-const EMPTY = {
-  time: '',
-  title: '',
-  location: '',
-  speaker: '',
-  description: '',
+function buildEmpty(day) {
+  return {
+    day,
+    time: '',
+    duration: 60,
+    title: '',
+    location: '',
+    speaker: '',
+    description: '',
+    capacity: 50,
+  }
 }
 
-export default function ActivityForm({ onSubmit, onCancel }) {
-  const [values, setValues] = useState(EMPTY)
+export default function ActivityForm({ day, days, onSubmit, onCancel }) {
+  const [values, setValues] = useState(() => buildEmpty(day))
 
   const update = (patch) => setValues((prev) => ({ ...prev, ...patch }))
 
@@ -18,7 +23,7 @@ export default function ActivityForm({ onSubmit, onCancel }) {
     e.preventDefault()
     if (!values.time || !values.title) return
     onSubmit(values)
-    setValues(EMPTY)
+    setValues(buildEmpty(day))
   }
 
   return (
@@ -29,6 +34,22 @@ export default function ActivityForm({ onSubmit, onCancel }) {
       <h3 className="font-semibold text-ink">Nouvelle activité</h3>
 
       <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {days.length > 1 && (
+          <label className="col-span-1 block">
+            <span className="text-xs font-medium text-ink">Jour</span>
+            <select
+              value={values.day}
+              onChange={(e) => update({ day: Number(e.target.value) })}
+              className="mt-1.5 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-brand-purple"
+            >
+              {days.map((d) => (
+                <option key={d.value} value={d.value}>
+                  {d.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <label className="col-span-1 block">
           <span className="text-xs font-medium text-ink">Heure</span>
           <input
@@ -40,7 +61,18 @@ export default function ActivityForm({ onSubmit, onCancel }) {
             className="mt-1.5 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-brand-purple"
           />
         </label>
-        <label className="col-span-1 block sm:col-span-3">
+        <label className="col-span-1 block">
+          <span className="text-xs font-medium text-ink">Durée (min)</span>
+          <input
+            type="number"
+            min="5"
+            step="5"
+            value={values.duration}
+            onChange={(e) => update({ duration: Number(e.target.value) })}
+            className="mt-1.5 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-brand-purple"
+          />
+        </label>
+        <label className="col-span-2 block sm:col-span-1">
           <span className="text-xs font-medium text-ink">Titre</span>
           <input
             type="text"
@@ -75,7 +107,19 @@ export default function ActivityForm({ onSubmit, onCancel }) {
           />
         </label>
 
-        <label className="col-span-2 block sm:col-span-4">
+        <label className="col-span-1 block">
+          <span className="text-xs font-medium text-ink">
+            Capacité max
+          </span>
+          <input
+            type="number"
+            min="1"
+            value={values.capacity}
+            onChange={(e) => update({ capacity: Number(e.target.value) })}
+            className="mt-1.5 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-brand-purple"
+          />
+        </label>
+        <label className="col-span-2 block sm:col-span-3">
           <span className="text-xs font-medium text-ink">
             Description (optionnel)
           </span>

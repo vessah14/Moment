@@ -17,77 +17,119 @@ import {
 
 const DEFAULT_MODULES = ['RSVP', 'Galerie', 'Localisation', 'FAQ']
 
+// Un module n'a un lien que s'il existe une vraie page dashboard derrière —
+// sinon il reste un simple badge indicatif (Témoins, Biographie... n'ont pas
+// encore d'écran dédié).
+export const MODULE_LINKS = {
+  'Plan de table': '/dashboard/plan-de-table',
+  'Liste de mariage': '/dashboard/liste-mariage',
+  Cadeaux: '/dashboard/liste-mariage',
+  Galerie: '/dashboard/galerie',
+  RSVP: '/dashboard/participants',
+  "Livre d'or": '/dashboard/livre-dor',
+  Speakers: '/dashboard/conference',
+  Sessions: '/dashboard/conference',
+  Sponsors: '/dashboard/conference',
+  Certificats: '/dashboard/conference',
+  Programme: '/dashboard/programme',
+  "Contrôle d'accès": '/dashboard/checkin',
+}
+
 export const EVENT_CATEGORIES = [
   {
     label: 'Mariage et fiançailles',
+    description: 'Cérémonie, réception et liste de mariage',
     icon: Heart,
     templateCategory: 'Mariage',
     modules: ['Témoins', 'Cérémonie et réception', 'Plan de table', 'Liste de mariage'],
   },
   {
     label: 'Anniversaire',
+    description: 'Fêtez un nouvel an avec vos proches',
     icon: Cake,
     templateCategory: 'Anniversaire',
     modules: ['Cadeaux', 'Galerie', 'RSVP', "Livre d'or"],
   },
-  { label: 'Baptême', icon: Baby, templateCategory: null, modules: DEFAULT_MODULES },
+  {
+    label: 'Baptême',
+    description: 'Célébrez une nouvelle naissance en famille',
+    icon: Baby,
+    templateCategory: null,
+    modules: DEFAULT_MODULES,
+  },
   {
     label: 'Graduation',
+    description: 'Célébrez un diplôme ou une réussite',
     icon: GraduationCap,
     templateCategory: 'Graduation',
     modules: ['Diplômé', 'Établissement', 'Promotion', 'Félicitations'],
   },
   {
     label: 'Obsèques / commémoration / hommage',
+    description: "Honorez la mémoire d'un être cher",
     icon: Flower2,
     templateCategory: 'Hommage',
     modules: ['Biographie', 'Veillée', 'Condoléances', 'Souvenirs'],
   },
-  { label: 'Soirée privée', icon: PartyPopper, templateCategory: null, modules: DEFAULT_MODULES },
+  {
+    label: 'Soirée privée',
+    description: 'Une soirée entre amis ou en famille',
+    icon: PartyPopper,
+    templateCategory: null,
+    modules: DEFAULT_MODULES,
+  },
   {
     label: 'Conférence / séminaire / atelier',
+    description: 'Speakers, sessions et sponsors',
     icon: Briefcase,
     templateCategory: 'Conférence',
     modules: ['Speakers', 'Sessions', 'Sponsors', 'Certificats'],
   },
   {
     label: 'Événement scolaire ou universitaire',
+    description: 'Remises de diplômes, portes ouvertes',
     icon: Building2,
     templateCategory: null,
     modules: DEFAULT_MODULES,
   },
   {
     label: 'Événement religieux',
+    description: 'Cérémonies et rassemblements spirituels',
     icon: Church,
     templateCategory: null,
     modules: DEFAULT_MODULES,
   },
   {
     label: 'Concert / spectacle',
+    description: 'Programmez artistes et billetterie',
     icon: Music,
     templateCategory: 'Concert',
     modules: ['Artistes', 'Programme', 'Catégories de billets', "Contrôle d'accès"],
   },
   {
     label: 'Compétition sportive',
+    description: 'Tournois, matchs et classements',
     icon: Trophy,
     templateCategory: null,
     modules: DEFAULT_MODULES,
   },
   {
     label: 'Événement familial',
+    description: 'Réunissez petits et grands',
     icon: Users,
     templateCategory: null,
     modules: DEFAULT_MODULES,
   },
   {
     label: 'Événement professionnel',
+    description: "Lancements et séminaires d'entreprise",
     icon: Award,
     templateCategory: 'Professionnel',
     modules: DEFAULT_MODULES,
   },
   {
     label: 'Événement personnalisé',
+    description: 'Créez un événement qui vous ressemble',
     icon: Sparkles,
     templateCategory: null,
     modules: DEFAULT_MODULES,

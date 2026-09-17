@@ -4,10 +4,11 @@ import GiftCard from '../components/gifts/GiftCard'
 import Button from '../components/ui/Button'
 import { INITIAL_CAGNOTTE, INITIAL_GIFTS } from '../data/giftRegistry'
 import { formatFcfa } from '../utils/formatCurrency'
+import { useLocalStorageState } from '../utils/useLocalStorageState'
 
 export default function GiftRegistryPublic() {
-  const [gifts, setGifts] = useState(INITIAL_GIFTS)
-  const [cagnotte, setCagnotte] = useState(INITIAL_CAGNOTTE)
+  const [gifts, setGifts] = useLocalStorageState('tbf_gifts', INITIAL_GIFTS)
+  const [cagnotte, setCagnotte] = useLocalStorageState('tbf_cagnotte', INITIAL_CAGNOTTE)
   const [contribution, setContribution] = useState('')
   const [lastContribution, setLastContribution] = useState(0)
   const [contributed, setContributed] = useState(false)

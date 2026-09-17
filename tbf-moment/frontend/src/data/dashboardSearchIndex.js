@@ -1,0 +1,42 @@
+import { INITIAL_EVENTS } from './myEvents'
+import { INITIAL_GUESTS } from './guests'
+
+const PAGES = [
+  { label: 'Vue globale', to: '/dashboard' },
+  { label: 'Mes événements', to: '/dashboard/evenements' },
+  { label: 'Invitations', to: '/dashboard/invitations' },
+  { label: 'Communication', to: '/dashboard/communication' },
+  { label: 'Participants', to: '/dashboard/participants' },
+  { label: 'Billetterie', to: '/dashboard/billetterie' },
+  { label: 'Check-in', to: '/dashboard/checkin' },
+  { label: 'Galerie', to: '/dashboard/galerie' },
+  { label: "Livre d'or", to: '/dashboard/livre-dor' },
+  { label: 'Programme', to: '/dashboard/programme' },
+  { label: 'Plan de table', to: '/dashboard/plan-de-table' },
+  { label: 'Liste de mariage', to: '/dashboard/liste-mariage' },
+  { label: 'Conférence', to: '/dashboard/conference' },
+  { label: 'Statistiques', to: '/dashboard/statistiques' },
+  { label: 'Paramètres', to: '/dashboard/parametres' },
+]
+
+export function buildDashboardSearchIndex() {
+  return [
+    ...PAGES.map((page) => ({
+      type: 'Page',
+      label: page.label,
+      to: page.to,
+    })),
+    ...INITIAL_EVENTS.map((event) => ({
+      type: 'Événement',
+      label: event.name,
+      sublabel: `${event.category} · ${event.date}`,
+      to: '/dashboard/evenements',
+    })),
+    ...INITIAL_GUESTS.map((guest) => ({
+      type: 'Invité',
+      label: guest.name,
+      sublabel: guest.group,
+      to: '/dashboard/participants',
+    })),
+  ]
+}

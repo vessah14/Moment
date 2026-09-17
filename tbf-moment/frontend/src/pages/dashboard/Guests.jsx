@@ -1,9 +1,12 @@
-import { Search } from 'lucide-react'
+import { Link2, Search } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import Avatar from '../../components/ui/Avatar'
 import Button from '../../components/ui/Button'
 import StatusBadge from '../../components/ui/StatusBadge'
 import DashboardLayout from '../../components/layout/DashboardLayout'
+import { INITIAL_GUESTS } from '../../data/guests'
+import { slugify } from '../../utils/slugify'
+import { useLocalStorageState } from '../../utils/useLocalStorageState'
 
 const FILTERS = [
   { label: 'Tous', count: 240 },
@@ -18,53 +21,26 @@ const STATUS_BY_FILTER = {
   Refus: 'Refus',
 }
 
-const INITIAL_GUESTS = [
-  {
-    name: 'Fatou Ndiaye',
-    role: 'Témoin',
-    contact: 'fatoun@mail.com',
-    group: 'Famille mariée',
-    status: 'Confirmé',
-    accomp: '+2',
-    invitation: 'Ouverte',
-  },
-  {
-    name: 'Moussa Traoré',
-    role: 'Invité',
-    contact: '+221 77 812 44 19',
-    group: 'Amis',
-    status: 'En attente',
-    accomp: '–',
-    invitation: 'Envoyée',
-  },
-  {
-    name: 'Aminata Bâ',
-    role: 'VIP',
-    contact: 'aminata@mail.com',
-    group: 'Collègues',
-    status: 'Refus',
-    accomp: '–',
-    invitation: 'Ouverte',
-  },
-  {
-    name: 'Ibrahima Sow',
-    role: 'Invité',
-    contact: 'isow@mail.com',
-    group: 'Voisins',
-    status: 'Confirmé',
-    accomp: '+1',
-    invitation: 'Ouverte',
-  },
-]
-
 export default function Guests() {
-  const [guests, setGuests] = useState(INITIAL_GUESTS)
+  const [guests, setGuests] = useLocalStorageState('tbf_guests', INITIAL_GUESTS)
   const [filter, setFilter] = useState('Tous')
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState(() => new Set([INITIAL_GUESTS[0].name]))
   const [actionMessage, setActionMessage] = useState('')
   const [addFormOpen, setAddFormOpen] = useState(false)
+  const [copiedName, setCopiedName] = useState('')
   const importInputRef = useRef(null)
+
+  const handleCopyLink = async (guest) => {
+    const url = `${window.location.origin}/invitation/${slugify(guest.name)}`
+    try {
+      await navigator.clipboard.writeText(url)
+    } catch {
+      // clipboard indisponible (contexte non sécurisé), on affiche quand même le lien
+    }
+    setCopiedName(guest.name)
+    setTimeout(() => setCopiedName(''), 2000)
+  }
 
   const toggleSelected = (name) => {
     setSelected((prev) => {
@@ -281,12 +257,13 @@ export default function Guests() {
               <th className="px-3 py-3 font-medium">Statut</th>
               <th className="px-3 py-3 font-medium">Accomp.</th>
               <th className="px-3 py-3 font-medium">Invitation</th>
+              <th className="w-10 px-3 py-3" />
             </tr>
           </thead>
           <tbody>
             {visible.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-6 py-10 text-center text-sm text-faint">
+                <td colSpan={8} className="px-6 py-10 text-center text-sm text-faint">
                   Aucun invité ne correspond à cette recherche.
                 </td>
               </tr>
@@ -321,6 +298,19 @@ export default function Guests() {
                 </td>
                 <td className="px-3 py-4 font-mono text-muted">{guest.accomp}</td>
                 <td className="px-3 py-4 text-muted">{guest.invitation}</td>
+                <td className="px-3 py-4">
+                  <button
+                    type="button"
+                    onClick={() => handleCopyLink(guest)}
+                    title="Copier le lien d'invitation"
+                    className="rounded-lg p-2 text-faint transition hover:bg-surface-2 hover:text-brand-purple"
+                  >
+                    <Link2 className="h-4 w-4" />
+                  </button>
+                  {copiedName === guest.name && (
+                    <span className="ml-1 text-xs text-success">Copié !</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

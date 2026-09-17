@@ -4,9 +4,12 @@ import Benefits from '../components/home/Benefits'
 import CreateConnectCelebrate from '../components/home/CreateConnectCelebrate'
 import EventTypeTabs from '../components/home/EventTypeTabs'
 import Faq from '../components/home/Faq'
+import FeatureShowcase from '../components/home/FeatureShowcase'
+import FinalCta from '../components/home/FinalCta'
 import Hero from '../components/home/Hero'
 import PopularTemplates from '../components/home/PopularTemplates'
 import PricingTeaser from '../components/home/PricingTeaser'
+import StatsBar from '../components/home/StatsBar'
 import Testimonials from '../components/home/Testimonials'
 import { EVENT_TYPES } from '../data/eventTypes'
 
@@ -25,11 +28,14 @@ export default function Home() {
       <Hero />
       <EventTypeTabs active={eventType} onChange={setEventType} />
       <Benefits />
-      <PopularTemplates category={eventType} />
       <CreateConnectCelebrate />
+      <PopularTemplates category={eventType} />
+      <FeatureShowcase />
+      <StatsBar />
       <Testimonials />
       <PricingTeaser />
       <Faq />
+      <FinalCta />
     </>
   )
 }

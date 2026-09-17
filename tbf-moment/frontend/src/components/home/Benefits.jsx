@@ -1,42 +1,24 @@
-import { BarChart3, Code2, Layers, QrCode, ShieldCheck, Users } from 'lucide-react'
+import { LayoutTemplate, Palette, Settings2 } from 'lucide-react'
 import BrandBackdrop from '../ui/BrandBackdrop'
 
 const BENEFITS = [
   {
-    icon: Code2,
-    title: 'Sans une ligne de code',
+    icon: LayoutTemplate,
+    title: 'Création intuitive',
     description:
-      'Choisissez un modèle, personnalisez vos textes et vos photos, publiez.',
+      'Glissez-déposez vos éléments pour composer votre page d’événement sans compétence technique.',
   },
   {
-    icon: QrCode,
-    title: 'QR Code et check-in',
+    icon: Palette,
+    title: 'Personnalisation totale',
     description:
-      'Invitations individuelles et validation des entrées en temps réel.',
+      'Adaptez vos modèles avec vos couleurs, vos photos et le contenu de votre événement.',
   },
   {
-    icon: Layers,
-    title: 'Un compte, tous vos événements',
+    icon: Settings2,
+    title: 'Gestion complète',
     description:
-      'Du mariage au séminaire professionnel, la même plateforme les gère tous.',
-  },
-  {
-    icon: BarChart3,
-    title: 'Statistiques en temps réel',
-    description:
-      'Visites, RSVP, billets vendus et scans, consultables à tout moment.',
-  },
-  {
-    icon: ShieldCheck,
-    title: 'Données isolées et sécurisées',
-    description:
-      'Chaque événement est cloisonné : vos invités restent privés à votre organisation.',
-  },
-  {
-    icon: Users,
-    title: 'Pour tous les organisateurs',
-    description:
-      'Particuliers, entreprises, écoles et associations — un outil pour chacun.',
+      'Pilotez vos invités, automatisez les RSVP et configurez la billetterie associée, au même endroit.',
   },
 ]
 
@@ -44,18 +26,21 @@ export default function Benefits() {
   return (
     <section id="fonctionnalites" className="relative overflow-hidden">
       <BrandBackdrop side="right" />
-      <div className="relative mx-auto max-w-7xl px-6 py-20">
-        <div className="max-w-2xl">
-          <h2 className="text-3xl font-bold text-ink">
-            Une plateforme, tous vos événements
+      <div className="relative mx-auto max-w-7xl px-6 py-20 text-center">
+        <div className="mx-auto max-w-2xl">
+          <span className="text-xs font-semibold tracking-widest text-brand-purple uppercase">
+            Simplicité
+          </span>
+          <h2 className="mt-3 text-3xl font-bold text-ink">
+            Une gestion d'événement simplifiée et moderne
           </h2>
           <p className="mt-3 text-muted">
-            TBF Moment réunit tout ce qu'il faut pour créer, promouvoir et
-            gérer un événement numérique de bout en bout.
+            Découvrez les fonctionnalités pensées pour vous faire gagner du
+            temps et élever l'expérience de vos invités.
           </p>
         </div>
 
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-10 grid gap-6 text-left sm:grid-cols-3">
           {BENEFITS.map((benefit) => (
             <div
               key={benefit.title}

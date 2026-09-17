@@ -8,6 +8,7 @@ import {
   Mail,
   MessageSquare,
   Mic2,
+  Plus,
   QrCode,
   Settings,
   Table2,
@@ -21,6 +22,11 @@ import logo from '../../assets/logo.png'
 const NAV_ITEMS = [
   { label: 'Vue globale', to: '/dashboard', icon: BarChart3, end: true },
   { label: 'Mes événements', to: '/dashboard/evenements', icon: Calendar },
+  {
+    label: 'Créer un événement',
+    to: '/dashboard/evenements/nouveau',
+    icon: Plus,
+  },
   { label: 'Invitations', to: '/dashboard/invitations', icon: Mail },
   {
     label: 'Communication',
@@ -58,11 +64,11 @@ export default function DashboardSidebar({ open, onClose }) {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex h-svh w-64 shrink-0 flex-col border-r border-border-soft/60 bg-bg px-4 py-6 transition-transform lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex h-svh w-64 shrink-0 flex-col overflow-y-auto border-r border-border-soft/60 bg-bg px-4 py-5 transition-transform lg:sticky lg:top-0 lg:translate-x-0 ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex shrink-0 items-center justify-between">
           <img src={logo} alt="TBF Moment" className="h-8 w-auto px-2" />
           <button
             type="button"
@@ -73,7 +79,7 @@ export default function DashboardSidebar({ open, onClose }) {
           </button>
         </div>
 
-        <nav className="mt-8 flex-1 space-y-1 overflow-y-auto">
+        <nav className="mt-6 flex-1 space-y-0.5">
           {NAV_ITEMS.map((item) => (
             <NavLink
               key={item.label}
@@ -81,7 +87,7 @@ export default function DashboardSidebar({ open, onClose }) {
               end={item.end}
               onClick={onClose}
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
+                `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition ${
                   isActive
                     ? 'bg-brand-indigo text-white'
                     : 'text-muted hover:bg-surface-2 hover:text-ink'
@@ -99,14 +105,14 @@ export default function DashboardSidebar({ open, onClose }) {
           ))}
         </nav>
 
-        <div className="rounded-xl border border-border-soft bg-surface p-4">
+        <div className="mt-4 shrink-0 rounded-xl border border-border-soft bg-surface p-3.5">
           <span className="font-mono text-[11px] font-semibold tracking-wider text-brand-orange uppercase">
             Plan Free
           </span>
-          <p className="mt-2 text-sm text-muted">
+          <p className="mt-1.5 text-sm text-muted">
             2 événements sur 3 utilisés
           </p>
-          <div className="mt-3 h-1.5 rounded-full bg-border-soft">
+          <div className="mt-2.5 h-1.5 rounded-full bg-border-soft">
             <div className="h-full w-2/3 rounded-full bg-[linear-gradient(92deg,_var(--color-brand-orange),_var(--color-brand-pink))]" />
           </div>
           <button
@@ -115,7 +121,7 @@ export default function DashboardSidebar({ open, onClose }) {
               onClose?.()
               navigate('/tarifs')
             }}
-            className="mt-4 w-full rounded-lg bg-[color:var(--color-gold)] py-2 text-sm font-semibold text-bg"
+            className="mt-3 w-full rounded-lg bg-[color:var(--color-gold)] py-2 text-sm font-semibold text-bg"
           >
             Passer en Premium
           </button>

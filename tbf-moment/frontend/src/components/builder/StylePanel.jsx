@@ -153,6 +153,26 @@ export default function StylePanel({
                   className="mt-2 w-full resize-none rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-brand-purple"
                 />
               </label>
+
+              <div className="space-y-4 border-t border-border-soft pt-4">
+                <p className="text-xs font-semibold tracking-wider text-faint uppercase">
+                  Options d'affichage
+                </p>
+                <Toggle
+                  label="Afficher le titre de section"
+                  checked={Boolean(content.showHeading)}
+                  onChange={(value) =>
+                    onChangeBlockContent(selectedBlock, { showHeading: value })
+                  }
+                />
+                <Toggle
+                  label="Arrière-plan teinté"
+                  checked={Boolean(content.tinted)}
+                  onChange={(value) =>
+                    onChangeBlockContent(selectedBlock, { tinted: value })
+                  }
+                />
+              </div>
             </div>
           ) : (
             <p className="text-sm text-faint">
