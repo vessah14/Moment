@@ -17,20 +17,23 @@ connues, prochaines étapes) est dans
 [`tbf-moment/frontend/README.md`](tbf-moment/frontend/README.md). Ce fichier-ci
 ne couvre que ce qui est à la racine du dépôt, en dehors de l'app.
 
+Dépôt distant : [gitlab.com/tbfdesign259/tbf-moment](https://gitlab.com/tbfdesign259/tbf-moment)
+(branche `master`).
+
 ## `img Logo/` — variantes du logo
 
 Toutes les images sont fournies telles quelles (aucune n'a été retouchée).
-Le fichier réellement utilisé dans l'application est **`tranche5.png`**
+Le fichier réellement utilisé dans l'application est **`Arrière-plan.png`**
 (copié dans `tbf-moment/frontend/src/assets/logo.png`) et **`tranche6.png`**
 (icône seule, copié en `logo-mark.png` et servi comme favicon).
 
 | Fichier | Description | Fond |
 |---|---|---|
-| `tranche6.png` | Icône seule (symbole M + étoile), dégradé couleur | Transparent |
-| `tranche5.png` **← utilisé** | Icône + "TBF MOMENT" + slogan, dégradé couleur | Transparent |
+| `tranche6.png` **← utilisé (icône seule)** | Icône seule (symbole M + étoile), dégradé couleur | Transparent |
+| `Arrière-plan.png` **← utilisé (logo principal)** | Icône + trait vertical + "TBF \| MOMENT" | Opaque (bleu nuit, proche de `--color-bg` de l'app) |
+| `tranche5.png` | Icône + "TBF MOMENT" + slogan, dégradé couleur | Transparent |
 | `tranche04.png` | Identique à `tranche5.png`, recadrage légèrement différent | Transparent |
 | `tranche4.png` | Icône + wordmark, sur fond violet dégradé intégré à l'image | Opaque (violet) |
-| `Arrière-plan.png` | Icône + trait vertical + "TBF \| MOMENT" | Opaque (bleu nuit, proche de `--color-bg` de l'app) |
 | `tranche1.png` | Version noir sur blanc | Transparent |
 | `tranche2.png` | Version monochrome noire | Transparent — **peu lisible sur fond sombre**, évité dans l'app pour cette raison |
 | `tranche3.png` | Version or / champagne | Fond sombre intégré |

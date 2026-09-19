@@ -8,7 +8,7 @@ import { INITIAL_TABLES, buildSeatingGuests } from '../../data/seatingGuests'
 import { useLocalStorageState } from '../../utils/useLocalStorageState'
 
 export default function SeatingPlan() {
-  const [guests] = useLocalStorageState('tbf_guests', INITIAL_GUESTS)
+  const [guests] = useLocalStorageState('tbf_guests_v2', INITIAL_GUESTS)
   const [tables, setTables] = useState(INITIAL_TABLES)
   const [formOpen, setFormOpen] = useState(false)
 

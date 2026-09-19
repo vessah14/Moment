@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import Avatar from '../ui/Avatar'
 import Button from '../ui/Button'
+import PhoneInput from '../ui/PhoneInput'
 import StatusBadge from '../ui/StatusBadge'
 
 export default function ProfileTab() {
@@ -118,12 +119,12 @@ export default function ProfileTab() {
         </label>
         <label className="block">
           <span className="text-sm font-medium text-ink">Téléphone</span>
-          <input
-            type="tel"
-            value={profile.phone}
-            onChange={(e) => updateProfile({ phone: e.target.value })}
-            className="mt-2 w-full rounded-lg border border-border bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-brand-purple"
-          />
+          <div className="mt-2">
+            <PhoneInput
+              value={profile.phone}
+              onChange={(value) => updateProfile({ phone: value })}
+            />
+          </div>
         </label>
 
         <label className="block">

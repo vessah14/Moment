@@ -1,9 +1,9 @@
 import { Download } from 'lucide-react'
 import { useState } from 'react'
+import { INITIAL_GUESTS } from '../../data/guests'
+import { useLocalStorageState } from '../../utils/useLocalStorageState'
 import Toggle from '../builder/Toggle'
 import Button from '../ui/Button'
-
-const ATTENDEES = ['Fatou Ndiaye', 'Moussa Traoré', 'Aminata Bâ', 'Ibrahima Sow']
 
 function generateCertificate(name, eventTitle) {
   const canvas = document.createElement('canvas')
@@ -46,6 +46,8 @@ function generateCertificate(name, eventTitle) {
 }
 
 export default function CertificatesTab({ eventTitle }) {
+  const [guests] = useLocalStorageState('tbf_guests_v2', INITIAL_GUESTS)
+  const attendees = guests.map((g) => g.name)
   const [autoGenerate, setAutoGenerate] = useState(false)
   const [issued, setIssued] = useState([])
 
@@ -59,7 +61,7 @@ export default function CertificatesTab({ eventTitle }) {
   }
 
   const handleGenerateAll = () => {
-    ATTENDEES.forEach((name) => handleDownload(name))
+    attendees.forEach((name) => handleDownload(name))
   }
 
   return (
@@ -68,7 +70,7 @@ export default function CertificatesTab({ eventTitle }) {
         <div>
           <h2 className="font-semibold text-ink">Certificats</h2>
           <p className="mt-1 text-sm text-muted">
-            {issued.length}/{ATTENDEES.length} certificat(s) téléchargé(s)
+            {issued.length}/{attendees.length} certificat(s) téléchargé(s)
           </p>
         </div>
         <Button variant="gradient" onClick={handleGenerateAll}>
@@ -89,7 +91,7 @@ export default function CertificatesTab({ eventTitle }) {
       </div>
 
       <div className="mt-5 divide-y divide-border-soft rounded-2xl border border-border-soft bg-surface">
-        {ATTENDEES.map((name) => (
+        {attendees.map((name) => (
           <div key={name} className="flex items-center justify-between px-5 py-3.5">
             <span className="text-sm text-ink">{name}</span>
             <div className="flex items-center gap-3">

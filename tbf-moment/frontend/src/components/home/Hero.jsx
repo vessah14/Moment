@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom'
 import heroPreview from '../../assets/img001.jpg'
+import { EVENT_CATEGORIES } from '../../data/eventCategories'
+import { TEMPLATES } from '../../data/templates'
 import BrandBackdrop from '../ui/BrandBackdrop'
 import Button from '../ui/Button'
 
 const STATS = [
-  { value: '14', label: "types d'événements" },
-  { value: '48', label: 'modèles prêts' },
+  { value: String(EVENT_CATEGORIES.length), label: "types d'événements" },
+  { value: String(TEMPLATES.length), label: 'modèles prêts' },
   { value: '10 min', label: 'pour publier' },
 ]
 

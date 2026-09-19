@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import QRCode from 'qrcode'
+import { useEffect, useState } from 'react'
 import TicketSalesChart from '../../components/billing/TicketSalesChart'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import StatCard from '../../components/dashboard/StatCard'
@@ -64,6 +65,11 @@ export default function Ticketing() {
   const [coupons, setCoupons] = useState(INITIAL_COUPONS)
   const [ticketForm, setTicketForm] = useState(null)
   const [couponForm, setCouponForm] = useState(null)
+  const [ticketQrUrl, setTicketQrUrl] = useState(null)
+
+  useEffect(() => {
+    QRCode.toDataURL('TBF-2027-0X4J91', { margin: 1, width: 160 }).then(setTicketQrUrl)
+  }, [])
 
   const handleAddTicket = (e) => {
     e.preventDefault()
@@ -243,7 +249,11 @@ export default function Ticketing() {
                 </div>
                 <StatusBadge status="VIP" />
               </div>
-              <div className="mt-4 flex aspect-square w-24 items-center justify-center rounded-lg bg-[repeating-linear-gradient(45deg,_var(--color-surface-2),_var(--color-surface-2)_4px,_var(--color-panel)_4px,_var(--color-panel)_8px)]" />
+              <div className="mt-4 flex aspect-square w-24 items-center justify-center overflow-hidden rounded-lg bg-white p-1.5">
+                {ticketQrUrl && (
+                  <img src={ticketQrUrl} alt="QR code du billet" className="h-full w-full" />
+                )}
+              </div>
               <div className="mt-3">
                 <p className="text-sm font-medium text-ink">Aminata Bâ</p>
                 <p className="text-xs text-faint">

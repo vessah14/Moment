@@ -5,12 +5,13 @@ import EventCard from '../../components/events/EventCard'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import Button from '../../components/ui/Button'
 import { INITIAL_EVENTS } from '../../data/myEvents'
+import { useLocalStorageState } from '../../utils/useLocalStorageState'
 
 const FILTERS = ['Tous', 'Publiés', 'Brouillons', 'Passés']
 
 export default function MyEvents() {
   const navigate = useNavigate()
-  const [events, setEvents] = useState(INITIAL_EVENTS)
+  const [events, setEvents] = useLocalStorageState('tbf_myevents', INITIAL_EVENTS)
   const [archivedEvents, setArchivedEvents] = useState([])
   const [filter, setFilter] = useState('Tous')
   const [query, setQuery] = useState('')

@@ -1,24 +1,31 @@
 import { Menu, X } from 'lucide-react'
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import logo from '../../assets/logo.png'
+import Button from '../ui/Button'
 
 const NAV_LINKS = [
   { label: 'Fonctionnalités', href: '/#fonctionnalites' },
   { label: 'Modèles', href: '/modeles' },
   { label: 'Tarifs', href: '/tarifs' },
+  { label: 'Écosystème', href: '/ecosysteme' },
+  { label: 'Support', href: '/support' },
 ]
 
-function NavLink({ link, className, onClick }) {
+function NavLink({ link, className, activeClassName, onClick }) {
+  const { pathname } = useLocation()
+  const isActive = link.href.startsWith('/') && !link.href.includes('#') && pathname === link.href
+  const finalClassName = `${className} ${isActive ? activeClassName : ''}`
+
   if (link.href.startsWith('/')) {
     return (
-      <Link to={link.href} className={className} onClick={onClick}>
+      <Link to={link.href} className={finalClassName} onClick={onClick}>
         {link.label}
       </Link>
     )
   }
   return (
-    <a href={link.href} className={className} onClick={onClick}>
+    <a href={link.href} className={finalClassName} onClick={onClick}>
       {link.label}
     </a>
   )
@@ -40,23 +47,28 @@ export default function Header() {
               key={link.label}
               link={link}
               className="text-sm text-muted transition hover:text-ink"
+              activeClassName="!text-ink font-medium"
             />
           ))}
         </nav>
 
-        <div className="flex items-center gap-4 sm:gap-6">
-          <Link
+        <div className="flex items-center gap-3 sm:gap-4">
+          <Button
+            as={Link}
             to="/connexion"
-            className="hidden text-sm font-medium text-ink sm:inline"
+            variant="outline"
+            className="hidden px-4 py-2 sm:inline-flex"
           >
             Se connecter
-          </Link>
-          <Link
+          </Button>
+          <Button
+            as={Link}
             to="/inscription"
-            className="bg-brand-gradient rounded-full px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand-pink/20 transition hover:opacity-90 sm:px-5"
+            variant="gradient"
+            className="px-4 py-2.5 sm:px-5"
           >
             Créer mon événement
-          </Link>
+          </Button>
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
@@ -75,6 +87,7 @@ export default function Header() {
               link={link}
               onClick={() => setMenuOpen(false)}
               className="rounded-lg px-3 py-2.5 text-sm font-medium text-muted transition hover:bg-surface-2 hover:text-ink"
+              activeClassName="!bg-surface-2 !text-ink"
             />
           ))}
           <Link

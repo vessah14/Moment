@@ -26,7 +26,7 @@
 
   --color-ink: #f8f9fc; /* Soft White, texte sur fond sombre */
   --color-muted: #9ba3c2;
-  --color-faint: #6b7290;
+  --color-faint: #7883a8; /* eclairci vs #6b7290 pour repasser le seuil WCAG AA (4.5:1) */
   --color-dark-gray: #1f2937; /* reserve aux surfaces claires (texte secondaire) */
 
   --color-brand-purple: #6c4bf4; /* Electric Purple officiel */

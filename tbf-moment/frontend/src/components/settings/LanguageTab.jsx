@@ -44,6 +44,12 @@ export default function LanguageTab() {
               <option key={l}>{l}</option>
             ))}
           </select>
+          {language !== 'Français' && (
+            <span className="mt-1.5 block text-xs text-brand-orange">
+              Interface disponible en français uniquement pour le moment —
+              les autres langues arrivent bientôt.
+            </span>
+          )}
         </label>
 
         <label className="block">

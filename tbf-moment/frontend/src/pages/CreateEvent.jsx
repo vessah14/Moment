@@ -13,6 +13,9 @@ import PublicationStep from '../components/wizard/PublicationStep'
 import StepProgress from '../components/wizard/StepProgress'
 import TemplateStep from '../components/wizard/TemplateStep'
 import { INITIAL_GUESTS } from '../data/guests'
+import { INITIAL_EVENTS } from '../data/myEvents'
+import { formatEventDate } from '../utils/formatDate'
+import { slugify } from '../utils/slugify'
 import { useLocalStorageState } from '../utils/useLocalStorageState'
 
 const STEPS = [
@@ -56,7 +59,8 @@ export default function CreateEvent() {
   const [visibility, setVisibility] = useState('publish')
   const [publishing, setPublishing] = useState(false)
   const [published, setPublished] = useState(false)
-  const [, setSharedGuests] = useLocalStorageState('tbf_guests', INITIAL_GUESTS)
+  const [, setSharedGuests] = useLocalStorageState('tbf_guests_v2', INITIAL_GUESTS)
+  const [, setMyEvents] = useLocalStorageState('tbf_myevents', INITIAL_EVENTS)
 
   const updateEvent = (patch) => setEvent((prev) => ({ ...prev, ...patch }))
 
@@ -71,6 +75,7 @@ export default function CreateEvent() {
         setSharedGuests((prev) => [
           ...prev,
           ...event.guests.map((g) => ({
+            id: `g-${g.id}`,
             name: g.name,
             role: 'Invité',
             contact: g.email,
@@ -81,6 +86,22 @@ export default function CreateEvent() {
           })),
         ])
       }
+      const guestCount = event.guests?.length ?? 0
+      setMyEvents((prev) => [
+        {
+          id: `${slugify(event.name)}-${Date.now()}`,
+          name: event.name,
+          status: visibility === 'publish' ? 'Publié' : 'Brouillon',
+          category: event.category,
+          date: formatEventDate(event.date),
+          location: event.location,
+          progressLabel: 'RSVP',
+          confirmed: 0,
+          total: Math.max(1, guestCount),
+          barColor: visibility === 'publish' ? 'bg-success' : 'bg-brand-gradient',
+        },
+        ...prev,
+      ])
       setPublishing(false)
       setPublished(true)
     }, 700)

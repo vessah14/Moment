@@ -28,7 +28,10 @@ export default function Testimonials() {
     <section className="relative overflow-hidden">
       <BrandBackdrop side="left" />
       <div className="relative mx-auto max-w-7xl px-6 py-20">
-        <h2 className="text-3xl font-bold text-ink">
+        <span className="text-xs font-semibold tracking-widest text-brand-purple uppercase">
+          Témoignages
+        </span>
+        <h2 className="mt-3 text-3xl font-bold text-ink">
           Ils ont créé leur moment
         </h2>
 

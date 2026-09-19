@@ -3,11 +3,14 @@
 Plateforme événementielle de l'écosystème TBF : création, personnalisation et
 gestion d'événements (mariages, conférences, anniversaires...) sans code.
 
-> **État du projet : prototype front-end.** Aucun backend n'existe. Toutes
-> les données (invités, tarifs, campagnes...) sont codées en dur ou vivent en
-> mémoire (`useState`) et sont perdues au rechargement de la page. Voir
-> [Limites connues](#limites-connues) avant de présenter ce projet comme
-> "fini".
+> **État du projet : prototype front-end.** Aucun backend n'existe. La
+> plupart des données (tarifs, campagnes, statistiques...) sont codées en dur
+> ou vivent en mémoire (`useState`) et sont perdues au rechargement de la
+> page. Quelques listes (invités, événements créés, cadeaux/cagnotte) sont
+> synchronisées entre pages via `localStorage` — pratique pour une démo dans
+> un seul navigateur, mais ce n'est toujours pas une vraie persistance
+> serveur. Voir [Limites connues](#limites-connues) avant de présenter ce
+> projet comme "fini".
 
 ## Stack technique
 
@@ -17,8 +20,9 @@ gestion d'événements (mariages, conférences, anniversaires...) sans code.
 | Routing | React Router 7 (`react-router-dom`) |
 | Styles | Tailwind CSS v4 (`@tailwindcss/vite`, pas de fichier config séparé — tokens dans `src/index.css` via `@theme`) |
 | Icônes | `lucide-react` |
+| Drapeaux de pays | `country-flag-icons` (SVG, pas d'emoji — rendu fiable sur Windows) |
 | Graphiques | `recharts` |
-| QR codes | `qrcode` (génération 100 % côté client) |
+| QR codes | `qrcode` (génération 100 % côté client, réutilisée sur l'invitation invité, le check-in et la billetterie) |
 | Polices | `@fontsource/inter`, `@fontsource/plus-jakarta-sans`, `@fontsource/playfair-display` |
 | Lint | `oxlint` |
 
@@ -41,16 +45,24 @@ configurer.
 src/
   data/            données statiques (mock) : tarifs, catégories d'événements,
                    modèles, invités, conférence, cadeaux, admin...
-  utils/           fonctions utilitaires pures (formatCurrency, adminAuth)
+  utils/           fonctions utilitaires pures (formatCurrency, formatDate,
+                   slugify, adminAuth, phoneCountry) + useLocalStorageState
+                   (voir plus bas)
   components/
-    ui/            primitives partagées (Button, Avatar, StatusBadge...)
+    ui/            primitives partagées (Button, Avatar, StatusBadge,
+                    PhoneInput...)
     layout/        Header, Footer, Dashboard{Sidebar,Topbar,Layout},
-                    Admin{Sidebar,Topbar,Layout}, AuthLayout, InfoPage
+                    Admin{Sidebar,Topbar,Layout}, AuthLayout, InfoPage,
+                    GlobalSearch
     home/          sections de la page d'accueil
     auth/          formulaires de connexion / inscription
-    wizard/        les 4 étapes de création d'événement
-    builder/       Event Builder (bibliothèque de blocs, canevas, style)
+    wizard/        les 7 étapes de l'assistant "Créer un événement"
+                    (+ un écran de succès) — voir plus bas
+    builder/       Event Builder (bibliothèque de blocs, canevas avec rendu
+                    réel des blocs, panneau de style)
     dashboard/     widgets du tableau de bord organisateur
+    settings/      onglets de la page Paramètres (Profil, Sécurité,
+                    Abonnement, Facturation, Équipe, Permissions, Domaine...)
     analytics/ billing/ events/ templates/ pricing/  widgets par domaine
     program/ seating/ gifts/ conference/ communication/
                    composants des modules spécialisés (voir plus bas)
@@ -63,7 +75,22 @@ Chaque page de tableau de bord suit le même patron : elle importe
 `DashboardLayout` (ou `AdminLayout`), pose son propre état local avec
 `useState`, et rend son contenu dedans. Il n'y a pas de state manager global
 (pas de Redux/Zustand/Context métier) — l'état ne survit pas à la navigation
-entre pages sœurs.
+entre pages sœurs, **sauf** pour les quelques listes qui passent par le hook
+partagé `useLocalStorageState` (`src/utils/useLocalStorageState.js`) :
+
+- `tbf_guests_v2` — liste d'invités, partagée entre Participants, Plan de
+  table, l'invitation invité (`/invitation/:code`) et les certificats de
+  conférence. Un invité ajouté (formulaire, import CSV, ou étape 5 de
+  l'assistant de création d'événement) est visible partout.
+- `tbf_myevents` — événements de l'organisateur, partagée entre "Mes
+  événements" et l'assistant de création : publier un événement l'ajoute
+  réellement à la liste au lieu de disparaître.
+- `tbf_gifts` / `tbf_cagnotte` — liste de mariage et cagnotte, partagées
+  entre la vue organisateur et la vue invité (`/cadeaux/:code`).
+
+C'est un pub-sub maison au-dessus de `localStorage` (même onglet et
+inter-onglets), explicitement documenté dans le fichier comme *pas* une
+vraie persistance serveur.
 
 ## Carte des routes
 
@@ -75,24 +102,42 @@ entre pages sœurs.
 | `/modeles` | Bibliothèque de modèles (`?categorie=` pour préfiltrer) |
 | `/tarifs` | Grille tarifaire |
 | `/connexion`, `/inscription` | Auth organisateur (accepte n'importe quel couple non vide, aucune vérification) |
+| `/mot-de-passe-oublie` | Demande de réinitialisation (pas d'e-mail réel envoyé — un lien simule l'ouverture du lien reçu) |
+| `/reinitialiser-mot-de-passe` | Définition d'un nouveau mot de passe |
 | `/ecosysteme`, `/support`, `/mentions-legales` | Pages statiques |
-| `/invitation/:code` | Page invité — RSVP, QR de billet |
+| `/invitation/:code` | Page invité — RSVP, QR de billet ; le `:code` est résolu contre la liste d'invités partagée (`tbf_guests_v2`) via un slug du nom |
 | `/cadeaux/:code` | Liste de mariage — vue invité |
 
 ### Espace organisateur (`/dashboard/...`)
 
 Toutes les données affichées concernent un unique événement de démonstration
 ("Mariage Awa & Ibrahim" par défaut, "TBF Summit 2027" pour le module
-Conférence). Il n'y a pas de sélecteur d'événement multi-comptes.
+Conférence). Il n'y a pas de sélecteur d'événement multi-comptes pour
+consulter les modules d'un événement en particulier (voir Limites connues).
 
-`evenements`, `evenements/nouveau` (assistant 4 étapes), `invitations`,
-`communication`, `participants`, `billetterie`, `checkin`, `galerie`,
-`livre-dor`, `programme`, `plan-de-table`, `liste-mariage`, `conference`,
-`statistiques`, `parametres`.
+`evenements`, `evenements/nouveau`, `invitations`, `communication`,
+`participants`, `billetterie`, `checkin`, `galerie`, `livre-dor`,
+`programme`, `plan-de-table`, `liste-mariage`, `conference`, `statistiques`,
+`parametres`.
+
+**`evenements/nouveau`** est un assistant à 7 étapes (+ un écran de succès),
+intégré dans la sidebar/topbar du dashboard : Type d'événement (14
+catégories), Informations générales, Choix du template (filtres Tous /
+Recommandés / Premium / Minimal), Personnalisation (couleur d'accent,
+message d'accroche), Invités (ajout manuel + import CSV), Options (modules
+activables : QR check-in, programme, galerie, billetterie, livre d'or —
+RSVP toujours actif), puis Aperçu & Publication. Publier ajoute réellement
+l'événement à "Mes événements" et fusionne les invités saisis dans la liste
+partagée.
 
 `/builder` (hors préfixe `/dashboard`) est l'éditeur visuel de site
 événementiel — desktop uniquement, un message invite à agrandir l'écran en
-dessous du breakpoint `lg`.
+dessous du breakpoint `lg`. Le canevas rend le **vrai contenu** de chaque
+bloc (pas des cartes abstraites) : compte à rebours réel calculé depuis la
+date de l'événement, formulaire RSVP fonctionnel, FAQ en accordéon, livre
+d'or avec formulaire d'ajout, galerie, témoins, localisation, billetterie,
+pied de page. Les blocs sélectionnés en édition ont une vraie barre d'outils
+(monter / descendre / supprimer).
 
 ### Console Super Admin (`/admin/...`)
 
@@ -107,7 +152,8 @@ réelle** (voir Limites connues).
   via l'URL.
 
 Pages : Vue globale, Organisations, Événements, Facturation, Modération,
-Paramètres système.
+Paramètres système. La topbar a sa propre cloche de notifications
+(signalements en attente, nouvelles organisations, paiements).
 
 ## Design system
 
@@ -119,7 +165,8 @@ graphique du cahier des charges :
   `--color-gold` (Champagne Gold — réservé aux éléments "Premium"). Le
   dégradé orange→rose (`--color-brand-orange` / `--color-brand-pink`) est une
   exception assumée à la charte écrite, conservée à la demande sur les CTA
-  principaux.
+  principaux. `--color-faint` a été éclairci (`#7883a8`, ex-`#6b7290`) pour
+  repasser le seuil de contraste WCAG AA (4.5:1) sur le fond sombre.
 - **Typographie** : Plus Jakarta Sans (titres, appliqué globalement à
   `h1/h2/h3`), Inter (corps de texte, dashboard), Playfair Display
   (disponible comme option de thème dans l'Event Builder).
@@ -127,10 +174,18 @@ graphique du cahier des charges :
   d'accessibilité du skill `dataviz` (contraste, daltonisme) — voir
   `--color-chart-*` dans `index.css`.
 
-Composants UI partagés à réutiliser avant d'en recréer un : `Button`,
-`StatusBadge` (registre de tous les libellés de statut de l'app — ajouter une
-nouvelle entrée plutôt que faire un nouveau composant de badge), `Avatar`,
-`StatCard`.
+Composants UI partagés à réutiliser avant d'en recréer un : `Button`
+(variants `gradient`/`solid`/`outline`/`ghost`/`white`), `StatusBadge`
+(registre de tous les libellés de statut de l'app — ajouter une nouvelle
+entrée plutôt que faire un nouveau composant de badge), `Avatar`, `StatCard`,
+`PhoneInput` (champ téléphone avec sélecteur de drapeau/indicatif,
+recherche par nom, code ISO ou indicatif).
+
+Le header public (`Header.jsx`) surligne le lien de la page courante et
+combine un bouton contour ("Se connecter") avec le bouton en dégradé
+("Créer mon événement") plutôt qu'un simple lien texte. Le footer a une
+barre de bas de page dédiée (copyright + liens légaux), distincte des
+colonnes de liens principales.
 
 ## Modules spécialisés par catégorie d'événement
 
@@ -139,27 +194,44 @@ d'événement. État actuel :
 
 - **Mariage** — complet : plan de table (`/dashboard/plan-de-table`), liste
   de mariage + cagnotte (`/dashboard/liste-mariage`, vue invité sur
-  `/cadeaux/:code`).
+  `/cadeaux/:code`), tous branchés sur la même liste d'invités partagée que
+  Participants.
 - **Conférence** — partiel : intervenants, sessions, sponsors, certificats
   (`/dashboard/conference`, onglets). Les certificats sont de vrais PNG
-  générés via `<canvas>` côté client.
+  générés via `<canvas>` côté client, pour la liste d'invités partagée
+  (plus une liste inventée séparée).
 - **Anniversaire, Obsèques, Graduation, Concert** — non construits (prévus
   V1/V2 dans la roadmap du cahier des charges, pas dans le MVP).
+
+## Onboarding post-inscription (en pause)
+
+Un parcours plein écran séparé (4 étapes : catégorie, objectif de
+l'événement, puis deux étapes non spécifiées) a été évoqué pour s'afficher
+une seule fois juste après l'inscription, avant le dashboard — distinct de
+l'assistant "Créer un événement" qui reste réutilisable à volonté. **Non
+construit** : seules 2 des 4 étapes ont une maquette ; le construire
+partiellement créerait un parcours à moitié fini. À reprendre dès que les
+maquettes des étapes 3 et 4 arrivent.
 
 ## Limites connues
 
 À garder en tête avant d'itérer sur ce projet :
 
-1. **Pas de backend.** Toute donnée saisie (invités ajoutés, campagnes
-   créées, cadeaux réservés...) vit dans le state React de la page et
-   disparaît à la navigation ou au rechargement.
+1. **Pas de backend.** La plupart des données saisies (campagnes créées,
+   statistiques, facturation...) vivent dans le state React de la page et
+   disparaissent à la navigation ou au rechargement. Quelques listes
+   (invités, événements, cadeaux/cagnotte) survivent via `localStorage` —
+   voir [Structure du projet](#structure-du-projet) — mais restent propres à
+   un seul navigateur, sans synchronisation entre appareils ni entre
+   personnes.
 2. **Pas d'authentification réelle.** Connexion organisateur : accepte tout
    couple non vide. Connexion admin : vérifie un couple fixe en clair dans le
    code (`src/utils/adminAuth.js`) — acceptable pour verrouiller une démo,
    pas pour de la sécurité réelle.
-3. **Un seul événement de démonstration** par module — pas de gestion
-   multi-événements réelle malgré l'UI qui le suggère (sélecteurs de
-   catégorie, listes filtrables).
+3. **Un seul événement de démonstration** par module — créer un second
+   événement via l'assistant l'ajoute bien à "Mes événements", mais les
+   autres modules (Programme, Galerie, Billetterie...) continuent d'afficher
+   les données du même événement de démo, pas de bascule contextuelle réelle.
 4. **Exports/téléchargements réels mais isolés.** Les CSV, `.ics`, QR codes et
    certificats générés sont de vrais fichiers (pas des simulations), mais
    rien n'est envoyé à un serveur — ils existent seulement sur la machine de
@@ -175,7 +247,12 @@ d'événement. État actuel :
    MySQL ou PostgreSQL) et définir les endpoints REST pour Event Core,
    Invités/RSVP et Billetterie en priorité — ce sont les données que chaque
    autre module consomme.
-2. Remplacer les `useState` locaux des pages dashboard par des appels API,
-   module par module.
+2. Remplacer les `useState` locaux et les clés `localStorage` des pages
+   dashboard par des appels API, module par module.
 3. Authentification réelle (sessions/tokens, RBAC organisateur/admin —
    cahier des charges section 12).
+4. Reprendre l'onboarding post-inscription dès réception des maquettes
+   manquantes (étapes 3 et 4).
+
+E-mail : admin@tbfmoment.com
+Mot de passe : TbfAdmin2027!

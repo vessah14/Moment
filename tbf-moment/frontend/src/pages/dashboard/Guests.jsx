@@ -22,13 +22,13 @@ const STATUS_BY_FILTER = {
 }
 
 export default function Guests() {
-  const [guests, setGuests] = useLocalStorageState('tbf_guests', INITIAL_GUESTS)
+  const [guests, setGuests] = useLocalStorageState('tbf_guests_v2', INITIAL_GUESTS)
   const [filter, setFilter] = useState('Tous')
   const [query, setQuery] = useState('')
-  const [selected, setSelected] = useState(() => new Set([INITIAL_GUESTS[0].name]))
+  const [selected, setSelected] = useState(() => new Set([INITIAL_GUESTS[0].id]))
   const [actionMessage, setActionMessage] = useState('')
   const [addFormOpen, setAddFormOpen] = useState(false)
-  const [copiedName, setCopiedName] = useState('')
+  const [copiedId, setCopiedId] = useState('')
   const importInputRef = useRef(null)
 
   const handleCopyLink = async (guest) => {
@@ -38,15 +38,15 @@ export default function Guests() {
     } catch {
       // clipboard indisponible (contexte non sécurisé), on affiche quand même le lien
     }
-    setCopiedName(guest.name)
-    setTimeout(() => setCopiedName(''), 2000)
+    setCopiedId(guest.id)
+    setTimeout(() => setCopiedId(''), 2000)
   }
 
-  const toggleSelected = (name) => {
+  const toggleSelected = (id) => {
     setSelected((prev) => {
       const next = new Set(prev)
-      if (next.has(name)) next.delete(name)
-      else next.add(name)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
       return next
     })
   }
@@ -62,7 +62,7 @@ export default function Guests() {
   }, [guests, filter, query])
 
   const handleDelete = () => {
-    setGuests((prev) => prev.filter((g) => !selected.has(g.name)))
+    setGuests((prev) => prev.filter((g) => !selected.has(g.id)))
     setActionMessage(`${selected.size} invité(s) supprimé(s)`)
     setSelected(new Set())
   }
@@ -85,6 +85,7 @@ export default function Guests() {
     setGuests((prev) => [
       ...prev,
       {
+        id: `g-${Date.now()}`,
         name,
         contact,
         group,
@@ -125,10 +126,11 @@ export default function Guests() {
         .filter(Boolean)
       const dataLines = /nom|name/i.test(lines[0]) ? lines.slice(1) : lines
       const imported = dataLines
-        .map((line) => {
+        .map((line, index) => {
           const [name, contact, group] = line.split(',').map((v) => v?.trim())
           if (!name) return null
           return {
+            id: `g-${Date.now()}-${index}`,
             name,
             contact: contact || '—',
             group: group || 'Importés',
@@ -269,12 +271,12 @@ export default function Guests() {
               </tr>
             )}
             {visible.map((guest) => (
-              <tr key={guest.name} className="border-b border-border-soft last:border-b-0">
+              <tr key={guest.id} className="border-b border-border-soft last:border-b-0">
                 <td className="px-6 py-4">
                   <input
                     type="checkbox"
-                    checked={selected.has(guest.name)}
-                    onChange={() => toggleSelected(guest.name)}
+                    checked={selected.has(guest.id)}
+                    onChange={() => toggleSelected(guest.id)}
                     className="h-4 w-4 rounded border-border accent-brand-purple"
                   />
                 </td>
@@ -307,7 +309,7 @@ export default function Guests() {
                   >
                     <Link2 className="h-4 w-4" />
                   </button>
-                  {copiedName === guest.name && (
+                  {copiedId === guest.id && (
                     <span className="ml-1 text-xs text-success">Copié !</span>
                   )}
                 </td>

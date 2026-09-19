@@ -6,14 +6,13 @@ import Header from '../components/layout/Header'
 import Footer from '../components/layout/Footer'
 import { TEMPLATES } from '../data/templates'
 
+const TEMPLATE_CATEGORIES = [...new Set(TEMPLATES.map((tpl) => tpl.category))]
 const CATEGORIES = [
-  { label: 'Tous', count: 48 },
-  { label: 'Mariage', count: 12 },
-  { label: 'Conférence', count: 9 },
-  { label: 'Anniversaire', count: 8 },
-  { label: 'Graduation', count: 6 },
-  { label: 'Hommage', count: 5 },
-  { label: 'Concert', count: 8 },
+  { label: 'Tous', count: TEMPLATES.length },
+  ...TEMPLATE_CATEGORIES.map((label) => ({
+    label,
+    count: TEMPLATES.filter((tpl) => tpl.category === label).length,
+  })),
 ]
 
 export default function Templates() {
@@ -42,7 +41,7 @@ export default function Templates() {
         <div className="flex flex-wrap items-start justify-between gap-6">
           <div>
             <h1 className="text-3xl font-bold text-ink">
-              48 modèles prêts à publier
+              {TEMPLATES.length} modèles prêts à publier
             </h1>
             <p className="mt-2 text-muted">
               Dupliquez un modèle, il devient le vôtre dans le Builder.
