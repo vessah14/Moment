@@ -1,11 +1,5 @@
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 
-const DATA = [
-  { name: 'Confirmés', value: 287, color: 'var(--color-chart-green)' },
-  { name: 'En attente', value: 96, color: 'var(--color-chart-amber)' },
-  { name: 'Refus', value: 29, color: 'var(--color-chart-rose)' },
-]
-
 function ChartTooltip({ active, payload }) {
   if (!active || !payload?.length) return null
   const { name, value } = payload[0]
@@ -18,14 +12,24 @@ function ChartTooltip({ active, payload }) {
   )
 }
 
-export default function RsvpDonut() {
+export default function RsvpDonut({ data }) {
+  const total = data?.reduce((sum, d) => sum + d.value, 0) ?? 0
+
+  if (!total) {
+    return (
+      <div className="flex h-56 items-center justify-center text-sm text-faint">
+        Aucun invité pour le moment.
+      </div>
+    )
+  }
+
   return (
     <div className="h-56">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Tooltip content={<ChartTooltip />} />
           <Pie
-            data={DATA}
+            data={data}
             dataKey="value"
             nameKey="name"
             innerRadius="60%"
@@ -34,7 +38,7 @@ export default function RsvpDonut() {
             stroke="var(--color-panel)"
             strokeWidth={2}
           >
-            {DATA.map((entry) => (
+            {data.map((entry) => (
               <Cell key={entry.name} fill={entry.color} />
             ))}
           </Pie>

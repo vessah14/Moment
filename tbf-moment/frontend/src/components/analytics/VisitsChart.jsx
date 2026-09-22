@@ -9,19 +9,6 @@ import {
   YAxis,
 } from 'recharts'
 
-const DATA = [
-  { day: '01', visites: 120, rsvp: 40 },
-  { day: '04', visites: 180, rsvp: 70 },
-  { day: '07', visites: 240, rsvp: 110 },
-  { day: '10', visites: 300, rsvp: 160 },
-  { day: '13', visites: 260, rsvp: 190 },
-  { day: '16', visites: 340, rsvp: 230 },
-  { day: '19', visites: 400, rsvp: 260 },
-  { day: '22', visites: 380, rsvp: 300 },
-  { day: '25', visites: 430, rsvp: 340 },
-  { day: '28', visites: 470, rsvp: 380 },
-]
-
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
   return (
@@ -36,11 +23,19 @@ function ChartTooltip({ active, payload, label }) {
   )
 }
 
-export default function VisitsChart() {
+export default function VisitsChart({ data }) {
+  if (!data?.length) {
+    return (
+      <div className="flex h-56 items-center justify-center text-sm text-faint">
+        Pas encore de trafic enregistré pour cet événement.
+      </div>
+    )
+  }
+
   return (
     <div className="h-56">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={DATA} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+        <LineChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
           <CartesianGrid vertical={false} stroke="var(--color-border-soft)" />
           <XAxis
             dataKey="day"
@@ -72,8 +67,8 @@ export default function VisitsChart() {
           />
           <Line
             type="monotone"
-            dataKey="rsvp"
-            name="RSVP"
+            dataKey="partages"
+            name="Partages"
             stroke="var(--color-chart-pink)"
             strokeWidth={2}
             dot={false}

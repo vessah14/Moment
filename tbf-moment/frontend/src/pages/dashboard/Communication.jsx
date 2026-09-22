@@ -1,75 +1,76 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import AutoReminders from '../../components/communication/AutoReminders'
 import CampaignComposer from '../../components/communication/CampaignComposer'
 import CampaignsList from '../../components/communication/CampaignsList'
 import StatCard from '../../components/dashboard/StatCard'
 import DashboardLayout from '../../components/layout/DashboardLayout'
-
-const INITIAL_CAMPAIGNS = [
-  {
-    id: 1,
-    name: 'Invitation initiale',
-    channel: 'E-mail',
-    audience: 'Tous les invités',
-    scheduledLabel: '01 févr. 2027',
-    status: 'Envoyée',
-  },
-  {
-    id: 2,
-    name: 'Relance non-répondants',
-    channel: 'E-mail',
-    audience: 'Non répondus',
-    scheduledLabel: '07 mars 2027',
-    status: 'Programmée',
-  },
-  {
-    id: 3,
-    name: 'Rappel J-1',
-    channel: 'SMS',
-    audience: 'Confirmés',
-    scheduledLabel: '13 mars 2027',
-    status: 'Programmée',
-  },
-  {
-    id: 4,
-    name: 'Dernières places disponibles !',
-    channel: 'SMS',
-    audience: 'Non répondus',
-    scheduledLabel: '15 mars 2026',
-    status: 'Envoyée',
-  },
-  {
-    id: 5,
-    name: "Consignes d'accès et plan de table",
-    channel: 'Push',
-    audience: 'Confirmés',
-    scheduledLabel: '01 juin 2027',
-    status: 'Brouillon',
-  },
-]
+import { listEvents } from '../../api/events'
+import { createCampaign, listCampaigns } from '../../api/campaigns'
 
 const TABS = ['Email', 'SMS', 'Notifications', 'Rappels']
 const TAB_CHANNEL = { Email: 'E-mail', SMS: 'SMS', Notifications: 'Push' }
 
 export default function Communication() {
-  const [campaigns, setCampaigns] = useState(INITIAL_CAMPAIGNS)
+  const [events, setEvents] = useState([])
+  const [selectedEventId, setSelectedEventId] = useState('')
+  const [campaigns, setCampaigns] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [tab, setTab] = useState('Email')
 
-  const handleCreate = (campaign) => {
-    setCampaigns((prev) => [{ id: Date.now(), ...campaign }, ...prev])
+  useEffect(() => {
+    listEvents()
+      .then((data) => {
+        setEvents(data ?? [])
+        if (data?.length) setSelectedEventId(data[0].id)
+        else setLoading(false)
+      })
+      .catch((err) => {
+        setError(err.message || 'Impossible de charger vos événements.')
+        setLoading(false)
+      })
+  }, [])
+
+  const reload = (eventId) => {
+    setLoading(true)
+    listCampaigns(eventId)
+      .then((data) => {
+        setCampaigns(data ?? [])
+        setError('')
+      })
+      .catch((err) => setError(err.message || 'Impossible de charger les campagnes.'))
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    if (!selectedEventId) return
+    reload(selectedEventId)
+  }, [selectedEventId])
+
+  const handleCreate = async (campaign) => {
+    setError('')
+    try {
+      await createCampaign(campaign, selectedEventId)
+      reload(selectedEventId)
+    } catch (err) {
+      setError(err.message || "La création a échoué.")
+      throw err
+    }
   }
 
   const stats = [
     {
       label: 'Campagnes envoyées',
-      value: String(campaigns.filter((c) => c.status === 'Envoyée').length),
+      value: String(campaigns.filter((c) => c.status === 'Envoyee').length),
     },
     {
-      label: 'Programmées',
-      value: String(campaigns.filter((c) => c.status === 'Programmée').length),
+      label: 'Brouillons',
+      value: String(campaigns.filter((c) => c.status === 'Brouillon').length),
     },
-    { label: "Taux d'ouverture moyen", value: '71%', hint: '+4 pts', hintColor: 'success' },
-    { label: 'Désabonnements', value: '3', hint: '0,4% des envois' },
+    {
+      label: 'Destinataires totaux',
+      value: String(campaigns.reduce((sum, c) => sum + c.recipientCount, 0)),
+    },
   ]
 
   const activeChannel = TAB_CHANNEL[tab]
@@ -77,17 +78,46 @@ export default function Communication() {
     ? campaigns.filter((c) => c.channel === activeChannel)
     : []
 
+  if (!loading && events.length === 0) {
+    return (
+      <DashboardLayout>
+        <h1 className="text-2xl font-bold text-ink">Messages & Communications</h1>
+        <p className="mt-8 rounded-2xl border border-dashed border-border-soft py-10 text-center text-sm text-faint">
+          Créez d'abord un événement.
+        </p>
+      </DashboardLayout>
+    )
+  }
+
   return (
     <DashboardLayout>
-      <div>
-        <h1 className="text-2xl font-bold text-ink">Messages & Communications</h1>
-        <p className="mt-1.5 text-sm text-muted">
-          Rédigez, programmez et envoyez des e-mails, SMS et rappels de vos
-          événements.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-ink">Messages & Communications</h1>
+          <p className="mt-1.5 text-sm text-muted">
+            Rédigez et enregistrez des campagnes e-mail, SMS et notifications de vos événements.
+          </p>
+        </div>
+        <select
+          value={selectedEventId}
+          onChange={(e) => setSelectedEventId(e.target.value)}
+          className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-brand-purple"
+        >
+          {events.map((ev) => (
+            <option key={ev.id} value={ev.id}>
+              {ev.name}
+            </option>
+          ))}
+        </select>
       </div>
 
-      <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      {error && (
+        <p className="mt-6 rounded-lg border border-danger/30 bg-danger/10 px-4 py-2.5 text-sm text-danger">
+          {error}
+        </p>
+      )}
+
+      <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-3">
         {stats.map((stat) => (
           <StatCard key={stat.label} {...stat} />
         ))}
@@ -117,8 +147,12 @@ export default function Communication() {
       ) : (
         <div className="mt-6 grid gap-6 lg:grid-cols-[2fr_1fr]">
           <div>
-            <h2 className="mb-3 font-semibold text-ink">Modèles & Historiques</h2>
-            <CampaignsList campaigns={filteredCampaigns} />
+            <h2 className="mb-3 font-semibold text-ink">Historique</h2>
+            {loading ? (
+              <p className="text-sm text-faint">Chargement…</p>
+            ) : (
+              <CampaignsList campaigns={filteredCampaigns} />
+            )}
           </div>
 
           <CampaignComposer key={tab} defaultChannel={activeChannel} onCreate={handleCreate} />

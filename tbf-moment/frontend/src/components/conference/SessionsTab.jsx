@@ -10,7 +10,7 @@ export default function SessionsTab({ sessions, speakers, onAdd, onRemove }) {
     [sessions],
   )
 
-  const speakerName = (id) => speakers.find((s) => s.id === Number(id))?.name
+  const speakerName = (id) => speakers.find((s) => s.id === id)?.name
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -18,7 +18,7 @@ export default function SessionsTab({ sessions, speakers, onAdd, onRemove }) {
     const time = form.get('time')?.toString().trim()
     const title = form.get('title')?.toString().trim()
     const room = form.get('room')?.toString().trim()
-    const speakerId = form.get('speakerId') ? Number(form.get('speakerId')) : null
+    const speakerId = form.get('speakerId')?.toString() || null
     if (!time || !title) return
     onAdd({ time, title, room, speakerId })
     setFormOpen(false)

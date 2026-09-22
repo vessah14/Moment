@@ -8,23 +8,6 @@ import {
   YAxis,
 } from 'recharts'
 
-const DATA = [
-  { day: '01', tickets: 8 },
-  { day: '03', tickets: 14 },
-  { day: '05', tickets: 11 },
-  { day: '07', tickets: 22 },
-  { day: '09', tickets: 19 },
-  { day: '11', tickets: 27 },
-  { day: '13', tickets: 31 },
-  { day: '15', tickets: 24 },
-  { day: '17', tickets: 35 },
-  { day: '19', tickets: 29 },
-  { day: '21', tickets: 42 },
-  { day: '23', tickets: 33 },
-  { day: '25', tickets: 38 },
-  { day: '27', tickets: 45 },
-]
-
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
   return (
@@ -37,11 +20,19 @@ function ChartTooltip({ active, payload, label }) {
   )
 }
 
-export default function TicketSalesChart() {
+export default function TicketSalesChart({ data }) {
+  if (!data?.length) {
+    return (
+      <div className="flex h-52 items-center justify-center text-sm text-faint">
+        Aucune vente enregistrée pour le moment.
+      </div>
+    )
+  }
+
   return (
     <div className="h-52">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={DATA} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+        <BarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
           <CartesianGrid vertical={false} stroke="var(--color-border-soft)" />
           <XAxis
             dataKey="day"

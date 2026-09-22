@@ -31,6 +31,9 @@ export default function TeamTab() {
       <p className="mt-1 text-sm text-muted">
         Invitez des collaborateurs pour co-organiser vos événements.
       </p>
+      <p className="mt-1 text-xs text-brand-orange">
+        Bientôt disponible — les comptes ne supportent qu'un seul organisateur pour le moment.
+      </p>
 
       <form onSubmit={handleInvite} className="mt-6 flex flex-wrap gap-3">
         <input

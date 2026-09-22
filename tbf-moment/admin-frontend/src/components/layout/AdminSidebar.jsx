@@ -13,6 +13,8 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import logo from '../../assets/logo.png'
 import { clearAdminAuthenticated } from '../../utils/adminAuth'
 
+const CLIENT_APP_URL = import.meta.env.VITE_CLIENT_APP_URL || 'http://localhost:5173'
+
 const NAV_ITEMS = [
   { label: 'Vue globale', to: '/admin', icon: LayoutDashboard, end: true },
   { label: 'Organisations', to: '/admin/organisations', icon: Building2 },
@@ -83,13 +85,13 @@ export default function AdminSidebar({ open, onClose }) {
         </nav>
 
         <div className="space-y-1">
-          <NavLink
-            to="/dashboard"
+          <a
+            href={`${CLIENT_APP_URL}/dashboard`}
             className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted transition hover:bg-surface-2 hover:text-ink"
           >
             <Home className="h-4 w-4 shrink-0" />
             Retour au dashboard
-          </NavLink>
+          </a>
           <button
             type="button"
             onClick={handleLogout}

@@ -32,6 +32,9 @@ export default function BrandTab() {
         <p className="mt-1 text-sm text-muted">
           Personnalisez l'identité visuelle de vos pages d'événements.
         </p>
+        <p className="mt-1 text-xs text-brand-orange">
+          Bientôt disponible — utilisez la couleur d'accent par événement dans l'assistant de création en attendant.
+        </p>
 
         <div className="mt-6 flex items-center gap-4">
           <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl bg-surface-2 text-xs text-faint">

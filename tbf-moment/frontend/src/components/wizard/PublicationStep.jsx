@@ -6,9 +6,9 @@ import Button from '../ui/Button'
 export default function PublicationStep({
   event,
   visibility,
-  onChangeVisibility,
   onPublish,
   publishing,
+  error,
 }) {
   const slug = slugify(event.name.split(' de ').pop() || event.name)
   const guestCount = event.guests?.length ?? 0
@@ -117,14 +117,17 @@ export default function PublicationStep({
             </div>
           )}
 
+          {error && (
+            <p className="mt-5 rounded-lg border border-danger/30 bg-danger/10 px-4 py-2.5 text-sm text-danger">
+              {error}
+            </p>
+          )}
+
           <div className="mt-6 space-y-2 border-t border-border-soft pt-5">
             <Button
               variant="gradient"
               disabled={publishing}
-              onClick={() => {
-                onChangeVisibility('publish')
-                onPublish()
-              }}
+              onClick={() => onPublish('publish')}
               className="w-full disabled:opacity-70"
             >
               {publishing && visibility === 'publish'
@@ -134,10 +137,7 @@ export default function PublicationStep({
             <Button
               variant="outline"
               disabled={publishing}
-              onClick={() => {
-                onChangeVisibility('draft')
-                onPublish()
-              }}
+              onClick={() => onPublish('draft')}
               className="w-full disabled:opacity-70"
             >
               {publishing && visibility === 'draft'

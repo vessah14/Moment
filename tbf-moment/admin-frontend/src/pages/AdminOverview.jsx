@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom'
-import AdminLayout from '../../components/layout/AdminLayout'
-import StatCard from '../../components/dashboard/StatCard'
-import StatusBadge from '../../components/ui/StatusBadge'
-import { MODERATION_QUEUE, ORGANIZATIONS, PLATFORM_EVENTS } from '../../data/adminData'
+import AdminLayout from '../components/layout/AdminLayout'
+import StatCard from '../components/dashboard/StatCard'
+import StatusBadge from '../components/ui/StatusBadge'
+import { MODERATION_QUEUE, ORGANIZATIONS, PLATFORM_EVENTS } from '../data/adminData'
 
 const STATS = [
   { label: 'Organisations actives', value: '4', hint: '+1 ce mois-ci', hintColor: 'success' },

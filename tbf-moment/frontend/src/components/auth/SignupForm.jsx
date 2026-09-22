@@ -1,6 +1,7 @@
 import { Camera } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { login, register } from '../../api/auth'
 import logoMark from '../../assets/logo-mark.png'
 import Button from '../ui/Button'
 import PasswordStrengthBar from './PasswordStrengthBar'
@@ -9,10 +10,14 @@ const ACCOUNT_TYPES = ['Particulier', 'Entreprise', 'École', 'Association']
 
 export default function SignupForm() {
   const navigate = useNavigate()
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [accountType, setAccountType] = useState('Particulier')
   const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
   const [avatarUrl, setAvatarUrl] = useState(null)
   const avatarInputRef = useRef(null)
 
@@ -25,11 +30,25 @@ export default function SignupForm() {
 
   const emailIncomplete = email.length > 0 && !/^\S+@\S+\.\S+$/.test(email)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (emailIncomplete) return
+    setError('')
     setSubmitting(true)
-    setTimeout(() => navigate('/dashboard'), 600)
+    try {
+      await register({
+        fullName: `${firstName} ${lastName}`.trim(),
+        email,
+        password,
+        confirmPassword,
+      })
+      await login({ email, password })
+      navigate('/dashboard')
+    } catch (err) {
+      setError(err.message || 'Inscription impossible.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -75,6 +94,8 @@ export default function SignupForm() {
             <input
               type="text"
               required
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
               className="mt-2 w-full rounded-lg border border-border bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-brand-purple focus:ring-3 focus:ring-brand-purple/30"
             />
           </label>
@@ -83,6 +104,8 @@ export default function SignupForm() {
             <input
               type="text"
               required
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
               className="mt-2 w-full rounded-lg border border-border bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-brand-purple focus:ring-3 focus:ring-brand-purple/30"
             />
           </label>
@@ -124,6 +147,20 @@ export default function SignupForm() {
           <PasswordStrengthBar password={password} />
         </label>
 
+        <label className="block">
+          <span className="text-sm font-medium text-ink">
+            Confirmer le mot de passe
+          </span>
+          <input
+            type="password"
+            required
+            minLength={8}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="mt-2 w-full rounded-lg border border-border bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-brand-purple focus:ring-3 focus:ring-brand-purple/30"
+          />
+        </label>
+
         <div>
           <span className="text-sm font-medium text-ink">Type de compte</span>
           <div className="mt-2 grid grid-cols-2 gap-3">
@@ -143,6 +180,12 @@ export default function SignupForm() {
             ))}
           </div>
         </div>
+
+        {error && (
+          <p className="rounded-lg border border-danger/30 bg-danger/10 px-4 py-2.5 text-sm text-danger">
+            {error}
+          </p>
+        )}
 
         <Button
           type="submit"

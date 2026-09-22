@@ -1,37 +1,8 @@
 import { Link } from 'react-router-dom'
 import StatusBadge from '../ui/StatusBadge'
+import { formatEventDate, statusLabel } from '../../utils/eventStatus'
 
-const EVENTS = [
-  {
-    name: 'Mariage Awa & Ibrahim',
-    category: 'Mariage',
-    date: '14 mars 2027',
-    confirmed: 187,
-    total: 240,
-    status: 'Publié',
-    barColor: 'bg-success',
-  },
-  {
-    name: 'TBF Summit 2027',
-    category: 'Conférence',
-    date: '02 juin 2027',
-    confirmed: 96,
-    total: 150,
-    status: 'Brouillon',
-    barColor: 'bg-brand-purple',
-  },
-  {
-    name: '40 ans de Moussa',
-    category: 'Anniversaire',
-    date: '21 déc. 2026',
-    confirmed: 129,
-    total: 140,
-    status: 'Publié',
-    barColor: 'bg-success',
-  },
-]
-
-export default function RecentEventsTable() {
+export default function RecentEventsTable({ events, loading }) {
   return (
     <div className="rounded-2xl border border-border-soft bg-surface">
       <div className="flex items-center justify-between px-6 py-5">
@@ -55,34 +26,51 @@ export default function RecentEventsTable() {
           </tr>
         </thead>
         <tbody>
-          {EVENTS.map((event) => (
-            <tr key={event.name} className="border-b border-border-soft last:border-b-0">
-              <td className="px-6 py-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-lg bg-surface-2" />
-                  <div>
-                    <p className="font-medium text-ink">{event.name}</p>
-                    <p className="text-xs text-faint">{event.category}</p>
-                  </div>
-                </div>
-              </td>
-              <td className="px-6 py-4 text-muted">{event.date}</td>
-              <td className="px-6 py-4">
-                <p className="font-mono text-ink">
-                  {event.confirmed}/{event.total}
-                </p>
-                <div className="mt-1.5 h-1 w-24 rounded-full bg-border-soft">
-                  <div
-                    className={`h-full rounded-full ${event.barColor}`}
-                    style={{ width: `${(event.confirmed / event.total) * 100}%` }}
-                  />
-                </div>
-              </td>
-              <td className="px-6 py-4">
-                <StatusBadge status={event.status} />
+          {loading && (
+            <tr>
+              <td colSpan={4} className="px-6 py-10 text-center text-sm text-faint">
+                Chargement…
               </td>
             </tr>
-          ))}
+          )}
+          {!loading && events.length === 0 && (
+            <tr>
+              <td colSpan={4} className="px-6 py-10 text-center text-sm text-faint">
+                Aucun événement pour le moment.
+              </td>
+            </tr>
+          )}
+          {!loading &&
+            events.map((event) => (
+              <tr key={event.id} className="border-b border-border-soft last:border-b-0">
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-lg bg-surface-2" />
+                    <div>
+                      <p className="font-medium text-ink">{event.name}</p>
+                      <p className="text-xs text-faint">{event.category}</p>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 text-muted">{formatEventDate(event.date)}</td>
+                <td className="px-6 py-4">
+                  <p className="font-mono text-ink">
+                    {event.total ? `${event.confirmed}/${event.total}` : '—'}
+                  </p>
+                  <div className="mt-1.5 h-1 w-24 rounded-full bg-border-soft">
+                    <div
+                      className="h-full rounded-full bg-success"
+                      style={{
+                        width: `${event.total ? (event.confirmed / event.total) * 100 : 0}%`,
+                      }}
+                    />
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <StatusBadge status={statusLabel(event.status)} />
+                </td>
+              </tr>
+            ))}
         </tbody>
       </table>
       </div>

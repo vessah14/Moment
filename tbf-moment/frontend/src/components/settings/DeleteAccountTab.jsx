@@ -1,35 +1,49 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { getCurrentUser } from '../../api/client'
+import { logout } from '../../api/auth'
+import { deactivateAccount } from '../../api/users'
 
 export default function DeleteAccountTab() {
+  const navigate = useNavigate()
+  const user = getCurrentUser()
   const [confirmText, setConfirmText] = useState('')
-  const [deleted, setDeleted] = useState(false)
+  const [deactivating, setDeactivating] = useState(false)
+  const [error, setError] = useState('')
 
   const canDelete = confirmText.trim().toUpperCase() === 'SUPPRIMER'
 
-  if (deleted) {
-    return (
-      <div className="rounded-2xl border border-danger/30 bg-danger/10 p-6 text-center">
-        <p className="font-semibold text-danger">Compte supprimé (démo)</p>
-        <p className="mt-1 text-sm text-muted">
-          Dans une vraie session, vous seriez déconnecté(e) et vos données
-          effacées. Rien n'a réellement été supprimé dans ce prototype.
-        </p>
-      </div>
-    )
+  const handleDeactivate = async () => {
+    if (!user) return
+    setDeactivating(true)
+    setError('')
+    try {
+      await deactivateAccount(user.id)
+      logout()
+      navigate('/connexion')
+    } catch (err) {
+      setError(err.message || 'La désactivation a échoué.')
+      setDeactivating(false)
+    }
   }
 
   return (
     <div className="rounded-2xl border border-danger/30 bg-surface p-6">
-      <h2 className="text-xl font-bold text-danger">Supprimer le compte</h2>
+      <h2 className="text-xl font-bold text-danger">Désactiver le compte</h2>
       <p className="mt-1 text-sm text-muted">
-        Cette action est définitive : vos événements, invités et données
-        seront supprimés. Cette action ne peut pas être annulée.
+        Votre compte sera désactivé et vous serez déconnecté(e). Vos événements et
+        invités restent en base — contactez le support pour une suppression complète.
       </p>
+
+      {error && (
+        <p className="mt-4 rounded-lg border border-danger/30 bg-danger/10 px-4 py-2.5 text-sm text-danger">
+          {error}
+        </p>
+      )}
 
       <label className="mt-6 block">
         <span className="text-sm font-medium text-ink">
-          Tapez <span className="font-mono font-semibold">SUPPRIMER</span> pour
-          confirmer
+          Tapez <span className="font-mono font-semibold">SUPPRIMER</span> pour confirmer
         </span>
         <input
           value={confirmText}
@@ -40,11 +54,11 @@ export default function DeleteAccountTab() {
 
       <button
         type="button"
-        disabled={!canDelete}
-        onClick={() => setDeleted(true)}
+        disabled={!canDelete || deactivating}
+        onClick={handleDeactivate}
         className="mt-5 rounded-full bg-danger px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:pointer-events-none disabled:opacity-40"
       >
-        Supprimer définitivement mon compte
+        {deactivating ? 'Désactivation…' : 'Désactiver mon compte'}
       </button>
     </div>
   )

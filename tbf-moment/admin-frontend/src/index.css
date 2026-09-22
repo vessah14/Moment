@@ -1,0 +1,99 @@
+@import 'tailwindcss';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/plus-jakarta-sans/500.css';
+@import '@fontsource/plus-jakarta-sans/600.css';
+@import '@fontsource/plus-jakarta-sans/700.css';
+@import '@fontsource/plus-jakarta-sans/800.css';
+@import '@fontsource/playfair-display/500.css';
+@import '@fontsource/playfair-display/600.css';
+@import '@fontsource/playfair-display/700.css';
+
+@theme {
+  /* Typographie officielle (cahier des charges 7.2) */
+  --font-sans: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  --font-display-premium: 'Playfair Display', 'Plus Jakarta Sans', serif;
+
+  /* Palette officielle (cahier des charges 7.1) */
+  --color-bg: #0b1020; /* Deep Navy */
+  --color-surface: #12172a;
+  --color-surface-2: #1a2036;
+  --color-panel: #1e2540;
+  --color-border: #2c3352;
+  --color-border-soft: #232a45;
+
+  --color-ink: #f8f9fc; /* Soft White, texte sur fond sombre */
+  --color-muted: #9ba3c2;
+  --color-faint: #6b7290;
+  --color-dark-gray: #1f2937; /* reserve aux surfaces claires (texte secondaire) */
+
+  --color-brand-purple: #6c4bf4; /* Electric Purple officiel */
+  --color-brand-indigo: #5636d6; /* variante plus sombre pour degrades */
+  --color-brand-magenta: #d946ef; /* Magenta officiel */
+  --color-gold: #d6b36a; /* Champagne Gold officiel */
+
+  /* CTA orange -> rose : conserve tel quel a la demande, hors charte ecrite */
+  --color-brand-orange: #ff7a3d;
+  --color-brand-pink: #ec4ec2;
+
+  --color-success: #34d399;
+  --color-danger: #f4574c;
+
+  --color-chart-purple: #6c4bf4;
+  --color-chart-pink: #d13fae;
+  --color-chart-green: #189b6b;
+  --color-chart-amber: #c9791b;
+  --color-chart-rose: #c22b5c;
+
+  --animate-blink: blink 1.4s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100svh;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-heading);
+}
+
+.bg-brand-gradient {
+  background-image: linear-gradient(
+    92deg,
+    var(--color-brand-orange),
+    var(--color-brand-pink)
+  );
+}
+
+.text-brand-gradient {
+  background-image: linear-gradient(
+    92deg,
+    var(--color-brand-orange),
+    var(--color-brand-pink)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}

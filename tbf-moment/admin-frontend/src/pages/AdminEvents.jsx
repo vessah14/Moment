@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
-import AdminLayout from '../../components/layout/AdminLayout'
-import StatusBadge from '../../components/ui/StatusBadge'
-import { PLATFORM_EVENTS } from '../../data/adminData'
+import AdminLayout from '../components/layout/AdminLayout'
+import StatusBadge from '../components/ui/StatusBadge'
+import { PLATFORM_EVENTS } from '../data/adminData'
 
 export default function AdminEvents() {
   const [events, setEvents] = useState(PLATFORM_EVENTS)

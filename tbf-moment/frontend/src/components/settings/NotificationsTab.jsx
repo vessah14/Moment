@@ -48,6 +48,9 @@ export default function NotificationsTab() {
       <p className="mt-1 text-sm text-muted">
         Choisissez les e-mails que TBF Moment vous envoie.
       </p>
+      <p className="mt-1 text-xs text-brand-orange">
+        Bientôt disponible — ces réglages ne sont pas encore sauvegardés.
+      </p>
 
       <div className="mt-6 space-y-4">
         {prefs.map((pref) => (

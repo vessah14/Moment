@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import AdminLayout from '../../components/layout/AdminLayout'
-import { MODERATION_QUEUE } from '../../data/adminData'
+import AdminLayout from '../components/layout/AdminLayout'
+import { MODERATION_QUEUE } from '../data/adminData'
 
 export default function AdminModeration() {
   const [queue, setQueue] = useState(MODERATION_QUEUE)

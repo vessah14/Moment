@@ -21,6 +21,9 @@ export default function DomainTab() {
         Votre mini-site est accessible à cette adresse, ou connectez votre
         propre domaine.
       </p>
+      <p className="mt-1 text-xs text-brand-orange">
+        Domaine personnalisé : bientôt disponible.
+      </p>
 
       <div className="mt-6 rounded-xl border border-border-soft bg-surface-2 px-5 py-4">
         <p className="text-xs font-semibold tracking-wider text-faint uppercase">

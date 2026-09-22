@@ -1,9 +1,9 @@
 import { ShieldAlert } from 'lucide-react'
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import logoMark from '../../assets/logo-mark.png'
-import Button from '../../components/ui/Button'
-import { checkAdminCredentials, setAdminAuthenticated } from '../../utils/adminAuth'
+import logoMark from '../assets/logo-mark.png'
+import Button from '../components/ui/Button'
+import { checkAdminCredentials, setAdminAuthenticated } from '../utils/adminAuth'
 
 export default function AdminLogin() {
   const navigate = useNavigate()

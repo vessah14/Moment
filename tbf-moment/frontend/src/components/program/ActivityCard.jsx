@@ -11,10 +11,17 @@ export default function ActivityCard({ activity, isSelected, onSelect, onToggleN
         <span className="mt-1 w-px flex-1 bg-border-soft" />
       </div>
 
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => onSelect(activity.id)}
-        className={`mb-6 flex-1 rounded-2xl border p-5 text-left transition ${
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            onSelect(activity.id)
+          }
+        }}
+        className={`mb-6 flex-1 cursor-pointer rounded-2xl border p-5 text-left transition ${
           isSelected
             ? 'border-brand-purple bg-brand-purple/5'
             : 'border-border-soft bg-surface hover:border-faint'
@@ -76,7 +83,7 @@ export default function ActivityCard({ activity, isSelected, onSelect, onToggleN
         {activity.description && (
           <p className="mt-3 text-sm text-muted">{activity.description}</p>
         )}
-      </button>
+      </div>
     </div>
   )
 }

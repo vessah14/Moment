@@ -1,6 +1,3 @@
-import { INITIAL_EVENTS } from './myEvents'
-import { INITIAL_GUESTS } from './guests'
-
 const PAGES = [
   { label: 'Vue globale', to: '/dashboard' },
   { label: 'Mes événements', to: '/dashboard/evenements' },
@@ -19,23 +16,23 @@ const PAGES = [
   { label: 'Paramètres', to: '/dashboard/parametres' },
 ]
 
-export function buildDashboardSearchIndex() {
+export function buildDashboardSearchIndex(events = [], guests = []) {
   return [
     ...PAGES.map((page) => ({
       type: 'Page',
       label: page.label,
       to: page.to,
     })),
-    ...INITIAL_EVENTS.map((event) => ({
+    ...events.map((event) => ({
       type: 'Événement',
       label: event.name,
-      sublabel: `${event.category} · ${event.date}`,
+      sublabel: event.eventDate ?? undefined,
       to: '/dashboard/evenements',
     })),
-    ...INITIAL_GUESTS.map((guest) => ({
+    ...guests.map((guest) => ({
       type: 'Invité',
-      label: guest.name,
-      sublabel: guest.group,
+      label: guest.fullName,
+      sublabel: guest.email,
       to: '/dashboard/participants',
     })),
   ]

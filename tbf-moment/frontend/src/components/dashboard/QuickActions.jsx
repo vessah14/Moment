@@ -12,12 +12,6 @@ const ACTIONS = [
   { label: 'Ouvrir le mode check-in', icon: ScanLine, to: '/dashboard/checkin' },
 ]
 
-const ACTIVITY = [
-  '14 nouveaux RSVP sur le mariage',
-  "3 messages dans le livre d'or",
-  '1 paiement reçu · 35 000 FCFA',
-]
-
 export default function QuickActions() {
   return (
     <div className="space-y-6">
@@ -43,11 +37,9 @@ export default function QuickActions() {
         <h3 className="text-xs font-semibold tracking-wider text-faint uppercase">
           Activité
         </h3>
-        <ul className="mt-3 space-y-3 text-sm text-muted">
-          {ACTIVITY.map((line) => (
-            <li key={line}>{line}</li>
-          ))}
-        </ul>
+        <p className="mt-3 text-sm text-faint">
+          Le flux d'activité en temps réel arrive bientôt.
+        </p>
       </div>
     </div>
   )

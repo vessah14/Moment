@@ -31,13 +31,13 @@ export default function EventCard({
           <div className="flex items-center justify-between text-xs text-faint">
             <span>{progressLabel}</span>
             <span className="font-mono text-ink">
-              {confirmed}/{total}
+              {total ? `${confirmed}/${total}` : '—'}
             </span>
           </div>
           <div className="mt-1.5 h-1 rounded-full bg-border-soft">
             <div
               className={`h-full rounded-full ${barColor}`}
-              style={{ width: `${(confirmed / total) * 100}%` }}
+              style={{ width: `${total ? (confirmed / total) * 100 : 0}%` }}
             />
           </div>
         </div>

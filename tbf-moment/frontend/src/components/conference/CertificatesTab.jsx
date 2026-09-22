@@ -3,8 +3,6 @@ import { useState } from 'react'
 import Toggle from '../builder/Toggle'
 import Button from '../ui/Button'
 
-const ATTENDEES = ['Fatou Ndiaye', 'Moussa Traoré', 'Aminata Bâ', 'Ibrahima Sow']
-
 function generateCertificate(name, eventTitle) {
   const canvas = document.createElement('canvas')
   canvas.width = 1000
@@ -45,7 +43,7 @@ function generateCertificate(name, eventTitle) {
   return canvas.toDataURL('image/png')
 }
 
-export default function CertificatesTab({ eventTitle }) {
+export default function CertificatesTab({ eventTitle, attendees = [] }) {
   const [autoGenerate, setAutoGenerate] = useState(false)
   const [issued, setIssued] = useState([])
 
@@ -59,7 +57,7 @@ export default function CertificatesTab({ eventTitle }) {
   }
 
   const handleGenerateAll = () => {
-    ATTENDEES.forEach((name) => handleDownload(name))
+    attendees.forEach((name) => handleDownload(name))
   }
 
   return (
@@ -68,10 +66,10 @@ export default function CertificatesTab({ eventTitle }) {
         <div>
           <h2 className="font-semibold text-ink">Certificats</h2>
           <p className="mt-1 text-sm text-muted">
-            {issued.length}/{ATTENDEES.length} certificat(s) téléchargé(s)
+            {issued.length}/{attendees.length} certificat(s) téléchargé(s)
           </p>
         </div>
-        <Button variant="gradient" onClick={handleGenerateAll}>
+        <Button variant="gradient" onClick={handleGenerateAll} disabled={attendees.length === 0}>
           Générer tous les certificats
         </Button>
       </div>
@@ -83,13 +81,18 @@ export default function CertificatesTab({ eventTitle }) {
           onChange={setAutoGenerate}
         />
         <p className="mt-2 text-xs text-faint">
-          Chaque participant validé à l'entrée reçoit son certificat par
-          e-mail dans les minutes qui suivent.
+          Chaque participant validé à l'entrée (check-in) peut recevoir son certificat.
         </p>
       </div>
 
+      {attendees.length === 0 && (
+        <p className="mt-5 rounded-2xl border border-dashed border-border-soft py-8 text-center text-sm text-faint">
+          Aucun participant "présent" pour le moment — validez des entrées depuis le Check-in.
+        </p>
+      )}
+
       <div className="mt-5 divide-y divide-border-soft rounded-2xl border border-border-soft bg-surface">
-        {ATTENDEES.map((name) => (
+        {attendees.map((name) => (
           <div key={name} className="flex items-center justify-between px-5 py-3.5">
             <span className="text-sm text-ink">{name}</span>
             <div className="flex items-center gap-3">

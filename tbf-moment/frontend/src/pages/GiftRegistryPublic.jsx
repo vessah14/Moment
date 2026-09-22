@@ -1,41 +1,67 @@
-import { useState } from 'react'
-import CagnottePanel from '../components/gifts/CagnottePanel'
+import { useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
 import GiftCard from '../components/gifts/GiftCard'
 import Button from '../components/ui/Button'
-import { INITIAL_CAGNOTTE, INITIAL_GIFTS } from '../data/giftRegistry'
-import { formatFcfa } from '../utils/formatCurrency'
-import { useLocalStorageState } from '../utils/useLocalStorageState'
+import { getPublicEvent, getPublicGifts, reservePublicGift } from '../api/giftRegistry'
 
 export default function GiftRegistryPublic() {
-  const [gifts, setGifts] = useLocalStorageState('tbf_gifts', INITIAL_GIFTS)
-  const [cagnotte, setCagnotte] = useLocalStorageState('tbf_cagnotte', INITIAL_CAGNOTTE)
-  const [contribution, setContribution] = useState('')
-  const [lastContribution, setLastContribution] = useState(0)
-  const [contributed, setContributed] = useState(false)
+  const { code } = useParams()
+  const [event, setEvent] = useState(null)
+  const [gifts, setGifts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [reservingId, setReservingId] = useState('')
 
-  const handleReserve = (id) => {
-    const name = window.prompt('Votre nom, pour que les mariés sachent qui les gâte ?')
-    if (!name?.trim()) return
-    setGifts((prev) =>
-      prev.map((g) =>
-        g.id === id ? { ...g, status: 'reserved', reservedBy: name.trim() } : g,
-      ),
-    )
+  const reload = () => {
+    Promise.all([getPublicEvent(code), getPublicGifts(code)])
+      .then(([eventData, giftsData]) => {
+        setEvent(eventData)
+        setGifts(giftsData ?? [])
+        setError('')
+      })
+      .catch(() => setError("Cette liste de cadeaux n'est pas disponible."))
+      .finally(() => setLoading(false))
   }
 
-  const handleContribute = (e) => {
-    e.preventDefault()
-    const amount = Number(contribution)
-    if (!amount || amount <= 0) return
-    setCagnotte((prev) => ({
-      ...prev,
-      raised: prev.raised + amount,
-      contributions: [{ name: 'Vous', amount }, ...prev.contributions],
-    }))
-    setLastContribution(amount)
-    setContribution('')
-    setContributed(true)
-    setTimeout(() => setContributed(false), 3000)
+  useEffect(() => {
+    setLoading(true)
+    reload()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code])
+
+  const handleReserve = async (giftId) => {
+    const name = window.prompt('Votre nom, pour que les organisateurs sachent qui les gâte ?')
+    if (!name?.trim()) return
+    setReservingId(giftId)
+    try {
+      await reservePublicGift(giftId, { reservedByName: name.trim() })
+      reload()
+    } catch (err) {
+      setError(err.message || 'La réservation a échoué — quelqu\'un vient peut-être de le réserver.')
+    } finally {
+      setReservingId('')
+    }
+  }
+
+  const toCardProps = (gift) => ({
+    id: gift.id,
+    name: gift.name,
+    description: gift.description,
+    price: gift.priceCents,
+    status: gift.isReserved ? 'reserved' : 'available',
+    reservedBy: gift.reservedByName,
+  })
+
+  if (loading) {
+    return <div className="flex min-h-svh items-center justify-center text-sm text-faint">Chargement…</div>
+  }
+
+  if (error || !event) {
+    return (
+      <div className="flex min-h-svh items-center justify-center px-6 text-center text-sm text-faint">
+        {error || 'Liste de cadeaux introuvable.'}
+      </div>
+    )
   }
 
   return (
@@ -43,67 +69,42 @@ export default function GiftRegistryPublic() {
       <div className="mx-auto max-w-4xl">
         <div className="text-center">
           <span className="inline-flex items-center rounded-full border border-border px-4 py-1.5 text-xs font-semibold tracking-widest text-brand-purple uppercase">
-            Liste de mariage
+            Liste de cadeaux
           </span>
-          <h1 className="mt-4 text-3xl font-bold text-ink">Awa & Ibrahim</h1>
+          <h1 className="mt-4 text-3xl font-bold text-ink">{event.name}</h1>
           <p className="mt-2 text-muted">
-            Merci de faire partie de notre histoire. Voici quelques idées pour
-            nous accompagner dans cette nouvelle étape.
+            Merci de faire partie de notre histoire. Voici quelques idées pour nous accompagner.
           </p>
         </div>
 
-        <div className="mt-10 grid gap-6 lg:grid-cols-[1fr_320px]">
-          <div className="grid gap-5 sm:grid-cols-2">
-            {gifts.map((gift) => (
-              <GiftCard
-                key={gift.id}
-                gift={gift}
-                footer={
-                  gift.status === 'available' ? (
-                    <Button
-                      variant="gradient"
-                      className="mt-4 w-full"
-                      onClick={() => handleReserve(gift.id)}
-                    >
-                      Je réserve ce cadeau
-                    </Button>
-                  ) : (
-                    <p className="mt-4 text-center text-xs text-faint">
-                      {gift.status === 'given'
-                        ? 'Déjà offert, merci !'
-                        : `Déjà réservé par ${gift.reservedBy}`}
-                    </p>
-                  )
-                }
-              />
-            ))}
-          </div>
-
-          <CagnottePanel cagnotte={cagnotte}>
-            <form onSubmit={handleContribute} className="mt-4 space-y-2">
-              <label className="block">
-                <span className="text-xs font-medium text-ink">
-                  Montant à contribuer (FCFA)
-                </span>
-                <input
-                  type="number"
-                  min="1"
-                  value={contribution}
-                  onChange={(e) => setContribution(e.target.value)}
-                  placeholder="10000"
-                  className="mt-1.5 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-brand-purple"
-                />
-              </label>
-              <Button type="submit" variant="gradient" className="w-full">
-                Contribuer
-              </Button>
-              {contributed && (
-                <p className="text-center text-xs text-success">
-                  Merci pour votre contribution de {formatFcfa(lastContribution)} !
-                </p>
-              )}
-            </form>
-          </CagnottePanel>
+        <div className="mt-10 grid gap-5 sm:grid-cols-2">
+          {gifts.length === 0 && (
+            <p className="col-span-full text-center text-sm text-faint">
+              Aucun cadeau proposé pour le moment.
+            </p>
+          )}
+          {gifts.map((gift) => (
+            <GiftCard
+              key={gift.id}
+              gift={toCardProps(gift)}
+              footer={
+                gift.isReserved ? (
+                  <p className="mt-4 text-center text-xs text-faint">
+                    Déjà réservé par {gift.reservedByName}
+                  </p>
+                ) : (
+                  <Button
+                    variant="gradient"
+                    className="mt-4 w-full"
+                    disabled={reservingId === gift.id}
+                    onClick={() => handleReserve(gift.id)}
+                  >
+                    {reservingId === gift.id ? 'Réservation…' : 'Je réserve ce cadeau'}
+                  </Button>
+                )
+              }
+            />
+          ))}
         </div>
       </div>
     </div>

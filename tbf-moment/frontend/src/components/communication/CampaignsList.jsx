@@ -1,6 +1,8 @@
 import { CHANNELS } from '../../data/communicationChannels'
 import StatusBadge from '../ui/StatusBadge'
 
+const STATUS_LABELS = { Brouillon: 'Brouillon', Programmee: 'Programmée', Envoyee: 'Envoyée' }
+
 function channelIcon(channel) {
   return CHANNELS.find((c) => c.value === channel)?.icon
 }
@@ -23,8 +25,9 @@ export default function CampaignsList({ campaigns }) {
               <th className="px-6 py-3 font-medium">Campagne</th>
               <th className="px-3 py-3 font-medium">Canal</th>
               <th className="px-3 py-3 font-medium">Audience</th>
-              <th className="px-3 py-3 font-medium">Envoi</th>
+              <th className="px-3 py-3 font-medium">Date</th>
               <th className="px-3 py-3 font-medium">Statut</th>
+              <th className="px-3 py-3 font-medium">Destinataires</th>
             </tr>
           </thead>
           <tbody>
@@ -41,11 +44,12 @@ export default function CampaignsList({ campaigns }) {
                   </td>
                   <td className="px-3 py-4 text-muted">{c.audience}</td>
                   <td className="px-3 py-4 font-mono text-xs text-muted">
-                    {c.scheduledLabel}
+                    {new Date(c.sentAt ?? c.createdAt).toLocaleDateString('fr-FR')}
                   </td>
                   <td className="px-3 py-4">
-                    <StatusBadge status={c.status} />
+                    <StatusBadge status={STATUS_LABELS[c.status] ?? c.status} />
                   </td>
+                  <td className="px-3 py-4 font-mono text-xs text-muted">{c.recipientCount}</td>
                 </tr>
               )
             })}

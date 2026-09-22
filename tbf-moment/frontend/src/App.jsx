@@ -1,14 +1,7 @@
 import { Route, Routes } from 'react-router-dom'
 import Footer from './components/layout/Footer'
 import Header from './components/layout/Header'
-import AdminBilling from './pages/admin/AdminBilling'
-import AdminEvents from './pages/admin/AdminEvents'
-import AdminLogin from './pages/admin/AdminLogin'
-import AdminModeration from './pages/admin/AdminModeration'
-import AdminOrganizations from './pages/admin/AdminOrganizations'
-import AdminOverview from './pages/admin/AdminOverview'
-import AdminSettings from './pages/admin/AdminSettings'
-import RequireAdmin from './components/admin/RequireAdmin'
+import RequireAuth from './components/auth/RequireAuth'
 import Builder from './pages/Builder'
 import CreateEvent from './pages/CreateEvent'
 import Dashboard from './pages/Dashboard'
@@ -71,74 +64,40 @@ function App() {
       <Route path="/invitation/:code" element={<GuestInvitation />} />
       <Route path="/cadeaux/:code" element={<GiftRegistryPublic />} />
 
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/dashboard/evenements" element={<MyEvents />} />
-      <Route path="/dashboard/evenements/nouveau" element={<CreateEvent />} />
-      <Route path="/dashboard/invitations" element={<Invitations />} />
-      <Route path="/dashboard/communication" element={<Communication />} />
-      <Route path="/dashboard/participants" element={<Guests />} />
-      <Route path="/dashboard/billetterie" element={<Ticketing />} />
-      <Route path="/dashboard/checkin" element={<CheckIn />} />
-      <Route path="/dashboard/galerie" element={<Gallery />} />
-      <Route path="/dashboard/livre-dor" element={<GuestBook />} />
-      <Route path="/dashboard/statistiques" element={<Analytics />} />
-      <Route path="/dashboard/parametres" element={<Settings />} />
-      <Route path="/dashboard/programme" element={<Program />} />
-      <Route path="/dashboard/plan-de-table" element={<SeatingPlan />} />
-      <Route path="/dashboard/liste-mariage" element={<GiftRegistry />} />
-      <Route path="/dashboard/conference" element={<Conference />} />
+      <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
+      <Route path="/dashboard/evenements" element={<RequireAuth><MyEvents /></RequireAuth>} />
+      <Route
+        path="/dashboard/evenements/nouveau"
+        element={<RequireAuth><CreateEvent /></RequireAuth>}
+      />
+      <Route
+        path="/dashboard/evenements/:id/modifier"
+        element={<RequireAuth><CreateEvent /></RequireAuth>}
+      />
+      <Route path="/dashboard/invitations" element={<RequireAuth><Invitations /></RequireAuth>} />
+      <Route
+        path="/dashboard/communication"
+        element={<RequireAuth><Communication /></RequireAuth>}
+      />
+      <Route path="/dashboard/participants" element={<RequireAuth><Guests /></RequireAuth>} />
+      <Route path="/dashboard/billetterie" element={<RequireAuth><Ticketing /></RequireAuth>} />
+      <Route path="/dashboard/checkin" element={<RequireAuth><CheckIn /></RequireAuth>} />
+      <Route path="/dashboard/galerie" element={<RequireAuth><Gallery /></RequireAuth>} />
+      <Route path="/dashboard/livre-dor" element={<RequireAuth><GuestBook /></RequireAuth>} />
+      <Route path="/dashboard/statistiques" element={<RequireAuth><Analytics /></RequireAuth>} />
+      <Route path="/dashboard/parametres" element={<RequireAuth><Settings /></RequireAuth>} />
+      <Route path="/dashboard/programme" element={<RequireAuth><Program /></RequireAuth>} />
+      <Route
+        path="/dashboard/plan-de-table"
+        element={<RequireAuth><SeatingPlan /></RequireAuth>}
+      />
+      <Route
+        path="/dashboard/liste-mariage"
+        element={<RequireAuth><GiftRegistry /></RequireAuth>}
+      />
+      <Route path="/dashboard/conference" element={<RequireAuth><Conference /></RequireAuth>} />
 
-      <Route path="/builder" element={<Builder />} />
-
-      <Route path="/admin/connexion" element={<AdminLogin />} />
-      <Route
-        path="/admin"
-        element={
-          <RequireAdmin>
-            <AdminOverview />
-          </RequireAdmin>
-        }
-      />
-      <Route
-        path="/admin/organisations"
-        element={
-          <RequireAdmin>
-            <AdminOrganizations />
-          </RequireAdmin>
-        }
-      />
-      <Route
-        path="/admin/evenements"
-        element={
-          <RequireAdmin>
-            <AdminEvents />
-          </RequireAdmin>
-        }
-      />
-      <Route
-        path="/admin/facturation"
-        element={
-          <RequireAdmin>
-            <AdminBilling />
-          </RequireAdmin>
-        }
-      />
-      <Route
-        path="/admin/moderation"
-        element={
-          <RequireAdmin>
-            <AdminModeration />
-          </RequireAdmin>
-        }
-      />
-      <Route
-        path="/admin/parametres"
-        element={
-          <RequireAdmin>
-            <AdminSettings />
-          </RequireAdmin>
-        }
-      />
+      <Route path="/builder" element={<RequireAuth><Builder /></RequireAuth>} />
 
       <Route
         path="*"

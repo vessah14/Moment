@@ -1,61 +1,127 @@
+import { useEffect, useMemo, useState } from 'react'
+import { listEvents } from '../api/events'
+import { listEventCategories } from '../api/eventCategories'
+import { listGuests } from '../api/guests'
+import { getCurrentUser } from '../api/client'
 import QuickActions from '../components/dashboard/QuickActions'
 import RecentEventsTable from '../components/dashboard/RecentEventsTable'
 import StatCard from '../components/dashboard/StatCard'
 import DashboardLayout from '../components/layout/DashboardLayout'
-import Button from '../components/ui/Button'
-
-const STATS = [
-  { label: 'Événements', value: '3', hint: '2 publiés · 1 brouillon' },
-  {
-    label: 'Invités',
-    value: '412',
-    hint: '+38 cette semaine',
-    hintColor: 'success',
-  },
-  {
-    label: 'Confirmés',
-    value: '287',
-    hint: '70% de réponses',
-    valueStyle: 'brand',
-  },
-  {
-    label: 'En attente',
-    value: '96',
-    hint: 'relance programmée',
-    valueStyle: 'brand',
-  },
-  {
-    label: 'Visiteurs',
-    value: '3 148',
-    hint: '+18%',
-    hintColor: 'success',
-  },
-]
 
 export default function Dashboard() {
+  const user = getCurrentUser()
+  const [events, setEvents] = useState([])
+  const [categories, setCategories] = useState([])
+  const [guests, setGuests] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    Promise.all([listEvents(), listEventCategories(), listGuests()])
+      .then(([eventsData, categoriesData, guestsData]) => {
+        setEvents(eventsData ?? [])
+        setCategories(categoriesData ?? [])
+        setGuests(guestsData ?? [])
+      })
+      .catch((err) => setError(err.message || 'Impossible de charger le tableau de bord.'))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const categoryLabel = useMemo(() => {
+    const map = new Map(categories.map((c) => [c.id, c.label]))
+    return (categoryId) => map.get(categoryId) ?? '—'
+  }, [categories])
+
+  const guestsByEvent = useMemo(() => {
+    const map = new Map()
+    for (const g of guests) {
+      if (!map.has(g.eventId)) map.set(g.eventId, [])
+      map.get(g.eventId).push(g)
+    }
+    return map
+  }, [guests])
+
+  const activeEvents = events.filter((e) => e.status !== 'Archive')
+  const publishedCount = activeEvents.filter((e) => e.status === 'Publie').length
+  const draftCount = activeEvents.filter((e) => e.status === 'Brouillon').length
+  const confirmedGuests = guests.filter((g) => g.status === 'Present').length
+  const pendingGuests = guests.filter((g) => g.status === 'EnAttente').length
+
+  const nextEvent = useMemo(() => {
+    const today = new Date()
+    return activeEvents
+      .filter((e) => e.eventDate && new Date(e.eventDate) >= today)
+      .sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate))[0]
+  }, [activeEvents])
+
+  const daysUntilNext = nextEvent
+    ? Math.ceil((new Date(nextEvent.eventDate) - new Date()) / (1000 * 60 * 60 * 24))
+    : null
+
+  const recentEvents = useMemo(() => {
+    return [...activeEvents]
+      .sort((a, b) => new Date(b.eventDate ?? 0) - new Date(a.eventDate ?? 0))
+      .slice(0, 5)
+      .map((event) => {
+        const eventGuests = guestsByEvent.get(event.id) ?? []
+        return {
+          id: event.id,
+          name: event.name,
+          category: categoryLabel(event.categoryId),
+          date: event.eventDate,
+          status: event.status,
+          confirmed: eventGuests.filter((g) => g.status === 'Present').length,
+          total: eventGuests.length,
+        }
+      })
+  }, [activeEvents, guestsByEvent, categoryLabel])
+
+  const STATS = [
+    { label: 'Événements', value: String(activeEvents.length), hint: `${publishedCount} publiés · ${draftCount} brouillon(s)` },
+    { label: 'Invités', value: String(guests.length) },
+    {
+      label: 'Confirmés',
+      value: String(confirmedGuests),
+      hint: guests.length ? `${Math.round((confirmedGuests / guests.length) * 100)}% de réponses` : undefined,
+      valueStyle: 'brand',
+    },
+    { label: 'En attente', value: String(pendingGuests), valueStyle: 'brand' },
+  ]
+
+  const firstName = user?.fullName?.split(' ')[0] ?? ''
+
   return (
     <DashboardLayout>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-ink">Bonjour Awa</h1>
+          <h1 className="text-3xl font-bold text-ink">
+            {firstName ? `Bonjour ${firstName}` : 'Bonjour'}
+          </h1>
           <p className="mt-1.5 text-muted">
-            3 événements actifs · le prochain dans 12 jours
+            {activeEvents.length} événement(s) actif(s)
+            {nextEvent && daysUntilNext != null
+              ? ` · le prochain dans ${daysUntilNext} jour(s)`
+              : ''}
           </p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline">30 derniers jours</Button>
-          <Button variant="outline">Exporter</Button>
-        </div>
       </div>
 
-      <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-5">
-        {STATS.map((stat) => (
-          <StatCard key={stat.label} {...stat} />
-        ))}
-      </div>
+      {error && (
+        <p className="mt-6 rounded-lg border border-danger/30 bg-danger/10 px-4 py-2.5 text-sm text-danger">
+          {error}
+        </p>
+      )}
+
+      {!loading && (
+        <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {STATS.map((stat) => (
+            <StatCard key={stat.label} {...stat} />
+          ))}
+        </div>
+      )}
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[2fr_1fr]">
-        <RecentEventsTable />
+        <RecentEventsTable events={recentEvents} loading={loading} />
         <QuickActions />
       </div>
     </DashboardLayout>

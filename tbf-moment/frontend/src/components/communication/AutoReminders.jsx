@@ -36,6 +36,9 @@ export default function AutoReminders() {
       <p className="mt-1 text-sm text-muted">
         Des campagnes déclenchées automatiquement, sans action de votre part.
       </p>
+      <p className="mt-1 text-xs text-brand-orange">
+        Bientôt disponible — ces réglages ne déclenchent pas encore d'envoi réel.
+      </p>
       <div className="mt-4 space-y-3">
         {reminders.map((reminder) => (
           <div

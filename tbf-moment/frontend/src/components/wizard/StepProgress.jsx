@@ -1,13 +1,11 @@
-const TOTAL_STEPS = 8
-
-export default function StepProgress({ currentStep, stepLabel }) {
-  const percent = Math.round(((currentStep + 1) / TOTAL_STEPS) * 100)
+export default function StepProgress({ currentStep, totalSteps, stepLabel }) {
+  const percent = Math.round(((currentStep + 1) / totalSteps) * 100)
 
   return (
     <div>
       <div className="flex items-center justify-between gap-4 text-xs font-medium">
         <span className="text-brand-purple">
-          Étape {currentStep + 1} sur {TOTAL_STEPS}
+          Étape {currentStep + 1} sur {totalSteps}
           <span className="text-faint"> · </span>
           <span className="text-ink">{stepLabel}</span>
         </span>

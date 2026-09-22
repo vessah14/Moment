@@ -1,6 +1,16 @@
 import { CheckCircle2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { createEvent, getEvent, updateEvent as updateEventApi } from '../api/events'
+import { listEventCategories } from '../api/eventCategories'
+import {
+  createEventLocation,
+  listEventLocations,
+  updateEventLocation,
+} from '../api/eventLocations'
+import { createEventBlock, listEventBlocks, updateEventBlock } from '../api/eventBlocks'
+import { createGuestGroup } from '../api/guestGroups'
+import { createGuest } from '../api/guests'
 import DashboardLayout from '../components/layout/DashboardLayout'
 import Button from '../components/ui/Button'
 import CategoryStep from '../components/wizard/CategoryStep'
@@ -12,8 +22,6 @@ import PersonalizationStep from '../components/wizard/PersonalizationStep'
 import PublicationStep from '../components/wizard/PublicationStep'
 import StepProgress from '../components/wizard/StepProgress'
 import TemplateStep from '../components/wizard/TemplateStep'
-import { INITIAL_GUESTS } from '../data/guests'
-import { useLocalStorageState } from '../utils/useLocalStorageState'
 
 const STEPS = [
   "Type d'événement",
@@ -26,14 +34,15 @@ const STEPS = [
 ]
 
 const INITIAL_EVENT = {
-  name: 'Mariage de Awa & Ibrahim',
-  location: 'Grande mosquée · Dakar',
-  date: '2027-03-14',
-  timeStart: '16:00',
-  timeEnd: '23:00',
+  name: '',
+  location: '',
+  date: '',
+  timeStart: '',
+  timeEnd: '',
   timezone: 'Europe/Paris (GMT+1)',
   description: '',
-  category: 'Mariage et fiançailles',
+  category: '',
+  categoryId: null,
   template: null,
   coverImage: null,
   themeColor: '#6549e8',
@@ -49,41 +58,208 @@ const INITIAL_EVENT = {
   plan: 'FREE',
 }
 
+function parseCustomFields(json) {
+  try {
+    return JSON.parse(json ?? '{}') ?? {}
+  } catch {
+    return {}
+  }
+}
+
 export default function CreateEvent() {
+  const { id: eventId } = useParams()
+  const isEditMode = Boolean(eventId)
   const navigate = useNavigate()
   const [currentStep, setCurrentStep] = useState(0)
   const [event, setEvent] = useState(INITIAL_EVENT)
   const [visibility, setVisibility] = useState('publish')
   const [publishing, setPublishing] = useState(false)
   const [published, setPublished] = useState(false)
-  const [, setSharedGuests] = useLocalStorageState('tbf_guests', INITIAL_GUESTS)
+  const [publishError, setPublishError] = useState('')
+  const [publishWarnings, setPublishWarnings] = useState([])
+  const [categories, setCategories] = useState([])
+  const [categoriesLoading, setCategoriesLoading] = useState(true)
+  const [loadingEvent, setLoadingEvent] = useState(isEditMode)
+  const [loadError, setLoadError] = useState('')
+  const [existingLocation, setExistingLocation] = useState(null)
+  const [existingBlocks, setExistingBlocks] = useState([])
+
+  useEffect(() => {
+    listEventCategories()
+      .then((data) => setCategories(data ?? []))
+      .catch(() => setCategories([]))
+      .finally(() => setCategoriesLoading(false))
+  }, [])
+
+  useEffect(() => {
+    if (!isEditMode) return
+    let cancelled = false
+    Promise.all([
+      getEvent(eventId),
+      listEventLocations(eventId).catch(() => []),
+      listEventBlocks(eventId).catch(() => []),
+    ])
+      .then(([eventData, locations, blocks]) => {
+        if (cancelled) return
+        const custom = parseCustomFields(eventData.customFields)
+        setEvent((prev) => ({
+          ...prev,
+          name: eventData.name,
+          categoryId: eventData.categoryId,
+          date: eventData.eventDate ?? '',
+          timeStart: eventData.startTime ? eventData.startTime.slice(0, 5) : '',
+          themeColor: eventData.themeColor || prev.themeColor,
+          location: locations[0]?.address ?? '',
+          description: custom.description ?? '',
+          tagline: custom.tagline ?? '',
+          timeEnd: custom.timeEnd ?? '',
+          timezone: custom.timezone ?? prev.timezone,
+          template: custom.template ?? null,
+          options: { ...prev.options, ...(custom.options ?? {}) },
+        }))
+        setVisibility(eventData.status === 'Publie' ? 'publish' : 'draft')
+        setExistingLocation(locations[0] ?? null)
+        setExistingBlocks(blocks)
+      })
+      .catch((err) => {
+        if (!cancelled) setLoadError(err.message || "Impossible de charger l'événement.")
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingEvent(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [isEditMode, eventId])
+
+  useEffect(() => {
+    if (!isEditMode || categoriesLoading || !event.categoryId) return
+    const match = categories.find((c) => c.id === event.categoryId)
+    if (match && event.category !== match.label) {
+      setEvent((prev) => ({ ...prev, category: match.label }))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditMode, categoriesLoading, categories, event.categoryId])
 
   const updateEvent = (patch) => setEvent((prev) => ({ ...prev, ...patch }))
 
   const canGoBack = currentStep > 0
   const isPublicationStep = currentStep === STEPS.length - 1
-  const canContinue = currentStep !== 0 || Boolean(event.category)
+  const canContinue = currentStep !== 0 || Boolean(event.categoryId)
 
-  const handlePublish = () => {
+  const handlePublish = async (targetVisibility) => {
+    setPublishError('')
+    setPublishWarnings([])
+
+    if (!event.categoryId) {
+      setPublishError("Sélectionnez d'abord une catégorie d'événement.")
+      return
+    }
+
+    setVisibility(targetVisibility)
     setPublishing(true)
-    setTimeout(() => {
-      if (event.guests?.length) {
-        setSharedGuests((prev) => [
-          ...prev,
-          ...event.guests.map((g) => ({
-            name: g.name,
-            role: 'Invité',
-            contact: g.email,
-            group: g.group,
-            status: 'En attente',
-            accomp: '–',
-            invitation: 'Non envoyée',
-          })),
-        ])
+    const warnings = []
+    try {
+      const dto = {
+        name: event.name,
+        categoryId: event.categoryId,
+        eventDate: event.date || null,
+        startTime: event.timeStart ? `${event.timeStart}:00` : null,
+        coverImageUrl: null,
+        themeColor: event.themeColor || null,
+        themeFont: null,
+        customFields: JSON.stringify({
+          description: event.description,
+          tagline: event.tagline,
+          timeEnd: event.timeEnd,
+          timezone: event.timezone,
+          template: event.template,
+          options: event.options,
+        }),
       }
-      setPublishing(false)
+
+      const targetId = isEditMode ? eventId : (await createEvent(dto)).id
+      await updateEventApi(targetId, {
+        ...dto,
+        status: targetVisibility === 'publish' ? 'Publie' : 'Brouillon',
+      })
+
+      if (event.location) {
+        try {
+          if (existingLocation) {
+            await updateEventLocation(existingLocation.id, {
+              label: existingLocation.label,
+              address: event.location,
+              position: existingLocation.position,
+            })
+          } else {
+            await createEventLocation(
+              { label: 'Lieu principal', address: event.location, position: 0 },
+              targetId,
+            )
+          }
+        } catch {
+          warnings.push("Le lieu n'a pas pu être enregistré.")
+        }
+      }
+
+      try {
+        const findBlock = (type) => existingBlocks.find((b) => b.blockType === type)
+        const upsertBlock = async (type, content) => {
+          const existing = findBlock(type)
+          if (existing) {
+            await updateEventBlock(existing.id, {
+              blockType: type,
+              position: existing.position,
+              isVisible: true,
+              content,
+            })
+          } else {
+            await createEventBlock(
+              { blockType: type, position: existingBlocks.length, isVisible: true, content },
+              targetId,
+            )
+          }
+        }
+
+        await upsertBlock('Hero', JSON.stringify({ title: event.name, tagline: event.tagline }))
+        if (event.options?.program) await upsertBlock('Programme', findBlock('Programme')?.content ?? '{}')
+        if (event.options?.checkin) await upsertBlock('Rsvp', findBlock('Rsvp')?.content ?? '{}')
+      } catch {
+        warnings.push("Les sections de la page n'ont pas pu être toutes mises à jour.")
+      }
+
+      if (event.guests?.length) {
+        const groupIdByName = new Map()
+        for (const groupName of new Set(event.guests.map((g) => g.group))) {
+          if (!groupName || groupName === 'Sans groupe') continue
+          try {
+            const group = await createGuestGroup({ name: groupName }, targetId)
+            groupIdByName.set(groupName, group.id)
+          } catch {
+            warnings.push(`Le groupe « ${groupName} » n'a pas pu être créé.`)
+          }
+        }
+
+        for (const guest of event.guests) {
+          try {
+            await createGuest(
+              { fullName: guest.name, phone: guest.phone, email: guest.email },
+              { eventId: targetId, groupId: groupIdByName.get(guest.group) },
+            )
+          } catch {
+            warnings.push(`${guest.name} n'a pas pu être ajouté(e).`)
+          }
+        }
+      }
+
+      setPublishWarnings(warnings)
       setPublished(true)
-    }, 700)
+    } catch (err) {
+      setPublishError(err.message || 'La publication a échoué.')
+    } finally {
+      setPublishing(false)
+    }
   }
 
   const stepContent = useMemo(() => {
@@ -91,8 +267,12 @@ export default function CreateEvent() {
       case 0:
         return (
           <CategoryStep
-            selected={event.category}
-            onSelect={(category) => updateEvent({ category })}
+            categories={categories}
+            loading={categoriesLoading}
+            selectedId={event.categoryId}
+            onSelect={(category) =>
+              updateEvent({ categoryId: category.id, category: category.label })
+            }
           />
         )
       case 1:
@@ -119,13 +299,37 @@ export default function CreateEvent() {
             onChangeVisibility={setVisibility}
             publishing={publishing}
             onPublish={handlePublish}
+            error={publishError}
           />
         )
       default:
         return null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentStep, event, visibility, publishing])
+  }, [currentStep, event, visibility, publishing, publishError, categories, categoriesLoading])
+
+  if (isEditMode && loadingEvent) {
+    return (
+      <DashboardLayout>
+        <p className="rounded-2xl border border-dashed border-border-soft py-20 text-center text-sm text-faint">
+          Chargement de l'événement…
+        </p>
+      </DashboardLayout>
+    )
+  }
+
+  if (isEditMode && loadError) {
+    return (
+      <DashboardLayout>
+        <p className="rounded-lg border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
+          {loadError}
+        </p>
+        <Button variant="outline" className="mt-6" onClick={() => navigate('/dashboard/evenements')}>
+          Retour à mes événements
+        </Button>
+      </DashboardLayout>
+    )
+  }
 
   if (published) {
     return (
@@ -135,15 +339,29 @@ export default function CreateEvent() {
             <CheckCircle2 className="h-8 w-8" />
           </span>
           <h1 className="mt-6 text-2xl font-bold text-ink">
-            {visibility === 'publish'
-              ? 'Événement publié !'
-              : 'Brouillon enregistré !'}
+            {isEditMode
+              ? 'Événement mis à jour !'
+              : visibility === 'publish'
+                ? 'Événement publié !'
+                : 'Brouillon enregistré !'}
           </h1>
           <p className="mt-2 text-sm text-muted">
             {visibility === 'publish'
               ? 'Votre mini-site est en ligne et prêt à être partagé à vos invités.'
               : 'Vous pouvez reprendre et publier votre événement à tout moment.'}
           </p>
+
+          {publishWarnings.length > 0 && (
+            <div className="mt-4 w-full rounded-lg border border-brand-orange/30 bg-brand-orange/10 px-4 py-3 text-left text-sm text-brand-orange">
+              <p className="font-medium">C'est enregistré, mais :</p>
+              <ul className="mt-1 list-disc space-y-0.5 pl-5">
+                {publishWarnings.map((w) => (
+                  <li key={w}>{w}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Button
               variant="gradient"
@@ -151,8 +369,8 @@ export default function CreateEvent() {
             >
               Voir mon mini-site
             </Button>
-            <Button variant="outline" onClick={() => navigate('/dashboard')}>
-              Retour au dashboard
+            <Button variant="outline" onClick={() => navigate('/dashboard/evenements')}>
+              Retour à mes événements
             </Button>
           </div>
         </div>
@@ -162,7 +380,7 @@ export default function CreateEvent() {
 
   return (
     <DashboardLayout>
-      <StepProgress currentStep={currentStep} stepLabel={STEPS[currentStep]} />
+      <StepProgress currentStep={currentStep} totalSteps={STEPS.length} stepLabel={STEPS[currentStep]} />
 
       <div className="mt-8">
         {isPublicationStep ? (

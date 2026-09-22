@@ -1,175 +1,232 @@
 import { Plus } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import ActivityCard from '../../components/program/ActivityCard'
 import ActivityDetailPanel from '../../components/program/ActivityDetailPanel'
 import ActivityForm from '../../components/program/ActivityForm'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import Button from '../../components/ui/Button'
+import { listEvents } from '../../api/events'
+import {
+  createProgramItem,
+  deleteProgramItem,
+  listProgramItems,
+  toggleProgramItemNotify,
+  updateProgramItem,
+} from '../../api/program'
 
-const ROOMS = [
-  'Grande mosquée · Dakar',
-  'Jardins de la mosquée',
-  'Salle Teranga · Almadies',
-  'Villa familiale · Almadies',
-]
+const ROOMS = ['Salle principale', 'Salle B', 'Jardin', 'Terrasse']
 
-const DAYS = [
-  { value: 1, label: 'Jour 1 (13 Mars)' },
-  { value: 2, label: 'Jour 2 (14 Mars)' },
-  { value: 3, label: 'Jour 3 (15 Mars)' },
-]
-
-const INITIAL_ACTIVITIES = [
-  {
-    id: 1,
-    day: 1,
-    time: '10:00',
-    duration: 90,
-    title: 'Henné & remise des cadeaux',
-    location: ROOMS[3],
-    description: 'Rituel du henné entre les deux familles.',
-    capacity: 40,
-    notify: false,
-  },
-  {
-    id: 2,
-    day: 2,
-    time: '14:00',
-    duration: 60,
-    title: 'Accueil des invités',
-    location: ROOMS[0],
-    description: 'Installation et remise des programmes.',
-    capacity: 200,
-    notify: true,
-  },
-  {
-    id: 3,
-    day: 2,
-    time: '16:00',
-    duration: 90,
-    title: 'Cérémonie religieuse',
-    location: ROOMS[0],
-    speaker: 'Imam Alioune Sarr',
-    description: "Bénédiction et échange des vœux.",
-    capacity: 200,
-    notify: true,
-  },
-  {
-    id: 4,
-    day: 2,
-    time: '18:30',
-    duration: 60,
-    title: 'Séance photo',
-    location: ROOMS[1],
-    capacity: 30,
-    notify: false,
-  },
-  {
-    id: 5,
-    day: 2,
-    time: '20:00',
-    duration: 180,
-    title: 'Réception et dîner',
-    location: ROOMS[2],
-    description: 'Discours, dîner et ouverture de la piste de danse.',
-    capacity: 250,
-    notify: true,
-  },
-  {
-    id: 6,
-    day: 3,
-    time: '11:00',
-    duration: 120,
-    title: 'Brunch de remerciement',
-    location: ROOMS[2],
-    description: 'Moment convivial pour remercier les proches.',
-    capacity: 80,
-    notify: true,
-  },
-]
+function toRow(item) {
+  const iso = item.startTime
+  return {
+    id: item.id,
+    date: iso ? iso.slice(0, 10) : '',
+    time: iso ? iso.slice(11, 16) : '',
+    duration: item.durationMinutes,
+    title: item.title,
+    location: item.location,
+    speaker: item.speaker,
+    description: item.description,
+    capacity: item.capacity,
+    notify: item.notify,
+  }
+}
 
 export default function Program() {
-  const [activities, setActivities] = useState(INITIAL_ACTIVITIES)
-  const [activeDay, setActiveDay] = useState(1)
+  const [events, setEvents] = useState([])
+  const [selectedEventId, setSelectedEventId] = useState('')
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [activeDate, setActiveDate] = useState('')
   const [formOpen, setFormOpen] = useState(false)
-  const [selectedId, setSelectedId] = useState(INITIAL_ACTIVITIES[0]?.id ?? null)
+  const [selectedId, setSelectedId] = useState(null)
+
+  useEffect(() => {
+    listEvents()
+      .then((data) => {
+        setEvents(data ?? [])
+        if (data?.length) setSelectedEventId(data[0].id)
+        else setLoading(false)
+      })
+      .catch((err) => {
+        setError(err.message || 'Impossible de charger vos événements.')
+        setLoading(false)
+      })
+  }, [])
+
+  const reload = (eventId) => {
+    setLoading(true)
+    listProgramItems(eventId)
+      .then((data) => {
+        const rows = (data ?? []).map(toRow)
+        setItems(rows)
+        const dates = [...new Set(rows.map((r) => r.date).filter(Boolean))].sort()
+        setActiveDate((prev) => (dates.includes(prev) ? prev : dates[0] ?? ''))
+        setError('')
+      })
+      .catch((err) => setError(err.message || 'Impossible de charger le programme.'))
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    if (!selectedEventId) return
+    reload(selectedEventId)
+  }, [selectedEventId])
+
+  const dates = useMemo(
+    () => [...new Set(items.map((r) => r.date).filter(Boolean))].sort(),
+    [items],
+  )
 
   const sorted = useMemo(
     () =>
-      activities
-        .filter((a) => a.day === activeDay)
+      items
+        .filter((a) => a.date === activeDate)
         .sort((a, b) => a.time.localeCompare(b.time)),
-    [activities, activeDay],
+    [items, activeDate],
   )
 
-  const selectedActivity =
-    sorted.find((a) => a.id === selectedId) ?? sorted[0] ?? null
+  const selectedActivity = sorted.find((a) => a.id === selectedId) ?? sorted[0] ?? null
 
-  const handleAdd = (values) => {
-    const id = Date.now()
-    setActivities((prev) => [...prev, { ...values, id, notify: true }])
-    setFormOpen(false)
-    setActiveDay(values.day)
-    setSelectedId(id)
+  const handleAdd = async (values) => {
+    setError('')
+    try {
+      await createProgramItem(
+        {
+          title: values.title,
+          description: values.description || null,
+          speaker: values.speaker || null,
+          location: values.location || null,
+          startTime: `${values.date}T${values.time}:00`,
+          durationMinutes: values.duration,
+          capacity: values.capacity,
+        },
+        selectedEventId,
+      )
+      setFormOpen(false)
+      setActiveDate(values.date)
+      reload(selectedEventId)
+    } catch (err) {
+      setError(err.message || "L'ajout a échoué.")
+    }
   }
 
-  const toggleNotify = (id) =>
-    setActivities((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, notify: !a.notify } : a)),
+  const toggleNotify = async (id) => {
+    setError('')
+    try {
+      await toggleProgramItemNotify(id)
+      reload(selectedEventId)
+    } catch (err) {
+      setError(err.message || "L'action a échoué.")
+    }
+  }
+
+  const handleDelete = async (id) => {
+    setError('')
+    try {
+      await deleteProgramItem(id)
+      reload(selectedEventId)
+    } catch (err) {
+      setError(err.message || 'La suppression a échoué.')
+    }
+  }
+
+  const handleQuickSave = async (id, patch) => {
+    const current = items.find((a) => a.id === id)
+    if (!current) return
+    setError('')
+    try {
+      await updateProgramItem(id, {
+        location: patch.location ?? current.location,
+        capacity: patch.capacity ?? current.capacity,
+        notify: current.notify,
+      })
+      reload(selectedEventId)
+    } catch (err) {
+      setError(err.message || "L'enregistrement a échoué.")
+    }
+  }
+
+  const selectedEvent = events.find((e) => e.id === selectedEventId)
+
+  if (!loading && events.length === 0) {
+    return (
+      <DashboardLayout>
+        <h1 className="text-2xl font-bold text-ink">Programme</h1>
+        <p className="mt-8 rounded-2xl border border-dashed border-border-soft py-10 text-center text-sm text-faint">
+          Créez d'abord un événement.
+        </p>
+      </DashboardLayout>
     )
-
-  const handleDelete = (id) =>
-    setActivities((prev) => prev.filter((a) => a.id !== id))
-
-  const handleQuickSave = (id, patch) =>
-    setActivities((prev) => prev.map((a) => (a.id === id ? { ...a, ...patch } : a)))
+  }
 
   return (
     <DashboardLayout>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-ink">
-            Programme & Planification — Mariage Awa & Ibrahim
+            Programme — {selectedEvent?.name ?? ''}
           </h1>
           <p className="mt-1.5 text-sm text-muted">
-            {activities.length} activités sur {DAYS.length} jours
+            {items.length} activités sur {dates.length || 0} jour(s)
           </p>
         </div>
-        <Button variant="gradient" onClick={() => setFormOpen(true)}>
-          <Plus className="h-4 w-4" />
-          Ajouter une activité
-        </Button>
+        <div className="flex flex-wrap gap-3">
+          <select
+            value={selectedEventId}
+            onChange={(e) => setSelectedEventId(e.target.value)}
+            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-brand-purple"
+          >
+            {events.map((ev) => (
+              <option key={ev.id} value={ev.id}>
+                {ev.name}
+              </option>
+            ))}
+          </select>
+          <Button variant="gradient" onClick={() => setFormOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Ajouter une activité
+          </Button>
+        </div>
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-2">
-        {DAYS.map((d) => (
-          <button
-            key={d.value}
-            type="button"
-            onClick={() => setActiveDay(d.value)}
-            className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-              activeDay === d.value
-                ? 'bg-[linear-gradient(92deg,_var(--color-brand-indigo),_var(--color-brand-purple))] text-white'
-                : 'border border-border text-muted hover:border-faint hover:text-ink'
-            }`}
-          >
-            {d.label}
-          </button>
-        ))}
-      </div>
+      {error && (
+        <p className="mt-6 rounded-lg border border-danger/30 bg-danger/10 px-4 py-2.5 text-sm text-danger">
+          {error}
+        </p>
+      )}
+
+      {dates.length > 0 && (
+        <div className="mt-6 flex flex-wrap gap-2">
+          {dates.map((d) => (
+            <button
+              key={d}
+              type="button"
+              onClick={() => setActiveDate(d)}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                activeDate === d
+                  ? 'bg-[linear-gradient(92deg,_var(--color-brand-indigo),_var(--color-brand-purple))] text-white'
+                  : 'border border-border text-muted hover:border-faint hover:text-ink'
+              }`}
+            >
+              {new Date(`${d}T00:00:00`).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long' })}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_320px]">
         <div>
           {formOpen && (
             <ActivityForm
-              day={activeDay}
-              days={DAYS}
+              date={activeDate || new Date().toISOString().slice(0, 10)}
               onSubmit={handleAdd}
               onCancel={() => setFormOpen(false)}
             />
           )}
 
-          {sorted.length === 0 ? (
+          {!loading && sorted.length === 0 ? (
             <p className="rounded-2xl border border-dashed border-border-soft py-12 text-center text-sm text-faint">
               Aucune activité ce jour-là. Ajoutez la première étape.
             </p>

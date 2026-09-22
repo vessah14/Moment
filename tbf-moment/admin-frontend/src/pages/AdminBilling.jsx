@@ -1,9 +1,9 @@
 import { FileDown } from 'lucide-react'
-import AdminLayout from '../../components/layout/AdminLayout'
-import StatCard from '../../components/dashboard/StatCard'
-import Button from '../../components/ui/Button'
-import { ORGANIZATIONS, TRANSACTIONS } from '../../data/adminData'
-import { formatFcfa } from '../../utils/formatCurrency'
+import AdminLayout from '../components/layout/AdminLayout'
+import StatCard from '../components/dashboard/StatCard'
+import Button from '../components/ui/Button'
+import { ORGANIZATIONS, TRANSACTIONS } from '../data/adminData'
+import { formatFcfa } from '../utils/formatCurrency'
 
 const PLAN_PRICES = {
   Free: 0,

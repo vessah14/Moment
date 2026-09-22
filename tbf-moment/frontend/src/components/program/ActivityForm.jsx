@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import Button from '../ui/Button'
 
-function buildEmpty(day) {
+function buildEmpty(date) {
   return {
-    day,
+    date,
     time: '',
     duration: 60,
     title: '',
@@ -14,16 +14,16 @@ function buildEmpty(day) {
   }
 }
 
-export default function ActivityForm({ day, days, onSubmit, onCancel }) {
-  const [values, setValues] = useState(() => buildEmpty(day))
+export default function ActivityForm({ date, onSubmit, onCancel }) {
+  const [values, setValues] = useState(() => buildEmpty(date))
 
   const update = (patch) => setValues((prev) => ({ ...prev, ...patch }))
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (!values.time || !values.title) return
+    if (!values.date || !values.time || !values.title) return
     onSubmit(values)
-    setValues(buildEmpty(day))
+    setValues(buildEmpty(date))
   }
 
   return (
@@ -34,28 +34,21 @@ export default function ActivityForm({ day, days, onSubmit, onCancel }) {
       <h3 className="font-semibold text-ink">Nouvelle activité</h3>
 
       <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {days.length > 1 && (
-          <label className="col-span-1 block">
-            <span className="text-xs font-medium text-ink">Jour</span>
-            <select
-              value={values.day}
-              onChange={(e) => update({ day: Number(e.target.value) })}
-              className="mt-1.5 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-brand-purple"
-            >
-              {days.map((d) => (
-                <option key={d.value} value={d.value}>
-                  {d.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
+        <label className="col-span-1 block">
+          <span className="text-xs font-medium text-ink">Date</span>
+          <input
+            type="date"
+            required
+            value={values.date}
+            onChange={(e) => update({ date: e.target.value })}
+            className="mt-1.5 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-brand-purple"
+          />
+        </label>
         <label className="col-span-1 block">
           <span className="text-xs font-medium text-ink">Heure</span>
           <input
-            type="text"
+            type="time"
             required
-            placeholder="16:00"
             value={values.time}
             onChange={(e) => update({ time: e.target.value })}
             className="mt-1.5 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-brand-purple"

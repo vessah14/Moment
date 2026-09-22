@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import Toggle from '../../components/builder/Toggle'
-import AdminLayout from '../../components/layout/AdminLayout'
-import Button from '../../components/ui/Button'
+import Toggle from '../components/builder/Toggle'
+import AdminLayout from '../components/layout/AdminLayout'
+import Button from '../components/ui/Button'
 
 const INITIAL_FLAGS = [
   { key: 'billetterie', label: 'Billetterie payante', enabled: true },

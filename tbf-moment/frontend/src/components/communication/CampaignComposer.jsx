@@ -9,34 +9,34 @@ export default function CampaignComposer({ defaultChannel = 'E-mail', onCreate }
   const [channel, setChannel] = useState(defaultChannel)
   const [audience, setAudience] = useState(AUDIENCES[0])
   const [message, setMessage] = useState('')
-  const [timing, setTiming] = useState('now')
-  const [scheduleDate, setScheduleDate] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   const reset = () => {
     setName('')
     setMessage('')
-    setTiming('now')
-    setScheduleDate('')
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e, sendNow) => {
     e.preventDefault()
     if (!name.trim() || !message.trim()) return
-    if (timing === 'later' && !scheduleDate) return
-    onCreate({
-      name: name.trim(),
-      channel,
-      audience,
-      message: message.trim(),
-      status: timing === 'now' ? 'Envoyée' : 'Programmée',
-      scheduledLabel: timing === 'now' ? "À l'instant" : scheduleDate,
-    })
-    reset()
+    setSubmitting(true)
+    try {
+      await onCreate({
+        name: name.trim(),
+        channel,
+        audience,
+        body: message.trim(),
+        sendNow,
+      })
+      reset()
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
     <form
-      onSubmit={handleSubmit}
+      onSubmit={(e) => e.preventDefault()}
       className="rounded-2xl border border-border-soft bg-surface p-5"
     >
       <h3 className="font-semibold text-ink">Nouveau message</h3>
@@ -112,53 +112,30 @@ export default function CampaignComposer({ defaultChannel = 'E-mail', onCreate }
         </div>
       </label>
 
-      <div className="mt-4">
-        <span className="text-xs font-medium text-ink">Envoi</span>
-        <div className="mt-1.5 grid gap-3 sm:grid-cols-2">
-          <button
-            type="button"
-            onClick={() => setTiming('now')}
-            className={`rounded-lg border px-3 py-2.5 text-left text-sm transition ${
-              timing === 'now'
-                ? 'border-brand-purple bg-brand-purple/10 text-ink'
-                : 'border-border-soft text-muted hover:border-faint'
-            }`}
-          >
-            Envoyer maintenant
-          </button>
-          <div
-            className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition ${
-              timing === 'later'
-                ? 'border-brand-purple bg-brand-purple/10'
-                : 'border-border-soft'
-            }`}
-          >
-            <button
-              type="button"
-              onClick={() => setTiming('later')}
-              className={`shrink-0 text-sm ${timing === 'later' ? 'text-ink' : 'text-muted'}`}
-            >
-              Programmer
-            </button>
-            <input
-              type="datetime-local"
-              value={scheduleDate}
-              onChange={(e) => {
-                setScheduleDate(e.target.value)
-                setTiming('later')
-              }}
-              className="w-full min-w-0 rounded-md border-0 bg-transparent text-xs text-ink outline-none"
-            />
-          </div>
-        </div>
-      </div>
+      <p className="mt-4 text-xs text-faint">
+        Aucun service d'envoi (e-mail/SMS/WhatsApp) n'est branché — la campagne est
+        enregistrée avec le nombre réel de destinataires concernés, sans envoi effectif.
+      </p>
 
-      <div className="mt-5 flex justify-end gap-3">
-        <Button type="button" variant="ghost" onClick={reset}>
+      <div className="mt-5 flex flex-wrap justify-end gap-3">
+        <Button type="button" variant="ghost" onClick={reset} disabled={submitting}>
           Réinitialiser
         </Button>
-        <Button type="submit" variant="gradient">
-          {timing === 'now' ? 'Envoyer maintenant' : 'Planifier l’envoi'}
+        <Button
+          type="button"
+          variant="outline"
+          disabled={submitting}
+          onClick={(e) => handleSubmit(e, false)}
+        >
+          Enregistrer en brouillon
+        </Button>
+        <Button
+          type="button"
+          variant="gradient"
+          disabled={submitting}
+          onClick={(e) => handleSubmit(e, true)}
+        >
+          Marquer comme envoyée
         </Button>
       </div>
     </form>

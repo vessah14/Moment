@@ -14,10 +14,11 @@ export default function InvitesStep({ event, onChange }) {
     const form = new FormData(e.target)
     const name = form.get('name')?.toString().trim()
     const email = form.get('email')?.toString().trim()
+    const phone = form.get('phone')?.toString().trim()
     const group = form.get('group')?.toString().trim() || 'Sans groupe'
-    if (!name || !email) return
+    if (!name || !email || !phone) return
     update({
-      guests: [...guests, { id: Date.now(), name, email, group, status: 'Prêt' }],
+      guests: [...guests, { id: Date.now(), name, email, phone, group, status: 'Prêt' }],
     })
     e.target.reset()
   }
@@ -37,12 +38,13 @@ export default function InvitesStep({ event, onChange }) {
       const dataLines = /nom|name/i.test(lines[0]) ? lines.slice(1) : lines
       const imported = dataLines
         .map((line) => {
-          const [name, email, group] = line.split(',').map((v) => v?.trim())
-          if (!name) return null
+          const [name, email, phone, group] = line.split(',').map((v) => v?.trim())
+          if (!name || !email || !phone) return null
           return {
             id: Date.now() + Math.random(),
             name,
-            email: email || '—',
+            email,
+            phone,
             group: group || 'Importés',
             status: 'Prêt',
           }
@@ -88,6 +90,15 @@ export default function InvitesStep({ event, onChange }) {
             />
           </label>
           <label className="block">
+            <span className="text-xs font-medium text-ink">Téléphone</span>
+            <input
+              name="phone"
+              required
+              placeholder="Ex: +221 77 000 00 00"
+              className="mt-1.5 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink placeholder:text-faint outline-none focus:border-brand-purple"
+            />
+          </label>
+          <label className="block">
             <span className="text-xs font-medium text-ink">Groupe d'invités</span>
             <select
               name="group"
@@ -121,7 +132,7 @@ export default function InvitesStep({ event, onChange }) {
               Glissez-déposez votre fichier ici
             </span>
             <span className="text-xs text-faint">
-              Fichiers pris en charge : CSV, XLS, XLSX (max 5 Mo)
+              Colonnes attendues : nom, email, téléphone, groupe (CSV, max 5 Mo)
             </span>
             <span className="mt-2 rounded-full border border-border px-4 py-1.5 text-xs font-semibold text-ink">
               Parcourir les fichiers
@@ -156,6 +167,7 @@ export default function InvitesStep({ event, onChange }) {
                 <tr className="border-y border-border-soft text-xs tracking-wider text-faint uppercase">
                   <th className="px-5 py-2 font-medium">Nom complet</th>
                   <th className="px-3 py-2 font-medium">Email</th>
+                  <th className="px-3 py-2 font-medium">Téléphone</th>
                   <th className="px-3 py-2 font-medium">Groupe</th>
                   <th className="px-3 py-2 font-medium">Statut</th>
                   <th className="w-10 px-3 py-2" />
@@ -166,6 +178,7 @@ export default function InvitesStep({ event, onChange }) {
                   <tr key={g.id} className="border-b border-border-soft last:border-b-0">
                     <td className="px-5 py-3 font-medium text-ink">{g.name}</td>
                     <td className="px-3 py-3 text-muted">{g.email}</td>
+                    <td className="px-3 py-3 text-muted">{g.phone}</td>
                     <td className="px-3 py-3 text-muted">{g.group}</td>
                     <td className="px-3 py-3">
                       <StatusBadge status={g.status} />

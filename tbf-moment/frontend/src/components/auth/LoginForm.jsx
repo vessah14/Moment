@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { login } from '../../api/auth'
 import logoMark from '../../assets/logo-mark.png'
 import Button from '../ui/Button'
 
@@ -8,11 +9,20 @@ export default function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
+    setError('')
     setSubmitting(true)
-    setTimeout(() => navigate('/dashboard'), 600)
+    try {
+      await login({ email, password })
+      navigate('/dashboard')
+    } catch (err) {
+      setError(err.message || 'Connexion impossible.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -47,6 +57,12 @@ export default function LoginForm() {
             className="mt-2 w-full rounded-lg border border-border bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-brand-purple focus:ring-3 focus:ring-brand-purple/30"
           />
         </label>
+
+        {error && (
+          <p className="rounded-lg border border-danger/30 bg-danger/10 px-4 py-2.5 text-sm text-danger">
+            {error}
+          </p>
+        )}
 
         <div className="flex items-center justify-between text-sm">
           <label className="flex items-center gap-2 text-muted">

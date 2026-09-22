@@ -1,8 +1,8 @@
 import { Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import AdminLayout from '../../components/layout/AdminLayout'
-import StatusBadge from '../../components/ui/StatusBadge'
-import { ORGANIZATIONS } from '../../data/adminData'
+import AdminLayout from '../components/layout/AdminLayout'
+import StatusBadge from '../components/ui/StatusBadge'
+import { ORGANIZATIONS } from '../data/adminData'
 
 export default function AdminOrganizations() {
   const [organizations, setOrganizations] = useState(ORGANIZATIONS)

@@ -1,67 +1,127 @@
 import { Search } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { listEvents, updateEvent, createEvent } from '../../api/events'
+import { listEventCategories } from '../../api/eventCategories'
 import EventCard from '../../components/events/EventCard'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import Button from '../../components/ui/Button'
-import { INITIAL_EVENTS } from '../../data/myEvents'
+import { formatEventDate, statusLabel } from '../../utils/eventStatus'
 
 const FILTERS = ['Tous', 'Publiés', 'Brouillons', 'Passés']
 
 export default function MyEvents() {
   const navigate = useNavigate()
-  const [events, setEvents] = useState(INITIAL_EVENTS)
-  const [archivedEvents, setArchivedEvents] = useState([])
+  const [events, setEvents] = useState([])
+  const [categories, setCategories] = useState([])
   const [filter, setFilter] = useState('Tous')
   const [query, setQuery] = useState('')
   const [showArchived, setShowArchived] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    Promise.all([listEvents(), listEventCategories()])
+      .then(([eventsData, categoriesData]) => {
+        if (cancelled) return
+        setEvents(eventsData ?? [])
+        setCategories(categoriesData ?? [])
+        setError('')
+      })
+      .catch((err) => {
+        if (cancelled) return
+        setError(err.message || 'Impossible de charger vos événements.')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const categoryLabel = useMemo(() => {
+    const map = new Map(categories.map((c) => [c.id, c.label]))
+    return (categoryId) => map.get(categoryId) ?? '—'
+  }, [categories])
+
+  const activeEvents = events.filter((e) => e.status !== 'Archive')
+  const archivedEvents = events.filter((e) => e.status === 'Archive')
 
   const filtered = useMemo(() => {
-    return events.filter((event) => {
+    return activeEvents.filter((event) => {
       const matchesFilter =
         filter === 'Tous' ||
-        (filter === 'Publiés' && event.status === 'Publié') ||
-        (filter === 'Brouillons' && event.status === 'Brouillon')
+        (filter === 'Publiés' && event.status === 'Publie') ||
+        (filter === 'Brouillons' && event.status === 'Brouillon') ||
+        (filter === 'Passés' &&
+          event.eventDate &&
+          new Date(event.eventDate) < new Date())
       const matchesQuery = event.name.toLowerCase().includes(query.toLowerCase())
       return matchesFilter && matchesQuery
     })
-  }, [events, filter, query])
+  }, [activeEvents, filter, query])
 
-  const handlePublish = (id) => {
-    setEvents((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, status: 'Publié' } : e)),
+  const runAction = async (action) => {
+    setError('')
+    try {
+      await action()
+      const fresh = await listEvents()
+      setEvents(fresh ?? [])
+    } catch (err) {
+      setError(err.message || "L'action a échoué.")
+    }
+  }
+
+  const toUpdateDto = (event, patch) => ({
+    name: event.name,
+    categoryId: event.categoryId,
+    status: event.status,
+    eventDate: event.eventDate,
+    startTime: event.startTime,
+    coverImageUrl: event.coverImageUrl,
+    themeColor: event.themeColor,
+    themeFont: event.themeFont,
+    customFields: event.customFields,
+    ...patch,
+  })
+
+  const handlePublish = (event) =>
+    runAction(() => updateEvent(event.id, toUpdateDto(event, { status: 'Publie' })))
+
+  const handleArchive = (event) =>
+    runAction(() => updateEvent(event.id, toUpdateDto(event, { status: 'Archive' })))
+
+  const handleRestore = (event) =>
+    runAction(() => updateEvent(event.id, toUpdateDto(event, { status: 'Brouillon' })))
+
+  const handleDuplicate = (event) =>
+    runAction(() =>
+      createEvent({
+        name: `${event.name} (copie)`,
+        categoryId: event.categoryId,
+        eventDate: event.eventDate,
+        startTime: event.startTime,
+        coverImageUrl: event.coverImageUrl,
+        themeColor: event.themeColor,
+        themeFont: event.themeFont,
+        customFields: event.customFields,
+      }),
     )
-  }
 
-  const handleArchive = (id) => {
-    setEvents((prev) => {
-      const target = prev.find((e) => e.id === id)
-      if (target) setArchivedEvents((archived) => [...archived, target])
-      return prev.filter((e) => e.id !== id)
-    })
-  }
-
-  const handleRestore = (id) => {
-    setArchivedEvents((prev) => {
-      const target = prev.find((e) => e.id === id)
-      if (target) setEvents((events) => [...events, target])
-      return prev.filter((e) => e.id !== id)
-    })
-  }
-
-  const handleDuplicate = (id) => {
-    setEvents((prev) => {
-      const source = prev.find((e) => e.id === id)
-      if (!source) return prev
-      const copy = {
-        ...source,
-        id: `${source.id}-copie-${Date.now()}`,
-        name: `${source.name} (copie)`,
-        status: 'Brouillon',
-      }
-      return [...prev, copy]
-    })
-  }
+  const toCardProps = (event) => ({
+    name: event.name,
+    status: statusLabel(event.status),
+    category: categoryLabel(event.categoryId),
+    date: formatEventDate(event.eventDate),
+    location: '—',
+    progressLabel: 'RSVP',
+    confirmed: 0,
+    total: 0,
+    barColor: 'bg-success',
+  })
 
   return (
     <DashboardLayout>
@@ -69,8 +129,8 @@ export default function MyEvents() {
         <div>
           <h1 className="text-3xl font-bold text-ink">Mes événements</h1>
           <p className="mt-1.5 text-muted">
-            {events.filter((e) => e.status === 'Publié').length} actifs ·{' '}
-            {events.filter((e) => e.status === 'Brouillon').length} brouillon(s)
+            {activeEvents.filter((e) => e.status === 'Publie').length} actifs ·{' '}
+            {activeEvents.filter((e) => e.status === 'Brouillon').length} brouillon(s)
           </p>
         </div>
         <div className="flex gap-3">
@@ -82,6 +142,12 @@ export default function MyEvents() {
           </Button>
         </div>
       </div>
+
+      {error && (
+        <p className="mt-6 rounded-lg border border-danger/30 bg-danger/10 px-4 py-2.5 text-sm text-danger">
+          {error}
+        </p>
+      )}
 
       {!showArchived && (
         <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
@@ -111,11 +177,16 @@ export default function MyEvents() {
               </button>
             ))}
           </div>
-          <Button variant="outline">Catégorie</Button>
         </div>
       )}
 
-      {showArchived ? (
+      {loading && (
+        <p className="mt-8 rounded-2xl border border-dashed border-border-soft py-10 text-center text-sm text-faint">
+          Chargement de vos événements…
+        </p>
+      )}
+
+      {!loading && showArchived && (
         archivedEvents.length === 0 ? (
           <p className="mt-8 rounded-2xl border border-dashed border-border-soft py-10 text-center text-sm text-faint">
             Aucun événement archivé.
@@ -125,19 +196,21 @@ export default function MyEvents() {
             {archivedEvents.map((event) => (
               <EventCard
                 key={event.id}
-                {...event}
+                {...toCardProps(event)}
                 actions={[
                   {
                     label: 'Restaurer',
                     highlight: true,
-                    onClick: () => handleRestore(event.id),
+                    onClick: () => handleRestore(event),
                   },
                 ]}
               />
             ))}
           </div>
         )
-      ) : (
+      )}
+
+      {!loading && !showArchived && (
         <>
           {filtered.length === 0 && (
             <p className="mt-8 rounded-2xl border border-dashed border-border-soft py-10 text-center text-sm text-faint">
@@ -149,29 +222,28 @@ export default function MyEvents() {
             {filtered.map((event) => (
               <EventCard
                 key={event.id}
-                {...event}
+                {...toCardProps(event)}
                 actions={
                   event.status === 'Brouillon'
                     ? [
-                        { label: 'Modifier', to: '/dashboard/evenements/nouveau' },
-                        { label: 'Dupliquer', onClick: () => handleDuplicate(event.id) },
+                        { label: 'Modifier', to: `/dashboard/evenements/${event.id}/modifier` },
+                        { label: 'Dupliquer', onClick: () => handleDuplicate(event) },
                         {
                           label: 'Publier',
                           highlight: true,
-                          onClick: () => handlePublish(event.id),
+                          onClick: () => handlePublish(event),
                         },
                       ]
                     : [
-                        { label: 'Modifier', to: '/dashboard/evenements/nouveau' },
+                        { label: 'Modifier', to: `/dashboard/evenements/${event.id}/modifier` },
                         {
                           label: 'Archiver',
                           danger: true,
-                          onClick: () => handleArchive(event.id),
+                          onClick: () => handleArchive(event),
                         },
                         {
                           label: 'Voir',
-                          onClick: () =>
-                            navigate('/builder', { state: { event } }),
+                          onClick: () => navigate('/builder', { state: { event } }),
                         },
                       ]
                 }
@@ -184,9 +256,6 @@ export default function MyEvents() {
             >
               <span className="h-10 w-10 rounded-xl bg-surface-2" />
               <span className="font-semibold text-ink">Créer un événement</span>
-              <span className="text-xs text-faint">
-                Il vous reste 1 événement sur le plan Free
-              </span>
             </Link>
           </div>
         </>
