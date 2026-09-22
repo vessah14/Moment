@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Avatar from '../ui/Avatar'
 import Button from '../ui/Button'
+import PhoneInput from '../ui/PhoneInput'
 import StatusBadge from '../ui/StatusBadge'
 import { getCurrentUser } from '../../api/client'
 import { updateProfile } from '../../api/users'
@@ -84,12 +85,9 @@ export default function ProfileTab() {
         </label>
         <label className="block">
           <span className="text-sm font-medium text-ink">Téléphone</span>
-          <input
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="mt-2 w-full rounded-lg border border-border bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-brand-purple"
-          />
+          <div className="mt-2">
+            <PhoneInput value={phone} onChange={setPhone} />
+          </div>
         </label>
       </div>
     </div>

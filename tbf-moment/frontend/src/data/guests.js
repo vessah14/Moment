@@ -1,5 +1,6 @@
 export const INITIAL_GUESTS = [
   {
+    id: 'g1',
     name: 'Fatou Ndiaye',
     role: 'Témoin',
     contact: 'fatoun@mail.com',
@@ -9,6 +10,7 @@ export const INITIAL_GUESTS = [
     invitation: 'Ouverte',
   },
   {
+    id: 'g2',
     name: 'Moussa Traoré',
     role: 'Invité',
     contact: '+221 77 812 44 19',
@@ -18,6 +20,7 @@ export const INITIAL_GUESTS = [
     invitation: 'Envoyée',
   },
   {
+    id: 'g3',
     name: 'Aminata Bâ',
     role: 'VIP',
     contact: 'aminata@mail.com',
@@ -27,6 +30,7 @@ export const INITIAL_GUESTS = [
     invitation: 'Ouverte',
   },
   {
+    id: 'g4',
     name: 'Ibrahima Sow',
     role: 'Invité',
     contact: 'isow@mail.com',

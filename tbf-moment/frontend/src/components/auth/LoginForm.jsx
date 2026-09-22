@@ -1,3 +1,4 @@
+import { Eye, EyeOff } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { login } from '../../api/auth'
@@ -10,6 +11,7 @@ export default function LoginForm() {
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -27,11 +29,16 @@ export default function LoginForm() {
 
   return (
     <div className="w-full max-w-sm">
-      <img src={logoMark} alt="" className="h-10 w-10" />
-      <h1 className="mt-6 text-3xl font-bold text-ink">Bon retour</h1>
-      <p className="mt-2 text-sm text-muted">
-        Retrouvez vos événements et vos invités.
-      </p>
+      <div className="text-center">
+        <span className="inline-flex items-center rounded-full border border-border px-4 py-1.5 text-xs font-semibold tracking-widest text-brand-purple uppercase">
+          Connexion
+        </span>
+        <img src={logoMark} alt="" className="mx-auto mt-6 h-10 w-10" />
+        <h1 className="mt-6 text-3xl font-bold text-ink">Bon retour</h1>
+        <p className="mt-2 text-sm text-muted">
+          Retrouvez vos événements et vos invités.
+        </p>
+      </div>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-5">
         <label className="block">
@@ -41,21 +48,38 @@ export default function LoginForm() {
           <input
             type="email"
             required
+            placeholder="nom@exemple.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-2 w-full rounded-lg border border-border bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-brand-purple focus:ring-3 focus:ring-brand-purple/30"
+            className="mt-2 w-full rounded-lg border border-border bg-surface px-4 py-3 text-sm text-ink placeholder:text-faint outline-none focus:border-brand-purple focus:ring-3 focus:ring-brand-purple/30"
           />
         </label>
 
         <label className="block">
           <span className="text-sm font-medium text-ink">Mot de passe</span>
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mt-2 w-full rounded-lg border border-border bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-brand-purple focus:ring-3 focus:ring-brand-purple/30"
-          />
+          <div className="relative mt-2">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full rounded-lg border border-border bg-surface px-4 py-3 pr-11 text-sm text-ink outline-none focus:border-brand-purple focus:ring-3 focus:ring-brand-purple/30"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={
+                showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'
+              }
+              className="absolute top-1/2 right-3 -translate-y-1/2 text-faint hover:text-ink"
+            >
+              {showPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </div>
         </label>
 
         {error && (

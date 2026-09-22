@@ -1,3 +1,4 @@
+import QRCode from 'qrcode'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import TicketSalesChart from '../../components/billing/TicketSalesChart'
 import DashboardLayout from '../../components/layout/DashboardLayout'
@@ -28,6 +29,11 @@ export default function Ticketing() {
   const [error, setError] = useState('')
   const [typeForm, setTypeForm] = useState(false)
   const [saleFormFor, setSaleFormFor] = useState('')
+  const [ticketQrUrl, setTicketQrUrl] = useState(null)
+
+  useEffect(() => {
+    QRCode.toDataURL('TBF-2027-0X4J91', { margin: 1, width: 160 }).then(setTicketQrUrl)
+  }, [])
 
   useEffect(() => {
     listEvents()
@@ -319,24 +325,53 @@ export default function Ticketing() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border-soft bg-panel p-5">
-          <h2 className="font-semibold text-ink">Dernières ventes</h2>
-          <div className="mt-3 space-y-2">
-            {sales.length === 0 && <p className="text-sm text-faint">Aucune vente encore.</p>}
-            {sales.slice(0, 8).map((sale) => (
-              <div
-                key={sale.id}
-                className="flex items-center justify-between rounded-lg border border-border-soft bg-surface px-4 py-3"
-              >
-                <div>
-                  <p className="text-sm font-medium text-ink">{sale.buyerName}</p>
-                  <p className="text-xs text-faint">{sale.ticketTypeName}</p>
+        <div className="space-y-6">
+          <div className="rounded-2xl border border-border-soft bg-panel p-5">
+            <h2 className="font-semibold text-ink">Dernières ventes</h2>
+            <div className="mt-3 space-y-2">
+              {sales.length === 0 && <p className="text-sm text-faint">Aucune vente encore.</p>}
+              {sales.slice(0, 8).map((sale) => (
+                <div
+                  key={sale.id}
+                  className="flex items-center justify-between rounded-lg border border-border-soft bg-surface px-4 py-3"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-ink">{sale.buyerName}</p>
+                    <p className="text-xs text-faint">{sale.ticketTypeName}</p>
+                  </div>
+                  <span className="text-xs text-faint">
+                    {new Date(sale.createdAt).toLocaleDateString('fr-FR')}
+                  </span>
                 </div>
-                <span className="text-xs text-faint">
-                  {new Date(sale.createdAt).toLocaleDateString('fr-FR')}
-                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-border-soft bg-panel p-5">
+            <h2 className="font-semibold text-ink">Billet numérique</h2>
+            <div className="mt-4 rounded-xl border border-border-soft bg-surface p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-semibold text-ink">TBF Summit 2027</p>
+                  <p className="text-xs text-faint">02 juin 2027 · 09:00 · Dakar Arena</p>
+                </div>
+                <StatusBadge status="VIP" />
               </div>
-            ))}
+              <div className="mt-4 flex aspect-square w-24 items-center justify-center overflow-hidden rounded-lg bg-white p-1.5">
+                {ticketQrUrl && (
+                  <img src={ticketQrUrl} alt="QR code du billet" className="h-full w-full" />
+                )}
+              </div>
+              <div className="mt-3">
+                <p className="text-sm font-medium text-ink">Aminata Bâ</p>
+                <p className="text-xs text-faint">
+                  TBF-2027-0X4J91 · Lounge · déjeuner inclus
+                </p>
+              </div>
+              <p className="mt-3 text-xs text-faint">
+                QR invalide après le premier scan
+              </p>
+            </div>
           </div>
         </div>
       </div>

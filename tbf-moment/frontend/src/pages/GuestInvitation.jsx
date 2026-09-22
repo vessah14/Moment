@@ -33,7 +33,7 @@ function buildIcs(ticketCode) {
 
 export default function GuestInvitation() {
   const { code } = useParams()
-  const [guests] = useLocalStorageState('tbf_guests', INITIAL_GUESTS)
+  const [guests] = useLocalStorageState('tbf_guests_v2', INITIAL_GUESTS)
   const guest = guests.find((g) => slugify(g.name) === code) ?? guests[0]
   const ticketCode = `TBF-2027-${code ? code.slice(0, 6).toUpperCase() : 'DEMO01'}`
   const seats = 1 + accompCount(guest.accomp)

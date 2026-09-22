@@ -30,9 +30,19 @@ export default function ForgotPassword() {
         </p>
 
         {sent ? (
-          <p className="mt-6 rounded-lg border border-success/30 bg-success/10 p-4 text-center text-sm text-success">
-            Un lien de réinitialisation a été envoyé à {email}.
-          </p>
+          <div className="mt-6 space-y-3 rounded-lg border border-success/30 bg-success/10 p-4 text-center text-sm text-success">
+            <p>Un lien de réinitialisation a été envoyé à {email}.</p>
+            <p className="text-xs text-muted">
+              Prototype sans envoi d'e-mail réel — simulez l'ouverture du
+              lien reçu :
+            </p>
+            <Link
+              to="/reinitialiser-mot-de-passe"
+              className="inline-block font-medium text-brand-purple hover:underline"
+            >
+              Ouvrir le lien de réinitialisation →
+            </Link>
+          </div>
         ) : (
           <form onSubmit={handleSubmit} className="mt-6 space-y-5">
             <label className="block">

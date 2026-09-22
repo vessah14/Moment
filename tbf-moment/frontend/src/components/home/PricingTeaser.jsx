@@ -14,7 +14,10 @@ export default function PricingTeaser() {
       <div className="relative mx-auto max-w-7xl px-6 py-20">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-bold text-ink">
+            <span className="text-xs font-semibold tracking-widest text-brand-purple uppercase">
+              Tarifs
+            </span>
+            <h2 className="mt-3 text-3xl font-bold text-ink">
               Un plan par usage, pas par événement
             </h2>
             <p className="mt-2 text-muted">

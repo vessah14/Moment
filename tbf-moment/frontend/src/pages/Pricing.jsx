@@ -21,7 +21,7 @@ export default function Pricing() {
     <div className="flex min-h-svh flex-col">
       <Header />
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-12">
+      <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-12">
         <div className="relative overflow-hidden rounded-2xl border border-border-soft bg-surface p-10">
           <BrandBackdrop />
           <h1 className="relative text-center text-3xl font-bold text-ink lg:text-4xl">

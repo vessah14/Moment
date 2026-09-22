@@ -1,4 +1,4 @@
-import { Bell, Menu } from 'lucide-react'
+import { Bell, LogOut, Menu, Settings } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { logout } from '../../api/auth'
@@ -23,7 +23,7 @@ function initials(fullName) {
 export default function DashboardTopbar({ onMenuClick }) {
   const navigate = useNavigate()
   const [notifOpen, setNotifOpen] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
   const [searchData, setSearchData] = useState({ events: [], guests: [] })
   const user = getCurrentUser()
 
@@ -35,6 +35,7 @@ export default function DashboardTopbar({ onMenuClick }) {
 
   const handleLogout = () => {
     logout()
+    setProfileOpen(false)
     navigate('/connexion')
   }
 
@@ -96,32 +97,41 @@ export default function DashboardTopbar({ onMenuClick }) {
         <div className="relative">
           <button
             type="button"
-            onClick={() => setMenuOpen((v) => !v)}
+            onClick={() => setProfileOpen((v) => !v)}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-purple/20 text-sm font-semibold text-brand-purple"
           >
             {initials(user?.fullName)}
           </button>
 
-          {menuOpen && (
+          {profileOpen && (
             <>
               <button
                 type="button"
-                aria-label="Fermer le menu"
-                onClick={() => setMenuOpen(false)}
+                aria-label="Fermer le menu profil"
+                onClick={() => setProfileOpen(false)}
                 className="fixed inset-0 z-40 cursor-default"
               />
-              <div className="absolute top-full right-0 z-50 mt-3 w-56 rounded-xl border border-border-soft bg-panel p-2 shadow-xl">
+              <div className="absolute top-full right-0 z-50 mt-3 w-56 rounded-xl border border-border-soft bg-panel p-1.5 shadow-xl">
                 <div className="px-3 py-2">
                   <p className="truncate text-sm font-medium text-ink">
                     {user?.fullName ?? 'Utilisateur'}
                   </p>
                   <p className="truncate text-xs text-faint">{user?.email}</p>
                 </div>
+                <Link
+                  to="/dashboard/parametres"
+                  onClick={() => setProfileOpen(false)}
+                  className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted hover:bg-surface-2 hover:text-ink"
+                >
+                  <Settings className="h-4 w-4" />
+                  Paramètres
+                </Link>
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="mt-1 w-full rounded-lg px-3 py-2 text-left text-sm text-danger hover:bg-danger/10"
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-danger hover:bg-danger/10"
                 >
+                  <LogOut className="h-4 w-4" />
                   Se déconnecter
                 </button>
               </div>
