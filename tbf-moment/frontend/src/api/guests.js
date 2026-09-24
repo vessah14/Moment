@@ -22,3 +22,11 @@ export function updateGuest(id, dto) {
 export function deleteGuest(id) {
   return apiFetch(`/guests/${id}`, { method: 'DELETE' })
 }
+
+export function getPublicInvitation(guestId) {
+  return apiFetch(`/public/invitations/${guestId}`, { auth: false })
+}
+
+export function submitPublicRsvp(guestId, dto) {
+  return apiFetch(`/public/invitations/${guestId}/rsvp`, { method: 'POST', body: dto, auth: false })
+}

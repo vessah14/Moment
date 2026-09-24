@@ -1,6 +1,6 @@
 import { Search } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { listEvents, updateEvent, createEvent } from '../../api/events'
 import { listEventCategories } from '../../api/eventCategories'
 import EventCard from '../../components/events/EventCard'
@@ -11,7 +11,6 @@ import { formatEventDate, statusLabel } from '../../utils/eventStatus'
 const FILTERS = ['Tous', 'Publiés', 'Brouillons', 'Passés']
 
 export default function MyEvents() {
-  const navigate = useNavigate()
   const [events, setEvents] = useState([])
   const [categories, setCategories] = useState([])
   const [filter, setFilter] = useState('Tous')
@@ -242,8 +241,8 @@ export default function MyEvents() {
                           onClick: () => handleArchive(event),
                         },
                         {
-                          label: 'Voir',
-                          onClick: () => navigate('/builder', { state: { event } }),
+                          label: 'Personnaliser',
+                          to: `/builder/${event.id}`,
                         },
                       ]
                 }

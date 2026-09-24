@@ -9,6 +9,7 @@ export default function PublicationStep({
   onPublish,
   publishing,
   error,
+  isEditMode,
 }) {
   const slug = slugify(event.name.split(' de ').pop() || event.name)
   const guestCount = event.guests?.length ?? 0
@@ -39,11 +40,12 @@ export default function PublicationStep({
   return (
     <div>
       <h2 className="text-2xl font-bold text-ink">
-        Aperçu et publication de l'événement
+        {isEditMode ? 'Aperçu et enregistrement des modifications' : "Aperçu et publication de l'événement"}
       </h2>
       <p className="mt-2 text-sm text-muted">
-        Vérifiez la mise en page de votre mini-site public et le récapitulatif
-        des configurations choisies avant de diffuser votre invitation.
+        {isEditMode
+          ? 'Vérifiez le récapitulatif avant d\'enregistrer les modifications de votre événement.'
+          : 'Vérifiez la mise en page de votre mini-site public et le récapitulatif des configurations choisies avant de diffuser votre invitation.'}
       </p>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
@@ -131,8 +133,10 @@ export default function PublicationStep({
               className="w-full disabled:opacity-70"
             >
               {publishing && visibility === 'publish'
-                ? 'Publication...'
-                : "Publier l'événement"}
+                ? 'Enregistrement...'
+                : isEditMode
+                  ? 'Enregistrer et publier'
+                  : "Publier l'événement"}
             </Button>
             <Button
               variant="outline"

@@ -52,11 +52,13 @@ export default function Invitations() {
     reload(selectedEventId)
   }, [selectedEventId])
 
+  const [emailsSentCount, setEmailsSentCount] = useState(0)
+
   const handleSend = async () => {
     setSending(true)
     setError('')
     try {
-      await createCampaign(
+      const result = await createCampaign(
         {
           name: 'Invitation',
           channel,
@@ -66,6 +68,7 @@ export default function Invitations() {
         },
         selectedEventId,
       )
+      setEmailsSentCount(result?.emailsSentCount ?? 0)
       setSent(true)
       reload(selectedEventId)
       setTimeout(() => setSent(false), 4000)
@@ -176,8 +179,9 @@ export default function Invitations() {
         </dl>
 
         <p className="mt-4 text-xs text-faint">
-          Aucun service d'envoi n'est branché : ceci enregistre la campagne avec le nombre
-          réel de destinataires, sans envoi effectif.
+          {channel === 'E-mail'
+            ? "Envoie un e-mail réel à chaque invité disposant d'une adresse e-mail."
+            : `Aucun service d'envoi ${channel} n'est branché : ceci enregistre la campagne avec le nombre réel de destinataires, sans envoi effectif.`}
         </p>
 
         <Button
@@ -186,11 +190,13 @@ export default function Invitations() {
           disabled={sending || guests.length === 0}
           onClick={handleSend}
         >
-          {sending ? 'Enregistrement...' : "Marquer comme envoyée"}
+          {sending ? 'Envoi...' : channel === 'E-mail' ? 'Envoyer par e-mail' : 'Marquer comme envoyée'}
         </Button>
         {sent && (
           <p className="mt-3 text-center text-sm text-success">
-            Campagne enregistrée pour {guests.length} invité(s) par {channel}.
+            {channel === 'E-mail'
+              ? `${emailsSentCount} e-mail(s) envoyé(s) sur ${guests.length} invité(s).`
+              : `Campagne enregistrée pour ${guests.length} invité(s) par ${channel}.`}
           </p>
         )}
       </div>

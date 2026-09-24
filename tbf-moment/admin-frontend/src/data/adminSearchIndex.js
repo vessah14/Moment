@@ -1,5 +1,3 @@
-import { ORGANIZATIONS, PLATFORM_EVENTS } from './adminData'
-
 const PAGES = [
   { label: 'Vue globale', to: '/admin' },
   { label: 'Organisations', to: '/admin/organisations' },
@@ -9,16 +7,16 @@ const PAGES = [
   { label: 'Paramètres système', to: '/admin/parametres' },
 ]
 
-export function buildAdminSearchIndex() {
+export function buildAdminSearchIndex({ organizations = [], events = [] } = {}) {
   return [
     ...PAGES.map((page) => ({ type: 'Page', label: page.label, to: page.to })),
-    ...ORGANIZATIONS.map((org) => ({
+    ...organizations.map((org) => ({
       type: 'Organisation',
       label: org.name,
       sublabel: `${org.plan} · ${org.email}`,
       to: '/admin/organisations',
     })),
-    ...PLATFORM_EVENTS.map((event) => ({
+    ...events.map((event) => ({
       type: 'Événement',
       label: event.name,
       sublabel: `${event.organization} · ${event.category}`,

@@ -1,30 +1,42 @@
 import { Bell, Menu } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { getCurrentAdmin } from '../../api/client'
+import { listModerationQueue, listOrganizations, listPlatformEvents } from '../../api/platform'
 import { buildAdminSearchIndex } from '../../data/adminSearchIndex'
-import { MODERATION_QUEUE } from '../../data/adminData'
 import GlobalSearch from './GlobalSearch'
 
-const NOTIFICATIONS = [
-  {
-    text: `${MODERATION_QUEUE.length} contenu(s) signalé(s) en attente de modération`,
-    time: 'il y a 8 min',
-    to: '/admin/moderation',
-  },
-  {
-    text: 'Nouvelle organisation inscrite · École Sup Dakar',
-    time: 'il y a 2 h',
-    to: '/admin/organisations',
-  },
-  {
-    text: 'Paiement reçu · TBF Digital Events · 24 900 FCFA',
-    time: 'hier',
-    to: '/admin/facturation',
-  },
-]
+function initials(fullName) {
+  if (!fullName) return '?'
+  return fullName
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
+}
 
 export default function AdminTopbar({ onMenuClick }) {
   const [notifOpen, setNotifOpen] = useState(false)
+  const [organizations, setOrganizations] = useState([])
+  const [events, setEvents] = useState([])
+  const [moderationCount, setModerationCount] = useState(0)
+  const admin = getCurrentAdmin()
+
+  useEffect(() => {
+    Promise.all([listOrganizations(), listPlatformEvents(), listModerationQueue()])
+      .then(([orgs, evts, queue]) => {
+        setOrganizations(orgs ?? [])
+        setEvents(evts ?? [])
+        setModerationCount(queue?.length ?? 0)
+      })
+      .catch(() => {
+        setOrganizations([])
+        setEvents([])
+        setModerationCount(0)
+      })
+  }, [])
 
   return (
     <div className="flex items-center gap-3 border-b border-border-soft/60 px-4 py-4 sm:gap-4 sm:px-8 sm:py-5">
@@ -38,7 +50,7 @@ export default function AdminTopbar({ onMenuClick }) {
 
       <GlobalSearch
         placeholder="Rechercher une organisation, un événement..."
-        buildIndex={buildAdminSearchIndex}
+        buildIndex={() => buildAdminSearchIndex({ organizations, events })}
       />
 
       <div className="ml-auto flex items-center gap-3 sm:gap-5">
@@ -49,7 +61,9 @@ export default function AdminTopbar({ onMenuClick }) {
             className="relative text-muted hover:text-ink"
           >
             <Bell className="h-5 w-5" />
-            <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-danger" />
+            {moderationCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-danger" />
+            )}
           </button>
 
           {notifOpen && (
@@ -64,26 +78,31 @@ export default function AdminTopbar({ onMenuClick }) {
                 <p className="px-2 pb-2 text-xs font-semibold tracking-wider text-faint uppercase">
                   Notifications
                 </p>
-                <div className="space-y-1">
-                  {NOTIFICATIONS.map((n) => (
-                    <Link
-                      key={n.text}
-                      to={n.to}
-                      onClick={() => setNotifOpen(false)}
-                      className="block rounded-lg px-2 py-2 text-sm hover:bg-surface-2"
-                    >
-                      <p className="text-ink">{n.text}</p>
-                      <p className="mt-0.5 text-xs text-faint">{n.time}</p>
-                    </Link>
-                  ))}
-                </div>
+                {moderationCount > 0 ? (
+                  <Link
+                    to="/admin/moderation"
+                    onClick={() => setNotifOpen(false)}
+                    className="block rounded-lg px-2 py-2 text-sm hover:bg-surface-2"
+                  >
+                    <p className="text-ink">
+                      {moderationCount} contenu(s) signalé(s) en attente de modération
+                    </p>
+                  </Link>
+                ) : (
+                  <p className="px-2 py-3 text-center text-xs text-faint">
+                    Rien à signaler.
+                  </p>
+                )}
               </div>
             </>
           )}
         </div>
 
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-danger/20 text-sm font-semibold text-danger">
-          SA
+        <div
+          title={admin?.fullName}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-danger/20 text-sm font-semibold text-danger"
+        >
+          {initials(admin?.fullName)}
         </div>
       </div>
     </div>

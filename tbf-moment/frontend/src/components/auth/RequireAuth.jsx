@@ -1,10 +1,10 @@
 import { Navigate, useLocation } from 'react-router-dom'
-import { getToken } from '../../api/client'
+import { isAuthenticated } from '../../api/client'
 
 export default function RequireAuth({ children }) {
   const location = useLocation()
 
-  if (!getToken()) {
+  if (!isAuthenticated()) {
     return <Navigate to="/connexion" replace state={{ from: location }} />
   }
 

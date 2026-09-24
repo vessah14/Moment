@@ -1,17 +1,51 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import AdminLayout from '../components/layout/AdminLayout'
 import StatCard from '../components/dashboard/StatCard'
 import StatusBadge from '../components/ui/StatusBadge'
-import { MODERATION_QUEUE, ORGANIZATIONS, PLATFORM_EVENTS } from '../data/adminData'
-
-const STATS = [
-  { label: 'Organisations actives', value: '4', hint: '+1 ce mois-ci', hintColor: 'success' },
-  { label: 'Événements créés', value: '4', hint: '3 publiés · 1 brouillon' },
-  { label: 'MRR', value: '84 700', hint: 'FCFA · +12%', hintColor: 'success' },
-  { label: 'Invités cumulés', value: '1 200', hint: 'tous événements confondus' },
-]
+import { listModerationQueue, listOrganizations, listPlatformEvents, listTransactions } from '../api/platform'
+import { formatFcfa } from '../utils/formatCurrency'
 
 export default function AdminOverview() {
+  const [organizations, setOrganizations] = useState([])
+  const [events, setEvents] = useState([])
+  const [moderationQueue, setModerationQueue] = useState([])
+  const [transactions, setTransactions] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    Promise.all([listOrganizations(), listPlatformEvents(), listModerationQueue(), listTransactions()])
+      .then(([orgs, evts, queue, txs]) => {
+        setOrganizations(orgs ?? [])
+        setEvents(evts ?? [])
+        setModerationQueue(queue ?? [])
+        setTransactions(txs ?? [])
+        setError('')
+      })
+      .catch((err) => setError(err.message || "Impossible de charger la vue d'ensemble."))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const publishedCount = events.filter((e) => e.status === 'Publié').length
+  const draftCount = events.filter((e) => e.status === 'Brouillon').length
+  const mrr = transactions.reduce((sum, t) => sum + t.amountCents, 0)
+  const totalGuests = events.reduce((sum, e) => sum + e.guests, 0)
+
+  const stats = [
+    {
+      label: 'Organisations actives',
+      value: String(organizations.filter((o) => o.isActive).length),
+    },
+    {
+      label: 'Événements créés',
+      value: String(events.length),
+      hint: `${publishedCount} publiés · ${draftCount} brouillon(s)`,
+    },
+    { label: 'MRR', value: formatFcfa(mrr) },
+    { label: 'Invités cumulés', value: String(totalGuests), hint: 'tous événements confondus' },
+  ]
+
   return (
     <AdminLayout>
       <div>
@@ -21,10 +55,16 @@ export default function AdminOverview() {
         </p>
       </div>
 
+      {error && (
+        <p className="mt-4 rounded-lg border border-danger/30 bg-danger/10 px-4 py-2.5 text-sm text-danger">
+          {error}
+        </p>
+      )}
+
       <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {STATS.map((stat) => (
-          <StatCard key={stat.label} {...stat} />
-        ))}
+        {loading
+          ? stats.map((s) => <StatCard key={s.label} label={s.label} value="…" />)
+          : stats.map((stat) => <StatCard key={stat.label} {...stat} />)}
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[2fr_1fr]">
@@ -49,7 +89,14 @@ export default function AdminOverview() {
                 </tr>
               </thead>
               <tbody>
-                {ORGANIZATIONS.map((org) => (
+                {!loading && organizations.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-8 text-center text-sm text-faint">
+                      Aucune organisation.
+                    </td>
+                  </tr>
+                )}
+                {organizations.slice(0, 5).map((org) => (
                   <tr key={org.id} className="border-b border-border-soft last:border-b-0">
                     <td className="px-6 py-4">
                       <p className="font-medium text-ink">{org.name}</p>
@@ -58,7 +105,7 @@ export default function AdminOverview() {
                     <td className="px-3 py-4 text-muted">{org.plan}</td>
                     <td className="px-3 py-4 font-mono text-muted">{org.events}</td>
                     <td className="px-3 py-4">
-                      <StatusBadge status={org.status} />
+                      <StatusBadge status={org.isActive ? 'Actif' : 'Suspendu'} />
                     </td>
                   </tr>
                 ))}
@@ -78,7 +125,10 @@ export default function AdminOverview() {
             </Link>
           </div>
           <div className="mt-4 space-y-3">
-            {MODERATION_QUEUE.map((item) => (
+            {!loading && moderationQueue.length === 0 && (
+              <p className="text-sm text-faint">Rien à signaler.</p>
+            )}
+            {moderationQueue.slice(0, 4).map((item) => (
               <div
                 key={item.id}
                 className="rounded-lg border border-border-soft px-4 py-3"
@@ -97,7 +147,10 @@ export default function AdminOverview() {
       <div className="mt-6 rounded-2xl border border-border-soft bg-surface p-5">
         <h2 className="font-semibold text-ink">Derniers événements créés</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {PLATFORM_EVENTS.map((event) => (
+          {!loading && events.length === 0 && (
+            <p className="text-sm text-faint">Aucun événement.</p>
+          )}
+          {events.slice(0, 4).map((event) => (
             <div
               key={event.id}
               className="rounded-lg border border-border-soft px-4 py-3"

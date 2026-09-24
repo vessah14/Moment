@@ -23,6 +23,17 @@ export default function LegalNotice() {
         </a>
         .
       </p>
+      <p>
+        Retrouvez également nos{' '}
+        <a href="/cgu" className="text-brand-purple hover:underline">
+          conditions générales d'utilisation
+        </a>{' '}
+        et notre{' '}
+        <a href="/confidentialite" className="text-brand-purple hover:underline">
+          politique de confidentialité
+        </a>
+        .
+      </p>
     </InfoPage>
   )
 }

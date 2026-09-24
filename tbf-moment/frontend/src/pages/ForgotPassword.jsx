@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { requestPasswordReset } from '../api/auth'
 import logoMark from '../assets/logo-mark.png'
 import AuthLayout from '../components/layout/AuthLayout'
 import Button from '../components/ui/Button'
@@ -8,14 +9,20 @@ export default function ForgotPassword() {
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
+    setError('')
     setSubmitting(true)
-    setTimeout(() => {
-      setSubmitting(false)
+    try {
+      await requestPasswordReset(email)
       setSent(true)
-    }, 600)
+    } catch (err) {
+      setError(err.message || "L'envoi a échoué.")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -31,17 +38,13 @@ export default function ForgotPassword() {
 
         {sent ? (
           <div className="mt-6 space-y-3 rounded-lg border border-success/30 bg-success/10 p-4 text-center text-sm text-success">
-            <p>Un lien de réinitialisation a été envoyé à {email}.</p>
-            <p className="text-xs text-muted">
-              Prototype sans envoi d'e-mail réel — simulez l'ouverture du
-              lien reçu :
+            <p>
+              Si un compte existe pour {email}, un lien de réinitialisation
+              vient de lui être envoyé.
             </p>
-            <Link
-              to="/reinitialiser-mot-de-passe"
-              className="inline-block font-medium text-brand-purple hover:underline"
-            >
-              Ouvrir le lien de réinitialisation →
-            </Link>
+            <p className="text-xs text-muted">
+              Le lien reste valable 30 minutes.
+            </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="mt-6 space-y-5">
@@ -58,6 +61,12 @@ export default function ForgotPassword() {
                 className="mt-2 w-full rounded-lg border border-border bg-surface px-4 py-3 text-sm text-ink placeholder:text-faint outline-none focus:border-brand-purple focus:ring-3 focus:ring-brand-purple/30"
               />
             </label>
+
+            {error && (
+              <p className="rounded-lg border border-danger/30 bg-danger/10 px-4 py-2.5 text-sm text-danger">
+                {error}
+              </p>
+            )}
 
             <Button
               type="submit"

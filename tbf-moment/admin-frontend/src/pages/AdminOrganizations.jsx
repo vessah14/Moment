@@ -1,12 +1,25 @@
 import { Search } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import AdminLayout from '../components/layout/AdminLayout'
 import StatusBadge from '../components/ui/StatusBadge'
-import { ORGANIZATIONS } from '../data/adminData'
+import { listOrganizations, updateOrganizationStatus } from '../api/platform'
 
 export default function AdminOrganizations() {
-  const [organizations, setOrganizations] = useState(ORGANIZATIONS)
+  const [organizations, setOrganizations] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [query, setQuery] = useState('')
+  const [updatingId, setUpdatingId] = useState('')
+
+  useEffect(() => {
+    listOrganizations()
+      .then((data) => {
+        setOrganizations(data ?? [])
+        setError('')
+      })
+      .catch((err) => setError(err.message || 'Impossible de charger les organisations.'))
+      .finally(() => setLoading(false))
+  }, [])
 
   const filtered = useMemo(
     () =>
@@ -17,14 +30,17 @@ export default function AdminOrganizations() {
     [organizations, query],
   )
 
-  const toggleStatus = (id) => {
-    setOrganizations((prev) =>
-      prev.map((org) =>
-        org.id === id
-          ? { ...org, status: org.status === 'Actif' ? 'Suspendu' : 'Actif' }
-          : org,
-      ),
-    )
+  const toggleStatus = async (org) => {
+    setUpdatingId(org.id)
+    setError('')
+    try {
+      const updated = await updateOrganizationStatus(org.id, !org.isActive)
+      setOrganizations((prev) => prev.map((o) => (o.id === org.id ? updated : o)))
+    } catch (err) {
+      setError(err.message || "La mise à jour a échoué.")
+    } finally {
+      setUpdatingId('')
+    }
   }
 
   return (
@@ -35,6 +51,12 @@ export default function AdminOrganizations() {
           {organizations.length} comptes sur la plateforme
         </p>
       </div>
+
+      {error && (
+        <p className="mt-4 rounded-lg border border-danger/30 bg-danger/10 px-4 py-2.5 text-sm text-danger">
+          {error}
+        </p>
+      )}
 
       <div className="relative mt-6 max-w-sm">
         <Search className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-faint" />
@@ -61,33 +83,51 @@ export default function AdminOrganizations() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((org) => (
-                <tr key={org.id} className="border-b border-border-soft last:border-b-0">
-                  <td className="px-6 py-4">
-                    <p className="font-medium text-ink">{org.name}</p>
-                    <p className="text-xs text-faint">{org.email}</p>
-                  </td>
-                  <td className="px-3 py-4 text-muted">{org.plan}</td>
-                  <td className="px-3 py-4 font-mono text-muted">{org.events}</td>
-                  <td className="px-3 py-4 text-muted">{org.joined}</td>
-                  <td className="px-3 py-4">
-                    <StatusBadge status={org.status} />
-                  </td>
-                  <td className="px-3 py-4">
-                    <button
-                      type="button"
-                      onClick={() => toggleStatus(org.id)}
-                      className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
-                        org.status === 'Actif'
-                          ? 'border-danger/40 text-danger hover:bg-danger/10'
-                          : 'border-success/40 text-success hover:bg-success/10'
-                      }`}
-                    >
-                      {org.status === 'Actif' ? 'Suspendre' : 'Réactiver'}
-                    </button>
+              {loading && (
+                <tr>
+                  <td colSpan={6} className="px-6 py-10 text-center text-sm text-faint">
+                    Chargement…
                   </td>
                 </tr>
-              ))}
+              )}
+              {!loading && filtered.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-6 py-10 text-center text-sm text-faint">
+                    Aucune organisation ne correspond à cette recherche.
+                  </td>
+                </tr>
+              )}
+              {!loading &&
+                filtered.map((org) => (
+                  <tr key={org.id} className="border-b border-border-soft last:border-b-0">
+                    <td className="px-6 py-4">
+                      <p className="font-medium text-ink">{org.name}</p>
+                      <p className="text-xs text-faint">{org.email}</p>
+                    </td>
+                    <td className="px-3 py-4 text-muted">{org.plan}</td>
+                    <td className="px-3 py-4 font-mono text-muted">{org.events}</td>
+                    <td className="px-3 py-4 text-muted">
+                      {new Date(org.joinedAt).toLocaleDateString('fr-FR')}
+                    </td>
+                    <td className="px-3 py-4">
+                      <StatusBadge status={org.isActive ? 'Actif' : 'Suspendu'} />
+                    </td>
+                    <td className="px-3 py-4">
+                      <button
+                        type="button"
+                        disabled={updatingId === org.id}
+                        onClick={() => toggleStatus(org)}
+                        className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition disabled:opacity-50 ${
+                          org.isActive
+                            ? 'border-danger/40 text-danger hover:bg-danger/10'
+                            : 'border-success/40 text-success hover:bg-success/10'
+                        }`}
+                      >
+                        {org.isActive ? 'Suspendre' : 'Réactiver'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>

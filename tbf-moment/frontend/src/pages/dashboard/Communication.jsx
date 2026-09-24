@@ -50,8 +50,9 @@ export default function Communication() {
   const handleCreate = async (campaign) => {
     setError('')
     try {
-      await createCampaign(campaign, selectedEventId)
+      const result = await createCampaign(campaign, selectedEventId)
       reload(selectedEventId)
+      return result
     } catch (err) {
       setError(err.message || "La création a échoué.")
       throw err

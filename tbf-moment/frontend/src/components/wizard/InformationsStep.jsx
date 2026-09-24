@@ -153,8 +153,12 @@ export default function InformationsStep({ event, onChange }) {
               onChange={(e) => {
                 const file = e.target.files?.[0]
                 if (!file) return
-                if (event.coverImage) URL.revokeObjectURL(event.coverImage)
-                update({ coverImage: URL.createObjectURL(file) })
+                if (event.coverImageIsLocal && event.coverImage) URL.revokeObjectURL(event.coverImage)
+                update({
+                  coverImage: URL.createObjectURL(file),
+                  coverImageIsLocal: true,
+                  coverImageFile: file,
+                })
               }}
             />
           </div>

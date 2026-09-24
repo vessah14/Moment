@@ -1,29 +1,45 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import AdminLayout from '../components/layout/AdminLayout'
 import StatusBadge from '../components/ui/StatusBadge'
-import { PLATFORM_EVENTS } from '../data/adminData'
+import { listPlatformEvents, updateEventSuspension } from '../api/platform'
 
 export default function AdminEvents() {
-  const [events, setEvents] = useState(PLATFORM_EVENTS)
+  const [events, setEvents] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [category, setCategory] = useState('Tous')
+  const [updatingId, setUpdatingId] = useState('')
+
+  useEffect(() => {
+    listPlatformEvents()
+      .then((data) => {
+        setEvents(data ?? [])
+        setError('')
+      })
+      .catch((err) => setError(err.message || 'Impossible de charger les événements.'))
+      .finally(() => setLoading(false))
+  }, [])
 
   const categories = useMemo(
-    () => ['Tous', ...new Set(PLATFORM_EVENTS.map((e) => e.category))],
-    [],
+    () => ['Tous', ...new Set(events.map((e) => e.category))],
+    [events],
   )
 
   const filtered = events.filter(
     (e) => category === 'Tous' || e.category === category,
   )
 
-  const toggleSuspend = (id) => {
-    setEvents((prev) =>
-      prev.map((e) =>
-        e.id === id
-          ? { ...e, status: e.status === 'Suspendu' ? 'Publié' : 'Suspendu' }
-          : e,
-      ),
-    )
+  const toggleSuspend = async (event) => {
+    setUpdatingId(event.id)
+    setError('')
+    try {
+      const updated = await updateEventSuspension(event.id, event.status !== 'Suspendu')
+      setEvents((prev) => prev.map((e) => (e.id === event.id ? updated : e)))
+    } catch (err) {
+      setError(err.message || 'La mise à jour a échoué.')
+    } finally {
+      setUpdatingId('')
+    }
   }
 
   return (
@@ -34,6 +50,12 @@ export default function AdminEvents() {
           {events.length} événements créés sur la plateforme
         </p>
       </div>
+
+      {error && (
+        <p className="mt-4 rounded-lg border border-danger/30 bg-danger/10 px-4 py-2.5 text-sm text-danger">
+          {error}
+        </p>
+      )}
 
       <div className="mt-6 flex flex-wrap gap-3">
         {categories.map((cat) => (
@@ -66,33 +88,55 @@ export default function AdminEvents() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((event) => (
-                <tr key={event.id} className="border-b border-border-soft last:border-b-0">
-                  <td className="px-6 py-4">
-                    <p className="font-medium text-ink">{event.name}</p>
-                    <p className="text-xs text-faint">{event.date}</p>
-                  </td>
-                  <td className="px-3 py-4 text-muted">{event.organization}</td>
-                  <td className="px-3 py-4 text-muted">{event.category}</td>
-                  <td className="px-3 py-4 font-mono text-muted">{event.guests}</td>
-                  <td className="px-3 py-4">
-                    <StatusBadge status={event.status} />
-                  </td>
-                  <td className="px-3 py-4">
-                    <button
-                      type="button"
-                      onClick={() => toggleSuspend(event.id)}
-                      className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
-                        event.status === 'Suspendu'
-                          ? 'border-success/40 text-success hover:bg-success/10'
-                          : 'border-danger/40 text-danger hover:bg-danger/10'
-                      }`}
-                    >
-                      {event.status === 'Suspendu' ? 'Rétablir' : 'Suspendre'}
-                    </button>
+              {loading && (
+                <tr>
+                  <td colSpan={6} className="px-6 py-10 text-center text-sm text-faint">
+                    Chargement…
                   </td>
                 </tr>
-              ))}
+              )}
+              {!loading && filtered.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-6 py-10 text-center text-sm text-faint">
+                    Aucun événement dans cette catégorie.
+                  </td>
+                </tr>
+              )}
+              {!loading &&
+                filtered.map((event) => (
+                  <tr key={event.id} className="border-b border-border-soft last:border-b-0">
+                    <td className="px-6 py-4">
+                      <p className="font-medium text-ink">{event.name}</p>
+                      <p className="text-xs text-faint">
+                        {event.eventDate
+                          ? new Date(event.eventDate).toLocaleDateString('fr-FR')
+                          : 'Date à définir'}
+                      </p>
+                    </td>
+                    <td className="px-3 py-4 text-muted">{event.organization}</td>
+                    <td className="px-3 py-4 text-muted">{event.category}</td>
+                    <td className="px-3 py-4 font-mono text-muted">{event.guests}</td>
+                    <td className="px-3 py-4">
+                      <StatusBadge status={event.status} />
+                    </td>
+                    <td className="px-3 py-4">
+                      {event.status !== 'Brouillon' && (
+                        <button
+                          type="button"
+                          disabled={updatingId === event.id}
+                          onClick={() => toggleSuspend(event)}
+                          className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition disabled:opacity-50 ${
+                            event.status === 'Suspendu'
+                              ? 'border-success/40 text-success hover:bg-success/10'
+                              : 'border-danger/40 text-danger hover:bg-danger/10'
+                          }`}
+                        >
+                          {event.status === 'Suspendu' ? 'Rétablir' : 'Suspendre'}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>

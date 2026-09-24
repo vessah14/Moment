@@ -8,7 +8,6 @@ import { createGuest, deleteGuest, listGuests, updateGuest } from '../../api/gue
 import { createGuestGroup, listGuestGroups } from '../../api/guestGroups'
 import { listEvents } from '../../api/events'
 import { listRsvps } from '../../api/rsvps'
-import { slugify } from '../../utils/slugify'
 import { GUEST_STATUS_BY_LABEL, guestStatusLabel } from '../../utils/guestStatus'
 
 const FILTERS = ['Tous', 'Confirmés', 'En attente', 'Refus']
@@ -116,7 +115,7 @@ export default function Guests() {
   }
 
   const handleCopyLink = async (guest) => {
-    const url = `${window.location.origin}/invitation/${slugify(guest.fullName)}`
+    const url = `${window.location.origin}/invitation/${guest.id}`
     try {
       await navigator.clipboard.writeText(url)
     } catch {
@@ -222,8 +221,6 @@ export default function Guests() {
     URL.revokeObjectURL(url)
     setActionMessage(`${guests.length} invité(s) exporté(s) en CSV`)
   }
-
-  const selectedEvent = events.find((e) => e.id === selectedEventId)
 
   if (!loading && events.length === 0) {
     return (

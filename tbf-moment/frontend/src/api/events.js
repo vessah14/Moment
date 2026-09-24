@@ -19,3 +19,9 @@ export function updateEvent(id, dto) {
 export function deleteEvent(id) {
   return apiFetch(`/events/${id}`, { method: 'DELETE' })
 }
+
+export function uploadEventCoverImage(id, file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return apiFetch(`/events/${id}/cover-image`, { method: 'POST', body: formData })
+}

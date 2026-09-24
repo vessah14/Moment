@@ -1,39 +1,31 @@
-const SESSION_KEY = 'tbf_admin_session'
+import { clearToken, getToken } from '../api/client'
+import { logout } from '../api/auth'
 
-// Identifiants de démonstration — front-end uniquement, aucune vérification
-// serveur derrière. À remplacer par une vraie authentification côté backend.
-export const ADMIN_CREDENTIALS = {
-  email: 'admin@tbfmoment.com',
-  password: 'TbfAdmin2027!',
-}
-
-export function checkAdminCredentials(email, password) {
-  return (
-    email.trim().toLowerCase() === ADMIN_CREDENTIALS.email &&
-    password === ADMIN_CREDENTIALS.password
-  )
+// Décode le payload d'un JWT sans vérifier sa signature (la signature est de
+// toute façon revalidée par le backend à chaque appel) — sert uniquement à lire
+// la date d'expiration côté client pour éviter d'afficher une session "connectée"
+// alors que le jeton a expiré, ce qui peut arriver longtemps avant le premier
+// appel API si une page ne fait aucune requête au montage.
+function isTokenExpired(token) {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    if (!payload.exp) return false
+    return Date.now() >= payload.exp * 1000
+  } catch {
+    return true
+  }
 }
 
 export function isAdminAuthenticated() {
-  try {
-    return sessionStorage.getItem(SESSION_KEY) === 'true'
-  } catch {
+  const token = getToken()
+  if (!token) return false
+  if (isTokenExpired(token)) {
+    clearToken()
     return false
   }
-}
-
-export function setAdminAuthenticated() {
-  try {
-    sessionStorage.setItem(SESSION_KEY, 'true')
-  } catch {
-    // sessionStorage indisponible (navigation privée, etc.)
-  }
+  return true
 }
 
 export function clearAdminAuthenticated() {
-  try {
-    sessionStorage.removeItem(SESSION_KEY)
-  } catch {
-    // sessionStorage indisponible
-  }
+  logout()
 }

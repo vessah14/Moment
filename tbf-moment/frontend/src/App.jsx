@@ -20,18 +20,22 @@ import SeatingPlan from './pages/dashboard/SeatingPlan'
 import Settings from './pages/dashboard/Settings'
 import Ticketing from './pages/dashboard/Ticketing'
 import Ecosystem from './pages/Ecosystem'
+import FacebookCallback from './pages/FacebookCallback'
 import ForgotPassword from './pages/ForgotPassword'
 import GiftRegistryPublic from './pages/GiftRegistryPublic'
 import GuestInvitation from './pages/GuestInvitation'
 import Home from './pages/Home'
 import LegalNotice from './pages/LegalNotice'
 import Login from './pages/Login'
+import MiniSite from './pages/MiniSite'
 import NotFound from './pages/NotFound'
 import Pricing from './pages/Pricing'
+import PrivacyPolicy from './pages/PrivacyPolicy'
 import ResetPassword from './pages/ResetPassword'
 import Signup from './pages/Signup'
 import Support from './pages/Support'
 import Templates from './pages/Templates'
+import TermsOfService from './pages/TermsOfService'
 
 function SiteLayout({ children }) {
   return (
@@ -55,6 +59,7 @@ function App() {
         }
       />
       <Route path="/connexion" element={<Login />} />
+      <Route path="/auth/facebook/callback" element={<FacebookCallback />} />
       <Route path="/mot-de-passe-oublie" element={<ForgotPassword />} />
       <Route path="/reinitialiser-mot-de-passe" element={<ResetPassword />} />
       <Route path="/inscription" element={<Signup />} />
@@ -63,8 +68,11 @@ function App() {
       <Route path="/ecosysteme" element={<Ecosystem />} />
       <Route path="/support" element={<Support />} />
       <Route path="/mentions-legales" element={<LegalNotice />} />
+      <Route path="/cgu" element={<TermsOfService />} />
+      <Route path="/confidentialite" element={<PrivacyPolicy />} />
       <Route path="/invitation/:code" element={<GuestInvitation />} />
       <Route path="/cadeaux/:code" element={<GiftRegistryPublic />} />
+      <Route path="/e/:slug" element={<MiniSite />} />
 
       <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
       <Route path="/dashboard/evenements" element={<RequireAuth><MyEvents /></RequireAuth>} />
@@ -99,7 +107,7 @@ function App() {
       />
       <Route path="/dashboard/conference" element={<RequireAuth><Conference /></RequireAuth>} />
 
-      <Route path="/builder" element={<RequireAuth><Builder /></RequireAuth>} />
+      <Route path="/builder/:eventId" element={<RequireAuth><Builder /></RequireAuth>} />
 
       <Route
         path="*"

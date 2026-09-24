@@ -9,6 +9,7 @@ import {
   createGuestBookEntry,
   deleteGuestBookEntry,
   listGuestBookEntries,
+  replyGuestBookEntry,
   updateGuestBookStatus,
 } from '../../api/guestBook'
 
@@ -39,6 +40,9 @@ export default function GuestBook() {
   const [error, setError] = useState('')
   const [filter, setFilter] = useState('EnAttente')
   const [formOpen, setFormOpen] = useState(false)
+  const [replyOpenId, setReplyOpenId] = useState(null)
+  const [replyDraft, setReplyDraft] = useState('')
+  const [replying, setReplying] = useState(false)
 
   useEffect(() => {
     listEvents()
@@ -82,6 +86,26 @@ export default function GuestBook() {
       reload(selectedEventId)
     } catch (err) {
       setError(err.message || "L'action a échoué.")
+    }
+  }
+
+  const openReply = (msg) => {
+    setReplyOpenId((prev) => (prev === msg.id ? null : msg.id))
+    setReplyDraft(msg.reply ?? '')
+  }
+
+  const submitReply = async (id) => {
+    setError('')
+    setReplying(true)
+    try {
+      await replyGuestBookEntry(id, replyDraft.trim())
+      setReplyOpenId(null)
+      setReplyDraft('')
+      reload(selectedEventId)
+    } catch (err) {
+      setError(err.message || "La réponse n'a pas pu être enregistrée.")
+    } finally {
+      setReplying(false)
     }
   }
 
@@ -253,7 +277,14 @@ export default function GuestBook() {
 
               <p className="mt-3 text-sm text-muted">{msg.message}</p>
 
-              <div className="mt-4 flex gap-2">
+              {msg.reply && replyOpenId !== msg.id && (
+                <div className="mt-3 rounded-lg border border-border-soft bg-surface-2 px-4 py-3">
+                  <p className="text-xs font-semibold text-brand-purple">Votre réponse</p>
+                  <p className="mt-1 text-sm text-ink">{msg.reply}</p>
+                </div>
+              )}
+
+              <div className="mt-4 flex flex-wrap gap-2">
                 {(ACTIONS_BY_STATUS[msg.status] ?? []).map((action) => (
                   <button
                     key={action.label}
@@ -270,12 +301,53 @@ export default function GuestBook() {
                 ))}
                 <button
                   type="button"
+                  onClick={() => openReply(msg)}
+                  className={`rounded-lg border px-4 py-1.5 text-xs font-medium transition ${
+                    replyOpenId === msg.id
+                      ? 'border-brand-purple bg-brand-purple/10 text-brand-purple'
+                      : 'border-border text-muted hover:border-faint'
+                  }`}
+                >
+                  {msg.reply ? 'Modifier la réponse' : 'Répondre'}
+                </button>
+                <button
+                  type="button"
                   onClick={() => handleDelete(msg.id)}
                   className="rounded-lg border border-border px-4 py-1.5 text-xs font-medium text-muted transition hover:border-faint"
                 >
                   Supprimer
                 </button>
               </div>
+
+              {replyOpenId === msg.id && (
+                <div className="mt-3 space-y-2">
+                  <textarea
+                    rows={2}
+                    autoFocus
+                    value={replyDraft}
+                    onChange={(e) => setReplyDraft(e.target.value)}
+                    placeholder="Écrire une réponse publique..."
+                    className="w-full resize-none rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink placeholder:text-faint outline-none focus:border-brand-purple"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setReplyOpenId(null)}
+                      className="rounded-lg px-3 py-1.5 text-xs font-medium text-muted hover:text-ink"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!replyDraft.trim() || replying}
+                      onClick={() => submitReply(msg.id)}
+                      className="rounded-lg bg-brand-indigo px-4 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
+                    >
+                      {replying ? 'Envoi…' : 'Envoyer la réponse'}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
       </div>

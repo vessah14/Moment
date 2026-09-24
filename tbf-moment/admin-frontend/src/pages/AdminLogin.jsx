@@ -1,9 +1,9 @@
 import { Eye, EyeOff, ShieldAlert } from 'lucide-react'
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { login } from '../api/auth'
 import logoMark from '../assets/logo-mark.png'
 import Button from '../components/ui/Button'
-import { checkAdminCredentials, setAdminAuthenticated } from '../utils/adminAuth'
 
 export default function AdminLogin() {
   const navigate = useNavigate()
@@ -15,20 +15,18 @@ export default function AdminLogin() {
   const [attempts, setAttempts] = useState(0)
   const [showPassword, setShowPassword] = useState(false)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setSubmitting(true)
     setError('')
-    setTimeout(() => {
-      if (checkAdminCredentials(email, password)) {
-        setAdminAuthenticated()
-        navigate(location.state?.from?.pathname ?? '/admin', { replace: true })
-        return
-      }
+    try {
+      await login({ email, password })
+      navigate(location.state?.from?.pathname ?? '/admin', { replace: true })
+    } catch (err) {
       setSubmitting(false)
       setAttempts((prev) => prev + 1)
-      setError('Identifiants incorrects.')
-    }, 600)
+      setError(err.message || 'Identifiants incorrects.')
+    }
   }
 
   return (

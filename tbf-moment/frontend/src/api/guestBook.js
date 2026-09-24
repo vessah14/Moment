@@ -15,3 +15,7 @@ export function updateGuestBookStatus(id, status) {
 export function deleteGuestBookEntry(id) {
   return apiFetch(`/guest-book/${id}`, { method: 'DELETE' })
 }
+
+export function replyGuestBookEntry(id, reply) {
+  return apiFetch(`/guest-book/${id}/reply`, { method: 'PUT', body: { reply } })
+}

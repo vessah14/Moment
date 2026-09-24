@@ -79,6 +79,12 @@ export default function Footer() {
             <Link to="/mentions-legales" className="transition hover:text-ink">
               Mentions légales
             </Link>
+            <Link to="/cgu" className="transition hover:text-ink">
+              CGU
+            </Link>
+            <Link to="/confidentialite" className="transition hover:text-ink">
+              Confidentialité
+            </Link>
             <Link to="/support" className="transition hover:text-ink">
               Support
             </Link>

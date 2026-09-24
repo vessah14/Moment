@@ -1,5 +1,6 @@
-import { Search } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import jsQR from 'jsqr'
+import { QrCode, Search, X } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Avatar from '../../components/ui/Avatar'
 import StatCard from '../../components/dashboard/StatCard'
 import StatusBadge from '../../components/ui/StatusBadge'
@@ -17,6 +18,17 @@ export default function CheckIn() {
   const [query, setQuery] = useState('')
   const [lastChecked, setLastChecked] = useState(null)
   const [checkingId, setCheckingId] = useState('')
+
+  const [scanning, setScanning] = useState(false)
+  const [scanError, setScanError] = useState('')
+  const [scanFeedback, setScanFeedback] = useState('')
+  const videoRef = useRef(null)
+  const canvasRef = useRef(null)
+  const streamRef = useRef(null)
+  const rafRef = useRef(null)
+  const guestsRef = useRef(guests)
+  const handleCheckInRef = useRef(null)
+  const lastScannedRef = useRef({ id: null, at: 0 })
 
   useEffect(() => {
     listEvents()
@@ -46,6 +58,10 @@ export default function CheckIn() {
     if (!selectedEventId) return
     reloadGuests(selectedEventId)
   }, [selectedEventId])
+
+  useEffect(() => {
+    guestsRef.current = guests
+  }, [guests])
 
   const attended = guests.filter((g) => g.status === 'Present')
   const pending = guests.filter((g) => g.status !== 'Present')
@@ -84,6 +100,75 @@ export default function CheckIn() {
     }
   }
 
+  useEffect(() => {
+    handleCheckInRef.current = handleCheckIn
+  })
+
+  const stopScan = useCallback(() => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    rafRef.current = null
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop())
+      streamRef.current = null
+    }
+    setScanning(false)
+  }, [])
+
+  const tick = useCallback(() => {
+    const video = videoRef.current
+    const canvas = canvasRef.current
+    if (!video || !canvas || video.readyState !== video.HAVE_ENOUGH_DATA) {
+      rafRef.current = requestAnimationFrame(tick)
+      return
+    }
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    const code = jsQR(imageData.data, imageData.width, imageData.height)
+
+    if (code?.data) {
+      const now = Date.now()
+      const isRepeat = code.data === lastScannedRef.current.id && now - lastScannedRef.current.at < 3000
+      if (!isRepeat) {
+        lastScannedRef.current = { id: code.data, at: now }
+        const match = guestsRef.current.find((g) => g.id === code.data)
+        if (!match) {
+          setScanFeedback('QR non reconnu pour cet événement.')
+        } else if (match.status === 'Present') {
+          setScanFeedback(`${match.fullName} est déjà enregistré(e).`)
+        } else {
+          setScanFeedback('')
+          handleCheckInRef.current?.(match)
+        }
+      }
+    }
+    rafRef.current = requestAnimationFrame(tick)
+  }, [])
+
+  const startScan = async () => {
+    setScanError('')
+    setScanFeedback('')
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+      streamRef.current = stream
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+        await videoRef.current.play()
+      }
+      setScanning(true)
+      rafRef.current = requestAnimationFrame(tick)
+    } catch {
+      setScanError("Impossible d'accéder à la caméra. Vérifiez les autorisations de votre navigateur.")
+    }
+  }
+
+  useEffect(() => stopScan, [stopScan])
+  useEffect(() => {
+    stopScan()
+  }, [selectedEventId, stopScan])
+
   const STATS = [
     { label: 'Présents', value: String(attended.length), valueStyle: 'brand' },
     { label: 'Attendus', value: String(guests.length) },
@@ -107,7 +192,7 @@ export default function CheckIn() {
         <div>
           <h1 className="text-2xl font-bold text-ink">Check-in</h1>
           <p className="mt-1.5 text-sm text-muted">
-            Recherchez un invité par nom, email ou téléphone pour valider son entrée.
+            Scannez le QR d'un invité ou recherchez-le par nom, email ou téléphone pour valider son entrée.
           </p>
         </div>
         <select
@@ -167,6 +252,42 @@ export default function CheckIn() {
               ))}
             </div>
           )}
+
+          <div className="mt-4 border-t border-border-soft pt-4">
+            {!scanning ? (
+              <button
+                type="button"
+                onClick={startScan}
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-border-soft px-3 py-2.5 text-sm font-medium text-ink transition hover:border-brand-purple"
+              >
+                <QrCode className="h-4 w-4" />
+                Scanner le QR d'un billet
+              </button>
+            ) : (
+              <div>
+                <div className="relative overflow-hidden rounded-lg bg-black">
+                  <video ref={videoRef} muted playsInline className="aspect-square w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={stopScan}
+                    className="absolute top-2 right-2 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80"
+                    aria-label="Arrêter le scan"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <canvas ref={canvasRef} className="hidden" />
+                {scanFeedback && (
+                  <p className="mt-2 rounded-lg border border-border-soft bg-surface-2 px-3 py-2 text-center text-xs text-muted">
+                    {scanFeedback}
+                  </p>
+                )}
+              </div>
+            )}
+            {scanError && (
+              <p className="mt-2 text-center text-xs text-danger">{scanError}</p>
+            )}
+          </div>
 
           {lastChecked && (
             <div className="mt-4 rounded-lg border border-success/30 bg-success/10 p-3">

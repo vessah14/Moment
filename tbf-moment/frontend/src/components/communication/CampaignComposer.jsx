@@ -10,6 +10,7 @@ export default function CampaignComposer({ defaultChannel = 'E-mail', onCreate }
   const [audience, setAudience] = useState(AUDIENCES[0])
   const [message, setMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [sentInfo, setSentInfo] = useState(null)
 
   const reset = () => {
     setName('')
@@ -20,14 +21,22 @@ export default function CampaignComposer({ defaultChannel = 'E-mail', onCreate }
     e.preventDefault()
     if (!name.trim() || !message.trim()) return
     setSubmitting(true)
+    setSentInfo(null)
     try {
-      await onCreate({
+      const result = await onCreate({
         name: name.trim(),
         channel,
         audience,
         body: message.trim(),
         sendNow,
       })
+      if (sendNow) {
+        setSentInfo(
+          channel === 'E-mail'
+            ? `${result?.emailsSentCount ?? 0} e-mail(s) envoyé(s) sur ${result?.recipientCount ?? 0} destinataire(s).`
+            : `Campagne enregistrée pour ${result?.recipientCount ?? 0} destinataire(s) par ${channel} (aucun envoi réel, ce canal n'est pas branché).`,
+        )
+      }
       reset()
     } finally {
       setSubmitting(false)
@@ -113,9 +122,12 @@ export default function CampaignComposer({ defaultChannel = 'E-mail', onCreate }
       </label>
 
       <p className="mt-4 text-xs text-faint">
-        Aucun service d'envoi (e-mail/SMS/WhatsApp) n'est branché — la campagne est
-        enregistrée avec le nombre réel de destinataires concernés, sans envoi effectif.
+        {channel === 'E-mail'
+          ? "Envoie un e-mail réel à chaque destinataire de l'audience sélectionnée disposant d'une adresse e-mail."
+          : `Aucun service d'envoi ${channel} n'est branché — la campagne est enregistrée avec le nombre réel de destinataires concernés, sans envoi effectif.`}
       </p>
+
+      {sentInfo && <p className="mt-3 text-sm text-success">{sentInfo}</p>}
 
       <div className="mt-5 flex flex-wrap justify-end gap-3">
         <Button type="button" variant="ghost" onClick={reset} disabled={submitting}>
@@ -135,7 +147,7 @@ export default function CampaignComposer({ defaultChannel = 'E-mail', onCreate }
           disabled={submitting}
           onClick={(e) => handleSubmit(e, true)}
         >
-          Marquer comme envoyée
+          {channel === 'E-mail' ? 'Envoyer par e-mail' : 'Marquer comme envoyée'}
         </Button>
       </div>
     </form>

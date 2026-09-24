@@ -14,6 +14,30 @@ export function getToken() {
   }
 }
 
+// Décode le payload d'un JWT sans vérifier sa signature (revalidée de toute
+// façon par le backend à chaque appel) — sert uniquement à détecter côté
+// client un jeton déjà expiré, sans attendre le premier 401.
+function isTokenExpired(token) {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    if (!payload.exp) return false
+    return Date.now() >= payload.exp * 1000
+  } catch {
+    return true
+  }
+}
+
+export function isAuthenticated() {
+  const token = getToken()
+  if (!token) return false
+  if (isTokenExpired(token)) {
+    clearToken()
+    clearCurrentUser()
+    return false
+  }
+  return true
+}
+
 export function setToken(token) {
   try {
     localStorage.setItem(TOKEN_KEY, token)

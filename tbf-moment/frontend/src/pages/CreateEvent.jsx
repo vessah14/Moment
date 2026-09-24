@@ -1,7 +1,13 @@
 import { CheckCircle2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { createEvent, getEvent, updateEvent as updateEventApi } from '../api/events'
+import {
+  createEvent,
+  getEvent,
+  updateEvent as updateEventApi,
+  uploadEventCoverImage,
+} from '../api/events'
+import { API_ORIGIN } from '../api/client'
 import { listEventCategories } from '../api/eventCategories'
 import {
   createEventLocation,
@@ -9,7 +15,7 @@ import {
   updateEventLocation,
 } from '../api/eventLocations'
 import { createEventBlock, listEventBlocks, updateEventBlock } from '../api/eventBlocks'
-import { createGuestGroup } from '../api/guestGroups'
+import { createGuestGroup, listGuestGroups } from '../api/guestGroups'
 import { createGuest } from '../api/guests'
 import DashboardLayout from '../components/layout/DashboardLayout'
 import Button from '../components/ui/Button'
@@ -45,6 +51,9 @@ const INITIAL_EVENT = {
   categoryId: null,
   template: null,
   coverImage: null,
+  coverImageUrl: null,
+  coverImageFile: null,
+  coverImageIsLocal: false,
   themeColor: '#6549e8',
   tagline: '',
   guests: [],
@@ -70,11 +79,15 @@ export default function CreateEvent() {
   const { id: eventId } = useParams()
   const isEditMode = Boolean(eventId)
   const navigate = useNavigate()
-  const [currentStep, setCurrentStep] = useState(0)
+  // En édition, la catégorie est déjà connue : on saute l'étape 0 pour ne pas
+  // forcer une re-sélection inutile à chaque petite modification.
+  const [currentStep, setCurrentStep] = useState(isEditMode ? 1 : 0)
   const [event, setEvent] = useState(INITIAL_EVENT)
   const [visibility, setVisibility] = useState('publish')
   const [publishing, setPublishing] = useState(false)
   const [published, setPublished] = useState(false)
+  const [publishedSlug, setPublishedSlug] = useState('')
+  const [publishedEventId, setPublishedEventId] = useState('')
   const [publishError, setPublishError] = useState('')
   const [publishWarnings, setPublishWarnings] = useState([])
   const [categories, setCategories] = useState([])
@@ -109,6 +122,10 @@ export default function CreateEvent() {
           date: eventData.eventDate ?? '',
           timeStart: eventData.startTime ? eventData.startTime.slice(0, 5) : '',
           themeColor: eventData.themeColor || prev.themeColor,
+          coverImage: eventData.coverImageUrl ? `${API_ORIGIN}${eventData.coverImageUrl}` : null,
+          coverImageUrl: eventData.coverImageUrl ?? null,
+          coverImageFile: null,
+          coverImageIsLocal: false,
           location: locations[0]?.address ?? '',
           description: custom.description ?? '',
           tagline: custom.tagline ?? '',
@@ -165,7 +182,7 @@ export default function CreateEvent() {
         categoryId: event.categoryId,
         eventDate: event.date || null,
         startTime: event.timeStart ? `${event.timeStart}:00` : null,
-        coverImageUrl: null,
+        coverImageUrl: event.coverImageUrl,
         themeColor: event.themeColor || null,
         themeFont: null,
         customFields: JSON.stringify({
@@ -179,10 +196,22 @@ export default function CreateEvent() {
       }
 
       const targetId = isEditMode ? eventId : (await createEvent(dto)).id
-      await updateEventApi(targetId, {
+
+      if (event.coverImageFile) {
+        try {
+          const { url } = await uploadEventCoverImage(targetId, event.coverImageFile)
+          dto.coverImageUrl = url
+        } catch {
+          warnings.push("L'image de couverture n'a pas pu être envoyée.")
+        }
+      }
+
+      const updatedEvent = await updateEventApi(targetId, {
         ...dto,
         status: targetVisibility === 'publish' ? 'Publie' : 'Brouillon',
       })
+      setPublishedSlug(updatedEvent?.slug ?? '')
+      setPublishedEventId(targetId)
 
       if (event.location) {
         try {
@@ -205,8 +234,19 @@ export default function CreateEvent() {
 
       try {
         const findBlock = (type) => existingBlocks.find((b) => b.blockType === type)
-        const upsertBlock = async (type, content) => {
+        const parseBlockContent = (raw) => {
+          try {
+            return JSON.parse(raw || '{}') ?? {}
+          } catch {
+            return {}
+          }
+        }
+        // Fusionne avec le contenu existant au lieu de l'écraser : le Builder peut avoir
+        // enregistré des réglages (couleur, police, sous-titre...) qu'un simple aller-retour
+        // dans cet assistant ne doit jamais effacer.
+        const upsertBlockMerge = async (type, patch) => {
           const existing = findBlock(type)
+          const content = JSON.stringify({ ...parseBlockContent(existing?.content), ...patch })
           if (existing) {
             await updateEventBlock(existing.id, {
               blockType: type,
@@ -222,17 +262,23 @@ export default function CreateEvent() {
           }
         }
 
-        await upsertBlock('Hero', JSON.stringify({ title: event.name, tagline: event.tagline }))
-        if (event.options?.program) await upsertBlock('Programme', findBlock('Programme')?.content ?? '{}')
-        if (event.options?.checkin) await upsertBlock('Rsvp', findBlock('Rsvp')?.content ?? '{}')
+        // Le sous-titre affiché publiquement (event.tagline) est déjà persisté au niveau de
+        // l'événement (CustomFields) et lu en repli par la page publique — inutile et risqué
+        // de le dupliquer ici avec une clé différente ("tagline" vs "subtitle" côté Builder).
+        await upsertBlockMerge('Hero', { title: event.name })
+        if (event.options?.program) await upsertBlockMerge('Programme', {})
+        if (event.options?.checkin) await upsertBlockMerge('Rsvp', {})
       } catch {
         warnings.push("Les sections de la page n'ont pas pu être toutes mises à jour.")
       }
 
       if (event.guests?.length) {
         const groupIdByName = new Map()
+        const existingGroups = await listGuestGroups(targetId).catch(() => [])
+        for (const g of existingGroups) groupIdByName.set(g.name, g.id)
+
         for (const groupName of new Set(event.guests.map((g) => g.group))) {
-          if (!groupName || groupName === 'Sans groupe') continue
+          if (!groupName || groupName === 'Sans groupe' || groupIdByName.has(groupName)) continue
           try {
             const group = await createGuestGroup({ name: groupName }, targetId)
             groupIdByName.set(groupName, group.id)
@@ -300,6 +346,7 @@ export default function CreateEvent() {
             publishing={publishing}
             onPublish={handlePublish}
             error={publishError}
+            isEditMode={isEditMode}
           />
         )
       default:
@@ -363,12 +410,19 @@ export default function CreateEvent() {
           )}
 
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Button
-              variant="gradient"
-              onClick={() => navigate('/builder', { state: { event } })}
-            >
-              Voir mon mini-site
-            </Button>
+            {visibility === 'publish' && publishedSlug && (
+              <Button as="a" href={`/e/${publishedSlug}`} target="_blank" rel="noopener noreferrer" variant="gradient">
+                Voir mon mini-site
+              </Button>
+            )}
+            {publishedEventId && (
+              <Button
+                variant={visibility === 'publish' && publishedSlug ? 'outline' : 'gradient'}
+                onClick={() => navigate(`/builder/${publishedEventId}`)}
+              >
+                Personnaliser dans le Builder
+              </Button>
+            )}
             <Button variant="outline" onClick={() => navigate('/dashboard/evenements')}>
               Retour à mes événements
             </Button>
