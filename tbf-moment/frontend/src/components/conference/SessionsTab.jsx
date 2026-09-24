@@ -1,8 +1,10 @@
 import { Plus, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import Button from '../ui/Button'
+import { useToast } from '../../utils/useToast'
 
 export default function SessionsTab({ sessions, speakers, onAdd, onRemove }) {
+  const toast = useToast()
   const [formOpen, setFormOpen] = useState(false)
 
   const sorted = useMemo(
@@ -23,6 +25,12 @@ export default function SessionsTab({ sessions, speakers, onAdd, onRemove }) {
     onAdd({ time, title, room, speakerId })
     setFormOpen(false)
     e.target.reset()
+    toast(`Session "${title}" ajoutée`)
+  }
+
+  const handleRemove = (session) => {
+    onRemove(session.id)
+    toast(`Session "${session.title}" supprimée`, { variant: 'danger' })
   }
 
   return (
@@ -114,7 +122,7 @@ export default function SessionsTab({ sessions, speakers, onAdd, onRemove }) {
                 <td className="px-3 py-4">
                   <button
                     type="button"
-                    onClick={() => onRemove(session.id)}
+                    onClick={() => handleRemove(session)}
                     className="rounded-lg p-1.5 text-faint transition hover:bg-danger/10 hover:text-danger"
                   >
                     <Trash2 className="h-4 w-4" />

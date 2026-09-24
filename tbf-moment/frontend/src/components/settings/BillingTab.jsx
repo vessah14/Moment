@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import StatusBadge from '../ui/StatusBadge'
 import Button from '../ui/Button'
+import { useToast } from '../../utils/useToast'
 
 const INVOICES = [
   { id: 'FAC-2027-003', date: '01 mars 2027', amount: '15 000 FCFA', status: 'Payée' },
@@ -9,22 +10,18 @@ const INVOICES = [
 ]
 
 export default function BillingTab() {
+  const toast = useToast()
   const [editingCard, setEditingCard] = useState(false)
-  const [saved, setSaved] = useState(false)
 
   const handleSave = (e) => {
     e.preventDefault()
     setEditingCard(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2500)
+    toast('Moyen de paiement mis à jour')
   }
 
   return (
     <div className="rounded-2xl border border-border-soft bg-surface p-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-ink">Facturation</h2>
-        {saved && <span className="text-sm text-success">Moyen de paiement mis à jour</span>}
-      </div>
+      <h2 className="text-xl font-bold text-ink">Facturation</h2>
       <p className="mt-1 text-sm text-muted">
         Votre moyen de paiement et l'historique de vos factures.
       </p>

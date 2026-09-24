@@ -2,6 +2,8 @@ import {
   BarChart3,
   BookHeart,
   Calendar,
+  ChevronsLeft,
+  ChevronsRight,
   Gift,
   Image,
   ListOrdered,
@@ -18,6 +20,8 @@ import {
 } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import logo from '../../assets/logo.png'
+import logoMark from '../../assets/logo-mark.png'
+import { useLocalStorageState } from '../../utils/useLocalStorageState'
 
 const NAV_ITEMS = [
   { label: 'Vue globale', to: '/dashboard', icon: BarChart3, end: true },
@@ -53,6 +57,10 @@ const NAV_ITEMS = [
 
 export default function DashboardSidebar({ open, onClose }) {
   const navigate = useNavigate()
+  const [collapsed, setCollapsed] = useLocalStorageState(
+    'tbf_sidebar_collapsed',
+    false,
+  )
 
   return (
     <>
@@ -65,11 +73,20 @@ export default function DashboardSidebar({ open, onClose }) {
 
       <aside
         className={`fixed inset-y-0 left-0 z-50 flex h-svh w-64 shrink-0 flex-col overflow-y-auto border-r border-border-soft/60 bg-bg px-4 py-5 transition-transform lg:sticky lg:top-0 lg:translate-x-0 ${
-          open ? 'translate-x-0' : '-translate-x-full'
-        }`}
+          collapsed ? 'lg:w-20 lg:px-2' : ''
+        } ${open ? 'translate-x-0' : '-translate-x-full'}`}
       >
         <div className="flex shrink-0 items-center justify-between">
-          <img src={logo} alt="TBF Moment" className="h-8 w-auto px-2" />
+          <img
+            src={logo}
+            alt="TBF Moment"
+            className={`h-8 w-auto px-2 ${collapsed ? 'lg:hidden' : ''}`}
+          />
+          <img
+            src={logoMark}
+            alt="TBF Moment"
+            className={`hidden h-8 w-8 ${collapsed ? 'lg:block' : ''}`}
+          />
           <button
             type="button"
             onClick={onClose}
@@ -86,8 +103,11 @@ export default function DashboardSidebar({ open, onClose }) {
               to={item.to}
               end={item.end}
               onClick={onClose}
+              title={item.label}
               className={({ isActive }) =>
                 `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                  collapsed ? 'lg:justify-center lg:px-2' : ''
+                } ${
                   isActive
                     ? 'bg-brand-indigo text-white'
                     : 'text-muted hover:bg-surface-2 hover:text-ink'
@@ -95,9 +115,15 @@ export default function DashboardSidebar({ open, onClose }) {
               }
             >
               <item.icon className="h-4 w-4 shrink-0" />
-              <span className="flex-1">{item.label}</span>
+              <span className={`flex-1 ${collapsed ? 'lg:hidden' : ''}`}>
+                {item.label}
+              </span>
               {item.badge && (
-                <span className="rounded-full bg-brand-purple/20 px-2 py-0.5 text-xs font-semibold text-brand-purple">
+                <span
+                  className={`rounded-full bg-brand-purple/20 px-2 py-0.5 text-xs font-semibold text-brand-purple ${
+                    collapsed ? 'lg:hidden' : ''
+                  }`}
+                >
                   {item.badge}
                 </span>
               )}
@@ -105,7 +131,27 @@ export default function DashboardSidebar({ open, onClose }) {
           ))}
         </nav>
 
-        <div className="mt-4 shrink-0 rounded-xl border border-border-soft bg-surface p-3.5">
+        <button
+          type="button"
+          onClick={() => setCollapsed((v) => !v)}
+          title={collapsed ? 'Développer le menu' : 'Réduire le menu'}
+          className="mb-3 hidden shrink-0 items-center justify-center gap-2 rounded-lg border border-border-soft py-2 text-xs font-medium text-muted transition hover:bg-surface-2 hover:text-ink lg:flex"
+        >
+          {collapsed ? (
+            <ChevronsRight className="h-4 w-4" />
+          ) : (
+            <>
+              <ChevronsLeft className="h-4 w-4" />
+              Réduire
+            </>
+          )}
+        </button>
+
+        <div
+          className={`mt-4 shrink-0 rounded-xl border border-border-soft bg-surface p-3.5 ${
+            collapsed ? 'lg:hidden' : ''
+          }`}
+        >
           <span className="font-mono text-[11px] font-semibold tracking-wider text-brand-orange uppercase">
             Plan Free
           </span>

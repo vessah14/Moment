@@ -1,5 +1,8 @@
 import { Check, FileDown, Loader2 } from 'lucide-react'
 import { useState } from 'react'
+import { INITIAL_GUESTS } from '../../data/guests'
+import { INITIAL_EVENTS } from '../../data/myEvents'
+import { useLocalStorageState } from '../../utils/useLocalStorageState'
 
 const EXPORTS = [
   { key: 'account', label: 'Exporter mes données de compte', format: 'JSON' },
@@ -7,7 +10,19 @@ const EXPORTS = [
   { key: 'guests', label: 'Exporter la liste de tous mes invités', format: 'CSV' },
 ]
 
+function downloadFile(filename, content, type) {
+  const blob = new Blob([content], { type })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
 export default function DataExportTab() {
+  const [guests] = useLocalStorageState('tbf_guests_v2', INITIAL_GUESTS)
+  const [events] = useLocalStorageState('tbf_myevents', INITIAL_EVENTS)
   const [status, setStatus] = useState({})
   const [confirmingWipe, setConfirmingWipe] = useState(false)
   const [wiped, setWiped] = useState(false)
@@ -15,6 +30,21 @@ export default function DataExportTab() {
   const handleExport = (key) => {
     setStatus((prev) => ({ ...prev, [key]: 'loading' }))
     setTimeout(() => {
+      if (key === 'account') {
+        downloadFile(
+          'compte-tbf-moment.json',
+          JSON.stringify({ name: 'Awa Diop', email: 'awa.diop@mail.com', accountType: 'Particulier' }, null, 2),
+          'application/json',
+        )
+      } else if (key === 'events') {
+        downloadFile('mes-evenements.json', JSON.stringify(events, null, 2), 'application/json')
+      } else if (key === 'guests') {
+        const header = 'Nom,Contact,Groupe,Statut,Accompagnants,Invitation'
+        const rows = guests.map((g) =>
+          [g.name, g.contact, g.group, g.status, g.accomp, g.invitation].join(','),
+        )
+        downloadFile('tous-mes-invites.csv', [header, ...rows].join('\n'), 'text/csv;charset=utf-8;')
+      }
       setStatus((prev) => ({ ...prev, [key]: 'done' }))
     }, 1200)
   }

@@ -3,9 +3,10 @@ import Avatar from '../ui/Avatar'
 import Button from '../ui/Button'
 import PhoneInput from '../ui/PhoneInput'
 import StatusBadge from '../ui/StatusBadge'
+import { useToast } from '../../utils/useToast'
 
 export default function ProfileTab() {
-  const [saved, setSaved] = useState(false)
+  const toast = useToast()
   const [avatarUrl, setAvatarUrl] = useState(null)
   const fileInputRef = useRef(null)
   const [profile, setProfile] = useState({
@@ -32,20 +33,16 @@ export default function ProfileTab() {
   }
 
   const handleSave = () => {
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2500)
+    toast('Profil enregistré')
   }
 
   return (
     <div className="rounded-2xl border border-border-soft bg-surface p-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-ink">Profil</h2>
-        <div className="flex items-center gap-3">
-          {saved && <span className="text-sm text-success">Enregistré</span>}
-          <Button variant="solid" onClick={handleSave}>
-            Enregistrer
-          </Button>
-        </div>
+        <Button variant="solid" onClick={handleSave}>
+          Enregistrer
+        </Button>
       </div>
       <p className="mt-1 text-sm text-muted">
         Ces informations apparaissent sur vos invitations et pages publiques.

@@ -1,6 +1,6 @@
 import { CheckCircle2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import DashboardLayout from '../components/layout/DashboardLayout'
 import Button from '../components/ui/Button'
 import CategoryStep from '../components/wizard/CategoryStep'
@@ -54,8 +54,19 @@ const INITIAL_EVENT = {
 
 export default function CreateEvent() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const onboarding = location.state?.onboarding
   const [currentStep, setCurrentStep] = useState(0)
-  const [event, setEvent] = useState(INITIAL_EVENT)
+  const [event, setEvent] = useState(() =>
+    onboarding
+      ? {
+          ...INITIAL_EVENT,
+          ...(onboarding.category && { category: onboarding.category }),
+          ...(onboarding.name && { name: onboarding.name }),
+          ...(onboarding.date && { date: onboarding.date }),
+        }
+      : INITIAL_EVENT,
+  )
   const [visibility, setVisibility] = useState('publish')
   const [publishing, setPublishing] = useState(false)
   const [published, setPublished] = useState(false)

@@ -1,6 +1,7 @@
 import QRCode from 'qrcode'
 import { useEffect, useState } from 'react'
 import TicketSalesChart from '../../components/billing/TicketSalesChart'
+import { useToast } from '../../utils/useToast'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import StatCard from '../../components/dashboard/StatCard'
 import Button from '../../components/ui/Button'
@@ -61,6 +62,7 @@ const INITIAL_COUPONS = [
 ]
 
 export default function Ticketing() {
+  const toast = useToast()
   const [ticketTypes, setTicketTypes] = useState(INITIAL_TICKET_TYPES)
   const [coupons, setCoupons] = useState(INITIAL_COUPONS)
   const [ticketForm, setTicketForm] = useState(null)
@@ -83,6 +85,7 @@ export default function Ticketing() {
       { name, price, sold: 0, quota, status: 'Programmé' },
     ])
     setTicketForm(null)
+    toast(`Billet "${name}" ajouté`)
   }
 
   const handleAddCoupon = (e) => {
@@ -93,6 +96,7 @@ export default function Ticketing() {
     if (!code || !discount) return
     setCoupons((prev) => [...prev, { code, discount, used: '0 utilisé' }])
     setCouponForm(null)
+    toast(`Coupon ${code} créé`)
   }
 
   return (

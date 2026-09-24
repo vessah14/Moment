@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { buildAdminSearchIndex } from '../../data/adminSearchIndex'
 import { MODERATION_QUEUE } from '../../data/adminData'
+import ThemeToggle from '../ui/ThemeToggle'
 import GlobalSearch from './GlobalSearch'
 
 const NOTIFICATIONS = [
@@ -42,6 +43,8 @@ export default function AdminTopbar({ onMenuClick }) {
       />
 
       <div className="ml-auto flex items-center gap-3 sm:gap-5">
+        <ThemeToggle className="hidden md:inline-flex" showLabels={false} />
+
         <div className="relative hidden sm:block">
           <button
             type="button"

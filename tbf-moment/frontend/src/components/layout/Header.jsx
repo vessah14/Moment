@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import logo from '../../assets/logo.png'
 import Button from '../ui/Button'
+import ThemeToggle from '../ui/ThemeToggle'
 
 const NAV_LINKS = [
   { label: 'Fonctionnalités', href: '/#fonctionnalites' },
@@ -53,6 +54,7 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-3 sm:gap-4">
+          <ThemeToggle className="hidden lg:inline-flex" showLabels={false} />
           <Button
             as={Link}
             to="/connexion"
@@ -81,6 +83,7 @@ export default function Header() {
 
       {menuOpen && (
         <nav className="flex flex-col gap-1 border-t border-border-soft/60 px-6 py-4 lg:hidden">
+          <ThemeToggle className="mb-2 w-fit" />
           {NAV_LINKS.map((link) => (
             <NavLink
               key={link.label}

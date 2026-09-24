@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { buildDashboardSearchIndex } from '../../data/dashboardSearchIndex'
 import Button from '../ui/Button'
+import ThemeToggle from '../ui/ThemeToggle'
 import GlobalSearch from './GlobalSearch'
 
 const NOTIFICATIONS = [
@@ -37,6 +38,8 @@ export default function DashboardTopbar({ onMenuClick }) {
       />
 
       <div className="ml-auto flex items-center gap-3 sm:gap-5">
+        <ThemeToggle className="hidden md:inline-flex" showLabels={false} />
+
         <div className="relative hidden sm:block">
           <button
             type="button"

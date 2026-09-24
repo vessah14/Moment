@@ -34,6 +34,7 @@ import Home from './pages/Home'
 import LegalNotice from './pages/LegalNotice'
 import Login from './pages/Login'
 import NotFound from './pages/NotFound'
+import Onboarding from './pages/Onboarding'
 import Pricing from './pages/Pricing'
 import ResetPassword from './pages/ResetPassword'
 import Signup from './pages/Signup'
@@ -64,6 +65,7 @@ function App() {
       <Route path="/connexion" element={<Login />} />
       <Route path="/mot-de-passe-oublie" element={<ForgotPassword />} />
       <Route path="/reinitialiser-mot-de-passe" element={<ResetPassword />} />
+      <Route path="/bienvenue" element={<Onboarding />} />
       <Route path="/inscription" element={<Signup />} />
       <Route path="/modeles" element={<Templates />} />
       <Route path="/tarifs" element={<Pricing />} />

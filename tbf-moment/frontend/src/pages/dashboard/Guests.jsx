@@ -7,6 +7,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout'
 import { INITIAL_GUESTS } from '../../data/guests'
 import { slugify } from '../../utils/slugify'
 import { useLocalStorageState } from '../../utils/useLocalStorageState'
+import { useToast } from '../../utils/useToast'
 
 const FILTERS = [
   { label: 'Tous', count: 240 },
@@ -22,13 +23,12 @@ const STATUS_BY_FILTER = {
 }
 
 export default function Guests() {
+  const toast = useToast()
   const [guests, setGuests] = useLocalStorageState('tbf_guests_v2', INITIAL_GUESTS)
   const [filter, setFilter] = useState('Tous')
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState(() => new Set([INITIAL_GUESTS[0].id]))
-  const [actionMessage, setActionMessage] = useState('')
   const [addFormOpen, setAddFormOpen] = useState(false)
-  const [copiedId, setCopiedId] = useState('')
   const importInputRef = useRef(null)
 
   const handleCopyLink = async (guest) => {
@@ -36,10 +36,9 @@ export default function Guests() {
     try {
       await navigator.clipboard.writeText(url)
     } catch {
-      // clipboard indisponible (contexte non sécurisé), on affiche quand même le lien
+      // clipboard indisponible (contexte non sécurisé)
     }
-    setCopiedId(guest.id)
-    setTimeout(() => setCopiedId(''), 2000)
+    toast(`Lien copié pour ${guest.name}`)
   }
 
   const toggleSelected = (id) => {
@@ -62,17 +61,18 @@ export default function Guests() {
   }, [guests, filter, query])
 
   const handleDelete = () => {
+    const count = selected.size
     setGuests((prev) => prev.filter((g) => !selected.has(g.id)))
-    setActionMessage(`${selected.size} invité(s) supprimé(s)`)
+    toast(`${count} invité(s) supprimé(s)`)
     setSelected(new Set())
   }
 
   const handleRelaunch = () => {
-    setActionMessage(`Relance envoyée à ${selected.size} invité(s)`)
+    toast(`Relance envoyée à ${selected.size} invité(s)`)
   }
 
   const handleChangeGroup = () => {
-    setActionMessage(`Groupe mis à jour pour ${selected.size} invité(s)`)
+    toast(`Groupe mis à jour pour ${selected.size} invité(s)`)
   }
 
   const handleAddGuest = (e) => {
@@ -95,7 +95,7 @@ export default function Guests() {
         invitation: 'Non envoyée',
       },
     ])
-    setActionMessage(`${name} ajouté(e) à la liste`)
+    toast(`${name} ajouté(e) à la liste`)
     setAddFormOpen(false)
   }
 
@@ -112,7 +112,7 @@ export default function Guests() {
     link.download = 'invites-mariage-awa-ibrahim.csv'
     link.click()
     URL.revokeObjectURL(url)
-    setActionMessage(`${guests.length} invité(s) exporté(s) en CSV`)
+    toast(`${guests.length} invité(s) exporté(s) en CSV`)
   }
 
   const handleImportFile = (e) => {
@@ -142,7 +142,7 @@ export default function Guests() {
         })
         .filter(Boolean)
       setGuests((prev) => [...prev, ...imported])
-      setActionMessage(`${imported.length} invité(s) importé(s)`)
+      toast(`${imported.length} invité(s) importé(s)`)
     }
     reader.readAsText(file)
     e.target.value = ''
@@ -309,9 +309,6 @@ export default function Guests() {
                   >
                     <Link2 className="h-4 w-4" />
                   </button>
-                  {copiedId === guest.id && (
-                    <span className="ml-1 text-xs text-success">Copié !</span>
-                  )}
                 </td>
               </tr>
             ))}
@@ -346,9 +343,6 @@ export default function Guests() {
             >
               Supprimer
             </button>
-            {actionMessage && (
-              <span className="text-xs text-success">{actionMessage}</span>
-            )}
           </div>
 
           <div className="flex items-center gap-1" title="Une seule page pour le moment">

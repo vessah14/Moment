@@ -48,7 +48,7 @@ export default function SignupForm() {
     e.preventDefault()
     if (emailIncomplete || passwordMismatch || !acceptedTerms) return
     setSubmitting(true)
-    setTimeout(() => navigate('/dashboard'), 600)
+    setTimeout(() => navigate('/bienvenue'), 600)
   }
 
   return (

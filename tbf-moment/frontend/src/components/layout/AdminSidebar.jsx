@@ -2,6 +2,8 @@ import {
   Banknote,
   Building2,
   Calendar,
+  ChevronsLeft,
+  ChevronsRight,
   Home,
   LayoutDashboard,
   LogOut,
@@ -11,7 +13,9 @@ import {
 } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import logo from '../../assets/logo.png'
+import logoMark from '../../assets/logo-mark.png'
 import { clearAdminAuthenticated } from '../../utils/adminAuth'
+import { useLocalStorageState } from '../../utils/useLocalStorageState'
 
 const NAV_ITEMS = [
   { label: 'Vue globale', to: '/admin', icon: LayoutDashboard, end: true },
@@ -24,6 +28,10 @@ const NAV_ITEMS = [
 
 export default function AdminSidebar({ open, onClose }) {
   const navigate = useNavigate()
+  const [collapsed, setCollapsed] = useLocalStorageState(
+    'tbf_admin_sidebar_collapsed',
+    false,
+  )
 
   const handleLogout = () => {
     clearAdminAuthenticated()
@@ -42,11 +50,20 @@ export default function AdminSidebar({ open, onClose }) {
 
       <aside
         className={`fixed inset-y-0 left-0 z-50 flex h-svh w-64 shrink-0 flex-col border-r border-border-soft/60 bg-bg px-4 py-6 transition-transform lg:sticky lg:top-0 lg:translate-x-0 ${
-          open ? 'translate-x-0' : '-translate-x-full'
-        }`}
+          collapsed ? 'lg:w-20 lg:px-2' : ''
+        } ${open ? 'translate-x-0' : '-translate-x-full'}`}
       >
         <div className="flex items-center justify-between">
-          <img src={logo} alt="TBF Moment" className="h-8 w-auto px-2" />
+          <img
+            src={logo}
+            alt="TBF Moment"
+            className={`h-8 w-auto px-2 ${collapsed ? 'lg:hidden' : ''}`}
+          />
+          <img
+            src={logoMark}
+            alt="TBF Moment"
+            className={`hidden h-8 w-8 ${collapsed ? 'lg:block' : ''}`}
+          />
           <button
             type="button"
             onClick={onClose}
@@ -56,7 +73,11 @@ export default function AdminSidebar({ open, onClose }) {
           </button>
         </div>
 
-        <span className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-full border border-danger/40 bg-danger/10 px-3 py-1 text-xs font-semibold tracking-wide text-danger uppercase">
+        <span
+          className={`mt-4 inline-flex w-fit items-center gap-1.5 rounded-full border border-danger/40 bg-danger/10 px-3 py-1 text-xs font-semibold tracking-wide text-danger uppercase ${
+            collapsed ? 'lg:hidden' : ''
+          }`}
+        >
           <ShieldAlert className="h-3.5 w-3.5" />
           Super Admin
         </span>
@@ -68,8 +89,11 @@ export default function AdminSidebar({ open, onClose }) {
               to={item.to}
               end={item.end}
               onClick={onClose}
+              title={item.label}
               className={({ isActive }) =>
                 `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
+                  collapsed ? 'lg:justify-center lg:px-2' : ''
+                } ${
                   isActive
                     ? 'bg-danger text-white'
                     : 'text-muted hover:bg-surface-2 hover:text-ink'
@@ -77,26 +101,52 @@ export default function AdminSidebar({ open, onClose }) {
               }
             >
               <item.icon className="h-4 w-4 shrink-0" />
-              <span className="flex-1">{item.label}</span>
+              <span className={`flex-1 ${collapsed ? 'lg:hidden' : ''}`}>
+                {item.label}
+              </span>
             </NavLink>
           ))}
         </nav>
 
+        <button
+          type="button"
+          onClick={() => setCollapsed((v) => !v)}
+          title={collapsed ? 'Développer le menu' : 'Réduire le menu'}
+          className="mb-3 hidden shrink-0 items-center justify-center gap-2 rounded-lg border border-border-soft py-2 text-xs font-medium text-muted transition hover:bg-surface-2 hover:text-ink lg:flex"
+        >
+          {collapsed ? (
+            <ChevronsRight className="h-4 w-4" />
+          ) : (
+            <>
+              <ChevronsLeft className="h-4 w-4" />
+              Réduire
+            </>
+          )}
+        </button>
+
         <div className="space-y-1">
           <NavLink
             to="/dashboard"
-            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted transition hover:bg-surface-2 hover:text-ink"
+            title="Retour au dashboard"
+            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted transition hover:bg-surface-2 hover:text-ink ${
+              collapsed ? 'lg:justify-center lg:px-2' : ''
+            }`}
           >
             <Home className="h-4 w-4 shrink-0" />
-            Retour au dashboard
+            <span className={collapsed ? 'lg:hidden' : ''}>
+              Retour au dashboard
+            </span>
           </NavLink>
           <button
             type="button"
             onClick={handleLogout}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-danger transition hover:bg-danger/10"
+            title="Se déconnecter"
+            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-danger transition hover:bg-danger/10 ${
+              collapsed ? 'lg:justify-center lg:px-2' : ''
+            }`}
           >
             <LogOut className="h-4 w-4 shrink-0" />
-            Se déconnecter
+            <span className={collapsed ? 'lg:hidden' : ''}>Se déconnecter</span>
           </button>
         </div>
       </aside>
