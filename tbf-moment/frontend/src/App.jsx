@@ -29,6 +29,7 @@ import LegalNotice from './pages/LegalNotice'
 import Login from './pages/Login'
 import MiniSite from './pages/MiniSite'
 import NotFound from './pages/NotFound'
+import Onboarding from './pages/Onboarding'
 import Pricing from './pages/Pricing'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import ResetPassword from './pages/ResetPassword'
@@ -62,6 +63,7 @@ function App() {
       <Route path="/auth/facebook/callback" element={<FacebookCallback />} />
       <Route path="/mot-de-passe-oublie" element={<ForgotPassword />} />
       <Route path="/reinitialiser-mot-de-passe" element={<ResetPassword />} />
+      <Route path="/bienvenue" element={<Onboarding />} />
       <Route path="/inscription" element={<Signup />} />
       <Route path="/modeles" element={<Templates />} />
       <Route path="/tarifs" element={<Pricing />} />

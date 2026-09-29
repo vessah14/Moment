@@ -1,6 +1,6 @@
 import { CheckCircle2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   createEvent,
   getEvent,
@@ -79,10 +79,21 @@ export default function CreateEvent() {
   const { id: eventId } = useParams()
   const isEditMode = Boolean(eventId)
   const navigate = useNavigate()
+  const location = useLocation()
+  const onboarding = location.state?.onboarding
   // En édition, la catégorie est déjà connue : on saute l'étape 0 pour ne pas
   // forcer une re-sélection inutile à chaque petite modification.
   const [currentStep, setCurrentStep] = useState(isEditMode ? 1 : 0)
-  const [event, setEvent] = useState(INITIAL_EVENT)
+  const [event, setEvent] = useState(() =>
+    onboarding
+      ? {
+          ...INITIAL_EVENT,
+          ...(onboarding.category && { category: onboarding.category }),
+          ...(onboarding.name && { name: onboarding.name }),
+          ...(onboarding.date && { date: onboarding.date }),
+        }
+      : INITIAL_EVENT,
+  )
   const [visibility, setVisibility] = useState('publish')
   const [publishing, setPublishing] = useState(false)
   const [published, setPublished] = useState(false)

@@ -73,6 +73,11 @@ export default function SecurityTab() {
         </div>
       </div>
 
+      <p className="mt-4 text-xs text-faint">
+        Pour supprimer votre compte, rendez-vous dans l'onglet{' '}
+        <span className="font-medium text-danger">Supprimer le compte</span>.
+      </p>
+
       {passwordFormOpen && (
         <form
           onSubmit={handlePasswordSubmit}

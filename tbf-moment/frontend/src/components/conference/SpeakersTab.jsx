@@ -1,8 +1,10 @@
 import { Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import Button from '../ui/Button'
+import { useToast } from '../../utils/useToast'
 
 export default function SpeakersTab({ speakers, onAdd, onRemove }) {
+  const toast = useToast()
   const [formOpen, setFormOpen] = useState(false)
 
   const handleSubmit = (e) => {
@@ -15,6 +17,12 @@ export default function SpeakersTab({ speakers, onAdd, onRemove }) {
     onAdd({ name, role, topic })
     setFormOpen(false)
     e.target.reset()
+    toast(`${name} ajouté aux intervenants`)
+  }
+
+  const handleRemove = (speaker) => {
+    onRemove(speaker.id)
+    toast(`${speaker.name} retiré`, { variant: 'danger' })
   }
 
   return (
@@ -85,7 +93,7 @@ export default function SpeakersTab({ speakers, onAdd, onRemove }) {
               </div>
               <button
                 type="button"
-                onClick={() => onRemove(speaker.id)}
+                onClick={() => handleRemove(speaker)}
                 className="rounded-lg p-1.5 text-faint transition hover:bg-danger/10 hover:text-danger"
               >
                 <Trash2 className="h-4 w-4" />

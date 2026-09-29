@@ -1,11 +1,23 @@
 import { Search } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 export default function GlobalSearch({ placeholder, buildIndex }) {
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
+  const inputRef = useRef(null)
+
+  useEffect(() => {
+    const handleShortcut = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        inputRef.current?.focus()
+      }
+    }
+    window.addEventListener('keydown', handleShortcut)
+    return () => window.removeEventListener('keydown', handleShortcut)
+  }, [])
 
   const results = useMemo(() => {
     const trimmed = query.trim().toLowerCase()
@@ -29,6 +41,7 @@ export default function GlobalSearch({ placeholder, buildIndex }) {
     <div className="relative min-w-0 flex-1 max-w-md">
       <Search className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-faint" />
       <input
+        ref={inputRef}
         type="search"
         value={query}
         onChange={(e) => {
@@ -38,11 +51,19 @@ export default function GlobalSearch({ placeholder, buildIndex }) {
         onFocus={() => setOpen(true)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && results[0]) goTo(results[0].to)
-          if (e.key === 'Escape') setOpen(false)
+          if (e.key === 'Escape') {
+            setOpen(false)
+            inputRef.current?.blur()
+          }
         }}
         placeholder={placeholder}
-        className="w-full rounded-lg border border-border bg-surface py-2.5 pr-4 pl-10 text-sm text-ink placeholder:text-faint outline-none focus:border-brand-purple"
+        className="w-full rounded-lg border border-border bg-surface py-2.5 pr-14 pl-10 text-sm text-ink placeholder:text-faint outline-none focus:border-brand-purple"
       />
+      {!query && (
+        <kbd className="pointer-events-none absolute top-1/2 right-3 hidden -translate-y-1/2 rounded-md border border-border-soft bg-surface-2 px-1.5 py-0.5 font-mono text-[10px] text-faint sm:inline-block">
+          Ctrl K
+        </kbd>
+      )}
 
       {open && query.trim() && (
         <>

@@ -5,6 +5,26 @@
     <link rel="icon" type="image/png" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TBF Moment — Create. Connect. Celebrate.</title>
+    <script>
+      (function () {
+        try {
+          var mode = localStorage.getItem('tbf_theme');
+          if (mode) mode = JSON.parse(mode);
+        } catch (e) {
+          mode = null;
+        }
+        var resolved =
+          mode === 'light' || mode === 'dark'
+            ? mode
+            : mode === 'auto' &&
+                window.matchMedia('(prefers-color-scheme: light)').matches
+              ? 'light'
+              : mode === 'auto'
+                ? 'dark'
+                : 'dark';
+        document.documentElement.setAttribute('data-theme', resolved);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -2,6 +2,7 @@ import { Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { SPONSOR_TIERS } from '../../data/conference'
 import Button from '../ui/Button'
+import { useToast } from '../../utils/useToast'
 
 const TIER_STYLES = {
   Platine: 'border-[color:var(--color-gold)]/60 text-[color:var(--color-gold)]',
@@ -11,6 +12,7 @@ const TIER_STYLES = {
 }
 
 export default function SponsorsTab({ sponsors, onAdd, onRemove }) {
+  const toast = useToast()
   const [formOpen, setFormOpen] = useState(false)
 
   const handleSubmit = (e) => {
@@ -22,6 +24,12 @@ export default function SponsorsTab({ sponsors, onAdd, onRemove }) {
     onAdd({ name, tier })
     setFormOpen(false)
     e.target.reset()
+    toast(`${name} ajouté (${tier})`)
+  }
+
+  const handleRemove = (sponsor) => {
+    onRemove(sponsor.id)
+    toast(`${sponsor.name} retiré`, { variant: 'danger' })
   }
 
   return (
@@ -86,7 +94,7 @@ export default function SponsorsTab({ sponsors, onAdd, onRemove }) {
                     <span className="text-sm font-medium">{sponsor.name}</span>
                     <button
                       type="button"
-                      onClick={() => onRemove(sponsor.id)}
+                      onClick={() => handleRemove(sponsor)}
                       className="text-faint hover:text-danger"
                     >
                       <Trash2 className="h-3.5 w-3.5" />

@@ -9,10 +9,12 @@ import { createGuestGroup, listGuestGroups } from '../../api/guestGroups'
 import { listEvents } from '../../api/events'
 import { listRsvps } from '../../api/rsvps'
 import { GUEST_STATUS_BY_LABEL, guestStatusLabel } from '../../utils/guestStatus'
+import { useToast } from '../../utils/useToast'
 
 const FILTERS = ['Tous', 'Confirmés', 'En attente', 'Refus']
 
 export default function Guests() {
+  const toast = useToast()
   const [events, setEvents] = useState([])
   const [selectedEventId, setSelectedEventId] = useState('')
   const [groups, setGroups] = useState([])
@@ -24,10 +26,8 @@ export default function Guests() {
   const [filter, setFilter] = useState('Tous')
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState(() => new Set())
-  const [actionMessage, setActionMessage] = useState('')
   const [addFormOpen, setAddFormOpen] = useState(false)
   const [newGroupName, setNewGroupName] = useState('')
-  const [copiedId, setCopiedId] = useState('')
   const [bulkGroupTarget, setBulkGroupTarget] = useState('')
 
   useEffect(() => {
@@ -83,6 +83,16 @@ export default function Guests() {
     setGuests(fresh ?? [])
   }
 
+  const handleCopyLink = async (guest) => {
+    const url = `${window.location.origin}/invitation/${guest.id}`
+    try {
+      await navigator.clipboard.writeText(url)
+    } catch {
+      // clipboard indisponible (contexte non sécurisé)
+    }
+    toast(`Lien copié pour ${guest.fullName}`)
+  }
+
   const visible = useMemo(() => {
     return guests.filter((g) => {
       const matchesFilter = filter === 'Tous' || g.status === GUEST_STATUS_BY_LABEL[filter]
@@ -114,23 +124,13 @@ export default function Guests() {
     })
   }
 
-  const handleCopyLink = async (guest) => {
-    const url = `${window.location.origin}/invitation/${guest.id}`
-    try {
-      await navigator.clipboard.writeText(url)
-    } catch {
-      // clipboard indisponible (contexte non sécurisé), on affiche quand même le lien
-    }
-    setCopiedId(guest.id)
-    setTimeout(() => setCopiedId(''), 2000)
-  }
-
   const handleDelete = async () => {
     setError('')
+    const count = selected.size
     try {
       await Promise.all([...selected].map((id) => deleteGuest(id)))
       await reloadGuests()
-      setActionMessage(`${selected.size} invité(s) supprimé(s)`)
+      toast(`${count} invité(s) supprimé(s)`)
       setSelected(new Set())
     } catch (err) {
       setError(err.message || 'La suppression a échoué.')
@@ -141,6 +141,7 @@ export default function Guests() {
     setBulkGroupTarget(groupId)
     if (!groupId && groupId !== '') return
     setError('')
+    const count = selected.size
     try {
       const targets = guests.filter((g) => selected.has(g.id))
       await Promise.all(
@@ -155,7 +156,7 @@ export default function Guests() {
         ),
       )
       await reloadGuests()
-      setActionMessage(`Groupe mis à jour pour ${selected.size} invité(s)`)
+      toast(`Groupe mis à jour pour ${count} invité(s)`)
       setSelected(new Set())
     } catch (err) {
       setError(err.message || 'La mise à jour a échoué.')
@@ -177,7 +178,7 @@ export default function Guests() {
     try {
       await createGuest({ fullName, phone, email }, { eventId: selectedEventId, groupId })
       await reloadGuests()
-      setActionMessage(`${fullName} ajouté(e) à la liste`)
+      toast(`${fullName} ajouté(e) à la liste`)
       setAddFormOpen(false)
       e.target.reset()
     } catch (err) {
@@ -219,7 +220,7 @@ export default function Guests() {
     link.download = 'invites.csv'
     link.click()
     URL.revokeObjectURL(url)
-    setActionMessage(`${guests.length} invité(s) exporté(s) en CSV`)
+    toast(`${guests.length} invité(s) exporté(s) en CSV`)
   }
 
   if (!loading && events.length === 0) {
@@ -441,9 +442,6 @@ export default function Guests() {
                       >
                         <Link2 className="h-4 w-4" />
                       </button>
-                      {copiedId === guest.id && (
-                        <span className="ml-1 text-xs text-success">Copié !</span>
-                      )}
                     </td>
                   </tr>
                 ))}
@@ -481,9 +479,6 @@ export default function Guests() {
             >
               Supprimer
             </button>
-            {actionMessage && (
-              <span className="text-xs text-success">{actionMessage}</span>
-            )}
           </div>
         </div>
       </div>

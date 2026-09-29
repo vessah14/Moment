@@ -56,6 +56,7 @@ src/
                     GlobalSearch
     home/          sections de la page d'accueil
     auth/          formulaires de connexion / inscription
+    onboarding/    les 4 étapes de l'accueil post-inscription (`/bienvenue`)
     wizard/        les 7 étapes de l'assistant "Créer un événement"
                     (+ un écran de succès) — voir plus bas
     builder/       Event Builder (bibliothèque de blocs, canevas avec rendu
@@ -90,7 +91,15 @@ partagé `useLocalStorageState` (`src/utils/useLocalStorageState.js`) :
 
 C'est un pub-sub maison au-dessus de `localStorage` (même onglet et
 inter-onglets), explicitement documenté dans le fichier comme *pas* une
-vraie persistance serveur.
+vraie persistance serveur. Le même mécanisme pilote aussi les préférences
+globales : `tbf_theme` (clair/sombre/auto), `tbf_reduced_motion`,
+`tbf_sidebar_collapsed` / `tbf_admin_sidebar_collapsed`.
+
+Les confirmations d'action ("Enregistré", "Lien copié"...) passent par un
+système de toast partagé (`ToastProvider` + `useToast()`, monté une seule
+fois dans `main.jsx`) plutôt que par des messages inline recréés page par
+page — certaines pages plus anciennes gardent encore leur propre feedback
+inline, pas encore migrées.
 
 ## Carte des routes
 
@@ -104,6 +113,7 @@ vraie persistance serveur.
 | `/connexion`, `/inscription` | Auth organisateur (accepte n'importe quel couple non vide, aucune vérification) |
 | `/mot-de-passe-oublie` | Demande de réinitialisation (pas d'e-mail réel envoyé — un lien simule l'ouverture du lien reçu) |
 | `/reinitialiser-mot-de-passe` | Définition d'un nouveau mot de passe |
+| `/bienvenue` | Accueil post-inscription (4 étapes) — voir plus bas |
 | `/ecosysteme`, `/support`, `/mentions-legales` | Pages statiques |
 | `/invitation/:code` | Page invité — RSVP, QR de billet ; le `:code` est résolu contre la liste d'invités partagée (`tbf_guests_v2`) via un slug du nom |
 | `/cadeaux/:code` | Liste de mariage — vue invité |
@@ -187,6 +197,30 @@ combine un bouton contour ("Se connecter") avec le bouton en dégradé
 barre de bas de page dédiée (copyright + liens légaux), distincte des
 colonnes de liens principales.
 
+### Thème clair / sombre / auto
+
+Piloté par `useTheme()` (`src/utils/useTheme.js`) via l'attribut
+`data-theme` sur `<html>` : les tokens de couleur dans `index.css` ont un
+bloc `:root[data-theme='light']` qui redéfinit les mêmes variables, donc
+tout composant utilisant déjà `bg-bg`/`text-ink`/etc. se re-thème sans
+modification. Un petit script bloquant dans `index.html` applique le bon
+thème avant le premier rendu (pas de flash). Sélecteur accessible dans le
+header public, les deux topbars (icônes), et en version complète avec
+libellés dans Paramètres > Langue et fuseau > Apparence. Le rendu "site
+public" dans le Builder (`BuilderCanvas.jsx`) reste volontairement toujours
+clair, indépendant de ce thème — il simule une vraie page web.
+
+### Accessibilité et préférences
+
+- **Réduction des animations** : respecte `prefers-reduced-motion`
+  automatiquement, plus un interrupteur manuel (`useReducedMotion`,
+  Paramètres > Apparence) qui ajoute `data-reduced-motion="true"`.
+- **Raccourci `Ctrl/Cmd+K`** : focus la recherche globale (`GlobalSearch.jsx`)
+  depuis n'importe quelle page dashboard/admin.
+- **Sidebar repliable** (dashboard et admin) : bouton en bas du menu, passe
+  en icônes seules avec info-bulles ; état mémorisé par contexte
+  (organisateur/admin séparés) ; toujours dépliée sur mobile (l'overlay).
+
 ## Modules spécialisés par catégorie d'événement
 
 Le cahier des charges (section 5) prévoit des modules dédiés par type
@@ -203,15 +237,23 @@ d'événement. État actuel :
 - **Anniversaire, Obsèques, Graduation, Concert** — non construits (prévus
   V1/V2 dans la roadmap du cahier des charges, pas dans le MVP).
 
-## Onboarding post-inscription (en pause)
+## Onboarding post-inscription
 
-Un parcours plein écran séparé (4 étapes : catégorie, objectif de
-l'événement, puis deux étapes non spécifiées) a été évoqué pour s'afficher
-une seule fois juste après l'inscription, avant le dashboard — distinct de
-l'assistant "Créer un événement" qui reste réutilisable à volonté. **Non
-construit** : seules 2 des 4 étapes ont une maquette ; le construire
-partiellement créerait un parcours à moitié fini. À reprendre dès que les
-maquettes des étapes 3 et 4 arrivent.
+Parcours plein écran séparé (`/bienvenue`, 4 étapes), affiché une seule fois
+juste après l'inscription (`SignupForm` redirige ici plutôt que vers
+`/dashboard`) — distinct de l'assistant "Créer un événement", qui reste
+réutilisable à volonté depuis le dashboard :
+
+1. **Type d'événement** — mêmes 14 catégories que l'assistant.
+2. **Objectif** — privé / professionnel / public / je ne sais pas encore.
+3. **Informations de base** — nom, date approximative, nombre d'invités
+   estimé (conçu pour ce projet, pas de maquette fournie).
+4. **Bienvenue** — récapitulatif des choix, puis soit "Créer mon premier
+   événement" (ouvre l'assistant avec catégorie/nom/date pré-remplis via
+   `location.state`), soit "Explorer le tableau de bord".
+
+Un lien "Passer" est présent à chaque étape (sauf la dernière) et quitte
+directement vers `/dashboard`, sans forcer à terminer le parcours.
 
 ## Limites connues
 
@@ -251,8 +293,8 @@ maquettes des étapes 3 et 4 arrivent.
    dashboard par des appels API, module par module.
 3. Authentification réelle (sessions/tokens, RBAC organisateur/admin —
    cahier des charges section 12).
-4. Reprendre l'onboarding post-inscription dès réception des maquettes
-   manquantes (étapes 3 et 4).
+4. Finir la migration des confirmations d'action inline vers le système de
+   toast partagé sur les pages qui ne l'utilisent pas encore.
 
 E-mail : admin@tbfmoment.com
 Mot de passe : TbfAdmin2027!

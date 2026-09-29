@@ -1,36 +1,59 @@
 import { useState } from 'react'
 import Button from '../ui/Button'
+import ThemeToggle from '../ui/ThemeToggle'
+import Toggle from '../builder/Toggle'
+import { useReducedMotion } from '../../utils/useReducedMotion'
+import { useToast } from '../../utils/useToast'
 
 const LANGUAGES = ['Français', 'English', 'Wolof']
 const TIMEZONES = ['GMT · Dakar', 'GMT+1 · Douala', 'GMT+0 · UTC', 'CET · Paris']
 const DATE_FORMATS = ['JJ/MM/AAAA', 'MM/JJ/AAAA', 'AAAA-MM-JJ']
 
 export default function LanguageTab() {
-  const [saved, setSaved] = useState(false)
+  const toast = useToast()
   const [language, setLanguage] = useState('Français')
   const [timezone, setTimezone] = useState('GMT · Dakar')
   const [dateFormat, setDateFormat] = useState('JJ/MM/AAAA')
+  const [reducedMotion, setReducedMotion] = useReducedMotion()
 
   const handleSave = () => {
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2500)
+    toast('Préférences enregistrées')
   }
 
   return (
     <div className="rounded-2xl border border-border-soft bg-surface p-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-ink">Langue et fuseau</h2>
-        <div className="flex items-center gap-3">
-          {saved && <span className="text-sm text-success">Enregistré</span>}
-          <Button variant="solid" onClick={handleSave}>
-            Enregistrer
-          </Button>
-        </div>
+        <Button variant="solid" onClick={handleSave}>
+          Enregistrer
+        </Button>
       </div>
       <p className="mt-1 text-sm text-muted">
         Ces réglages s'appliquent à votre interface et aux e-mails envoyés en
         votre nom.
       </p>
+
+      <div className="mt-6">
+        <span className="text-sm font-medium text-ink">Apparence</span>
+        <div className="mt-2">
+          <ThemeToggle />
+        </div>
+        <p className="mt-1.5 text-xs text-faint">
+          "Auto" suit le réglage clair/sombre de votre appareil.
+        </p>
+
+        <div className="mt-4 flex items-center justify-between rounded-lg border border-border-soft px-4 py-3">
+          <div>
+            <p className="text-sm font-medium text-ink">
+              Réduire les animations
+            </p>
+            <p className="text-xs text-faint">
+              Désactive les transitions et animations dans toute l'app.
+            </p>
+          </div>
+          <Toggle checked={reducedMotion} onChange={setReducedMotion} />
+        </div>
+      </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
         <label className="block">

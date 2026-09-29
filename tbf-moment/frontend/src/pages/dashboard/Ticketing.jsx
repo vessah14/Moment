@@ -1,6 +1,7 @@
 import QRCode from 'qrcode'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import TicketSalesChart from '../../components/billing/TicketSalesChart'
+import { useToast } from '../../utils/useToast'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import StatCard from '../../components/dashboard/StatCard'
 import Button from '../../components/ui/Button'
@@ -21,6 +22,7 @@ function statusFor(type) {
 }
 
 export default function Ticketing() {
+  const toast = useToast()
   const [events, setEvents] = useState([])
   const [selectedEventId, setSelectedEventId] = useState('')
   const [ticketTypes, setTicketTypes] = useState([])
@@ -76,6 +78,7 @@ export default function Ticketing() {
     try {
       await createTicketType({ name, priceCents, quota }, selectedEventId)
       setTypeForm(false)
+      toast(`Billet "${name}" ajouté`)
       e.target.reset()
       reload(selectedEventId)
     } catch (err) {
@@ -103,6 +106,7 @@ export default function Ticketing() {
     try {
       await recordTicketSale(ticketTypeId, { buyerName, buyerEmail })
       setSaleFormFor('')
+      toast(`Vente enregistrée pour ${buyerName}`)
       reload(selectedEventId)
     } catch (err) {
       setError(err.message || "L'enregistrement a échoué.")

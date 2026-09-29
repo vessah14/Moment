@@ -66,7 +66,7 @@ export default function SignupForm() {
         confirmPassword,
       })
       await login({ email, password })
-      navigate('/dashboard')
+      navigate('/bienvenue')
     } catch (err) {
       setError(err.message || 'Inscription impossible.')
     } finally {

@@ -50,6 +50,26 @@
   --animate-blink: blink 1.4s ease-in-out infinite;
 }
 
+/* Thème clair — mêmes noms de variables, valeurs inversées. Les couleurs de
+   marque/graphiques restent identiques (déjà lisibles sur fond clair) ; seuls
+   les tokens de surface et de texte changent réellement. */
+:root[data-theme='light'] {
+  --color-bg: #f6f7fb;
+  --color-surface: #ffffff;
+  --color-surface-2: #eef0f6;
+  --color-panel: #ffffff;
+  --color-border: #dde1ec;
+  --color-border-soft: #e8eaf2;
+
+  --color-ink: #12172a;
+  --color-muted: #4b5170;
+  --color-faint: #6b7290;
+
+  /* Variantes plus foncées pour rester lisibles (AA) en texte sur fond clair */
+  --color-success: #047857;
+  --color-danger: #dc2626;
+}
+
 @keyframes blink {
   0%,
   100% {
@@ -96,4 +116,26 @@ h3 {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+/* Animations reduites : respecte le reglage systeme automatiquement, et/ou
+   l'interrupteur manuel (Parametres > Langue et fuseau > Apparence). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+[data-reduced-motion='true'] *,
+[data-reduced-motion='true'] *::before,
+[data-reduced-motion='true'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
 }

@@ -7,6 +7,7 @@ import { listEvents } from '../../api/events'
 import { listGuests } from '../../api/guests'
 import { buildDashboardSearchIndex } from '../../data/dashboardSearchIndex'
 import Button from '../ui/Button'
+import ThemeToggle from '../ui/ThemeToggle'
 import GlobalSearch from './GlobalSearch'
 
 function initials(fullName) {
@@ -55,6 +56,8 @@ export default function DashboardTopbar({ onMenuClick }) {
       />
 
       <div className="ml-auto flex items-center gap-3 sm:gap-5">
+        <ThemeToggle className="hidden md:inline-flex" showLabels={false} />
+
         <div className="relative hidden sm:block">
           <button
             type="button"
