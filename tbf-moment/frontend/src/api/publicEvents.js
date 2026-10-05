@@ -7,3 +7,8 @@ export function getPublicEvent(slug) {
 export function getPublicSite(slug) {
   return apiFetch(`/public/events/${slug}/site`, { auth: false })
 }
+
+// Message d'un invité dans le livre d'or : publié seulement après validation de l'organisateur.
+export function signPublicGuestBook(slug, dto) {
+  return apiFetch(`/public/events/${encodeURIComponent(slug)}/guest-book`, { method: 'POST', body: dto, auth: false })
+}

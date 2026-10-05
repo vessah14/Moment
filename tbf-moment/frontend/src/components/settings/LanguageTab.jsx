@@ -4,20 +4,21 @@ import ThemeToggle from '../ui/ThemeToggle'
 import Toggle from '../builder/Toggle'
 import { useReducedMotion } from '../../utils/useReducedMotion'
 import { useToast } from '../../utils/useToast'
-
-const LANGUAGES = ['Français', 'English', 'Wolof']
+import { LANGUAGES, getCurrentLanguage, setLanguage as applyLanguage } from '../../utils/translation'
 const TIMEZONES = ['GMT · Dakar', 'GMT+1 · Douala', 'GMT+0 · UTC', 'CET · Paris']
 const DATE_FORMATS = ['JJ/MM/AAAA', 'MM/JJ/AAAA', 'AAAA-MM-JJ']
 
 export default function LanguageTab() {
   const toast = useToast()
-  const [language, setLanguage] = useState('Français')
+  const [language, setLanguage] = useState(getCurrentLanguage())
   const [timezone, setTimezone] = useState('GMT · Dakar')
   const [dateFormat, setDateFormat] = useState('JJ/MM/AAAA')
   const [reducedMotion, setReducedMotion] = useReducedMotion()
 
   const handleSave = () => {
     toast('Préférences enregistrées')
+    // Changer de langue recharge la page pour traduire tout le site.
+    if (language !== getCurrentLanguage()) applyLanguage(language)
   }
 
   return (
@@ -64,13 +65,15 @@ export default function LanguageTab() {
             className="mt-2 w-full rounded-lg border border-border bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-brand-purple"
           >
             {LANGUAGES.map((l) => (
-              <option key={l}>{l}</option>
+              <option key={l.code} value={l.code} className="notranslate">
+                {l.label}
+              </option>
             ))}
           </select>
-          {language !== 'Français' && (
-            <span className="mt-1.5 block text-xs text-brand-orange">
-              Interface disponible en français uniquement pour le moment —
-              les autres langues arrivent bientôt.
+          {language !== 'fr' && (
+            <span className="mt-1.5 block text-xs text-faint">
+              Traduction automatique de l'interface. Les e-mails envoyés à vos
+              invités restent en français.
             </span>
           )}
         </label>

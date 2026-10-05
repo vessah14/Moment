@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { consumeReturnPath, returnPathFrom } from '../../utils/returnPath'
 import { loginWithGoogle } from '../../api/auth'
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
@@ -26,6 +27,7 @@ function loadGoogleScript() {
 // une connexion Google qui ne peut pas fonctionner.
 export default function GoogleSignInButton({ onError }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const containerRef = useRef(null)
 
   useEffect(() => {
@@ -40,7 +42,7 @@ export default function GoogleSignInButton({ onError }) {
           callback: async (response) => {
             try {
               await loginWithGoogle(response.credential)
-              navigate('/dashboard')
+              navigate(returnPathFrom(location) ?? consumeReturnPath() ?? '/dashboard', { replace: true })
             } catch (err) {
               onError?.(err.message || 'Connexion Google impossible.')
             }

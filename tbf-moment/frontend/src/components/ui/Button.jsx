@@ -1,3 +1,5 @@
+import { mergeClasses } from '../../utils/mergeClasses'
+
 const VARIANTS = {
   gradient:
     'bg-brand-gradient text-white shadow-lg shadow-brand-pink/20 hover:opacity-90',
@@ -16,7 +18,10 @@ export default function Button({
 }) {
   return (
     <Component
-      className={`inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition ${VARIANTS[variant]} ${className}`}
+      className={mergeClasses(
+        `inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition ${VARIANTS[variant]}`,
+        className,
+      )}
       {...props}
     >
       {children}

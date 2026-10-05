@@ -143,7 +143,7 @@ export default function Communication() {
 
       {tab === 'Rappels' ? (
         <div className="mt-6 max-w-2xl">
-          <AutoReminders />
+          <AutoReminders eventId={selectedEventId} />
         </div>
       ) : (
         <div className="mt-6 grid gap-6 lg:grid-cols-[2fr_1fr]">

@@ -22,6 +22,7 @@ const STYLES = {
   Signalé: 'bg-danger/15 text-danger',
   'Double scan': 'bg-danger/15 text-danger',
   Suspendu: 'bg-danger/15 text-danger',
+  Archivé: 'bg-surface-2 text-muted',
 
   Programmé: 'bg-brand-purple/15 text-brand-purple',
   Programmée: 'bg-brand-purple/15 text-brand-purple',

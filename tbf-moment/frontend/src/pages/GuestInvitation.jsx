@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom'
 import { getPublicInvitation, submitPublicRsvp } from '../api/guests'
 import logoMark from '../assets/logo-mark.png'
 import Button from '../components/ui/Button'
+import LanguageSwitcher from '../components/ui/LanguageSwitcher'
 
 function formatEventDateTime(dateStr, timeStr) {
   if (!dateStr) return ''
@@ -146,9 +147,12 @@ export default function GuestInvitation() {
   const rsvp =
     invitation.rsvpConfirmed === true ? 'confirmed' : invitation.rsvpConfirmed === false ? 'declined' : null
   const seats = 1 + (invitation.rsvpAccompanyingCount ?? 0)
+  // Événement passé : la réponse ne peut plus être modifiée (refusé aussi côté serveur).
+  const closed = Boolean(invitation.rsvpClosed)
 
   return (
     <div className="flex min-h-svh items-center justify-center bg-bg px-6 py-12">
+      <LanguageSwitcher floating />
       <div className="w-full max-w-md overflow-hidden rounded-2xl border border-border-soft bg-surface">
         <div className="flex items-center gap-2 border-b border-border-soft px-4 py-3">
           <span className="h-2.5 w-2.5 rounded-full bg-brand-orange" />
@@ -170,7 +174,16 @@ export default function GuestInvitation() {
             </p>
           )}
 
-          {rsvp === null && (
+          {rsvp === null && closed && (
+            <div className="rounded-lg border border-border-soft bg-surface-2 p-4">
+              <p className="font-semibold text-ink">Les réponses sont closes</p>
+              <p className="mt-1 text-sm text-muted">
+                {invitation.eventName} a déjà eu lieu. Merci de votre intérêt !
+              </p>
+            </div>
+          )}
+
+          {rsvp === null && !closed && (
             <>
               <span className="inline-flex items-center rounded-full border border-border px-3 py-1 text-[11px] font-semibold tracking-widest text-brand-purple uppercase">
                 Invitation personnelle
@@ -244,14 +257,16 @@ export default function GuestInvitation() {
                 <Button variant="outline" className="w-full" onClick={handleSaveQr}>
                   Enregistrer le QR
                 </Button>
-                <button
-                  type="button"
-                  disabled={submitting}
-                  onClick={() => handleRsvp(false)}
-                  className="w-full text-sm text-muted hover:text-ink hover:underline"
-                >
-                  Je ne peux finalement plus venir
-                </button>
+                {!closed && (
+                  <button
+                    type="button"
+                    disabled={submitting}
+                    onClick={() => handleRsvp(false)}
+                    className="w-full text-sm text-muted hover:text-ink hover:underline"
+                  >
+                    Je ne peux finalement plus venir
+                  </button>
+                )}
               </div>
             </>
           )}
@@ -264,14 +279,16 @@ export default function GuestInvitation() {
                   Merci de nous avoir prévenus, vous nous manquerez le jour J.
                 </p>
               </div>
-              <button
-                type="button"
-                disabled={submitting}
-                onClick={() => handleRsvp(true)}
-                className="mt-4 text-sm text-brand-purple hover:underline"
-              >
-                Changer ma réponse
-              </button>
+              {!closed && (
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={() => handleRsvp(true)}
+                  className="mt-4 text-sm text-brand-purple hover:underline"
+                >
+                  Changer ma réponse
+                </button>
+              )}
             </>
           )}
 

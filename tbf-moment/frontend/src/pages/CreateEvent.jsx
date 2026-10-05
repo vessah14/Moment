@@ -1,20 +1,29 @@
 import { CheckCircle2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams
+} from 'react-router-dom'
 import {
   createEvent,
   getEvent,
   updateEvent as updateEventApi,
-  uploadEventCoverImage,
+  uploadEventCoverImage
 } from '../api/events'
 import { API_ORIGIN } from '../api/client'
 import { listEventCategories } from '../api/eventCategories'
 import {
   createEventLocation,
   listEventLocations,
-  updateEventLocation,
+  updateEventLocation
 } from '../api/eventLocations'
-import { createEventBlock, listEventBlocks, updateEventBlock } from '../api/eventBlocks'
+import {
+  createEventBlock,
+  listEventBlocks,
+  updateEventBlock
+} from '../api/eventBlocks'
 import { createGuestGroup, listGuestGroups } from '../api/guestGroups'
 import { createGuest } from '../api/guests'
 import DashboardLayout from '../components/layout/DashboardLayout'
@@ -28,6 +37,7 @@ import PersonalizationStep from '../components/wizard/PersonalizationStep'
 import PublicationStep from '../components/wizard/PublicationStep'
 import StepProgress from '../components/wizard/StepProgress'
 import TemplateStep from '../components/wizard/TemplateStep'
+import { findTemplate, templateMatchesCategory } from '../utils/templateTheme'
 
 const STEPS = [
   "Type d'événement",
@@ -36,7 +46,7 @@ const STEPS = [
   'Personnalisation',
   'Invités',
   'Options',
-  'Aperçu & Publication',
+  'Aperçu & Publication'
 ]
 
 const INITIAL_EVENT = {
@@ -62,12 +72,12 @@ const INITIAL_EVENT = {
     program: true,
     gallery: true,
     ticketing: false,
-    guestbook: false,
+    guestbook: false
   },
-  plan: 'FREE',
+  plan: 'FREE'
 }
 
-function parseCustomFields(json) {
+function parseCustomFields (json) {
   try {
     return JSON.parse(json ?? '{}') ?? {}
   } catch {
@@ -75,25 +85,38 @@ function parseCustomFields(json) {
   }
 }
 
-export default function CreateEvent() {
+export default function CreateEvent () {
   const { id: eventId } = useParams()
   const isEditMode = Boolean(eventId)
   const navigate = useNavigate()
   const location = useLocation()
   const onboarding = location.state?.onboarding
+  // "Utiliser ce modèle" depuis la bibliothèque : /dashboard/evenements/nouveau?modele=Éclat
+  const [searchParams] = useSearchParams()
+  const presetTemplate = isEditMode
+    ? null
+    : findTemplate(searchParams.get('modele'))
   // En édition, la catégorie est déjà connue : on saute l'étape 0 pour ne pas
   // forcer une re-sélection inutile à chaque petite modification.
   const [currentStep, setCurrentStep] = useState(isEditMode ? 1 : 0)
-  const [event, setEvent] = useState(() =>
-    onboarding
+  const [event, setEvent] = useState(() => {
+    const base = onboarding
       ? {
           ...INITIAL_EVENT,
           ...(onboarding.category && { category: onboarding.category }),
           ...(onboarding.name && { name: onboarding.name }),
-          ...(onboarding.date && { date: onboarding.date }),
+          ...(onboarding.date && { date: onboarding.date })
         }
-      : INITIAL_EVENT,
-  )
+      : INITIAL_EVENT
+    return presetTemplate
+      ? {
+          ...base,
+          template: presetTemplate.name,
+          // Résolu en categoryId dès que les catégories sont chargées (voir plus bas).
+          presetCategoryCode: base.category ? null : presetTemplate.categoryCode
+        }
+      : base
+  })
   const [visibility, setVisibility] = useState('publish')
   const [publishing, setPublishing] = useState(false)
   const [published, setPublished] = useState(false)
@@ -110,7 +133,7 @@ export default function CreateEvent() {
 
   useEffect(() => {
     listEventCategories()
-      .then((data) => setCategories(data ?? []))
+      .then(data => setCategories(data ?? []))
       .catch(() => setCategories([]))
       .finally(() => setCategoriesLoading(false))
   }, [])
@@ -121,19 +144,21 @@ export default function CreateEvent() {
     Promise.all([
       getEvent(eventId),
       listEventLocations(eventId).catch(() => []),
-      listEventBlocks(eventId).catch(() => []),
+      listEventBlocks(eventId).catch(() => [])
     ])
       .then(([eventData, locations, blocks]) => {
         if (cancelled) return
         const custom = parseCustomFields(eventData.customFields)
-        setEvent((prev) => ({
+        setEvent(prev => ({
           ...prev,
           name: eventData.name,
           categoryId: eventData.categoryId,
           date: eventData.eventDate ?? '',
           timeStart: eventData.startTime ? eventData.startTime.slice(0, 5) : '',
           themeColor: eventData.themeColor || prev.themeColor,
-          coverImage: eventData.coverImageUrl ? `${API_ORIGIN}${eventData.coverImageUrl}` : null,
+          coverImage: eventData.coverImageUrl
+            ? `${API_ORIGIN}${eventData.coverImageUrl}`
+            : null,
           coverImageUrl: eventData.coverImageUrl ?? null,
           coverImageFile: null,
           coverImageIsLocal: false,
@@ -143,14 +168,15 @@ export default function CreateEvent() {
           timeEnd: custom.timeEnd ?? '',
           timezone: custom.timezone ?? prev.timezone,
           template: custom.template ?? null,
-          options: { ...prev.options, ...(custom.options ?? {}) },
+          options: { ...prev.options, ...(custom.options ?? {}) }
         }))
         setVisibility(eventData.status === 'Publie' ? 'publish' : 'draft')
         setExistingLocation(locations[0] ?? null)
         setExistingBlocks(blocks)
       })
-      .catch((err) => {
-        if (!cancelled) setLoadError(err.message || "Impossible de charger l'événement.")
+      .catch(err => {
+        if (!cancelled)
+          setLoadError(err.message || "Impossible de charger l'événement.")
       })
       .finally(() => {
         if (!cancelled) setLoadingEvent(false)
@@ -162,20 +188,71 @@ export default function CreateEvent() {
 
   useEffect(() => {
     if (!isEditMode || categoriesLoading || !event.categoryId) return
-    const match = categories.find((c) => c.id === event.categoryId)
+    const match = categories.find(c => c.id === event.categoryId)
     if (match && event.category !== match.label) {
-      setEvent((prev) => ({ ...prev, category: match.label }))
+      setEvent(prev => ({ ...prev, category: match.label }))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditMode, categoriesLoading, categories, event.categoryId])
 
-  const updateEvent = (patch) => setEvent((prev) => ({ ...prev, ...patch }))
+  // Catégorie connue sans son identifiant (modèle présélectionné → code, onboarding →
+  // libellé) : on la retrouve dès que la liste des catégories est chargée.
+  useEffect(() => {
+    if (isEditMode || categoriesLoading || event.categoryId) return
+    if (!event.presetCategoryCode && !event.category) return
+    const match =
+      categories.find(
+        c => event.presetCategoryCode && c.code === event.presetCategoryCode
+      ) ??
+      categories.find(
+        c =>
+          event.category &&
+          c.label.toLowerCase() === event.category.toLowerCase()
+      )
+    if (match)
+      setEvent(prev => ({
+        ...prev,
+        categoryId: match.id,
+        category: match.label,
+        presetCategoryCode: null
+      }))
+  }, [
+    isEditMode,
+    categoriesLoading,
+    categories,
+    event.categoryId,
+    event.category,
+    event.presetCategoryCode
+  ])
+
+  const selectedCategory =
+    categories.find(c => c.id === event.categoryId) ?? null
+  const selectedCategoryCode = selectedCategory?.code ?? null
+
+  const handleCategorySelect = category => {
+    const selectedTemplate = findTemplate(event.template)
+    updateEvent({
+      categoryId: category.id,
+      category: category.label,
+      template:
+        selectedTemplate &&
+        !templateMatchesCategory(
+          selectedTemplate,
+          category.code,
+          category.label
+        )
+          ? null
+          : event.template
+    })
+  }
+
+  const updateEvent = patch => setEvent(prev => ({ ...prev, ...patch }))
 
   const canGoBack = currentStep > 0
   const isPublicationStep = currentStep === STEPS.length - 1
   const canContinue = currentStep !== 0 || Boolean(event.categoryId)
 
-  const handlePublish = async (targetVisibility) => {
+  const handlePublish = async targetVisibility => {
     setPublishError('')
     setPublishWarnings([])
 
@@ -202,15 +279,18 @@ export default function CreateEvent() {
           timeEnd: event.timeEnd,
           timezone: event.timezone,
           template: event.template,
-          options: event.options,
-        }),
+          options: event.options
+        })
       }
 
       const targetId = isEditMode ? eventId : (await createEvent(dto)).id
 
       if (event.coverImageFile) {
         try {
-          const { url } = await uploadEventCoverImage(targetId, event.coverImageFile)
+          const { url } = await uploadEventCoverImage(
+            targetId,
+            event.coverImageFile
+          )
           dto.coverImageUrl = url
         } catch {
           warnings.push("L'image de couverture n'a pas pu être envoyée.")
@@ -219,7 +299,7 @@ export default function CreateEvent() {
 
       const updatedEvent = await updateEventApi(targetId, {
         ...dto,
-        status: targetVisibility === 'publish' ? 'Publie' : 'Brouillon',
+        status: targetVisibility === 'publish' ? 'Publie' : 'Brouillon'
       })
       setPublishedSlug(updatedEvent?.slug ?? '')
       setPublishedEventId(targetId)
@@ -230,12 +310,12 @@ export default function CreateEvent() {
             await updateEventLocation(existingLocation.id, {
               label: existingLocation.label,
               address: event.location,
-              position: existingLocation.position,
+              position: existingLocation.position
             })
           } else {
             await createEventLocation(
               { label: 'Lieu principal', address: event.location, position: 0 },
-              targetId,
+              targetId
             )
           }
         } catch {
@@ -244,8 +324,8 @@ export default function CreateEvent() {
       }
 
       try {
-        const findBlock = (type) => existingBlocks.find((b) => b.blockType === type)
-        const parseBlockContent = (raw) => {
+        const findBlock = type => existingBlocks.find(b => b.blockType === type)
+        const parseBlockContent = raw => {
           try {
             return JSON.parse(raw || '{}') ?? {}
           } catch {
@@ -257,18 +337,26 @@ export default function CreateEvent() {
         // dans cet assistant ne doit jamais effacer.
         const upsertBlockMerge = async (type, patch) => {
           const existing = findBlock(type)
-          const content = JSON.stringify({ ...parseBlockContent(existing?.content), ...patch })
+          const content = JSON.stringify({
+            ...parseBlockContent(existing?.content),
+            ...patch
+          })
           if (existing) {
             await updateEventBlock(existing.id, {
               blockType: type,
               position: existing.position,
               isVisible: true,
-              content,
+              content
             })
           } else {
             await createEventBlock(
-              { blockType: type, position: existingBlocks.length, isVisible: true, content },
-              targetId,
+              {
+                blockType: type,
+                position: existingBlocks.length,
+                isVisible: true,
+                content
+              },
+              targetId
             )
           }
         }
@@ -280,7 +368,9 @@ export default function CreateEvent() {
         if (event.options?.program) await upsertBlockMerge('Programme', {})
         if (event.options?.checkin) await upsertBlockMerge('Rsvp', {})
       } catch {
-        warnings.push("Les sections de la page n'ont pas pu être toutes mises à jour.")
+        warnings.push(
+          "Les sections de la page n'ont pas pu être toutes mises à jour."
+        )
       }
 
       if (event.guests?.length) {
@@ -288,8 +378,13 @@ export default function CreateEvent() {
         const existingGroups = await listGuestGroups(targetId).catch(() => [])
         for (const g of existingGroups) groupIdByName.set(g.name, g.id)
 
-        for (const groupName of new Set(event.guests.map((g) => g.group))) {
-          if (!groupName || groupName === 'Sans groupe' || groupIdByName.has(groupName)) continue
+        for (const groupName of new Set(event.guests.map(g => g.group))) {
+          if (
+            !groupName ||
+            groupName === 'Sans groupe' ||
+            groupIdByName.has(groupName)
+          )
+            continue
           try {
             const group = await createGuestGroup({ name: groupName }, targetId)
             groupIdByName.set(groupName, group.id)
@@ -302,7 +397,7 @@ export default function CreateEvent() {
           try {
             await createGuest(
               { fullName: guest.name, phone: guest.phone, email: guest.email },
-              { eventId: targetId, groupId: groupIdByName.get(guest.group) },
+              { eventId: targetId, groupId: groupIdByName.get(guest.group) }
             )
           } catch {
             warnings.push(`${guest.name} n'a pas pu être ajouté(e).`)
@@ -327,9 +422,7 @@ export default function CreateEvent() {
             categories={categories}
             loading={categoriesLoading}
             selectedId={event.categoryId}
-            onSelect={(category) =>
-              updateEvent({ categoryId: category.id, category: category.label })
-            }
+            onSelect={handleCategorySelect}
           />
         )
       case 1:
@@ -337,9 +430,10 @@ export default function CreateEvent() {
       case 2:
         return (
           <TemplateStep
-            category={event.category}
+            categoryCode={selectedCategoryCode}
+            categoryLabel={selectedCategory?.label}
             selected={event.template}
-            onSelect={(template) => updateEvent({ template })}
+            onSelect={template => updateEvent({ template })}
           />
         )
       case 3:
@@ -364,12 +458,20 @@ export default function CreateEvent() {
         return null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentStep, event, visibility, publishing, publishError, categories, categoriesLoading])
+  }, [
+    currentStep,
+    event,
+    visibility,
+    publishing,
+    publishError,
+    categories,
+    categoriesLoading
+  ])
 
   if (isEditMode && loadingEvent) {
     return (
       <DashboardLayout>
-        <p className="rounded-2xl border border-dashed border-border-soft py-20 text-center text-sm text-faint">
+        <p className='rounded-2xl border border-dashed border-border-soft py-20 text-center text-sm text-faint'>
           Chargement de l'événement…
         </p>
       </DashboardLayout>
@@ -379,10 +481,14 @@ export default function CreateEvent() {
   if (isEditMode && loadError) {
     return (
       <DashboardLayout>
-        <p className="rounded-lg border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
+        <p className='rounded-lg border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger'>
           {loadError}
         </p>
-        <Button variant="outline" className="mt-6" onClick={() => navigate('/dashboard/evenements')}>
+        <Button
+          variant='outline'
+          className='mt-6'
+          onClick={() => navigate('/dashboard/evenements')}
+        >
           Retour à mes événements
         </Button>
       </DashboardLayout>
@@ -392,49 +498,62 @@ export default function CreateEvent() {
   if (published) {
     return (
       <DashboardLayout>
-        <div className="mx-auto flex max-w-lg flex-col items-center py-20 text-center">
-          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-success/15 text-success">
-            <CheckCircle2 className="h-8 w-8" />
+        <div className='mx-auto flex max-w-lg flex-col items-center py-20 text-center'>
+          <span className='flex h-16 w-16 items-center justify-center rounded-full bg-success/15 text-success'>
+            <CheckCircle2 className='h-8 w-8' />
           </span>
-          <h1 className="mt-6 text-2xl font-bold text-ink">
+          <h1 className='mt-6 text-2xl font-bold text-ink'>
             {isEditMode
               ? 'Événement mis à jour !'
               : visibility === 'publish'
-                ? 'Événement publié !'
-                : 'Brouillon enregistré !'}
+              ? 'Événement publié !'
+              : 'Brouillon enregistré !'}
           </h1>
-          <p className="mt-2 text-sm text-muted">
+          <p className='mt-2 text-sm text-muted'>
             {visibility === 'publish'
               ? 'Votre mini-site est en ligne et prêt à être partagé à vos invités.'
               : 'Vous pouvez reprendre et publier votre événement à tout moment.'}
           </p>
 
           {publishWarnings.length > 0 && (
-            <div className="mt-4 w-full rounded-lg border border-brand-orange/30 bg-brand-orange/10 px-4 py-3 text-left text-sm text-brand-orange">
-              <p className="font-medium">C'est enregistré, mais :</p>
-              <ul className="mt-1 list-disc space-y-0.5 pl-5">
-                {publishWarnings.map((w) => (
+            <div className='mt-4 w-full rounded-lg border border-brand-orange/30 bg-brand-orange/10 px-4 py-3 text-left text-sm text-brand-orange'>
+              <p className='font-medium'>C'est enregistré, mais :</p>
+              <ul className='mt-1 list-disc space-y-0.5 pl-5'>
+                {publishWarnings.map(w => (
                   <li key={w}>{w}</li>
                 ))}
               </ul>
             </div>
           )}
 
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <div className='mt-8 flex flex-wrap justify-center gap-3'>
             {visibility === 'publish' && publishedSlug && (
-              <Button as="a" href={`/e/${publishedSlug}`} target="_blank" rel="noopener noreferrer" variant="gradient">
+              <Button
+                as='a'
+                href={`/e/${publishedSlug}`}
+                target='_blank'
+                rel='noopener noreferrer'
+                variant='gradient'
+              >
                 Voir mon mini-site
               </Button>
             )}
             {publishedEventId && (
               <Button
-                variant={visibility === 'publish' && publishedSlug ? 'outline' : 'gradient'}
+                variant={
+                  visibility === 'publish' && publishedSlug
+                    ? 'outline'
+                    : 'gradient'
+                }
                 onClick={() => navigate(`/builder/${publishedEventId}`)}
               >
                 Personnaliser dans le Builder
               </Button>
             )}
-            <Button variant="outline" onClick={() => navigate('/dashboard/evenements')}>
+            <Button
+              variant='outline'
+              onClick={() => navigate('/dashboard/evenements')}
+            >
               Retour à mes événements
             </Button>
           </div>
@@ -445,13 +564,17 @@ export default function CreateEvent() {
 
   return (
     <DashboardLayout>
-      <StepProgress currentStep={currentStep} totalSteps={STEPS.length} stepLabel={STEPS[currentStep]} />
+      <StepProgress
+        currentStep={currentStep}
+        totalSteps={STEPS.length}
+        stepLabel={STEPS[currentStep]}
+      />
 
-      <div className="mt-8">
+      <div className='mt-8'>
         {isPublicationStep ? (
           stepContent
         ) : (
-          <div className="grid gap-10 lg:grid-cols-[2fr_1fr]">
+          <div className='grid gap-10 lg:grid-cols-[2fr_1fr]'>
             {stepContent}
             <EventPreviewPanel event={event} />
           </div>
@@ -459,32 +582,32 @@ export default function CreateEvent() {
       </div>
 
       {!isPublicationStep && (
-        <div className="mt-10 flex items-center justify-between border-t border-border-soft pt-6">
+        <div className='mt-10 flex items-center justify-between border-t border-border-soft pt-6'>
           <Button
-            variant="ghost"
+            variant='ghost'
             disabled={!canGoBack}
-            onClick={() => setCurrentStep((s) => Math.max(0, s - 1))}
-            className="disabled:pointer-events-none disabled:opacity-40"
+            onClick={() => setCurrentStep(s => Math.max(0, s - 1))}
+            className='disabled:pointer-events-none disabled:opacity-40'
           >
             Retour
           </Button>
-          <div className="flex items-center gap-4">
+          <div className='flex items-center gap-4'>
             {currentStep === 0 && (
               <button
-                type="button"
+                type='button'
                 onClick={() => setCurrentStep(1)}
-                className="text-sm text-muted hover:text-ink hover:underline"
+                className='text-sm text-muted hover:text-ink hover:underline'
               >
                 Passer cette étape
               </button>
             )}
             <Button
-              variant="gradient"
+              variant='gradient'
               disabled={!canContinue}
               onClick={() =>
-                setCurrentStep((s) => Math.min(STEPS.length - 1, s + 1))
+                setCurrentStep(s => Math.min(STEPS.length - 1, s + 1))
               }
-              className="disabled:pointer-events-none disabled:opacity-40"
+              className='disabled:pointer-events-none disabled:opacity-40'
             >
               Continuer
             </Button>

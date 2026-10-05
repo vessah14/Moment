@@ -3,28 +3,25 @@
 Plateforme événementielle de l'écosystème TBF : création, personnalisation et
 gestion d'événements (mariages, conférences, anniversaires...) sans code.
 
-> **État du projet : prototype front-end.** Aucun backend n'existe. La
-> plupart des données (tarifs, campagnes, statistiques...) sont codées en dur
-> ou vivent en mémoire (`useState`) et sont perdues au rechargement de la
-> page. Quelques listes (invités, événements créés, cadeaux/cagnotte) sont
-> synchronisées entre pages via `localStorage` — pratique pour une démo dans
-> un seul navigateur, mais ce n'est toujours pas une vraie persistance
-> serveur. Voir [Limites connues](#limites-connues) avant de présenter ce
-> projet comme "fini".
+> **État du projet : application en développement.** Une API ASP.NET Core et
+> PostgreSQL existent à la racine du dépôt. Les parcours d'authentification,
+> d'événements, d'invités, de RSVP et plusieurs autres modules utilisent cette
+> API. D'autres écrans restent des démonstrations avec des données locales ou
+> statiques. Voir [Limites connues](#limites-connues) avant un déploiement.
 
 ## Stack technique
 
-| Domaine | Choix |
-|---|---|
-| Framework | React 19 + Vite 8 |
-| Routing | React Router 7 (`react-router-dom`) |
-| Styles | Tailwind CSS v4 (`@tailwindcss/vite`, pas de fichier config séparé — tokens dans `src/index.css` via `@theme`) |
-| Icônes | `lucide-react` |
-| Drapeaux de pays | `country-flag-icons` (SVG, pas d'emoji — rendu fiable sur Windows) |
-| Graphiques | `recharts` |
-| QR codes | `qrcode` (génération 100 % côté client, réutilisée sur l'invitation invité, le check-in et la billetterie) |
-| Polices | `@fontsource/inter`, `@fontsource/plus-jakarta-sans`, `@fontsource/playfair-display` |
-| Lint | `oxlint` |
+| Domaine          | Choix                                                                                                          |
+| ---------------- | -------------------------------------------------------------------------------------------------------------- |
+| Framework        | React 19 + Vite 8                                                                                              |
+| Routing          | React Router 7 (`react-router-dom`)                                                                            |
+| Styles           | Tailwind CSS v4 (`@tailwindcss/vite`, pas de fichier config séparé — tokens dans `src/index.css` via `@theme`) |
+| Icônes           | `lucide-react`                                                                                                 |
+| Drapeaux de pays | `country-flag-icons` (SVG, pas d'emoji — rendu fiable sur Windows)                                             |
+| Graphiques       | `recharts`                                                                                                     |
+| QR codes         | `qrcode` (génération 100 % côté client, réutilisée sur l'invitation invité, le check-in et la billetterie)     |
+| Polices          | `@fontsource/inter`, `@fontsource/plus-jakarta-sans`, `@fontsource/playfair-display`                           |
+| Lint             | `oxlint`                                                                                                       |
 
 ## Démarrage
 
@@ -36,24 +33,39 @@ npm run lint      # oxlint
 npm run preview   # sert le build de production en local
 ```
 
-Aucune variable d'environnement n'est nécessaire : il n'y a pas d'API à
-configurer.
+L'API se lance séparément depuis `backend_EventMoment` avec le profil `http`
+(`http://localhost:5146`). Elle requiert PostgreSQL et les paramètres locaux
+`Jwt:Key` et `ConnectionStrings:AdminConnection`, `ClientConnection` et
+`SignupConnection` dans .NET User Secrets ou dans l'environnement. Pour lancer
+la console administrateur, démarrez aussi `admin-frontend` (`npm install`, puis
+`npm run dev`, port 5174). Les deux frontends utilisent `VITE_API_URL` ; sa
+valeur locale par défaut est `http://localhost:5146/api`.
+
+Le frontend est configuré pour tourner en HTTP local pour éviter le message
+Chrome “Votre connexion n’est pas privée” provoqué par un certificat auto-signé.
+Si une intégration OAuth ou un fournisseur tiers exige HTTPS, utilisez un
+certificat local fiable (ex. `mkcert`) et remplacez la config de Vite avec une
+configuration HTTPS certifiée.
+
+Les intégrations Google et l'envoi réel d'e-mails nécessitent aussi leurs
+identifiants de fournisseur dans la configuration du backend. Sans SMTP,
+les e-mails de vérification et de réinitialisation ne sont pas envoyés.
 
 ## Structure du projet
 
 ```
 src/
-  data/            données statiques (mock) : tarifs, catégories d'événements,
-                   modèles, invités, conférence, cadeaux, admin...
+  data/            données statiques de présentation : tarifs, catégories,
+                   modèles et index de recherche
+  api/             clients REST pour l'API ASP.NET Core
   utils/           fonctions utilitaires pures (formatCurrency, formatDate,
-                   slugify, adminAuth, phoneCountry) + useLocalStorageState
+                   slugify, phoneCountry) + useLocalStorageState
                    (voir plus bas)
   components/
     ui/            primitives partagées (Button, Avatar, StatusBadge,
                     PhoneInput...)
     layout/        Header, Footer, Dashboard{Sidebar,Topbar,Layout},
-                    Admin{Sidebar,Topbar,Layout}, AuthLayout, InfoPage,
-                    GlobalSearch
+                    AuthLayout, InfoPage, GlobalSearch
     home/          sections de la page d'accueil
     auth/          formulaires de connexion / inscription
     onboarding/    les 4 étapes de l'accueil post-inscription (`/bienvenue`)
@@ -67,33 +79,14 @@ src/
     analytics/ billing/ events/ templates/ pricing/  widgets par domaine
     program/ seating/ gifts/ conference/ communication/
                    composants des modules spécialisés (voir plus bas)
-    admin/         garde de route (RequireAdmin)
-  pages/           une page par route ; pages/dashboard/* = espace organisateur,
-                   pages/admin/* = console super admin
+  pages/           une page par route ; pages/dashboard/* = espace organisateur
 ```
 
-Chaque page de tableau de bord suit le même patron : elle importe
-`DashboardLayout` (ou `AdminLayout`), pose son propre état local avec
-`useState`, et rend son contenu dedans. Il n'y a pas de state manager global
-(pas de Redux/Zustand/Context métier) — l'état ne survit pas à la navigation
-entre pages sœurs, **sauf** pour les quelques listes qui passent par le hook
-partagé `useLocalStorageState` (`src/utils/useLocalStorageState.js`) :
-
-- `tbf_guests_v2` — liste d'invités, partagée entre Participants, Plan de
-  table, l'invitation invité (`/invitation/:code`) et les certificats de
-  conférence. Un invité ajouté (formulaire, import CSV, ou étape 5 de
-  l'assistant de création d'événement) est visible partout.
-- `tbf_myevents` — événements de l'organisateur, partagée entre "Mes
-  événements" et l'assistant de création : publier un événement l'ajoute
-  réellement à la liste au lieu de disparaître.
-- `tbf_gifts` / `tbf_cagnotte` — liste de mariage et cagnotte, partagées
-  entre la vue organisateur et la vue invité (`/cadeaux/:code`).
-
-C'est un pub-sub maison au-dessus de `localStorage` (même onglet et
-inter-onglets), explicitement documenté dans le fichier comme *pas* une
-vraie persistance serveur. Le même mécanisme pilote aussi les préférences
-globales : `tbf_theme` (clair/sombre/auto), `tbf_reduced_motion`,
-`tbf_sidebar_collapsed` / `tbf_admin_sidebar_collapsed`.
+Chaque page du tableau de bord charge ses données depuis l'API pour
+l'événement sélectionné. Il n'y a pas de state manager métier global. Le hook
+`useLocalStorageState` (`src/utils/useLocalStorageState.js`) sert aux
+préférences locales : thème, réduction des animations et état replié de la
+sidebar.
 
 Les confirmations d'action ("Enregistré", "Lien copié"...) passent par un
 système de toast partagé (`ToastProvider` + `useToast()`, monté une seule
@@ -105,25 +98,24 @@ inline, pas encore migrées.
 
 ### Site public
 
-| Route | Page |
-|---|---|
-| `/` | Accueil |
-| `/modeles` | Bibliothèque de modèles (`?categorie=` pour préfiltrer) |
-| `/tarifs` | Grille tarifaire |
-| `/connexion`, `/inscription` | Auth organisateur (accepte n'importe quel couple non vide, aucune vérification) |
-| `/mot-de-passe-oublie` | Demande de réinitialisation (pas d'e-mail réel envoyé — un lien simule l'ouverture du lien reçu) |
-| `/reinitialiser-mot-de-passe` | Définition d'un nouveau mot de passe |
-| `/bienvenue` | Accueil post-inscription (4 étapes) — voir plus bas |
-| `/ecosysteme`, `/support`, `/mentions-legales` | Pages statiques |
-| `/invitation/:code` | Page invité — RSVP, QR de billet ; le `:code` est résolu contre la liste d'invités partagée (`tbf_guests_v2`) via un slug du nom |
-| `/cadeaux/:code` | Liste de mariage — vue invité |
+| Route                                          | Page                                                                                                                             |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `/`                                            | Accueil                                                                                                                          |
+| `/modeles`                                     | Bibliothèque de modèles (`?categorie=` pour préfiltrer)                                                                          |
+| `/tarifs`                                      | Grille tarifaire                                                                                                                 |
+| `/connexion`, `/inscription`                   | Auth organisateur via l'API (JWT)                                                                                               |
+| `/mot-de-passe-oublie`                         | Demande de réinitialisation via l'API (l'envoi du lien requiert SMTP configuré)                                                  |
+| `/reinitialiser-mot-de-passe`                  | Définition d'un nouveau mot de passe                                                                                             |
+| `/bienvenue`                                   | Accueil post-inscription (4 étapes) — voir plus bas                                                                              |
+| `/ecosysteme`, `/support`, `/mentions-legales` | Pages statiques                                                                                                                  |
+| `/invitation/:code`                            | Invitation publique chargée depuis l'API par identifiant d'invité, avec RSVP et billet QR                                      |
+| `/cadeaux/:code`                               | Liste de mariage — vue invité                                                                                                    |
 
 ### Espace organisateur (`/dashboard/...`)
 
-Toutes les données affichées concernent un unique événement de démonstration
-("Mariage Awa & Ibrahim" par défaut, "TBF Summit 2027" pour le module
-Conférence). Il n'y a pas de sélecteur d'événement multi-comptes pour
-consulter les modules d'un événement en particulier (voir Limites connues).
+Les modules connectés à l'API chargent les événements de l'organisateur et
+permettent de choisir l'événement concerné. Certains panneaux et graphiques
+restent alimentés par des données de démonstration.
 
 `evenements`, `evenements/nouveau`, `invitations`, `communication`,
 `participants`, `billetterie`, `checkin`, `galerie`, `livre-dor`,
@@ -151,15 +143,13 @@ pied de page. Les blocs sélectionnés en édition ont une vraie barre d'outils
 
 ### Console Super Admin (`/admin/...`)
 
-Distincte du dashboard organisateur (autre sidebar, accent rouge). Protégée
-par `RequireAdmin` (`src/components/admin/RequireAdmin.jsx`), qui vérifie un
-flag dans `sessionStorage` — **protection cosmétique, pas une sécurité
-réelle** (voir Limites connues).
+Distincte du dashboard organisateur et servie par l'application séparée
+`admin-frontend` (autre sidebar, accent rouge). Les routes sont protégées côté
+client pour l'expérience utilisateur et l'API vérifie le JWT et le rôle admin
+sur chaque opération sensible.
 
-- Identifiants de démo : `admin@tbfmoment.com` / `TbfAdmin2027!`
-  (`src/utils/adminAuth.js`)
 - Aucun lien visible n'y mène depuis le reste de l'app ; y accéder directement
-  via l'URL.
+  via l'URL `http://localhost:5174/admin` en développement.
 
 Pages : Vue globale, Organisations, Événements, Facturation, Modération,
 Paramètres système. La topbar a sa propre cloche de notifications
@@ -259,42 +249,27 @@ directement vers `/dashboard`, sans forcer à terminer le parcours.
 
 À garder en tête avant d'itérer sur ce projet :
 
-1. **Pas de backend.** La plupart des données saisies (campagnes créées,
-   statistiques, facturation...) vivent dans le state React de la page et
-   disparaissent à la navigation ou au rechargement. Quelques listes
-   (invités, événements, cadeaux/cagnotte) survivent via `localStorage` —
-   voir [Structure du projet](#structure-du-projet) — mais restent propres à
-   un seul navigateur, sans synchronisation entre appareils ni entre
-   personnes.
-2. **Pas d'authentification réelle.** Connexion organisateur : accepte tout
-   couple non vide. Connexion admin : vérifie un couple fixe en clair dans le
-   code (`src/utils/adminAuth.js`) — acceptable pour verrouiller une démo,
-   pas pour de la sécurité réelle.
-3. **Un seul événement de démonstration** par module — créer un second
-   événement via l'assistant l'ajoute bien à "Mes événements", mais les
-   autres modules (Programme, Galerie, Billetterie...) continuent d'afficher
-   les données du même événement de démo, pas de bascule contextuelle réelle.
+1. **Persistance encore incomplète.** Des écrans et statistiques de démonstration
+   utilisent des données statiques ou un état React local ; les données ne
+   sont pas toutes enregistrées dans PostgreSQL. Quelques préférences restent
+   dans `localStorage`.
+2. **Services externes à configurer.** Sans SMTP, les liens de vérification et
+   de récupération de compte ne sont pas livrés. Google Sign-In nécessite un
+   client ID valide ; Facebook OAuth doit être configuré dans le tableau de
+   bord Meta avec l'URL de retour du frontend.
+3. **Contenu de démonstration restant.** Quelques panneaux, statistiques et
+   listes sont encore des maquettes et ne reflètent pas les données de tous
+   les événements.
 4. **Exports/téléchargements réels mais isolés.** Les CSV, `.ics`, QR codes et
    certificats générés sont de vrais fichiers (pas des simulations), mais
    rien n'est envoyé à un serveur — ils existent seulement sur la machine de
    la personne qui clique.
-5. **Bundle non optimisé.** `npm run build` avertit sur un chunk > 500 Ko
-   (recharts + polices). Envisager du code-splitting par route
-   (`React.lazy`) si le temps de chargement devient un sujet.
-6. **Pas de tests automatisés.**
+5. **Configuration et données de production à fournir.** Les secrets,
+   paramètres PostgreSQL, SMTP/OAuth et migrations de base doivent être
+   configurés et validés dans l'environnement de déploiement.
 
 ## Prochaines étapes suggérées
 
-1. Choisir la stack backend (le cahier des charges propose PHP 8+ ou Node.js,
-   MySQL ou PostgreSQL) et définir les endpoints REST pour Event Core,
-   Invités/RSVP et Billetterie en priorité — ce sont les données que chaque
-   autre module consomme.
-2. Remplacer les `useState` locaux et les clés `localStorage` des pages
-   dashboard par des appels API, module par module.
-3. Authentification réelle (sessions/tokens, RBAC organisateur/admin —
-   cahier des charges section 12).
-4. Finir la migration des confirmations d'action inline vers le système de
-   toast partagé sur les pages qui ne l'utilisent pas encore.
-
-E-mail : admin@tbfmoment.com
-Mot de passe : TbfAdmin2027!
+1. Compléter la migration des écrans de démonstration vers les endpoints API.
+2. Configurer et valider les services SMTP et OAuth par environnement.
+3. Ajouter des tests d'intégration des principaux parcours avec PostgreSQL.

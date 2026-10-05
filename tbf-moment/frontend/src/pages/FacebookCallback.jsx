@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { loginWithFacebook } from '../api/auth'
 import logoMark from '../assets/logo-mark.png'
 import AuthLayout from '../components/layout/AuthLayout'
+import { consumeReturnPath } from '../utils/returnPath'
 
 export default function FacebookCallback() {
   const navigate = useNavigate()
@@ -23,7 +24,7 @@ export default function FacebookCallback() {
     }
 
     loginWithFacebook(accessToken)
-      .then(() => navigate('/dashboard', { replace: true }))
+      .then(() => navigate(consumeReturnPath() ?? '/dashboard', { replace: true }))
       .catch((err) => setError(err.message || 'Connexion Facebook impossible.'))
   }, [navigate])
 

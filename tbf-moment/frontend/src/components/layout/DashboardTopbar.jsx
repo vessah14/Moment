@@ -8,6 +8,7 @@ import { listGuests } from '../../api/guests'
 import { buildDashboardSearchIndex } from '../../data/dashboardSearchIndex'
 import Button from '../ui/Button'
 import ThemeToggle from '../ui/ThemeToggle'
+import LanguageSwitcher from '../ui/LanguageSwitcher'
 import GlobalSearch from './GlobalSearch'
 
 function initials(fullName) {
@@ -56,6 +57,7 @@ export default function DashboardTopbar({ onMenuClick }) {
       />
 
       <div className="ml-auto flex items-center gap-3 sm:gap-5">
+        <LanguageSwitcher />
         <ThemeToggle className="hidden md:inline-flex" showLabels={false} />
 
         <div className="relative hidden sm:block">

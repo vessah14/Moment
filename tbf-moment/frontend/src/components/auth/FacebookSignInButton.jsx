@@ -1,4 +1,6 @@
+import { useLocation } from 'react-router-dom'
 import Button from '../ui/Button'
+import { rememberReturnPath, returnPathFrom } from '../../utils/returnPath'
 
 const APP_ID = import.meta.env.VITE_FACEBOOK_APP_ID
 const REDIRECT_URI = `${window.location.origin}/auth/facebook/callback`
@@ -14,9 +16,14 @@ const REDIRECT_URI = `${window.location.origin}/auth/facebook/callback`
 // n'a pas ce problème : Facebook renvoie lui-même le navigateur vers REDIRECT_URI,
 // géré par FacebookCallback.jsx.
 export default function FacebookSignInButton() {
+  const location = useLocation()
   if (!APP_ID) return null
 
   const handleClick = () => {
+    // La page quitte le site : la destination est conservée pour FacebookCallback.
+    // (sans destination explicite, on garde celle mémorisée à l'expiration de session)
+    const target = returnPathFrom(location)
+    if (target) rememberReturnPath(target)
     const authUrl =
       'https://www.facebook.com/v19.0/dialog/oauth' +
       `?client_id=${encodeURIComponent(APP_ID)}` +

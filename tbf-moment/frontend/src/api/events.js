@@ -25,3 +25,11 @@ export function uploadEventCoverImage(id, file) {
   formData.append('file', file)
   return apiFetch(`/events/${id}/cover-image`, { method: 'POST', body: formData })
 }
+
+export function listEventReminders(eventId) {
+  return apiFetch(`/events/${eventId}/reminders`)
+}
+
+export function setEventReminder(eventId, kind, enabled) {
+  return apiFetch(`/events/${eventId}/reminders/${kind}`, { method: 'PUT', body: { enabled } })
+}

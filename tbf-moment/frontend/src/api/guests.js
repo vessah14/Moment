@@ -23,6 +23,15 @@ export function deleteGuest(id) {
   return apiFetch(`/guests/${id}`, { method: 'DELETE' })
 }
 
+// Arrivée le jour J — distincte de la réponse RSVP (guest.status).
+export function checkInGuest(id) {
+  return apiFetch(`/guests/${id}/check-in`, { method: 'POST' })
+}
+
+export function undoCheckInGuest(id) {
+  return apiFetch(`/guests/${id}/check-in`, { method: 'DELETE' })
+}
+
 export function getPublicInvitation(guestId) {
   return apiFetch(`/public/invitations/${guestId}`, { auth: false })
 }

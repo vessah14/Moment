@@ -1,6 +1,19 @@
+import { rememberReturnPath } from '../utils/returnPath'
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5146/api'
 const TOKEN_KEY = 'tbf_auth_token'
 const USER_KEY = 'tbf_auth_user'
+
+function decodeTokenPayload(token) {
+  const encoded = token.split('.')[1]
+  if (!encoded) throw new Error('Jeton invalide')
+
+  // JWT uses base64url, which may contain '-' and '_' and omit padding.
+  const base64 = encoded.replace(/-/g, '+').replace(/_/g, '/')
+  const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')
+  const bytes = Uint8Array.from(atob(padded), character => character.charCodeAt(0))
+  return JSON.parse(new TextDecoder().decode(bytes))
+}
 
 // Origine du backend (sans le suffixe /api), pour construire les URLs de fichiers
 // uploadés (galerie) renvoyées en chemins relatifs par l'API.
@@ -19,7 +32,7 @@ export function getToken() {
 // client un jeton déjà expiré, sans attendre le premier 401.
 function isTokenExpired(token) {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]))
+    const payload = decodeTokenPayload(token)
     if (!payload.exp) return false
     return Date.now() >= payload.exp * 1000
   } catch {
@@ -102,6 +115,47 @@ async function extractErrorMessage(response) {
   return `Erreur ${response.status}`
 }
 
+function tokenExpiresInMs(token) {
+  try {
+    const payload = decodeTokenPayload(token)
+    return payload.exp ? payload.exp * 1000 - Date.now() : Infinity
+  } catch {
+    return 0
+  }
+}
+
+// Renouvellement glissant de la session : le jeton dure 30 min. S'il expire dans moins
+// de 10 min, on en demande un nouveau avant l'appel. Un organisateur actif n'est donc
+// plus déconnecté en plein travail ; une session inactive expire toujours normalement.
+const REFRESH_WINDOW_MS = 10 * 60 * 1000
+let refreshPromise = null
+
+async function refreshTokenIfNeeded() {
+  const token = getToken()
+  if (!token) return
+  const remaining = tokenExpiresInMs(token)
+  if (remaining <= 0 || remaining > REFRESH_WINDOW_MS) return
+
+  // Un seul renouvellement à la fois, même si plusieurs appels partent ensemble.
+  refreshPromise ??= fetch(`${API_URL}/users/refresh-token`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+    .then(async (res) => {
+      if (!res.ok) return
+      const data = await res.json()
+      if (data?.token) setToken(data.token)
+      if (data?.utilisateur) setCurrentUser(data.utilisateur)
+    })
+    .catch(() => {
+      // Réseau indisponible : l'appel suivant réessaiera, le jeton actuel reste valide.
+    })
+    .finally(() => {
+      refreshPromise = null
+    })
+  await refreshPromise
+}
+
 export async function apiFetch(path, { auth = true, headers, body, ...options } = {}) {
   const finalHeaders = { ...headers }
   let finalBody = body
@@ -112,6 +166,7 @@ export async function apiFetch(path, { auth = true, headers, body, ...options } 
   }
 
   if (auth) {
+    await refreshTokenIfNeeded()
     const token = getToken()
     if (token) finalHeaders['Authorization'] = `Bearer ${token}`
   }
@@ -128,6 +183,8 @@ export async function apiFetch(path, { auth = true, headers, body, ...options } 
       clearToken()
       clearCurrentUser()
       if (typeof window !== 'undefined' && window.location.pathname !== '/connexion') {
+        // Après reconnexion, on revient sur la page où la session a expiré.
+        rememberReturnPath(`${window.location.pathname}${window.location.search}`)
         window.location.href = '/connexion'
       }
     }

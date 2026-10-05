@@ -1,29 +1,25 @@
 import { Link } from 'react-router-dom'
+import TemplatePreview, { TemplateBadge } from './TemplatePreview'
 
-export default function TemplateCard({ name, meta, badge, image }) {
+export default function TemplateCard({ name, meta, badge, image, preview, minimal }) {
   return (
     <div className="group">
-      <div className="relative aspect-4/5 overflow-hidden rounded-2xl bg-[linear-gradient(160deg,_var(--color-surface-2),_var(--color-panel))]">
-        {image && (
+      <div className="relative aspect-4/5 overflow-hidden rounded-2xl border border-border-soft bg-[linear-gradient(160deg,_var(--color-surface-2),_var(--color-panel))] transition group-hover:-translate-y-0.5 group-hover:shadow-lg">
+        {image ? (
           <img
             src={image}
             alt={name}
             className="absolute inset-0 h-full w-full object-cover"
           />
+        ) : (
+          <TemplatePreview preview={preview} minimal={minimal} />
         )}
-        <span
-          className={`absolute top-3 right-3 rounded-full px-3 py-1 text-[11px] font-bold tracking-wide ${
-            badge === 'PREMIUM'
-              ? 'bg-[color:var(--color-gold)] text-bg'
-              : 'bg-black/50 text-ink'
-          }`}
-        >
-          {badge}
-        </span>
+        <TemplateBadge badge={badge} />
 
+        {/* Toujours visible sur mobile (pas de survol au toucher), au survol sur ordinateur. */}
         <Link
-          to="/builder"
-          className="absolute bottom-3 left-3 rounded-full bg-brand-indigo px-4 py-2 text-xs font-semibold text-white opacity-0 transition group-hover:opacity-100"
+          to={`/dashboard/evenements/nouveau?modele=${encodeURIComponent(name)}`}
+          className="absolute bottom-3 left-3 z-10 rounded-full bg-brand-indigo px-4 py-2 text-xs font-semibold text-white shadow-md transition sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
         >
           Utiliser ce modèle
         </Link>

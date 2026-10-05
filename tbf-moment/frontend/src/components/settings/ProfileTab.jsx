@@ -4,10 +4,13 @@ import Button from '../ui/Button'
 import PhoneInput from '../ui/PhoneInput'
 import StatusBadge from '../ui/StatusBadge'
 import { getCurrentUser } from '../../api/client'
-import { updateProfile } from '../../api/users'
+import { resendVerificationEmail, updateProfile } from '../../api/users'
+import { useToast } from '../../utils/useToast'
 
 export default function ProfileTab() {
   const user = getCurrentUser()
+  const toast = useToast()
+  const [resending, setResending] = useState(false)
   const [fullName, setFullName] = useState(user?.fullName ?? '')
   const [phone, setPhone] = useState(user?.phone ?? '')
   const [saving, setSaving] = useState(false)
@@ -26,6 +29,19 @@ export default function ProfileTab() {
       setError(err.message || "L'enregistrement a échoué.")
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleResend = async () => {
+    setResending(true)
+    setError('')
+    try {
+      await resendVerificationEmail()
+      toast(`Lien de vérification envoyé à ${user.email}`)
+    } catch (err) {
+      setError(err.message || "L'envoi a échoué.")
+    } finally {
+      setResending(false)
     }
   }
 
@@ -79,9 +95,19 @@ export default function ProfileTab() {
               className="w-full rounded-lg border border-border bg-surface-2 px-4 py-3 pr-20 text-sm text-faint outline-none"
             />
             <span className="absolute top-1/2 right-3 -translate-y-1/2">
-              <StatusBadge status="Validé" />
+              <StatusBadge status={user?.emailVerified ? 'Validé' : 'En attente'} />
             </span>
           </div>
+          {user && !user.emailVerified && (
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={resending}
+              className="mt-1.5 text-xs font-medium text-brand-purple hover:underline disabled:opacity-50"
+            >
+              {resending ? 'Envoi…' : 'Renvoyer le lien de vérification'}
+            </button>
+          )}
         </label>
         <label className="block">
           <span className="text-sm font-medium text-ink">Téléphone</span>

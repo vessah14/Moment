@@ -1,3 +1,4 @@
+import { mergeClasses } from '../../utils/mergeClasses'
 import { Monitor, Moon, Sun } from 'lucide-react'
 import { useTheme } from '../../utils/useTheme'
 
@@ -11,7 +12,7 @@ export default function ThemeToggle({ className = '', showLabels = true }) {
   const [mode, setMode] = useTheme()
 
   return (
-    <div className={`inline-flex gap-1 rounded-full bg-surface-2 p-1 ${className}`}>
+    <div className={mergeClasses('inline-flex gap-1 rounded-full bg-surface-2 p-1', className)}>
       {OPTIONS.map((opt) => (
         <button
           key={opt.value}

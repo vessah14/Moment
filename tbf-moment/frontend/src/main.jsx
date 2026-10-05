@@ -4,6 +4,9 @@ import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
 import { ToastProvider } from './components/ui/ToastProvider.jsx'
+import { initTranslation } from './utils/translation.js'
+
+initTranslation()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

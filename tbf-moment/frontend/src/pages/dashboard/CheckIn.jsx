@@ -6,8 +6,13 @@ import StatCard from '../../components/dashboard/StatCard'
 import StatusBadge from '../../components/ui/StatusBadge'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import { listEvents } from '../../api/events'
-import { listGuests, updateGuest } from '../../api/guests'
+import { checkInGuest, listGuests, undoCheckInGuest } from '../../api/guests'
 import { guestStatusLabel } from '../../utils/guestStatus'
+
+function formatTime(value) {
+  if (!value) return '—'
+  return new Date(value).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+}
 
 export default function CheckIn() {
   const [events, setEvents] = useState([])
@@ -63,8 +68,13 @@ export default function CheckIn() {
     guestsRef.current = guests
   }, [guests])
 
-  const attended = guests.filter((g) => g.status === 'Present')
-  const pending = guests.filter((g) => g.status !== 'Present')
+  // Arrivée = pointage du jour J (checkedInAt), pas la réponse RSVP : un invité qui a
+  // confirmé sa venue n'est pas encore arrivé.
+  const attended = guests
+    .filter((g) => g.checkedInAt)
+    .sort((a, b) => new Date(b.checkedInAt) - new Date(a.checkedInAt))
+  const pending = guests.filter((g) => !g.checkedInAt)
+  const expected = guests.filter((g) => g.status !== 'Absent')
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -83,18 +93,26 @@ export default function CheckIn() {
     setCheckingId(guest.id)
     setError('')
     try {
-      await updateGuest(guest.id, {
-        groupId: guest.groupId || null,
-        fullName: guest.fullName,
-        phone: guest.phone,
-        email: guest.email,
-        status: 'Present',
-      })
-      setLastChecked({ ...guest, status: 'Present' })
+      const updated = await checkInGuest(guest.id)
+      setGuests((prev) => prev.map((g) => (g.id === updated.id ? updated : g)))
+      setLastChecked(updated)
       setQuery('')
-      reloadGuests(selectedEventId)
     } catch (err) {
       setError(err.message || "L'enregistrement a échoué.")
+    } finally {
+      setCheckingId('')
+    }
+  }
+
+  const handleUndo = async (guest) => {
+    setCheckingId(guest.id)
+    setError('')
+    try {
+      const updated = await undoCheckInGuest(guest.id)
+      setGuests((prev) => prev.map((g) => (g.id === updated.id ? updated : g)))
+      if (lastChecked?.id === guest.id) setLastChecked(null)
+    } catch (err) {
+      setError(err.message || "L'annulation a échoué.")
     } finally {
       setCheckingId('')
     }
@@ -136,8 +154,8 @@ export default function CheckIn() {
         const match = guestsRef.current.find((g) => g.id === code.data)
         if (!match) {
           setScanFeedback('QR non reconnu pour cet événement.')
-        } else if (match.status === 'Present') {
-          setScanFeedback(`${match.fullName} est déjà enregistré(e).`)
+        } else if (match.checkedInAt) {
+          setScanFeedback(`${match.fullName} est déjà entré(e) à ${formatTime(match.checkedInAt)}.`)
         } else {
           setScanFeedback('')
           handleCheckInRef.current?.(match)
@@ -170,9 +188,9 @@ export default function CheckIn() {
   }, [selectedEventId, stopScan])
 
   const STATS = [
-    { label: 'Présents', value: String(attended.length), valueStyle: 'brand' },
-    { label: 'Attendus', value: String(guests.length) },
-    { label: 'En attente', value: String(pending.length) },
+    { label: 'Arrivés', value: String(attended.length), valueStyle: 'brand' },
+    { label: 'Attendus', value: String(expected.length), hint: 'hors refus' },
+    { label: 'Pas encore arrivés', value: String(pending.filter((g) => g.status !== 'Absent').length) },
   ]
 
   if (!loading && events.length === 0) {
@@ -293,6 +311,11 @@ export default function CheckIn() {
             <div className="mt-4 rounded-lg border border-success/30 bg-success/10 p-3">
               <p className="text-sm font-semibold text-success">Entrée validée</p>
               <p className="mt-1 text-sm text-ink">{lastChecked.fullName}</p>
+              {lastChecked.status === 'Absent' && (
+                <p className="mt-1 text-xs text-brand-orange">
+                  Attention : cet invité avait décliné l'invitation.
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -306,29 +329,30 @@ export default function CheckIn() {
 
           <div className="mt-6 overflow-hidden rounded-2xl border border-border-soft bg-surface">
             <div className="flex items-center justify-between px-6 py-4">
-              <h2 className="font-semibold text-ink">Invités présents</h2>
-              <span className="text-xs text-faint">{attended.length} / {guests.length}</span>
+              <h2 className="font-semibold text-ink">Invités arrivés</h2>
+              <span className="text-xs text-faint">{attended.length} / {expected.length}</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[480px] text-left text-sm">
                 <thead>
                   <tr className="border-y border-border-soft text-xs tracking-wider text-faint uppercase">
                     <th className="px-6 py-3 font-medium">Invité</th>
-                    <th className="px-3 py-3 font-medium">Contact</th>
-                    <th className="px-3 py-3 font-medium">Statut</th>
+                    <th className="px-3 py-3 font-medium">Arrivée</th>
+                    <th className="px-3 py-3 font-medium">RSVP</th>
+                    <th className="px-3 py-3" />
                   </tr>
                 </thead>
                 <tbody>
                   {loading && (
                     <tr>
-                      <td colSpan={3} className="px-6 py-10 text-center text-sm text-faint">
+                      <td colSpan={4} className="px-6 py-10 text-center text-sm text-faint">
                         Chargement…
                       </td>
                     </tr>
                   )}
                   {!loading && attended.length === 0 && (
                     <tr>
-                      <td colSpan={3} className="px-6 py-10 text-center text-sm text-faint">
+                      <td colSpan={4} className="px-6 py-10 text-center text-sm text-faint">
                         Aucun invité pointé pour le moment.
                       </td>
                     </tr>
@@ -342,9 +366,20 @@ export default function CheckIn() {
                             <span className="font-medium text-ink">{guest.fullName}</span>
                           </div>
                         </td>
-                        <td className="px-3 py-3 text-muted">{guest.email}</td>
+                        <td className="px-3 py-3 font-mono text-muted">{formatTime(guest.checkedInAt)}</td>
                         <td className="px-3 py-3">
                           <StatusBadge status={guestStatusLabel(guest.status)} />
+                        </td>
+                        <td className="px-3 py-3 text-right">
+                          <button
+                            type="button"
+                            disabled={checkingId === guest.id}
+                            onClick={() => handleUndo(guest)}
+                            className="text-xs text-faint hover:text-danger disabled:opacity-50"
+                            title="Annuler le pointage (erreur de saisie)"
+                          >
+                            Annuler
+                          </button>
                         </td>
                       </tr>
                     ))}

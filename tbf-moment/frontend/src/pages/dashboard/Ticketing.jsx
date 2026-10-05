@@ -1,4 +1,3 @@
-import QRCode from 'qrcode'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import TicketSalesChart from '../../components/billing/TicketSalesChart'
 import { useToast } from '../../utils/useToast'
@@ -31,11 +30,6 @@ export default function Ticketing() {
   const [error, setError] = useState('')
   const [typeForm, setTypeForm] = useState(false)
   const [saleFormFor, setSaleFormFor] = useState('')
-  const [ticketQrUrl, setTicketQrUrl] = useState(null)
-
-  useEffect(() => {
-    QRCode.toDataURL('TBF-2027-0X4J91', { margin: 1, width: 160 }).then(setTicketQrUrl)
-  }, [])
 
   useEffect(() => {
     listEvents()
@@ -353,29 +347,20 @@ export default function Ticketing() {
 
           <div className="rounded-2xl border border-border-soft bg-panel p-5">
             <h2 className="font-semibold text-ink">Billet numérique</h2>
-            <div className="mt-4 rounded-xl border border-border-soft bg-surface p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-semibold text-ink">TBF Summit 2027</p>
-                  <p className="text-xs text-faint">02 juin 2027 · 09:00 · Dakar Arena</p>
-                </div>
-                <StatusBadge status="VIP" />
-              </div>
-              <div className="mt-4 flex aspect-square w-24 items-center justify-center overflow-hidden rounded-lg bg-white p-1.5">
-                {ticketQrUrl && (
-                  <img src={ticketQrUrl} alt="QR code du billet" className="h-full w-full" />
-                )}
-              </div>
-              <div className="mt-3">
-                <p className="text-sm font-medium text-ink">Aminata Bâ</p>
-                <p className="text-xs text-faint">
-                  TBF-2027-0X4J91 · Lounge · déjeuner inclus
-                </p>
-              </div>
-              <p className="mt-3 text-xs text-faint">
-                QR invalide après le premier scan
-              </p>
-            </div>
+            <ol className="mt-4 space-y-3 text-sm text-muted">
+              <li>
+                <span className="font-medium text-ink">1. Vente enregistrée</span> — l'acheteur est
+                ajouté à vos invités comme « confirmé ».
+              </li>
+              <li>
+                <span className="font-medium text-ink">2. E-mail automatique</span> — il reçoit un
+                lien vers son billet avec son QR code d'entrée.
+              </li>
+              <li>
+                <span className="font-medium text-ink">3. Jour J</span> — scannez le QR depuis la page
+                Check-in. Un billet déjà scanné est signalé, l'entrée n'est comptée qu'une fois.
+              </li>
+            </ol>
           </div>
         </div>
       </div>

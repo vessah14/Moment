@@ -8,7 +8,13 @@ import { logout } from '../api/auth'
 // appel API si une page ne fait aucune requête au montage.
 function isTokenExpired(token) {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]))
+    const encoded = token.split('.')[1]
+    if (!encoded) return true
+
+    const base64 = encoded.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')
+    const bytes = Uint8Array.from(atob(padded), character => character.charCodeAt(0))
+    const payload = JSON.parse(new TextDecoder().decode(bytes))
     if (!payload.exp) return false
     return Date.now() >= payload.exp * 1000
   } catch {
