@@ -1,4 +1,6 @@
 import { Check } from 'lucide-react'
+import { getSiteTheme, themePalette } from '../site/themes/themeDefs'
+import { findTemplate } from '../../utils/templateTheme'
 
 const COLORS = [
   { value: '#6549e8', name: 'Violet' },
@@ -11,6 +13,9 @@ const COLORS = [
 
 export default function PersonalizationStep({ event, onChange }) {
   const update = (patch) => onChange({ ...event, ...patch })
+  // Modèle premium : ses trois palettes et son accroche d'en-tête remplacent les couleurs génériques.
+  const theme = getSiteTheme(findTemplate(event.template)?.theme)
+  const selectedPalette = theme ? themePalette(theme, event.palette) : null
 
   return (
     <div>
@@ -20,6 +25,51 @@ export default function PersonalizationStep({ event, onChange }) {
         à tout moment dans le Builder.
       </p>
 
+      {theme && (
+        <div className="mt-8">
+          <span className="text-sm font-medium text-ink">Ambiance du modèle {theme.name}</span>
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            {theme.palettes.map((p) => {
+              const isSelected = selectedPalette?.id === p.id
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  aria-pressed={isSelected}
+                  onClick={() => update({ palette: p.id, themeColor: p.vars['--accent'] })}
+                  className={`flex items-center gap-3 rounded-xl border p-3 text-left transition ${isSelected ? 'border-brand-purple ring-2 ring-brand-purple/30' : 'border-border hover:border-faint'}`}
+                >
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ background: p.vars['--bg'], boxShadow: 'inset 0 0 0 1px rgba(127,127,127,.35)' }}>
+                    <span className="h-4 w-4 rounded-full" style={{ background: p.vars['--accent'] }} />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-semibold text-ink">{p.label}</span>
+                    <span className="text-xs text-faint">{p.dark ? 'Sombre' : 'Clair'}</span>
+                  </span>
+                  {isSelected && <Check className="ml-auto h-4 w-4 shrink-0 text-brand-purple" />}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {theme && (
+        <label className="mt-8 block">
+          <span className="text-sm font-medium text-ink">Accroche de l'en-tête</span>
+          <input
+            type="text"
+            value={event.kicker ?? ''}
+            onChange={(e) => update({ kicker: e.target.value })}
+            placeholder={`Ex: ${theme.kicker}`}
+            maxLength={80}
+            className="mt-2 w-full rounded-lg border border-border bg-surface px-4 py-3 text-sm text-ink placeholder:text-faint outline-none focus:border-brand-purple focus:ring-3 focus:ring-brand-purple/30"
+          />
+          <span className="mt-1.5 block text-xs text-faint">Petite ligne au-dessus du titre. Vide : « {theme.kicker} ».</span>
+        </label>
+      )}
+
+      {!theme && (
       <div className="mt-8">
         <span className="text-sm font-medium text-ink">Couleur d'accent</span>
         <div className="mt-3 flex flex-wrap gap-3">
@@ -43,6 +93,7 @@ export default function PersonalizationStep({ event, onChange }) {
           })}
         </div>
       </div>
+      )}
 
       <label className="mt-8 block">
         <span className="text-sm font-medium text-ink">

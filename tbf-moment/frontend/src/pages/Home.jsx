@@ -12,8 +12,29 @@ import PricingTeaser from '../components/home/PricingTeaser'
 import StatsBar from '../components/home/StatsBar'
 import Testimonials from '../components/home/Testimonials'
 import { EVENT_TYPES } from '../data/eventTypes'
+import { siteUrl, useSeo } from '../utils/seo'
 
 export default function Home() {
+  useSeo({
+    path: '/',
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        name: 'TBF Moment',
+        url: siteUrl(),
+        logo: `${siteUrl()}/favicon.png`,
+        slogan: 'Create. Connect. Celebrate.',
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: 'TBF Moment',
+        url: siteUrl(),
+        inLanguage: 'fr-FR',
+      },
+    ],
+  })
   const [eventType, setEventType] = useState(EVENT_TYPES[0])
   const location = useLocation()
 

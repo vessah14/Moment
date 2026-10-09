@@ -8,10 +8,12 @@ import EventBasicsStep from '../components/onboarding/EventBasicsStep'
 import ObjectiveStep from '../components/onboarding/ObjectiveStep'
 import OnboardingProgress from '../components/onboarding/OnboardingProgress'
 import WelcomeStep from '../components/onboarding/WelcomeStep'
+import { useSeo } from '../utils/seo'
 
 const TOTAL_STEPS = 4
 
 export default function Onboarding() {
+  useSeo({ title: 'Bienvenue', noindex: true })
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [values, setValues] = useState({

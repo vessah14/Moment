@@ -1,10 +1,36 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TBF Moment — Create. Connect. Celebrate.</title>
+    <title>TBF Moment — Créez le site de votre événement</title>
+    <!-- Valeurs par défaut, lues par les robots qui n'exécutent pas le JavaScript
+         (aperçus WhatsApp, Facebook, LinkedIn…). Chaque page les remplace ensuite via
+         src/utils/seo.js. %VITE_SITE_URL% est remplacé au build. -->
+    <meta
+      name="description"
+      content="Créez en quelques minutes le site de votre événement (mariage, anniversaire, conférence, concert…) : invitations, confirmations de présence, programme, billetterie et livre d'or."
+    />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#0b1020" />
+    <meta name="application-name" content="TBF Moment" />
+    <meta property="og:site_name" content="TBF Moment" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="TBF Moment — Créez le site de votre événement" />
+    <meta
+      property="og:description"
+      content="Invitations, confirmations de présence, programme, billetterie et livre d'or : le site de votre événement en quelques minutes."
+    />
+    <meta property="og:url" content="%VITE_SITE_URL%/" />
+    <meta property="og:image" content="%VITE_SITE_URL%/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="%VITE_SITE_URL%/og-image.png" />
+    <link rel="canonical" href="%VITE_SITE_URL%/" />
     <script>
       (function () {
         try {
@@ -27,6 +53,10 @@
     </script>
   </head>
   <body>
+    <noscript>
+      TBF Moment : créez le site de votre événement. Activez JavaScript pour utiliser
+      l'application.
+    </noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

@@ -1,8 +1,13 @@
 import { useState } from 'react'
-import { THEME_PRESETS } from '../../data/blockDefaults'
+import { Check } from 'lucide-react'
+import TemplatePreview from '../templates/TemplatePreview'
+import { getSiteTheme } from '../site/themes/themeDefs'
+import FaqEditor from './FaqEditor'
+import { DressCodeEditor, FamiliesEditor, GiftAccountsEditor, PartnersEditor, PeopleEditor } from './ModuleEditors'
+import PremiumThemeFields from './PremiumThemeFields'
 import Toggle from './Toggle'
 
-const TABS = ['Style', 'Contenu', 'Thème']
+const TABS = ['Style', 'Contenu', 'Modèle']
 
 export default function StylePanel({
   palette,
@@ -11,15 +16,21 @@ export default function StylePanel({
   selectedBlock,
   blockContent,
   onChangeBlockContent,
+  templates = [],
+  currentTemplate,
+  categoryLabel,
+  onApplyTemplate,
 }) {
   const [tab, setTab] = useState('Style')
 
   const update = (patch) => onChangeHeroStyle({ ...heroStyle, ...patch })
   const isHero = selectedBlock === 'Hero'
   const content = blockContent[selectedBlock]
+  // Modèle premium : ses palettes et motifs remplacent couleur et police libres.
+  const premiumTheme = getSiteTheme(currentTemplate?.theme)
 
   return (
-    <aside className="w-72 shrink-0 border-l border-border-soft/60 p-5">
+    <aside className="w-72 shrink-0 overflow-y-auto border-l border-border-soft/60 p-5">
       <div className="flex gap-1 rounded-lg bg-surface p-1 text-sm">
         {TABS.map((t) => (
           <button
@@ -35,7 +46,11 @@ export default function StylePanel({
         ))}
       </div>
 
-      {tab === 'Style' && (
+      {tab === 'Style' && premiumTheme && (
+        <PremiumThemeFields theme={premiumTheme} heroStyle={heroStyle} onChange={update} />
+      )}
+
+      {tab === 'Style' && !premiumTheme && (
         <div className="mt-6 space-y-6">
           <div>
             <p className="text-sm font-medium text-ink">
@@ -154,6 +169,44 @@ export default function StylePanel({
                 />
               </label>
 
+              {selectedBlock === 'Familles' && (
+                <FamiliesEditor content={content} onChange={(patch) => onChangeBlockContent(selectedBlock, patch)} />
+              )}
+              {selectedBlock === 'Dress code' && (
+                <DressCodeEditor content={content} onChange={(patch) => onChangeBlockContent(selectedBlock, patch)} />
+              )}
+              {selectedBlock === 'Intervenants' && (
+                <PeopleEditor content={content} onChange={(patch) => onChangeBlockContent(selectedBlock, patch)} />
+              )}
+              {selectedBlock === 'Partenaires' && (
+                <PartnersEditor content={content} onChange={(patch) => onChangeBlockContent(selectedBlock, patch)} />
+              )}
+              {selectedBlock === 'Cadeaux' && (
+                <GiftAccountsEditor content={content} onChange={(patch) => onChangeBlockContent(selectedBlock, patch)} />
+              )}
+
+              {selectedBlock === 'FAQ' && (
+                <FaqEditor
+                  items={Array.isArray(content.items) ? content.items : []}
+                  onChange={(items) => onChangeBlockContent(selectedBlock, { items })}
+                />
+              )}
+
+              {selectedBlock === 'Localisation' && (
+                <label className="block">
+                  <span className="text-sm font-medium text-ink">Moyens de transport</span>
+                  <textarea
+                    rows={3}
+                    value={content.transport ?? ''}
+                    placeholder="Parking, transports en commun…"
+                    onChange={(e) =>
+                      onChangeBlockContent(selectedBlock, { transport: e.target.value })
+                    }
+                    className="mt-2 w-full resize-none rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-brand-purple"
+                  />
+                </label>
+              )}
+
               <div className="space-y-4 border-t border-border-soft pt-4">
                 <p className="text-xs font-semibold tracking-wider text-faint uppercase">
                   Options d'affichage
@@ -182,43 +235,41 @@ export default function StylePanel({
         </div>
       )}
 
-      {tab === 'Thème' && (
+      {tab === 'Modèle' && (
         <div className="mt-6">
           <p className="text-sm text-muted">
-            Un thème applique en un clic une couleur et une typographie au
-            Hero de votre page.
+            {templates.length > 0
+              ? `Modèles conçus pour « ${categoryLabel || 'cette catégorie'} ». Un clic applique ses couleurs, sa typographie et sa mise en page ; vos textes et photos sont conservés.`
+              : `Aucun modèle n'est encore proposé pour « ${categoryLabel || 'cette catégorie'} ».`}
           </p>
-          <div className="mt-4 space-y-2">
-            {THEME_PRESETS.map((preset) => {
-              const isActive =
-                heroStyle.color === preset.color && heroStyle.font === preset.font
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            {templates.map((template) => {
+              const isActive = currentTemplate?.name === template.name
               return (
                 <button
-                  key={preset.name}
+                  key={template.name}
                   type="button"
-                  onClick={() =>
-                    update({
-                      color: preset.color,
-                      font: preset.font,
-                      darkOverlay: preset.darkOverlay,
-                    })
-                  }
-                  className={`flex w-full items-center gap-3 rounded-lg border px-4 py-3 text-left transition ${
+                  onClick={() => onApplyTemplate(template)}
+                  className={`overflow-hidden rounded-xl border text-left transition ${
                     isActive
-                      ? 'border-brand-purple bg-brand-purple/10'
+                      ? 'border-brand-purple ring-2 ring-brand-purple/40'
                       : 'border-border-soft hover:border-faint'
                   }`}
                 >
-                  <span
-                    className="h-6 w-6 shrink-0 rounded-full"
-                    style={{ backgroundColor: preset.color }}
-                  />
-                  <span>
-                    <span className="block text-sm font-medium text-ink">
-                      {preset.name}
-                    </span>
-                    <span className="block text-xs text-faint">{preset.font}</span>
-                  </span>
+                  <div className="relative aspect-4/5">
+                    <TemplatePreview preview={template.preview} minimal={template.minimal} template={template} />
+                    {isActive && (
+                      <span className="absolute top-2 left-2 flex h-5 w-5 items-center justify-center rounded-full bg-brand-purple text-white">
+                        <Check className="h-3 w-3" />
+                      </span>
+                    )}
+                  </div>
+                  <div className="bg-surface px-2.5 py-2">
+                    <p className="text-xs font-semibold text-ink">{template.name}</p>
+                    <p className="text-[10px] text-faint">
+                      {template.badge === 'PREMIUM' ? 'Premium' : 'Gratuit'}
+                    </p>
+                  </div>
                 </button>
               )
             })}
@@ -227,7 +278,7 @@ export default function StylePanel({
       )}
 
       <p className="mt-8 text-xs text-faint">
-        Les modifications sont enregistrées automatiquement.
+        Pensez à cliquer sur Enregistrer pour conserver vos modifications.
       </p>
     </aside>
   )

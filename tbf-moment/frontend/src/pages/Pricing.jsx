@@ -4,6 +4,7 @@ import Header from '../components/layout/Header'
 import PricingCard from '../components/pricing/PricingCard'
 import BrandBackdrop from '../components/ui/BrandBackdrop'
 import { PRICING_PLANS as PLANS } from '../data/pricingPlans'
+import { useSeo } from '../utils/seo'
 
 const MODULES = [
   { name: 'Event Builder', values: ['Limité', 'Complet', 'Complet', 'Complet', 'Complet'] },
@@ -15,6 +16,12 @@ const MODULES = [
 const HIGHLIGHT_VALUES = new Set(['Payante', 'Illimité'])
 
 export default function Pricing() {
+  useSeo({
+    title: 'Tarifs',
+    description:
+      "Gratuit pour commencer, Premium pour aller plus loin : comparez les offres TBF Moment pour créer le site de votre événement.",
+    path: '/tarifs',
+  })
   const [period, setPeriod] = useState('Mensuel')
 
   return (

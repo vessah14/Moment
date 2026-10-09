@@ -1,5 +1,6 @@
 import { FileDown } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import UpgradeRequestsPanel from '../components/admin/UpgradeRequestsPanel'
 import AdminLayout from '../components/layout/AdminLayout'
 import StatCard from '../components/dashboard/StatCard'
 import Button from '../components/ui/Button'
@@ -66,6 +67,8 @@ export default function AdminBilling() {
           {error}
         </p>
       )}
+
+      <UpgradeRequestsPanel />
 
       <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="MRR (abonnements actifs)" value={formatFcfa(mrr)} />

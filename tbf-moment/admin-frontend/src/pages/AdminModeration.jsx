@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import ReviewsPanel from '../components/admin/ReviewsPanel'
 import AdminLayout from '../components/layout/AdminLayout'
 import {
   listModerationQueue,
@@ -101,6 +102,8 @@ export default function AdminModeration() {
           ))
         )}
       </div>
+
+      <ReviewsPanel />
     </AdminLayout>
   )
 }

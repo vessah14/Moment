@@ -12,7 +12,7 @@ import {
   updateEvent as updateEventApi,
   uploadEventCoverImage
 } from '../api/events'
-import { API_ORIGIN } from '../api/client'
+import { mediaUrl } from '../api/client'
 import { listEventCategories } from '../api/eventCategories'
 import {
   createEventLocation,
@@ -26,7 +26,10 @@ import {
 } from '../api/eventBlocks'
 import { createGuestGroup, listGuestGroups } from '../api/guestGroups'
 import { createGuest } from '../api/guests'
+import { createProgramItem } from '../api/program'
+import { createTicketType } from '../api/ticketing'
 import DashboardLayout from '../components/layout/DashboardLayout'
+import UpgradeDialog from '../components/plan/UpgradeDialog'
 import Button from '../components/ui/Button'
 import CategoryStep from '../components/wizard/CategoryStep'
 import EventPreviewPanel from '../components/wizard/EventPreviewPanel'
@@ -36,13 +39,31 @@ import OptionsStep from '../components/wizard/OptionsStep'
 import PersonalizationStep from '../components/wizard/PersonalizationStep'
 import PublicationStep from '../components/wizard/PublicationStep'
 import StepProgress from '../components/wizard/StepProgress'
+import TemplateContentStep from '../components/wizard/TemplateContentStep'
 import TemplateStep from '../components/wizard/TemplateStep'
-import { findTemplate, templateMatchesCategory } from '../utils/templateTheme'
+import { BLOCK_CONTENT_DEFAULTS } from '../data/blockDefaults'
+import {
+  blockContentToSave,
+  CONTENT_BLOCKS,
+  programItemsToCreate,
+  ticketTypesToCreate
+} from '../utils/templateContent'
+import { notifyGuestsChanged } from '../utils/guestEvents'
+import { isEventLimitReached, notifyPlanChanged, usePlan } from '../utils/usePlan'
+import {
+  findTemplate,
+  normalizeBlockType,
+  templateBlockContent,
+  templateBlockHeading,
+  templateBlocks,
+  templateMatchesCategory
+} from '../utils/templateTheme'
 
 const STEPS = [
   "Type d'événement",
   'Informations générales',
   'Choix du template',
+  'Contenu du modèle',
   'Personnalisation',
   'Invités',
   'Options',
@@ -66,13 +87,23 @@ const INITIAL_EVENT = {
   coverImageIsLocal: false,
   themeColor: '#6549e8',
   tagline: '',
+  birthdayAge: '',
+  // Contenu propre au modèle (étape « Contenu du modèle ») : sections du site, accroche
+  // et palette de l'en-tête, activités du programme et billets créés à la publication.
+  kicker: '',
+  palette: null,
+  blockContent: {},
+  programItems: [],
+  ticketTypes: [],
   guests: [],
   options: {
     checkin: true,
     program: true,
     gallery: true,
     ticketing: false,
-    guestbook: false
+    guestbook: false,
+    // Privé par défaut : le site n'est indexé par les moteurs que sur choix explicite.
+    searchable: false
   },
   plan: 'FREE'
 }
@@ -130,6 +161,10 @@ export default function CreateEvent () {
   const [loadError, setLoadError] = useState('')
   const [existingLocation, setExistingLocation] = useState(null)
   const [existingBlocks, setExistingBlocks] = useState([])
+  // Limite d'événements de l'offre : prévenir dès le début plutôt qu'à la publication.
+  const plan = usePlan()
+  const [upgradeOpen, setUpgradeOpen] = useState(false)
+  const limitReached = !isEditMode && isEventLimitReached(plan)
 
   useEffect(() => {
     listEventCategories()
@@ -149,6 +184,16 @@ export default function CreateEvent () {
       .then(([eventData, locations, blocks]) => {
         if (cancelled) return
         const custom = parseCustomFields(eventData.customFields)
+        const blockJson = type =>
+          parseCustomFields(
+            blocks.find(b => normalizeBlockType(b.blockType) === type)?.content
+          )
+        const heroContent = blockJson('Hero')
+        const blockContent = Object.fromEntries(
+          CONTENT_BLOCKS.filter(type =>
+            blocks.some(b => normalizeBlockType(b.blockType) === type)
+          ).map(type => [type, blockJson(type)])
+        )
         setEvent(prev => ({
           ...prev,
           name: eventData.name,
@@ -157,7 +202,7 @@ export default function CreateEvent () {
           timeStart: eventData.startTime ? eventData.startTime.slice(0, 5) : '',
           themeColor: eventData.themeColor || prev.themeColor,
           coverImage: eventData.coverImageUrl
-            ? `${API_ORIGIN}${eventData.coverImageUrl}`
+            ? mediaUrl(eventData.coverImageUrl)
             : null,
           coverImageUrl: eventData.coverImageUrl ?? null,
           coverImageFile: null,
@@ -165,9 +210,13 @@ export default function CreateEvent () {
           location: locations[0]?.address ?? '',
           description: custom.description ?? '',
           tagline: custom.tagline ?? '',
+          birthdayAge: custom.birthdayAge == null ? '' : String(custom.birthdayAge),
           timeEnd: custom.timeEnd ?? '',
           timezone: custom.timezone ?? prev.timezone,
           template: custom.template ?? null,
+          kicker: heroContent.kicker ?? '',
+          palette: heroContent.palette ?? null,
+          blockContent,
           options: { ...prev.options, ...(custom.options ?? {}) }
         }))
         setVisibility(eventData.status === 'Publie' ? 'publish' : 'draft')
@@ -252,6 +301,10 @@ export default function CreateEvent () {
   const isPublicationStep = currentStep === STEPS.length - 1
   const canContinue = currentStep !== 0 || Boolean(event.categoryId)
 
+  const publishedEventName = event.birthdayAge && selectedCategoryCode === 'anniversaire'
+    ? `Les ${event.birthdayAge} ans de ${(event.birthdayName || event.name).replace(/^Les\s+\d+\s+ans\s+de\s*/i, '').trim()}`
+    : event.name
+
   const handlePublish = async targetVisibility => {
     setPublishError('')
     setPublishWarnings([])
@@ -266,7 +319,7 @@ export default function CreateEvent () {
     const warnings = []
     try {
       const dto = {
-        name: event.name,
+        name: publishedEventName,
         categoryId: event.categoryId,
         eventDate: event.date || null,
         startTime: event.timeStart ? `${event.timeStart}:00` : null,
@@ -276,6 +329,7 @@ export default function CreateEvent () {
         customFields: JSON.stringify({
           description: event.description,
           tagline: event.tagline,
+          birthdayAge: event.birthdayAge ? Number(event.birthdayAge) : null,
           timeEnd: event.timeEnd,
           timezone: event.timezone,
           template: event.template,
@@ -324,7 +378,11 @@ export default function CreateEvent () {
       }
 
       try {
-        const findBlock = type => existingBlocks.find(b => b.blockType === type)
+        const findBlock = type =>
+          existingBlocks.find(b => normalizeBlockType(b.blockType) === type)
+        // Position unique par événement : le Hero occupe 0, les autres blocs suivent.
+        let nextPosition =
+          Math.max(0, ...existingBlocks.map(b => b.position)) + 1
         const parseBlockContent = raw => {
           try {
             return JSON.parse(raw || '{}') ?? {}
@@ -352,7 +410,7 @@ export default function CreateEvent () {
             await createEventBlock(
               {
                 blockType: type,
-                position: existingBlocks.length,
+                position: type === 'Hero' ? 0 : nextPosition++,
                 isVisible: true,
                 content
               },
@@ -364,13 +422,76 @@ export default function CreateEvent () {
         // Le sous-titre affiché publiquement (event.tagline) est déjà persisté au niveau de
         // l'événement (CustomFields) et lu en repli par la page publique — inutile et risqué
         // de le dupliquer ici avec une clé différente ("tagline" vs "subtitle" côté Builder).
-        await upsertBlockMerge('Hero', { title: event.name })
-        if (event.options?.program) await upsertBlockMerge('Programme', {})
-        if (event.options?.checkin) await upsertBlockMerge('Rsvp', {})
+        const chosenTemplate = findTemplate(event.template)
+        // Modèle premium : accroche et palette de l'en-tête choisies dans l'assistant
+        // (laissées telles quelles si rien n'a été choisi, pour ne pas écraser le Builder).
+        await upsertBlockMerge('Hero', {
+          title: publishedEventName,
+          ...(chosenTemplate?.theme && event.kicker?.trim() && { kicker: event.kicker.trim() }),
+          ...(chosenTemplate?.theme && event.palette && { palette: event.palette })
+        })
+
+        // Page encore vide : on la compose d'après le modèle choisi, avec ses titres de
+        // section et le contenu saisi à l'étape « Contenu du modèle ». Les données réelles
+        // (programme, galerie...) sont lues depuis leurs tables.
+        const pageBlocks = existingBlocks.some(b => b.blockType !== 'Hero')
+          ? []
+          : [...templateBlocks(chosenTemplate)]
+        // Sections demandées par les options mais absentes du modèle : insérées avant le
+        // pied de page (jamais après), dans l'ordre habituel.
+        if (pageBlocks.length > 0) {
+          const footer = pageBlocks.indexOf('Pied de page')
+          const insertAt = footer === -1 ? pageBlocks.length : footer
+          const extra = [
+            event.options?.program && !pageBlocks.includes('Programme') && 'Programme',
+            event.options?.checkin && !pageBlocks.includes('RSVP') && 'RSVP'
+          ].filter(Boolean)
+          pageBlocks.splice(insertAt, 0, ...extra)
+        }
+        for (const type of pageBlocks) {
+          const defaults = BLOCK_CONTENT_DEFAULTS[type] ?? {}
+          await upsertBlockMerge(type, {
+            ...templateBlockContent(chosenTemplate, type),
+            heading: templateBlockHeading(chosenTemplate, type),
+            showHeading: Boolean(defaults.showHeading),
+            tinted: Boolean(defaults.tinted),
+            ...blockContentToSave(type, event.blockContent?.[type])
+          })
+        }
+        // Page déjà composée (modification) : le contenu modifié est fusionné dans les
+        // sections existantes.
+        for (const [type, content] of Object.entries(event.blockContent ?? {})) {
+          if (!pageBlocks.includes(type) && findBlock(type))
+            await upsertBlockMerge(type, blockContentToSave(type, content))
+        }
+        const pageHas = type => findBlock(type) || pageBlocks.includes(type)
+        if (event.options?.program && !pageHas('Programme'))
+          await upsertBlockMerge('Programme', {})
+        if (event.options?.checkin && !pageHas('RSVP'))
+          await upsertBlockMerge('RSVP', {})
       } catch {
         warnings.push(
           "Les sections de la page n'ont pas pu être toutes mises à jour."
         )
+      }
+
+      // Programme et billets saisis à l'étape « Contenu du modèle » (création uniquement :
+      // en modification, ils se gèrent dans leurs menus du tableau de bord).
+      if (!isEditMode) {
+        for (const dto of programItemsToCreate(event.programItems, event.date)) {
+          try {
+            await createProgramItem(dto, targetId)
+          } catch {
+            warnings.push(`L'activité « ${dto.title} » n'a pas pu être ajoutée au programme.`)
+          }
+        }
+        for (const dto of ticketTypesToCreate(event.ticketTypes)) {
+          try {
+            await createTicketType(dto, targetId)
+          } catch {
+            warnings.push(`Le billet « ${dto.name} » n'a pas pu être créé.`)
+          }
+        }
       }
 
       if (event.guests?.length) {
@@ -405,6 +526,8 @@ export default function CreateEvent () {
         }
       }
 
+      if (event.guests?.length) notifyGuestsChanged()
+      if (!isEditMode) notifyPlanChanged()
       setPublishWarnings(warnings)
       setPublished(true)
     } catch (err) {
@@ -426,26 +549,31 @@ export default function CreateEvent () {
           />
         )
       case 1:
-        return <InformationsStep event={event} onChange={setEvent} />
+        return <InformationsStep event={event} onChange={setEvent} categoryCode={selectedCategoryCode} selectedTemplate={event.template} />
       case 2:
         return (
           <TemplateStep
             categoryCode={selectedCategoryCode}
             categoryLabel={selectedCategory?.label}
             selected={event.template}
-            onSelect={template => updateEvent({ template })}
+            // Chaque modèle premium a ses propres palettes : on repart de la sienne.
+            onSelect={template =>
+              updateEvent(template === event.template ? { template } : { template, palette: null })
+            }
           />
         )
       case 3:
-        return <PersonalizationStep event={event} onChange={setEvent} />
+        return <TemplateContentStep event={event} onChange={setEvent} isEditMode={isEditMode} />
       case 4:
-        return <InvitesStep event={event} onChange={setEvent} />
+        return <PersonalizationStep event={event} onChange={setEvent} />
       case 5:
-        return <OptionsStep event={event} onChange={setEvent} />
+        return <InvitesStep event={event} onChange={setEvent} />
       case 6:
+        return <OptionsStep event={event} onChange={setEvent} />
+      case 7:
         return (
           <PublicationStep
-            event={event}
+            event={{ ...event, name: publishedEventName }}
             visibility={visibility}
             onChangeVisibility={setVisibility}
             publishing={publishing}
@@ -564,6 +692,18 @@ export default function CreateEvent () {
 
   return (
     <DashboardLayout>
+      {limitReached && (
+        <div className='mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-orange/30 bg-brand-orange/10 px-4 py-3'>
+          <p className='text-sm text-ink'>
+            Votre offre <b>{plan.planLabel}</b> permet {plan.maxEvents} événement{plan.maxEvents > 1 ? 's' : ''} et vous en avez
+            déjà {plan.eventsUsed}. Archivez un événement ou passez à une offre supérieure pour publier celui-ci.
+          </p>
+          <Button variant='gradient' onClick={() => setUpgradeOpen(true)}>
+            {plan.pendingRequest ? 'Voir ma demande' : 'Passer en Premium'}
+          </Button>
+        </div>
+      )}
+      <UpgradeDialog open={upgradeOpen} onClose={() => setUpgradeOpen(false)} plan={plan} />
       <StepProgress
         currentStep={currentStep}
         totalSteps={STEPS.length}

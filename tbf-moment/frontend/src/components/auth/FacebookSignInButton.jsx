@@ -1,5 +1,6 @@
 import { useLocation } from 'react-router-dom'
 import Button from '../ui/Button'
+import { createOAuthState } from '../../utils/oauthState'
 import { rememberReturnPath, returnPathFrom } from '../../utils/returnPath'
 
 const APP_ID = import.meta.env.VITE_FACEBOOK_APP_ID
@@ -29,7 +30,8 @@ export default function FacebookSignInButton() {
       `?client_id=${encodeURIComponent(APP_ID)}` +
       `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
       '&response_type=token' +
-      '&scope=email'
+      '&scope=email' +
+      `&state=${createOAuthState()}`
     window.location.href = authUrl
   }
 

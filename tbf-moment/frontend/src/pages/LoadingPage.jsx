@@ -1,4 +1,7 @@
+import { useSeo } from '../utils/seo'
+
 export default function LoadingPage ({ text = 'Chargement de votre espace…' }) {
+  useSeo({ title: 'Chargement', noindex: true })
   return (
     <div className='flex min-h-svh items-center justify-center bg-bg px-6'>
       <div className='w-full max-w-md rounded-[28px] border border-border-soft bg-surface/90 px-6 py-8 text-center shadow-[0_18px_40px_rgba(15,23,42,0.06)] backdrop-blur-sm'>

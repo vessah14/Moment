@@ -123,6 +123,37 @@ h3 {
   color: transparent;
 }
 
+/* Site public d'un événement (components/site/SitePage.jsx) : entrée échelonnée des
+   éléments du Hero et lente dérive des halos décoratifs. */
+@keyframes site-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes site-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-24px, 18px, 0) scale(1.08);
+  }
+}
+
+.site-enter {
+  animation: site-fade-up 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.site-float {
+  animation: site-float 12s ease-in-out infinite;
+}
+
 /* Animations reduites : respecte le reglage systeme automatiquement, et/ou
    l'interrupteur manuel (Parametres > Langue et fuseau > Apparence). */
 @media (prefers-reduced-motion: reduce) {

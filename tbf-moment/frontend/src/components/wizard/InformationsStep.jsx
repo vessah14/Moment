@@ -8,8 +8,26 @@ const TIMEZONES = [
   'America/New_York (GMT-5)',
 ]
 
-export default function InformationsStep({ event, onChange }) {
+export default function InformationsStep({ event, onChange, categoryCode, selectedTemplate }) {
   const update = (patch) => onChange({ ...event, ...patch })
+  const isBirthday = categoryCode === 'anniversaire' || event.category?.toLowerCase().includes('anniversaire')
+  const updateBirthdayAge = (age) => {
+    const oldAge = event.birthdayAge
+    const currentName = event.name.trim()
+    const person = event.birthdayName || currentName.replace(/^Les\s+\d+\s+ans\s+de\s*/i, '').trim()
+    const generated = !currentName || (oldAge && currentName === `Les ${oldAge} ans de ${person}`)
+    if (!generated) return update({ birthdayAge: age })
+    update({ birthdayAge: age, birthdayName: person, name: person ? `Les ${age} ans de ${person}` : '' })
+  }
+  const updateBirthdayName = (name) => {
+    const age = event.birthdayAge
+    const isGenerated = age && event.name === `Les ${age} ans de ${event.birthdayName || ''}`.trim()
+    if (isBirthday && age && (isGenerated || !event.name.trim())) {
+      update({ birthdayName: name, name: name.trim() ? `Les ${age} ans de ${name.trim()}` : '' })
+      return
+    }
+    update({ name })
+  }
 
   return (
     <div>
@@ -28,7 +46,7 @@ export default function InformationsStep({ event, onChange }) {
               type="text"
               required
               value={event.name}
-              onChange={(e) => update({ name: e.target.value })}
+              onChange={(e) => updateBirthdayName(e.target.value)}
               placeholder="Ex: Mariage de Sophie & Matthieu"
               className="mt-2 w-full rounded-lg border border-border bg-surface px-4 py-3 text-sm text-ink placeholder:text-faint outline-none focus:border-brand-purple focus:ring-3 focus:ring-brand-purple/30"
             />
@@ -47,6 +65,31 @@ export default function InformationsStep({ event, onChange }) {
             />
           </label>
         </div>
+
+        {isBirthday && (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-sm font-medium text-ink">Âge célébré</span>
+              <input
+                type="number"
+                min="1"
+                max="120"
+                inputMode="numeric"
+                value={event.birthdayAge ?? ''}
+                onChange={(e) => updateBirthdayAge(e.target.value)}
+                placeholder="Ex. 30"
+                className="mt-2 w-full rounded-lg border border-border bg-surface px-4 py-3 text-sm text-ink placeholder:text-faint outline-none focus:border-brand-purple focus:ring-3 focus:ring-brand-purple/30"
+              />
+              <span className="mt-1.5 block text-xs text-faint">Cet âge pourra être repris sur le titre de votre invitation.</span>
+            </label>
+          </div>
+        )}
+
+        {isBirthday && selectedTemplate && ['Fiesta', 'Prestige'].includes(selectedTemplate) && (
+          <p className="rounded-lg border border-brand-purple/20 bg-brand-purple/5 px-4 py-3 text-sm text-muted">
+            Le modèle {selectedTemplate} met l’âge célébré en avant. Indiquez-le pour personnaliser le titre de votre invitation.
+          </p>
+        )}
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <label className="block">

@@ -1,4 +1,4 @@
-import { Check, Gift, Image, ListOrdered, QrCode, Ticket } from 'lucide-react'
+import { Check, Gift, Globe, Image, ListOrdered, QrCode, Ticket } from 'lucide-react'
 import Toggle from '../builder/Toggle'
 
 const OPTIONS = [
@@ -39,6 +39,13 @@ const OPTIONS = [
     description:
       "Offrez à vos hôtes la liberté d'enregistrer des messages d'affection, mots doux ou remerciements personnalisés en ligne.",
     comingSoon: true,
+  },
+  {
+    key: 'searchable',
+    icon: Globe,
+    label: 'Visible sur Google',
+    description:
+      "Autorisez les moteurs de recherche à afficher le site de l'événement dans leurs résultats. Idéal pour un concert, une conférence ou un événement ouvert au public ; laissez désactivé pour un événement privé (mariage, anniversaire, hommage…), qui reste accessible à toute personne disposant du lien.",
   },
 ]
 

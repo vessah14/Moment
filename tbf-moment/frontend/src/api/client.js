@@ -19,6 +19,16 @@ function decodeTokenPayload(token) {
 // uploadés (galerie) renvoyées en chemins relatifs par l'API.
 export const API_ORIGIN = API_URL.replace(/\/api\/?$/, '')
 
+// URL d'affichage d'une image téléversée : les chemins « /uploads/… » sont servis par le
+// backend ; les images Cloudinary (URL https complètes) sont servies par leur CDN, en
+// format et qualité automatiques (WebP/AVIF selon le navigateur, poids réduit).
+export function mediaUrl(path) {
+  if (typeof path !== 'string' || !path) return ''
+  if (path.startsWith('https://res.cloudinary.com/'))
+    return path.replace('/image/upload/', '/image/upload/f_auto,q_auto/')
+  return path.startsWith('/') ? `${API_ORIGIN}${path}` : ''
+}
+
 export function getToken() {
   try {
     return localStorage.getItem(TOKEN_KEY)

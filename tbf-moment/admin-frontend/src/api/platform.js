@@ -41,3 +41,25 @@ export function resolveGalleryModeration(id, keep) {
 export function listTransactions() {
   return apiFetch('/admin/platform/transactions')
 }
+
+// Demandes de passage à une offre payante (paiement reçu hors ligne, puis activation).
+export function listUpgradeRequests() {
+  return apiFetch('/admin/platform/upgrade-requests')
+}
+
+export function approveUpgradeRequest(id, note) {
+  return apiFetch(`/admin/platform/upgrade-requests/${id}/approve`, { method: 'POST', body: { note } })
+}
+
+export function rejectUpgradeRequest(id, note) {
+  return apiFetch(`/admin/platform/upgrade-requests/${id}/reject`, { method: 'POST', body: { note } })
+}
+
+// Avis des clients sur la plateforme (publiés sur l'accueil après validation).
+export function listReviews() {
+  return apiFetch('/admin/platform/reviews')
+}
+
+export function updateReviewStatus(id, status) {
+  return apiFetch(`/admin/platform/reviews/${id}/status`, { method: 'PATCH', body: { status } })
+}

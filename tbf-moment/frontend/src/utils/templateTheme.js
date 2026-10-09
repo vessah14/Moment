@@ -1,3 +1,4 @@
+import { BLOCK_CONTENT_DEFAULTS } from "../data/blockDefaults";
 import { TEMPLATES } from "../data/templates";
 
 export function findTemplate(name) {
@@ -74,6 +75,117 @@ export function defaultFontForTemplate(template) {
   return template?.preview?.serif
     ? "Playfair Display + Inter"
     : "Plus Jakarta Sans + DM Sans";
+}
+
+export const DEFAULT_ACCENT = "#6c4bf4";
+
+// Les couleurs finissent dans le CSS de la page : on n'accepte qu'un hex à 6 chiffres.
+export function safeHexColor(value) {
+  return typeof value === "string" && /^#[0-9a-fA-F]{6}$/.test(value)
+    ? value
+    : null;
+}
+
+// Le modèle choisi dans l'assistant est rangé dans event.customFields (JSON).
+export function templateFromCustomFields(raw) {
+  try {
+    const parsed = JSON.parse(raw || "{}");
+    return findTemplate(typeof parsed?.template === "string" ? parsed.template : null);
+  } catch {
+    return null;
+  }
+}
+
+// Couleur d'accent et police des titres du site d'un événement. Le modèle donne les
+// valeurs par défaut ; un choix explicite fait dans le Builder (heroContent.customStyle)
+// passe devant. Sans modèle, on retombe sur le Hero puis sur la couleur de l'événement.
+export function resolveSiteStyle({ template, heroContent = {}, themeColor } = {}) {
+  const heroColor = safeHexColor(heroContent.color);
+  const heroFont = HEADING_FONT_STACKS[heroContent.font] ? heroContent.font : null;
+  const custom = Boolean(heroContent.customStyle);
+
+  const accent =
+    (custom && heroColor) ||
+    template?.preview?.accent ||
+    heroColor ||
+    safeHexColor(themeColor) ||
+    DEFAULT_ACCENT;
+  const fontKey =
+    (custom && heroFont) ||
+    (template && defaultFontForTemplate(template)) ||
+    heroFont ||
+    "Playfair Display + Inter";
+
+  return { accent, fontKey, headingFont: HEADING_FONT_STACKS[fontKey] };
+}
+
+// Variables CSS complètes d'une page publique : couleurs du modèle, accent, police des
+// titres et arrondi des sections. À poser sur l'élément racine de la page.
+export function siteRootStyle(template, { accent, headingFont }) {
+  return {
+    ...siteThemeStyle(template, accent),
+    "--site-heading-font": headingFont,
+    "--site-panel-radius": template?.presentation?.panelRadius ?? "1.75rem",
+    fontFamily:
+      template?.categoryCode === "mariage"
+        ? "var(--font-montserrat)"
+        : "var(--font-sans)",
+  };
+}
+
+// Composition de blocs (hors Hero) proposée par un modèle.
+export function templateBlocks(template) {
+  return Array.isArray(template?.blocks) ? template.blocks : [];
+}
+
+// Titre de section proposé par un modèle (« Line-up » pour un concert, « Registre de
+// condoléances » pour un hommage…), sinon le titre par défaut du bloc.
+export function templateBlockHeading(template, type) {
+  const heading = template?.headings?.[type];
+  if (typeof heading === "string") return heading;
+  // Modèles premium : titres sobres de leurs démos plutôt que les titres par défaut du
+  // Builder, pensés pour un mariage (« Le Programme de la Journée »…).
+  if (template?.theme && PREMIUM_HEADINGS[type]) return PREMIUM_HEADINGS[type];
+  return BLOCK_CONTENT_DEFAULTS[type]?.heading ?? "";
+}
+
+const PREMIUM_HEADINGS = {
+  Histoire: "Notre histoire",
+  Programme: "Programme",
+  Localisation: "Le lieu",
+  Galerie: "Galerie",
+  "Livre d'or": "Livre d'or",
+  RSVP: "Serez-vous des nôtres ?",
+  Billetterie: "Billetterie",
+  FAQ: "Questions fréquentes",
+  "Plan de table": "Trouver ma place",
+};
+
+// Contenu propre à un modèle pour un bloc (ex. « La marraine » / « Le parrain » au lieu
+// des deux familles d'un mariage), sans exemple de contenu.
+export function templateBlockContent(template, type) {
+  const content = template?.content?.[type];
+  return content && typeof content === "object" ? content : {};
+}
+
+// Contenu initial des blocs d'un modèle (titres de section du modèle), pour une page
+// encore vide.
+export function templateBlockDefaults(template) {
+  return Object.fromEntries(
+    templateBlocks(template).map((type) => [
+      type,
+      {
+        ...BLOCK_CONTENT_DEFAULTS[type],
+        ...templateBlockContent(template, type),
+        heading: templateBlockHeading(template, type),
+      },
+    ]),
+  );
+}
+
+// Anciennes données : l'assistant créait un bloc "Rsvp", le Builder utilise "RSVP".
+export function normalizeBlockType(type) {
+  return type === "Rsvp" ? "RSVP" : type;
 }
 
 // Redéfinit les variables de couleur de l'interface (--color-bg, --color-ink...) à

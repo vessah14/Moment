@@ -1,9 +1,16 @@
 import { useState } from 'react'
 import { signPublicGuestBook } from '../../api/publicEvents'
 
-// Formulaire du livre d'or sur le mini-site public. Le message part en modération :
-// il n'apparaît qu'une fois validé par l'organisateur.
-export default function GuestBookForm({ slug }) {
+// Formulaire du livre d'or. Sur le mini-site public, le message est enregistré en base
+// et part en modération : il n'apparaît qu'une fois validé par l'organisateur.
+// `onSubmit` remplace l'envoi public (Builder : l'organisateur écrit via son API) ;
+// `successMessage` adapte la confirmation ; `disabled` bloque tout envoi.
+export default function GuestBookForm({
+  slug,
+  disabled = false,
+  onSubmit,
+  successMessage = "Il apparaîtra ici après validation par l'organisateur.",
+}) {
   const [authorName, setAuthorName] = useState('')
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
@@ -12,11 +19,13 @@ export default function GuestBookForm({ slug }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (disabled) return
     if (!authorName.trim() || !message.trim()) return
     setSending(true)
     setError('')
     try {
-      await signPublicGuestBook(slug, { authorName: authorName.trim(), message: message.trim() })
+      const dto = { authorName: authorName.trim(), message: message.trim() }
+      await (onSubmit ? onSubmit(dto) : signPublicGuestBook(slug, dto))
       setSent(true)
       setAuthorName('')
       setMessage('')
@@ -31,7 +40,7 @@ export default function GuestBookForm({ slug }) {
     return (
       <div className="rounded-xl border border-border-soft bg-surface p-4 text-center">
         <p className="text-sm font-medium text-ink">Merci pour votre message !</p>
-        <p className="mt-1 text-xs text-muted">Il apparaîtra ici après validation par l'organisateur.</p>
+        <p className="mt-1 text-xs text-muted">{successMessage}</p>
         <button type="button" onClick={() => setSent(false)} className="mt-3 text-xs font-medium text-brand-purple hover:underline">
           Écrire un autre message
         </button>
@@ -45,6 +54,7 @@ export default function GuestBookForm({ slug }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-3 rounded-xl border border-border-soft bg-surface p-4">
       <p className="text-sm font-medium text-ink">Laisser un message</p>
+      <fieldset disabled={disabled} className="min-w-0 space-y-3 disabled:opacity-60">
       <input
         value={authorName}
         onChange={(e) => setAuthorName(e.target.value)}
@@ -72,6 +82,7 @@ export default function GuestBookForm({ slug }) {
       >
         {sending ? 'Envoi…' : 'Envoyer'}
       </button>
+      </fieldset>
     </form>
   )
 }

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import Button from '../../components/ui/Button'
 import { listEvents } from '../../api/events'
-import { API_ORIGIN } from '../../api/client'
+import { mediaUrl } from '../../api/client'
 import {
   deleteGalleryPhoto,
   listGalleryPhotos,
@@ -221,7 +221,7 @@ export default function Gallery() {
               <div key={item.id}>
                 <div className="relative aspect-square overflow-hidden rounded-xl bg-surface-2">
                   <img
-                    src={`${API_ORIGIN}${item.url}`}
+                    src={mediaUrl(item.url)}
                     alt=""
                     className="h-full w-full object-cover"
                   />

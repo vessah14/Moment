@@ -1,10 +1,12 @@
 import QRCode from 'qrcode'
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { getPublicInvitation, submitPublicRsvp } from '../api/guests'
 import logoMark from '../assets/logo-mark.png'
 import Button from '../components/ui/Button'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
+import { useSeo } from '../utils/seo'
+import { findTemplate, resolveSiteStyle, siteRootStyle } from '../utils/templateTheme'
 
 function formatEventDateTime(dateStr, timeStr) {
   if (!dateStr) return ''
@@ -42,6 +44,13 @@ export default function GuestInvitation() {
   const [accompanyingCount, setAccompanyingCount] = useState(0)
   const [qrDataUrl, setQrDataUrl] = useState(null)
   const [shareMessage, setShareMessage] = useState('')
+  useSeo({
+    title: invitation?.eventName ? `Invitation · ${invitation.eventName}` : 'Invitation',
+    description: invitation?.eventName
+      ? `Vous êtes invité(e) à ${invitation.eventName}. Confirmez votre présence en un clic.`
+      : undefined,
+    noindex: true,
+  })
 
   useEffect(() => {
     getPublicInvitation(guestId)
@@ -149,11 +158,21 @@ export default function GuestInvitation() {
   const seats = 1 + (invitation.rsvpAccompanyingCount ?? 0)
   // Événement passé : la réponse ne peut plus être modifiée (refusé aussi côté serveur).
   const closed = Boolean(invitation.rsvpClosed)
+  // Même habillage que le site de l'événement (modèle choisi par l'organisateur).
+  const template = findTemplate(invitation.template)
+  const siteStyle = resolveSiteStyle({ template, themeColor: invitation.themeColor })
 
   return (
-    <div className="flex min-h-svh items-center justify-center bg-bg px-6 py-12">
+    <div
+      className="flex min-h-svh items-center justify-center bg-bg px-6 py-12 text-ink"
+      style={siteRootStyle(template, siteStyle)}
+      data-template={template?.name ?? 'custom'}
+    >
       <LanguageSwitcher floating />
-      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-border-soft bg-surface">
+      <div
+        className="w-full max-w-md overflow-hidden rounded-2xl border border-border-soft bg-surface"
+        style={{ borderRadius: 'var(--site-panel-radius)' }}
+      >
         <div className="flex items-center gap-2 border-b border-border-soft px-4 py-3">
           <span className="h-2.5 w-2.5 rounded-full bg-brand-orange" />
           <span className="h-2.5 w-2.5 rounded-full bg-brand-pink" />
@@ -163,8 +182,27 @@ export default function GuestInvitation() {
           </span>
         </div>
 
-        <div className="flex aspect-video items-center justify-center bg-[linear-gradient(160deg,_var(--color-surface-2),_var(--color-panel))]">
-          <img src={logoMark} alt="" className="h-10 w-10 opacity-80" />
+        <div
+          className="flex aspect-video flex-col items-center justify-center gap-2 px-6 text-center"
+          style={{
+            background: `linear-gradient(160deg, ${siteStyle.accent}55, var(--color-panel))`,
+          }}
+        >
+          {template ? (
+            <>
+              <span className="text-[11px] font-semibold tracking-widest text-brand-purple uppercase">
+                {template.preview.eyebrow}
+              </span>
+              <p
+                className="text-2xl font-bold text-ink"
+                style={{ fontFamily: 'var(--site-heading-font)' }}
+              >
+                {invitation.eventName}
+              </p>
+            </>
+          ) : (
+            <img src={logoMark} alt="" className="h-10 w-10 opacity-80" />
+          )}
         </div>
 
         <div className="p-6">
@@ -188,7 +226,12 @@ export default function GuestInvitation() {
               <span className="inline-flex items-center rounded-full border border-border px-3 py-1 text-[11px] font-semibold tracking-widest text-brand-purple uppercase">
                 Invitation personnelle
               </span>
-              <h1 className="mt-4 text-2xl font-bold text-ink">{invitation.guestFullName}</h1>
+              <h1
+                className="mt-4 text-2xl font-bold text-ink"
+                style={{ fontFamily: 'var(--site-heading-font)' }}
+              >
+                {invitation.guestFullName}
+              </h1>
               <p className="mt-3 text-sm text-muted">
                 Vous êtes invité(e) à {invitation.eventName}
                 {invitation.eventDate ? `, le ${formatEventDateTime(invitation.eventDate, invitation.eventStartTime)}` : ''}
@@ -290,6 +333,16 @@ export default function GuestInvitation() {
                 </button>
               )}
             </>
+          )}
+
+          {invitation.eventSlug && (
+            // Le site de l'événement, ouvert à son nom : réponse, pass, plan de table…
+            <Link
+              to={`/e/${invitation.eventSlug}?invite=${guestId}`}
+              className="mt-6 block rounded-xl border border-border-soft bg-surface-2 px-4 py-3 text-center text-sm font-semibold text-brand-purple hover:border-brand-purple"
+            >
+              Découvrir le site de l'événement →
+            </Link>
           )}
 
           <div className="mt-6 flex items-center justify-center gap-4 border-t border-border-soft pt-4 text-xs text-faint">

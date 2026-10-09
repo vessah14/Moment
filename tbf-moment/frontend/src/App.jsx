@@ -24,6 +24,7 @@ const MyEvents = lazy(() => import('./pages/dashboard/MyEvents'))
 const Program = lazy(() => import('./pages/dashboard/Program'))
 const SeatingPlan = lazy(() => import('./pages/dashboard/SeatingPlan'))
 const Settings = lazy(() => import('./pages/dashboard/Settings'))
+const MyReview = lazy(() => import('./pages/dashboard/MyReview'))
 const Ticketing = lazy(() => import('./pages/dashboard/Ticketing'))
 const Ecosystem = lazy(() => import('./pages/Ecosystem'))
 const FacebookCallback = lazy(() => import('./pages/FacebookCallback'))
@@ -43,6 +44,7 @@ const VerifyEmail = lazy(() => import('./pages/VerifyEmail'))
 const Signup = lazy(() => import('./pages/Signup'))
 const Support = lazy(() => import('./pages/Support'))
 const Templates = lazy(() => import('./pages/Templates'))
+const TemplateDemo = lazy(() => import('./pages/TemplateDemo'))
 const TermsOfService = lazy(() => import('./pages/TermsOfService'))
 
 function SiteLayout ({ children }) {
@@ -104,6 +106,7 @@ function App () {
           <Route path='/bienvenue' element={<Onboarding />} />
           <Route path='/inscription' element={<Signup />} />
           <Route path='/modeles' element={<Templates />} />
+          <Route path='/modeles/:theme' element={<TemplateDemo />} />
           <Route path='/tarifs' element={<Pricing />} />
           <Route path='/ecosysteme' element={<Ecosystem />} />
           <Route path='/support' element={<Support />} />
@@ -217,6 +220,14 @@ function App () {
             element={
               <RequireAuth>
                 <Analytics />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path='/dashboard/avis'
+            element={
+              <RequireAuth>
+                <MyReview />
               </RequireAuth>
             }
           />

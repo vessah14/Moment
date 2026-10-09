@@ -1,7 +1,9 @@
 import Footer from './Footer'
 import Header from './Header'
+import { useSeo } from '../../utils/seo'
 
-export default function InfoPage({ title, children }) {
+export default function InfoPage({ title, description, path, children }) {
+  useSeo({ title, description, path })
   return (
     <div className="flex min-h-svh flex-col">
       <Header />

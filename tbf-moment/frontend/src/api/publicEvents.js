@@ -12,3 +12,15 @@ export function getPublicSite(slug) {
 export function signPublicGuestBook(slug, dto) {
   return apiFetch(`/public/events/${encodeURIComponent(slug)}/guest-book`, { method: 'POST', body: dto, auth: false })
 }
+
+// Plan de table public : tables sans noms d'invités, et recherche par nom complet.
+export function getPublicSeating(slug) {
+  return apiFetch(`/public/events/${encodeURIComponent(slug)}/seating`, { auth: false })
+}
+
+export function findPublicSeat(slug, name) {
+  return apiFetch(
+    `/public/events/${encodeURIComponent(slug)}/seating/find?name=${encodeURIComponent(name)}`,
+    { auth: false },
+  )
+}

@@ -1,6 +1,6 @@
-import { LayoutPanelLeft, Monitor, Smartphone, X } from 'lucide-react'
+import { ArrowLeft, LayoutPanelLeft, Monitor, Smartphone, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import BlockLibrary from '../components/builder/BlockLibrary'
 import BuilderCanvas from '../components/builder/BuilderCanvas'
 import StylePanel from '../components/builder/StylePanel'
@@ -8,7 +8,23 @@ import Toggle from '../components/builder/Toggle'
 import Button from '../components/ui/Button'
 import DashboardLayout from '../components/layout/DashboardLayout'
 import { BLOCK_CONTENT_DEFAULTS } from '../data/blockDefaults'
-import { getEvent, updateEvent as updateEventApi } from '../api/events'
+import {
+  getEvent,
+  updateEvent as updateEventApi,
+  uploadEventBlockImage,
+} from '../api/events'
+import { listEventCategories } from '../api/eventCategories'
+import { listEventLocations } from '../api/eventLocations'
+import { listGalleryPhotos, uploadGalleryPhoto } from '../api/gallery'
+import {
+  createGuestBookEntry,
+  listGuestBookEntries,
+  updateGuestBookStatus,
+} from '../api/guestBook'
+import { listProgramItems } from '../api/program'
+import { listTicketTypes } from '../api/ticketing'
+import { listGiftItems } from '../api/giftRegistry'
+import { listTables } from '../api/seating'
 import {
   createEventBlock,
   deleteEventBlock,
@@ -16,6 +32,16 @@ import {
   updateEventBlock,
 } from '../api/eventBlocks'
 import { formatEventDate } from '../utils/eventStatus'
+import {
+  defaultFontForTemplate,
+  normalizeBlockType,
+  resolveSiteStyle,
+  templateBlockDefaults,
+  templateBlocks,
+  templateFromCustomFields,
+  templatesForCategory,
+} from '../utils/templateTheme'
+import { useSeo } from '../utils/seo'
 
 const PALETTE = ['#6549e8', '#ec4ec2', '#ff7a3d', '#f6c945', '#c026d3']
 
@@ -30,6 +56,14 @@ function heroSubtitleFromEvent(event) {
   ]
     .filter(Boolean)
     .join(' · ')
+}
+
+function customFieldOf(event, key) {
+  try {
+    return JSON.parse(event?.customFields || '{}')?.[key] ?? ''
+  } catch {
+    return ''
+  }
 }
 
 export default function Builder() {
@@ -57,11 +91,44 @@ export default function Builder() {
     entryAnimation: false,
     title: '',
     subtitle: '',
+    customStyle: false,
+    // Modèles premium : palette, motif de fond et accroche de l'en-tête.
+    palette: null,
+    motif: null,
+    kicker: '',
   })
 
+  // Photos publiées de la galerie : ce sont elles que le bloc Galerie affiche en ligne.
+  const [galleryPhotos, setGalleryPhotos] = useState([])
+  // Données réelles affichées par les blocs, comme sur le site public.
+  const [siteData, setSiteData] = useState({
+    programItems: [],
+    guestBookEntries: [],
+    ticketTypes: [],
+    location: null,
+    gifts: [],
+    seatingTables: [],
+  })
+  const [uploading, setUploading] = useState(false)
+  const [categories, setCategories] = useState([])
+  // Modèle changé dans l'onglet "Modèle" : à enregistrer sur l'événement (customFields).
+  const [templateDirty, setTemplateDirty] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [savedJustNow, setSavedJustNow] = useState(false)
+  useSeo({ title: event?.name ? `Builder · ${event.name}` : 'Builder', noindex: true })
+
+  useEffect(() => {
+    let cancelled = false
+    listEventCategories()
+      .then((data) => {
+        if (!cancelled) setCategories(data ?? [])
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     if (!eventId) {
@@ -70,9 +137,31 @@ export default function Builder() {
       return
     }
     let cancelled = false
-    Promise.all([getEvent(eventId), listEventBlocks(eventId)])
-      .then(([eventData, blocks]) => {
+    Promise.all([
+      getEvent(eventId),
+      listEventBlocks(eventId),
+      listGalleryPhotos(eventId).catch(() => []),
+      listProgramItems(eventId).catch(() => []),
+      listGuestBookEntries(eventId).catch(() => []),
+      listTicketTypes(eventId).catch(() => []),
+      listEventLocations(eventId).catch(() => []),
+      listGiftItems(eventId).catch(() => []),
+      listTables(eventId).catch(() => []),
+    ])
+      .then(([eventData, blocks, photos, program, guestBook, tickets, locations, gifts, tables]) => {
         if (cancelled) return
+        setGalleryPhotos((photos ?? []).filter((p) => p.status === 'Publie'))
+        setSiteData({
+          programItems: program ?? [],
+          guestBookEntries: (guestBook ?? []).filter((g) => g.status === 'Publie').slice(0, 20),
+          ticketTypes: tickets ?? [],
+          location: locations?.[0] ?? null,
+          gifts: gifts ?? [],
+          // Même numérotation que le site public : ordre du plan, à partir de 1.
+          seatingTables: [...(tables ?? [])]
+            .sort((a, b) => a.position - b.position)
+            .map((t, i) => ({ number: i + 1, label: t.label, capacity: t.capacity })),
+        })
         setEvent(eventData)
         setExistingBlocks(blocks ?? [])
         setPublished(eventData.status === 'Publie')
@@ -84,30 +173,62 @@ export default function Builder() {
         } catch {
           heroContent = {}
         }
+        // Le modèle choisi dans l'assistant fournit couleur et police tant que
+        // l'organisateur ne les a pas changées lui-même ici (customStyle).
+        const template = templateFromCustomFields(eventData.customFields)
+        const siteStyle = resolveSiteStyle({
+          template,
+          heroContent,
+          themeColor: eventData.themeColor,
+        })
         setHeroStyle({
-          color: heroContent.color || PALETTE[0],
-          font: heroContent.font || 'Plus Jakarta Sans + DM Sans',
+          color: siteStyle.accent,
+          font: siteStyle.fontKey,
+          customStyle: Boolean(heroContent.customStyle),
+          customTitle: Boolean(heroContent.customTitle),
+          palette: heroContent.palette ?? null,
+          motif: heroContent.motif ?? null,
+          kicker: heroContent.kicker ?? '',
           blockHeight: heroContent.blockHeight ?? 72,
           darkOverlay: heroContent.darkOverlay ?? true,
           entryAnimation: heroContent.entryAnimation ?? false,
-          title: heroContent.title || heroTitleFromName(eventData.name),
-          subtitle: heroContent.subtitle || heroSubtitleFromEvent(eventData),
+          title: heroContent.title || (() => {
+            const age = Number(customFieldOf(eventData, 'birthdayAge')) || null
+            return age && template?.categoryCode === 'anniversaire'
+              ? `Les ${age} ans de ${eventData.name.replace(/^Les\s+\d+\s+ans\s+de\s*/i, '').trim()}`
+              : heroTitleFromName(eventData.name)
+          })(),
+          subtitle:
+            heroContent.subtitle ||
+            customFieldOf(eventData, 'tagline') ||
+            heroSubtitleFromEvent(eventData),
         })
 
         const others = (blocks ?? [])
           .filter((b) => b.blockType !== 'Hero')
           .sort((a, b) => a.position - b.position)
-        setPageBlocks(others.map((b) => b.blockType))
+        // Page encore vide : on part de la composition du modèle (enregistrée au
+        // premier clic sur Enregistrer / Publier).
+        setPageBlocks(
+          others.length > 0
+            ? others.map((b) => normalizeBlockType(b.blockType))
+            : [...templateBlocks(template)],
+        )
 
         const loadedContent = {}
         for (const b of others) {
+          const type = normalizeBlockType(b.blockType)
           try {
-            loadedContent[b.blockType] = JSON.parse(b.content || '{}')
+            loadedContent[type] = JSON.parse(b.content || '{}')
           } catch {
-            loadedContent[b.blockType] = {}
+            loadedContent[type] = {}
           }
         }
-        setBlockContent({ ...BLOCK_CONTENT_DEFAULTS, ...loadedContent })
+        setBlockContent({
+          ...BLOCK_CONTENT_DEFAULTS,
+          ...(others.length > 0 ? {} : templateBlockDefaults(template)),
+          ...loadedContent,
+        })
       })
       .catch((err) => {
         if (!cancelled) setLoadError(err.message || "Impossible de charger l'événement.")
@@ -122,6 +243,64 @@ export default function Builder() {
 
   const eventTitle = event?.name ?? ''
   const slug = event?.slug ?? ''
+  const template = templateFromCustomFields(event?.customFields)
+  const category = categories.find((c) => c.id === event?.categoryId) ?? null
+  const birthdayAge = Number(customFieldOf(event, 'birthdayAge')) || null
+  const birthdayTitle = birthdayAge && template?.categoryCode === 'anniversaire'
+    ? `Les ${birthdayAge} ans de ${(event?.name ?? '').replace(/^Les\s+\d+\s+ans\s+de\s*/i, '').trim()}`
+    : heroTitleFromName(event?.name)
+  const displayedHeroStyle = template?.categoryCode === 'anniversaire' && birthdayAge && !heroStyle.customTitle
+    ? { ...heroStyle, title: birthdayTitle }
+    : heroStyle
+  // Seuls les modèles de la catégorie de l'événement sont proposés.
+  const categoryTemplates = templatesForCategory(category?.code, category?.label)
+
+  const handleApplyTemplate = (next) => {
+    setEvent((prev) => {
+      let fields = {}
+      try {
+        fields = JSON.parse(prev.customFields || '{}') ?? {}
+      } catch {
+        fields = {}
+      }
+      return { ...prev, customFields: JSON.stringify({ ...fields, template: next.name }) }
+    })
+    setTemplateDirty(true)
+    // Le modèle reprend la main sur les couleurs et la police ; textes et photos restent.
+    setHeroStyle((prev) => ({
+      ...prev,
+      color: next.preview.accent,
+      font: defaultFontForTemplate(next),
+      customStyle: false,
+      palette: null,
+      motif: null,
+    }))
+    if (pageBlocks.length === 0) setBlockContent((prev) => ({ ...prev, ...templateBlockDefaults(next) }))
+    setPageBlocks((prev) => (prev.length > 0 ? prev : [...templateBlocks(next)]))
+  }
+
+  const eventDto = (status) => ({
+    name: event.name,
+    categoryId: event.categoryId,
+    status,
+    eventDate: event.eventDate,
+    startTime: event.startTime,
+    coverImageUrl: event.coverImageUrl,
+    themeColor: event.themeColor,
+    themeFont: event.themeFont,
+    customFields: event.customFields,
+  })
+  const eventDescription = customFieldOf(event, 'description')
+  // La couleur du modèle est toujours proposée en premier dans la palette.
+  const palette = [...new Set([template?.preview?.accent, ...PALETTE].filter(Boolean))]
+
+  const handleChangeHeroStyle = (next) =>
+    setHeroStyle((prev) => ({
+      ...next,
+      customTitle: prev.customTitle || next.title !== prev.title,
+      customStyle:
+        prev.customStyle || next.color !== prev.color || next.font !== prev.font,
+    }))
 
   const handleSelectBlock = (block) => {
     if (block !== 'Hero') {
@@ -149,12 +328,63 @@ export default function Builder() {
     setSelectedBlock((prev) => (prev === block ? 'Hero' : prev))
   }
 
+  const handleUploadBlockImage = async (block, file) => {
+    if (!file) return
+    setUploading(true)
+    setSaveError('')
+    try {
+      const { url } = await uploadEventBlockImage(eventId, file)
+      updateBlockContent(block, { imageUrl: url })
+    } catch (err) {
+      setSaveError(err.message || "La photo n'a pas pu être envoyée.")
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  // Les photos ajoutées ici vont directement dans la galerie de l'événement (publiées).
+  const handleUploadGalleryPhotos = async (files) => {
+    if (!files?.length) return
+    setUploading(true)
+    setSaveError('')
+    const failed = []
+    for (const file of files) {
+      try {
+        const photo = await uploadGalleryPhoto(file, eventId)
+        setGalleryPhotos((prev) => [photo, ...prev])
+      } catch {
+        failed.push(file.name)
+      }
+    }
+    if (failed.length)
+      setSaveError(`Photo(s) non envoyée(s) : ${failed.join(', ')}.`)
+    setUploading(false)
+  }
+
+  // Message écrit par l'organisateur depuis le Builder : enregistré en base puis publié
+  // directement (pas de modération pour ses propres messages). Une erreur remonte au
+  // formulaire, qui l'affiche.
+  const handleAddGuestBookEntry = async (dto) => {
+    const entry = await createGuestBookEntry(dto, eventId)
+    const published = await updateGuestBookStatus(entry.id, 'Publie')
+    setSiteData((prev) => ({
+      ...prev,
+      guestBookEntries: [published, ...prev.guestBookEntries].slice(0, 20),
+    }))
+  }
+
   const handleSave = async () => {
     if (!eventId) return
     setSaving(true)
     setSaveError('')
     try {
-      const existingByType = new Map(existingBlocks.map((b) => [b.blockType, b]))
+      if (templateDirty) {
+        await updateEventApi(eventId, eventDto(published ? 'Publie' : 'Brouillon'))
+        setTemplateDirty(false)
+      }
+      const existingByType = new Map(
+        existingBlocks.map((b) => [normalizeBlockType(b.blockType), b]),
+      )
 
       // Décale d'abord tous les blocs existants vers des positions temporaires
       // négatives : la contrainte unique (event_id, position) en base
@@ -178,6 +408,11 @@ export default function Builder() {
         entryAnimation: heroStyle.entryAnimation,
         title: heroStyle.title,
         subtitle: heroStyle.subtitle,
+        customStyle: heroStyle.customStyle,
+        customTitle: heroStyle.customTitle,
+        palette: heroStyle.palette,
+        motif: heroStyle.motif,
+        kicker: heroStyle.kicker,
       })
       const heroExisting = existingByType.get('Hero')
       if (heroExisting) {
@@ -226,17 +461,7 @@ export default function Builder() {
     setSaveError('')
     try {
       await handleSave()
-      await updateEventApi(eventId, {
-        name: event.name,
-        categoryId: event.categoryId,
-        status: nextPublished ? 'Publie' : 'Brouillon',
-        eventDate: event.eventDate,
-        startTime: event.startTime,
-        coverImageUrl: event.coverImageUrl,
-        themeColor: event.themeColor,
-        themeFont: event.themeFont,
-        customFields: event.customFields,
-      })
+      await updateEventApi(eventId, eventDto(nextPublished ? 'Publie' : 'Brouillon'))
       setPublished(nextPublished)
       if (nextPublished) {
         setJustPublished(true)
@@ -289,6 +514,14 @@ export default function Builder() {
           </>
         ) : (
           <>
+            <Link
+              to="/dashboard/evenements"
+              className="flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted transition hover:border-faint hover:text-ink"
+              title="Retour au tableau de bord (pensez à enregistrer avant)"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Tableau de bord</span>
+            </Link>
             <div className="min-w-0">
               <span className="truncate font-semibold text-ink">
                 {eventTitle}
@@ -379,18 +612,41 @@ export default function Builder() {
           onReorderBlock={handleReorderBlock}
           onRemoveBlock={handleRemoveBlock}
           device={device}
-          heroStyle={heroStyle}
-          eventDateTime={event.eventDate ? `${event.eventDate}T${event.startTime ?? '00:00:00'}` : ''}
+          heroStyle={displayedHeroStyle}
+          template={template}
+          data={{
+            eventDateTime: event.eventDate
+              ? `${event.eventDate}T${event.startTime ?? '00:00:00'}`
+              : '',
+            coverPath: event.coverImageUrl,
+            description: eventDescription,
+            locationLabel: siteData.location?.label,
+            locationAddress: siteData.location?.address,
+            programItems: siteData.programItems,
+            galleryPhotos,
+            guestBookEntries: siteData.guestBookEntries,
+            ticketTypes: siteData.ticketTypes,
+            gifts: siteData.gifts,
+            seatingTables: siteData.seatingTables,
+          }}
+          uploading={uploading}
+          onUploadBlockImage={handleUploadBlockImage}
+          onUploadGalleryPhotos={handleUploadGalleryPhotos}
+          onAddGuestBookEntry={handleAddGuestBookEntry}
           readOnly={previewMode}
         />
         {!previewMode && (
           <StylePanel
-            palette={PALETTE}
-            heroStyle={heroStyle}
-            onChangeHeroStyle={setHeroStyle}
+            palette={palette}
+            heroStyle={displayedHeroStyle}
+            onChangeHeroStyle={handleChangeHeroStyle}
             selectedBlock={selectedBlock}
             blockContent={blockContent}
             onChangeBlockContent={updateBlockContent}
+            templates={categoryTemplates}
+            currentTemplate={template}
+            categoryLabel={category?.label}
+            onApplyTemplate={handleApplyTemplate}
           />
         )}
       </div>

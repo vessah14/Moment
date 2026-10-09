@@ -14,19 +14,25 @@ import {
   Plus,
   QrCode,
   Settings,
+  Star,
   Table2,
   Ticket,
   Users,
   X,
 } from 'lucide-react'
-import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, NavLink } from 'react-router-dom'
+import { listGuests } from '../../api/guests'
+import UpgradeDialog from '../plan/UpgradeDialog'
+import { isEventLimitReached, usePlan } from '../../utils/usePlan'
+import { GUESTS_CHANGED_EVENT } from '../../utils/guestEvents'
 import logo from '../../assets/logo.png'
 import logoMark from '../../assets/logo-mark.png'
 import { useLocalStorageState } from '../../utils/useLocalStorageState'
 
 const NAV_ITEMS = [
   { label: 'Vue globale', to: '/dashboard', icon: BarChart3, end: true },
-  { label: 'Mes événements', to: '/dashboard/evenements', icon: Calendar },
+  { label: 'Mes événements', to: '/dashboard/evenements', icon: Calendar, end: true },
   {
     label: 'Créer un événement',
     to: '/dashboard/evenements/nouveau',
@@ -42,7 +48,7 @@ const NAV_ITEMS = [
     label: 'Participants',
     to: '/dashboard/participants',
     icon: Users,
-    badge: 14,
+    badgeKey: 'guests',
   },
   { label: 'Billetterie', to: '/dashboard/billetterie', icon: Ticket },
   { label: 'Check-in', to: '/dashboard/checkin', icon: QrCode },
@@ -50,14 +56,43 @@ const NAV_ITEMS = [
   { label: "Livre d'or", to: '/dashboard/livre-dor', icon: BookHeart },
   { label: 'Programme', to: '/dashboard/programme', icon: ListOrdered },
   { label: 'Plan de table', to: '/dashboard/plan-de-table', icon: Table2 },
-  { label: 'Liste de mariage', to: '/dashboard/liste-mariage', icon: Gift },
+  { label: 'Liste de cadeaux', to: '/dashboard/liste-mariage', icon: Gift },
   { label: 'Conférence', to: '/dashboard/conference', icon: Mic2 },
   { label: 'Statistiques', to: '/dashboard/statistiques', icon: BarChart3 },
+  { label: 'Mon avis', to: '/dashboard/avis', icon: Star },
   { label: 'Paramètres', to: '/dashboard/parametres', icon: Settings },
 ]
 
+// Nombre total d'invités de l'organisateur, tous événements confondus (lu en base).
+function useGuestCount() {
+  const [count, setCount] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    const load = () =>
+      listGuests()
+        .then((guests) => {
+          if (!cancelled) setCount(Array.isArray(guests) ? guests.length : null)
+        })
+        .catch(() => {
+          if (!cancelled) setCount(null)
+        })
+    load()
+    window.addEventListener(GUESTS_CHANGED_EVENT, load)
+    return () => {
+      cancelled = true
+      window.removeEventListener(GUESTS_CHANGED_EVENT, load)
+    }
+  }, [])
+
+  return count
+}
+
 export default function DashboardSidebar({ open, onClose }) {
-  const navigate = useNavigate()
+  const guestCount = useGuestCount()
+  const badges = { guests: guestCount }
+  const plan = usePlan()
+  const [upgradeOpen, setUpgradeOpen] = useState(false)
   const [collapsed, setCollapsed] = useLocalStorageState(
     'tbf_sidebar_collapsed',
     false,
@@ -100,7 +135,9 @@ export default function DashboardSidebar({ open, onClose }) {
         </div>
 
         <nav className="mt-6 flex-1 space-y-0.5">
-          {NAV_ITEMS.map((item) => (
+          {NAV_ITEMS.map((item) => {
+            const badge = item.badgeKey ? badges[item.badgeKey] : null
+            return (
             <NavLink
               key={item.label}
               to={item.to}
@@ -121,17 +158,18 @@ export default function DashboardSidebar({ open, onClose }) {
               <span className={`flex-1 ${collapsed ? 'lg:hidden' : ''}`}>
                 {item.label}
               </span>
-              {item.badge && (
+              {badge > 0 && (
                 <span
                   className={`rounded-full bg-brand-purple/20 px-2 py-0.5 text-xs font-semibold text-brand-purple ${
                     collapsed ? 'lg:hidden' : ''
                   }`}
                 >
-                  {item.badge}
+                  {badge > 999 ? '999+' : badge}
                 </span>
               )}
             </NavLink>
-          ))}
+            )
+          })}
         </nav>
 
         <Link
@@ -162,32 +200,55 @@ export default function DashboardSidebar({ open, onClose }) {
           )}
         </button>
 
+        {/* Offre en cours, lue en base : nombre d'événements utilisés et demande en cours. */}
         <div
           className={`mt-4 shrink-0 rounded-xl border border-border-soft bg-surface p-3.5 ${
             collapsed ? 'lg:hidden' : ''
           }`}
         >
           <span className="font-mono text-[11px] font-semibold tracking-wider text-brand-orange uppercase">
-            Plan Free
+            Plan {plan?.planLabel ?? '…'}
           </span>
-          <p className="mt-1.5 text-sm text-muted">
-            2 événements sur 3 utilisés
-          </p>
-          <div className="mt-2.5 h-1.5 rounded-full bg-border-soft">
-            <div className="h-full w-2/3 rounded-full bg-[linear-gradient(92deg,_var(--color-brand-orange),_var(--color-brand-pink))]" />
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              onClose?.()
-              navigate('/tarifs')
-            }}
-            className="mt-3 w-full rounded-lg bg-[color:var(--color-gold)] py-2 text-sm font-semibold text-bg"
-          >
-            Passer en Premium
-          </button>
+          {plan && (
+            <p className="mt-1.5 text-sm text-muted">
+              {plan.maxEvents == null
+                ? `${plan.eventsUsed} événement${plan.eventsUsed > 1 ? 's' : ''} · illimité`
+                : `${plan.eventsUsed} événement${plan.eventsUsed > 1 ? 's' : ''} sur ${plan.maxEvents} utilisé${plan.eventsUsed > 1 ? 's' : ''}`}
+            </p>
+          )}
+          {plan?.maxEvents != null && (
+            <div
+              className="mt-2.5 h-1.5 rounded-full bg-border-soft"
+              role="progressbar"
+              aria-label="Événements utilisés"
+              aria-valuemin={0}
+              aria-valuemax={plan.maxEvents}
+              aria-valuenow={Math.min(plan.eventsUsed, plan.maxEvents)}
+            >
+              <div
+                className={`h-full rounded-full ${isEventLimitReached(plan) ? 'bg-danger' : 'bg-[linear-gradient(92deg,_var(--color-brand-orange),_var(--color-brand-pink))]'}`}
+                style={{ width: `${Math.min(100, Math.round((plan.eventsUsed / Math.max(1, plan.maxEvents)) * 100))}%` }}
+              />
+            </div>
+          )}
+          {plan?.endsAt && (
+            <p className="mt-1.5 text-xs text-faint">Jusqu'au {new Date(plan.endsAt).toLocaleDateString('fr-FR')}</p>
+          )}
+          {plan?.pendingRequest && (
+            <p className="mt-2 text-xs font-medium text-brand-orange">Demande {plan.pendingRequest.planLabel} en cours</p>
+          )}
+          {plan?.planCode !== 'eventpro' && (
+            <button
+              type="button"
+              onClick={() => setUpgradeOpen(true)}
+              className="mt-3 w-full rounded-lg bg-[color:var(--color-gold)] py-2 text-sm font-semibold text-bg"
+            >
+              {plan?.pendingRequest ? 'Voir ma demande' : plan?.planCode === 'free' || !plan ? 'Passer en Premium' : 'Changer d’offre'}
+            </button>
+          )}
         </div>
       </aside>
+      <UpgradeDialog open={upgradeOpen} onClose={() => setUpgradeOpen(false)} plan={plan} />
     </>
   )
 }

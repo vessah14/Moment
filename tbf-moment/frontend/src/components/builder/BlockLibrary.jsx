@@ -14,6 +14,10 @@ const BLOCKS = [
   'Billetterie',
   'FAQ',
   "Livre d'or",
+  'Familles',
+  'Dress code',
+  'Cadeaux',
+  'Partenaires',
   'Plan de table',
   'Pied de page',
 ]

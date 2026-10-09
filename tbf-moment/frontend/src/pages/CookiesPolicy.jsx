@@ -14,7 +14,9 @@ export default function CookiesPolicy () {
   }
 
   return (
-    <InfoPage title='Politique relative aux cookies'>
+    <InfoPage title='Politique relative aux cookies'
+      description="Les cookies utilisés par TBF Moment et la façon de gérer vos préférences."
+      path='/cookies'>
       <p className='text-xs text-faint'>
         Dernière mise à jour : 3 octobre 2026
       </p>

@@ -9,6 +9,7 @@ import { createGuestGroup, listGuestGroups } from '../../api/guestGroups'
 import { listEvents } from '../../api/events'
 import { listRsvps } from '../../api/rsvps'
 import { GUEST_STATUS_BY_LABEL, guestStatusLabel } from '../../utils/guestStatus'
+import { notifyGuestsChanged } from '../../utils/guestEvents'
 import { useToast } from '../../utils/useToast'
 
 const FILTERS = ['Tous', 'Confirmés', 'En attente', 'Refus']
@@ -81,6 +82,7 @@ export default function Guests() {
   const reloadGuests = async () => {
     const fresh = await listGuests(selectedEventId)
     setGuests(fresh ?? [])
+    notifyGuestsChanged()
   }
 
   const handleCopyLink = async (guest) => {
@@ -133,6 +135,8 @@ export default function Guests() {
       toast(`${count} invité(s) supprimé(s)`)
       setSelected(new Set())
     } catch (err) {
+      // Une partie a pu être supprimée avant l'erreur : on recompte quand même.
+      notifyGuestsChanged()
       setError(err.message || 'La suppression a échoué.')
     }
   }

@@ -10,7 +10,7 @@ const PAGES = [
   { label: "Livre d'or", to: '/dashboard/livre-dor' },
   { label: 'Programme', to: '/dashboard/programme' },
   { label: 'Plan de table', to: '/dashboard/plan-de-table' },
-  { label: 'Liste de mariage', to: '/dashboard/liste-mariage' },
+  { label: 'Liste de cadeaux', to: '/dashboard/liste-mariage' },
   { label: 'Conférence', to: '/dashboard/conference' },
   { label: 'Statistiques', to: '/dashboard/statistiques' },
   { label: 'Paramètres', to: '/dashboard/parametres' },

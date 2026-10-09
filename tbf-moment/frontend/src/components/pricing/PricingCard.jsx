@@ -1,5 +1,5 @@
 import { Check } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import PlanCta from './PlanCta'
 
 export default function PricingCard({ plan }) {
   const ctaClassName = `mt-6 block rounded-full px-6 py-3 text-center text-sm font-semibold transition ${
@@ -58,9 +58,7 @@ export default function PricingCard({ plan }) {
           {plan.cta}
         </a>
       ) : (
-        <Link to="/inscription" className={ctaClassName}>
-          {plan.cta}
-        </Link>
+        <PlanCta plan={plan} className={ctaClassName} />
       )}
     </div>
   )

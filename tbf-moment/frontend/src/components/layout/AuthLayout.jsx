@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom'
 import logo from '../../assets/logo.png'
 import BrandBackdrop from '../ui/BrandBackdrop'
+import { useSeo } from '../../utils/seo'
 
 export default function AuthLayout({ children }) {
+  useSeo({ title: 'Connexion', noindex: true })
   return (
     <div className="relative flex min-h-svh flex-col overflow-hidden">
       <BrandBackdrop />

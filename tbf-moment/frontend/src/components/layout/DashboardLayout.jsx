@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import DashboardSidebar from './DashboardSidebar'
 import DashboardTopbar from './DashboardTopbar'
+import { useSeo } from '../../utils/seo'
 
 export default function DashboardLayout({ children }) {
+  useSeo({ title: 'Tableau de bord', noindex: true })
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (

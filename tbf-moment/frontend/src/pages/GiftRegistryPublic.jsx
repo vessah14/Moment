@@ -4,6 +4,8 @@ import GiftCard from '../components/gifts/GiftCard'
 import Button from '../components/ui/Button'
 import { getPublicEvent, getPublicGifts, reservePublicGift } from '../api/giftRegistry'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
+import { useSeo } from '../utils/seo'
+import { findTemplate, resolveSiteStyle, siteRootStyle } from '../utils/templateTheme'
 
 export default function GiftRegistryPublic() {
   const { code } = useParams()
@@ -12,6 +14,10 @@ export default function GiftRegistryPublic() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [reservingId, setReservingId] = useState('')
+  useSeo({
+    title: event?.name ? `Liste de cadeaux · ${event.name}` : 'Liste de cadeaux',
+    noindex: true,
+  })
 
   const reload = () => {
     Promise.all([getPublicEvent(code), getPublicGifts(code)])
@@ -65,15 +71,27 @@ export default function GiftRegistryPublic() {
     )
   }
 
+  const template = findTemplate(event.template)
+  const siteStyle = resolveSiteStyle({ template, themeColor: event.themeColor })
+
   return (
-    <div className="min-h-svh bg-bg px-6 py-12">
+    <div
+      className="min-h-svh bg-bg px-6 py-12 text-ink"
+      style={siteRootStyle(template, siteStyle)}
+      data-template={template?.name ?? 'custom'}
+    >
       <LanguageSwitcher floating />
       <div className="mx-auto max-w-4xl">
         <div className="text-center">
           <span className="inline-flex items-center rounded-full border border-border px-4 py-1.5 text-xs font-semibold tracking-widest text-brand-purple uppercase">
             Liste de cadeaux
           </span>
-          <h1 className="mt-4 text-3xl font-bold text-ink">{event.name}</h1>
+          <h1
+            className="mt-4 text-3xl font-bold text-ink"
+            style={{ fontFamily: 'var(--site-heading-font)' }}
+          >
+            {event.name}
+          </h1>
           <p className="mt-2 text-muted">
             Merci de faire partie de notre histoire. Voici quelques idées pour nous accompagner.
           </p>

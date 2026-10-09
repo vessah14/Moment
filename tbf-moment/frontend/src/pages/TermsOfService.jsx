@@ -2,7 +2,9 @@ import InfoPage from '../components/layout/InfoPage'
 
 export default function TermsOfService() {
   return (
-    <InfoPage title="Conditions générales d'utilisation">
+    <InfoPage title="Conditions générales d'utilisation"
+      description="Conditions générales d'utilisation de TBF Moment, la plateforme de création de sites d'événements."
+      path='/cgu'>
       <p className="text-xs text-faint">Dernière mise à jour : [à compléter par TBF Moment]</p>
 
       <h2 className="mt-6 text-lg font-semibold text-ink">1. Objet</h2>

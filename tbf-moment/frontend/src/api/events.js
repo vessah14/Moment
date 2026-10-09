@@ -33,3 +33,10 @@ export function listEventReminders(eventId) {
 export function setEventReminder(eventId, kind, enabled) {
   return apiFetch(`/events/${eventId}/reminders/${kind}`, { method: 'PUT', body: { enabled } })
 }
+
+// Photo d'un bloc du site (ex. "Histoire") : renvoie { url } à ranger dans le contenu du bloc.
+export function uploadEventBlockImage(id, file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return apiFetch(`/events/${id}/block-image`, { method: 'POST', body: formData })
+}

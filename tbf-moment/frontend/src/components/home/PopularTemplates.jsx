@@ -4,10 +4,15 @@ import TemplateCard from '../templates/TemplateCard'
 import BrandBackdrop from '../ui/BrandBackdrop'
 
 export default function PopularTemplates({ category }) {
-  const filtered =
+  // Accueil : une sélection (les premiers de chaque catégorie), la bibliothèque complète
+  // reste sur /modeles.
+  const filtered = (
     !category || category === 'Tous'
-      ? TEMPLATES
+      ? TEMPLATES.filter(
+          (tpl, index) => TEMPLATES.findIndex((t) => t.category === tpl.category) === index,
+        )
       : TEMPLATES.filter((tpl) => tpl.category === category)
+  ).slice(0, 8)
 
   return (
     <section id="modeles" className="relative overflow-hidden">
@@ -34,9 +39,9 @@ export default function PopularTemplates({ category }) {
         </div>
 
         {filtered.length > 0 ? (
-          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filtered.map((tpl) => (
-              <TemplateCard key={tpl.name} {...tpl} />
+              <TemplateCard key={tpl.name} template={tpl} />
             ))}
           </div>
         ) : (

@@ -1,0 +1,56 @@
+/* Miniatures des modèles premium (galerie des maquettes TBF Moment), en unités relatives
+   au cadre (cqmin / cqw) pour rester justes de la grande carte à la petite vignette. */
+.pthumb { position: absolute; inset: 0; container-type: size; display: grid; place-items: center; text-align: center; overflow: hidden }
+.pthumb i, .pthumb b, .pthumb span { font-style: normal }
+
+/* Noor : enveloppe scellée */
+.pt-noor { background: #0C2620 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Cg fill='none' stroke='%23D9B46A' stroke-opacity='.25'%3E%3Cpath d='M20 7l3.5 9.5L33 20l-9.5 3.5L20 33l-3.5-9.5L7 20l9.5-3.5z'/%3E%3C/g%3E%3C/svg%3E") }
+.pt-noor .env { width: min(66cqw, 92cqmin); aspect-ratio: 1.5; background: #1A4339; border-radius: 1.6cqmin; position: relative; box-shadow: 0 8cqmin 16cqmin -6cqmin #000; display: grid; place-items: center }
+.pt-noor .env::before { content: ""; position: absolute; inset: 0; background: #163B32; clip-path: polygon(0 0, 100% 0, 50% 58%); border-radius: 1.6cqmin }
+.pt-noor .seal { position: relative; width: 19cqmin; height: 19cqmin; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #F3DDA6, #D9B46A 60%, #8E6E2E); display: grid; place-items: center; color: #0C2620; font-family: Georgia, serif; font-size: 5.5cqmin; margin-top: 12% }
+.pt-noor .for { position: absolute; top: 9%; left: 0; right: 0; font-family: "Pinyon Script", cursive; color: #D9B46A; font-size: 10cqmin; line-height: 1.1 }
+
+/* Bloom : fleur à dix pétales */
+.pt-bloom { background: #FBF3EF }
+.pt-bloom .fl { position: relative; width: 62cqmin; height: 62cqmin }
+.pt-bloom .fl i { position: absolute; left: 50%; top: 50%; width: 16cqmin; height: 29cqmin; margin: -29cqmin 0 0 -8cqmin; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; transform-origin: 50% 100%; transform: rotate(calc(var(--k) * 36deg)); background: linear-gradient(#B5616E, #F0D3D6) }
+.pt-bloom .fl i:nth-child(even) { background: linear-gradient(#6F8F76, #DDE7D6) }
+.pt-bloom .fl b { position: absolute; left: 50%; top: 50%; width: 26cqmin; height: 26cqmin; margin: -13cqmin 0 0 -13cqmin; border-radius: 50%; background: #fff; display: grid; place-items: center; font-family: "Parisienne", cursive; font-weight: 400; font-size: 9cqmin; color: #3A2A2E; box-shadow: 0 2.5cqmin 6.5cqmin -2.5cqmin rgba(0, 0, 0, .3) }
+
+/* Toghu Royal : rideau brodé et médaillon */
+.pt-toghu { background: #0E0C0C; grid-template-columns: 1fr 1fr; place-items: stretch }
+.pt-toghu .p { background: #262020 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='24'%3E%3Cpath d='M0 12 4 7 8 12 12 7 16 12 20 7 24 12 28 7 32 12' fill='none' stroke='%23E9B526' stroke-width='1.5'/%3E%3Cpath d='M8 0l4 4-4 4-4-4zM24 16l4 4-4 4-4-4z' fill='%23C8312B'/%3E%3C/svg%3E"); position: relative }
+.pt-toghu .p.l { box-shadow: inset -14px 0 20px -10px #000; border-right: 2cqmin solid #E9B526 }
+.pt-toghu .p.r { box-shadow: inset 14px 0 20px -10px #000; border-left: 2cqmin solid #C8312B }
+.pt-toghu .m { position: absolute; left: 50%; top: 50%; translate: -50% -50%; width: 35cqmin; height: 35cqmin; border-radius: 50%; background: #0E0C0C; border: .8cqmin solid #E9B526; display: grid; place-items: center; font-family: "Yeseva One", serif; color: #F4EDE1; font-size: 7.5cqmin; box-shadow: 0 0 0 2.5cqmin rgba(14, 12, 12, .6) }
+
+/* Ndop : médaillon indigo */
+.pt-ndop { background: #14213D url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Cg fill='none' stroke='%23F3F1EA' stroke-opacity='.22' stroke-width='1.3'%3E%3Crect x='4' y='4' width='32' height='32'/%3E%3Cpath d='M4 4l32 32M36 4L4 36'/%3E%3Ccircle cx='20' cy='20' r='5'/%3E%3C/g%3E%3C/svg%3E") }
+.pt-ndop .ring { position: absolute; left: 50%; top: 50%; width: 62cqmin; height: 62cqmin; translate: -50% -50%; border-radius: 50%; border: .6cqmin dashed #F3F1EA; opacity: .6 }
+.pt-ndop .m { position: relative; width: 43cqmin; height: 43cqmin; border-radius: 50%; background: #1B2B4E; border: .8cqmin solid #F3F1EA; display: grid; place-items: center; color: #F3F1EA; font-family: "Marcellus", serif; font-size: 9cqmin; box-shadow: 0 0 0 4cqmin rgba(20, 33, 61, .7) }
+
+/* Fiesta : cadeau, ballons et confettis */
+.pt-fiesta { background: #FFF6EE }
+.pt-fiesta .gift { position: relative; width: 38cqmin; height: 40cqmin }
+.pt-fiesta .box { position: absolute; left: 2.5cqmin; right: 2.5cqmin; bottom: 0; height: 26cqmin; border-radius: 3cqmin; background: #6C4BF4 }
+.pt-fiesta .lid { position: absolute; left: 0; right: 0; top: 1.5cqmin; height: 9cqmin; border-radius: 3cqmin; background: #7C5EF6; transform: translate(6.5cqmin, -6cqmin) rotate(14deg) }
+.pt-fiesta .rib { position: absolute; left: 50%; width: 6cqmin; margin-left: -3cqmin; top: 0; bottom: 0; background: #FF7A3D }
+.pt-fiesta .bal { position: absolute; width: 11cqmin; height: 13cqmin; border-radius: 50%; opacity: .7 }
+.pt-fiesta .bal.sm { width: 8.5cqmin; height: 10.5cqmin }
+.pt-fiesta .bal::after { content: ""; position: absolute; left: 50%; top: 100%; width: 1px; height: 11cqmin; background: currentColor }
+.pt-fiesta .c { position: absolute; width: 3.8cqmin; height: 1.7cqmin; border-radius: 1cqmin }
+
+/* Prestige : soleil Art déco et grand chiffre */
+.pt-prestige { background: #0D0D0F }
+.pt-prestige .sun { position: absolute; left: 50%; bottom: -60%; width: 160%; aspect-ratio: 1; translate: -50% 0; border-radius: 50%; background: repeating-conic-gradient(from -90deg at 50% 50%, rgba(212, 175, 97, .35) 0 2deg, transparent 2deg 10deg) }
+.pt-prestige b { position: relative; font-family: "Poiret One", sans-serif; font-weight: 400; font-size: 40cqmin; line-height: .9; background: linear-gradient(135deg, #F1DCA7, #D4AF61); -webkit-background-clip: text; background-clip: text; color: transparent }
+.pt-prestige small { position: absolute; bottom: 20%; left: 50%; translate: -50% 0; font-size: 3cqmin; letter-spacing: .4em; color: #D4AF61; font-weight: 700 }
+
+/* Autres catégories : carte typographique (sous-titre, grand titre, trois pastilles) */
+.pt-type { background: var(--tb); color: var(--ti); align-content: center; justify-items: center; padding: 6cqmin }
+.pt-type .sub { font-size: 3.6cqmin; letter-spacing: .2em; text-transform: uppercase; font-weight: 700; color: var(--ta); max-width: 100% }
+.pt-type b { font-weight: 400; font-size: clamp(1.2rem, 13cqmin, 4rem); line-height: 1.05; margin-top: 2cqmin; max-width: 100%; overflow-wrap: anywhere }
+.pt-type .dots { position: absolute; right: 4cqmin; bottom: 4cqmin; display: flex; gap: 1.4cqmin }
+.pt-type .dots i { width: 4.4cqmin; height: 4.4cqmin; border-radius: 50%; background: var(--tb); box-shadow: 0 0 0 .5cqmin var(--ti) }
+.pt-type .dots i:nth-child(2) { background: var(--ta) }
+.pt-type .dots i:nth-child(3) { background: var(--t2) }

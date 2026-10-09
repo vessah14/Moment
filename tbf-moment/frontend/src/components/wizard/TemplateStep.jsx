@@ -37,7 +37,7 @@ export default function TemplateStep ({
               }`}
             >
               <div className='relative aspect-4/5 bg-[linear-gradient(160deg,_var(--color-surface-2),_var(--color-panel))]'>
-                <TemplatePreview preview={tpl.preview} minimal={tpl.minimal} />
+                <TemplatePreview preview={tpl.preview} minimal={tpl.minimal} template={tpl} />
                 <TemplateBadge badge={tpl.badge} />
                 {isSelected && (
                   <span className='absolute top-3 left-3 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-brand-purple text-white'>

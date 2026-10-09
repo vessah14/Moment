@@ -1,6 +1,10 @@
+import PremiumThumb from './PremiumThumb'
+
 // Miniature d'un site d'événement, dessinée à partir des couleurs du modèle. Utilisée
-// quand un modèle n'a pas de capture d'écran (`image`).
-export default function TemplatePreview({ preview, minimal = false }) {
+// quand un modèle n'a pas de capture d'écran (`image`). Les modèles premium
+// (`template.theme`) ont leur propre miniature, celle de leur ouverture animée.
+export default function TemplatePreview({ preview, minimal = false, template }) {
+  if (template?.theme) return <PremiumThumb template={template} />
   if (!preview) return null
   const { bg, ink, accent, serif, eyebrow, title, date } = preview
   const titleFont = serif ? 'Georgia, "Times New Roman", serif' : 'inherit'
@@ -13,7 +17,7 @@ export default function TemplatePreview({ preview, minimal = false }) {
     >
       {/* Couverture */}
       <div
-        className="relative flex h-[46%] flex-col items-center justify-center px-5 text-center"
+        className="relative flex h-[52%] shrink-0 flex-col items-center justify-center px-5 pt-8 text-center"
         style={{
           background: minimal
             ? `linear-gradient(180deg, ${accent}1f, transparent)`
@@ -31,16 +35,16 @@ export default function TemplatePreview({ preview, minimal = false }) {
       </div>
 
       {/* Blocs de contenu */}
-      <div className="flex flex-1 flex-col gap-2.5 px-6 pt-3">
+      <div className="flex min-h-0 flex-1 flex-col gap-2 px-6 pt-3">
         <div className="mx-auto h-1.5 w-3/4 rounded-full opacity-20" style={{ backgroundColor: ink }} />
         <div className="mx-auto h-1.5 w-2/3 rounded-full opacity-15" style={{ backgroundColor: ink }} />
         <div className="mt-2 grid grid-cols-3 gap-2">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="aspect-square rounded-md" style={{ backgroundColor: accent, opacity: 0.12 + i * 0.08 }} />
+            <div key={i} className="h-7 rounded-md" style={{ backgroundColor: accent, opacity: 0.12 + i * 0.08 }} />
           ))}
         </div>
         <div
-          className="mx-auto mt-auto mb-14 rounded-full px-4 py-1.5 text-[10px] font-semibold sm:mb-6"
+          className="mx-auto mt-auto mb-3 rounded-full px-4 py-1.5 text-[10px] font-semibold"
           style={{ backgroundColor: accent, color: bg }}
         >
           Confirmer ma présence
