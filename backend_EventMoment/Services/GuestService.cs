@@ -10,12 +10,14 @@ namespace backend_EventMoment.Services
         private readonly AdminDbContext _context;
         private readonly IOrganizerNotifier? _notifier;
         private readonly IPlanService? _plans;
+        private readonly InvitationSignal? _invitations;
 
-        public GuestService(AdminDbContext context, IOrganizerNotifier? notifier = null, IPlanService? plans = null)
+        public GuestService(AdminDbContext context, IOrganizerNotifier? notifier = null, IPlanService? plans = null, InvitationSignal? invitations = null)
         {
             _context = context;
             _notifier = notifier;
             _plans = plans;
+            _invitations = invitations;
         }
 
         public async Task<GuestDTO> CreateAsync(CreateGuestDto dto, Guid eventId, Guid organizerId, Guid? groupId = null)
@@ -45,8 +47,12 @@ namespace backend_EventMoment.Services
             };
 
             _context.Guests.Add(entity);
+            // Lien d'invitation envoyé par InvitationDispatcher dès que l'événement est publié.
+            if (dto.SendInvitation && !string.IsNullOrWhiteSpace(entity.Email))
+                _context.GuestInvitations.Add(new GuestInvitation { GuestId = entity.Id, EventId = eventId, QueuedAt = DateTimeOffset.UtcNow });
             await _context.SaveChangesAsync();
-            return Map(entity, null);
+            _invitations?.Notify();
+            return await WithInvitationAsync(Map(entity, null));
         }
 
         // Un même e-mail invité deux fois au même événement reçoit tout en double
@@ -79,7 +85,7 @@ namespace backend_EventMoment.Services
 
             var existing = await _context.GuestCheckins.AsNoTracking().FirstOrDefaultAsync(c => c.GuestId == id);
             if (existing != null)
-                return Map(guest, existing.CheckedInAt);
+                return await WithInvitationAsync(Map(guest, existing.CheckedInAt));
 
             var checkin = new GuestCheckin { GuestId = id, EventId = guest.EventId, CheckedInAt = DateTimeOffset.UtcNow };
             _context.GuestCheckins.Add(checkin);
@@ -92,9 +98,9 @@ namespace backend_EventMoment.Services
                 // Deux appareils ont scanné le même invité au même instant : déjà pointé.
                 _context.Entry(checkin).State = EntityState.Detached;
                 var saved = await _context.GuestCheckins.AsNoTracking().FirstAsync(c => c.GuestId == id);
-                return Map(guest, saved.CheckedInAt);
+                return await WithInvitationAsync(Map(guest, saved.CheckedInAt));
             }
-            return Map(guest, checkin.CheckedInAt);
+            return await WithInvitationAsync(Map(guest, checkin.CheckedInAt));
         }
 
         public async Task<GuestDTO> UndoCheckInAsync(Guid id, Guid organizerId)
@@ -109,7 +115,7 @@ namespace backend_EventMoment.Services
                 _context.GuestCheckins.Remove(existing);
                 await _context.SaveChangesAsync();
             }
-            return Map(guest, null);
+            return await WithInvitationAsync(Map(guest, null));
         }
 
         public async Task<GuestDTO> GetByIdAsync(Guid id, Guid organizerId)
@@ -120,7 +126,7 @@ namespace backend_EventMoment.Services
                 throw new KeyNotFoundException($"Invité {id} introuvable.");
 
             var checkins = await CheckinsForAsync(new[] { entity.Id });
-            return Map(entity, checkins.TryGetValue(entity.Id, out var at) ? at : null);
+            return await WithInvitationAsync(Map(entity, checkins.TryGetValue(entity.Id, out var at) ? at : null));
         }
 
         public async Task<List<GuestDTO>> GetAllAsync(Guid organizerId, Guid? eventId = null)
@@ -131,7 +137,7 @@ namespace backend_EventMoment.Services
 
             var entities = await query.OrderBy(g => g.FullName).ToListAsync();
             var checkins = await CheckinsForAsync(entities.Select(g => g.Id));
-            return entities.Select(g => Map(g, checkins.TryGetValue(g.Id, out var at) ? at : null)).ToList();
+            return await WithInvitationsAsync(entities.Select(g => Map(g, checkins.TryGetValue(g.Id, out var at) ? at : null)).ToList());
         }
 
         public async Task<GuestDTO> UpdateAsync(Guid id, UpdateGuestDto dto, Guid organizerId)
@@ -145,6 +151,20 @@ namespace backend_EventMoment.Services
 
             await EnsureEmailNotUsedAsync(entity.EventId, dto.Email, exceptGuestId: entity.Id);
 
+            // Nouvelle adresse : l'invitation déjà envoyée est partie à l'ancienne, on la renvoie.
+            var emailChanged = !string.Equals(entity.Email?.Trim(), dto.Email?.Trim(), StringComparison.OrdinalIgnoreCase);
+            if (emailChanged && !string.IsNullOrWhiteSpace(dto.Email))
+            {
+                var invitation = await _context.GuestInvitations.FirstOrDefaultAsync(i => i.GuestId == entity.Id);
+                if (invitation != null)
+                {
+                    invitation.SentAt = null;
+                    invitation.Attempts = 0;
+                    invitation.LastError = null;
+                    invitation.QueuedAt = DateTimeOffset.UtcNow;
+                }
+            }
+
             entity.GroupId = dto.GroupId;
             entity.FullName = dto.FullName;
             entity.Phone = dto.Phone;
@@ -153,8 +173,87 @@ namespace backend_EventMoment.Services
             entity.UpdatedAt = DateTimeOffset.UtcNow;
 
             await _context.SaveChangesAsync();
+            if (emailChanged) _invitations?.Notify();
             var checkins = await CheckinsForAsync(new[] { entity.Id });
-            return Map(entity, checkins.TryGetValue(entity.Id, out var at) ? at : null);
+            return await WithInvitationAsync(Map(entity, checkins.TryGetValue(entity.Id, out var at) ? at : null));
+        }
+
+        // Met (ou remet) en file le lien d'invitation d'un invité : envoi ou renvoi manuel.
+        public async Task<GuestDTO> QueueInvitationAsync(Guid id, Guid organizerId)
+        {
+            var guest = await _context.Guests.AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == id && x.Event.OrganizerId == organizerId)
+                ?? throw new KeyNotFoundException($"Invité {id} introuvable.");
+            if (string.IsNullOrWhiteSpace(guest.Email))
+                throw new InvalidOperationException("Cet invité n'a pas d'adresse e-mail.");
+
+            var invitation = await _context.GuestInvitations.FirstOrDefaultAsync(i => i.GuestId == id);
+            if (invitation == null)
+            {
+                invitation = new GuestInvitation { GuestId = id, EventId = guest.EventId };
+                _context.GuestInvitations.Add(invitation);
+            }
+            else if (invitation.SentAt != null && invitation.SentAt > DateTimeOffset.UtcNow.AddMinutes(-2))
+            {
+                throw new InvalidOperationException("L'invitation vient d'être envoyée. Patientez quelques minutes avant de la renvoyer.");
+            }
+            invitation.SentAt = null;
+            invitation.Attempts = 0;
+            invitation.LastError = null;
+            invitation.QueuedAt = DateTimeOffset.UtcNow;
+            await _context.SaveChangesAsync();
+            _invitations?.Notify();
+
+            var checkins = await CheckinsForAsync(new[] { id });
+            return await WithInvitationAsync(Map(guest, checkins.TryGetValue(id, out var at) ? at : null));
+        }
+
+        // Envoie le lien à tous les invités de l'événement qui ne l'ont jamais reçu.
+        public async Task<int> QueuePendingInvitationsAsync(Guid eventId, Guid organizerId)
+        {
+            if (!await _context.Events.AnyAsync(e => e.Id == eventId && e.OrganizerId == organizerId))
+                throw new KeyNotFoundException("Événement introuvable.");
+
+            var guests = await _context.Guests.AsNoTracking()
+                .Where(g => g.EventId == eventId && g.Email != null && g.Email != ""
+                    && !_context.GuestInvitations.Any(i => i.GuestId == g.Id && i.SentAt != null))
+                .Select(g => g.Id)
+                .ToListAsync();
+            var existing = await _context.GuestInvitations.Where(i => guests.Contains(i.GuestId)).ToListAsync();
+            var now = DateTimeOffset.UtcNow;
+            foreach (var guestId in guests)
+            {
+                var invitation = existing.FirstOrDefault(i => i.GuestId == guestId);
+                if (invitation == null)
+                    _context.GuestInvitations.Add(new GuestInvitation { GuestId = guestId, EventId = eventId, QueuedAt = now });
+                else
+                {
+                    invitation.Attempts = 0;
+                    invitation.LastError = null;
+                    invitation.QueuedAt = now;
+                }
+            }
+            await _context.SaveChangesAsync();
+            _invitations?.Notify();
+            return guests.Count;
+        }
+
+        private async Task<GuestDTO> WithInvitationAsync(GuestDTO dto) => (await WithInvitationsAsync(new List<GuestDTO> { dto }))[0];
+
+        private async Task<List<GuestDTO>> WithInvitationsAsync(List<GuestDTO> dtos)
+        {
+            var ids = dtos.Select(d => d.Id).ToList();
+            var invitations = await _context.GuestInvitations.AsNoTracking()
+                .Where(i => ids.Contains(i.GuestId))
+                .ToDictionaryAsync(i => i.GuestId);
+            foreach (var dto in dtos)
+            {
+                if (!invitations.TryGetValue(dto.Id, out var inv)) continue;
+                dto.InvitationSentAt = inv.SentAt;
+                dto.InvitationPending = inv.SentAt == null && inv.Attempts < InvitationDispatcher.MaxAttempts;
+                dto.InvitationError = inv.SentAt == null ? inv.LastError : null;
+            }
+            return dtos;
         }
 
         public async Task<bool> DeleteAsync(Guid id, Guid organizerId)

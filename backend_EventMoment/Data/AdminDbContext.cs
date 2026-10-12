@@ -9,6 +9,10 @@ namespace backend_EventMoment.Data
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
 
+        // Paiement en ligne Notch Pay (Payments:NotchPay:Enabled), lu une fois au démarrage : le
+        // modèle EF est construit une seule fois par processus.
+        public static bool NotchPayEnabled { get; set; }
+
         public AdminDbContext(DbContextOptions<AdminDbContext> options, IHttpContextAccessor httpContextAccessor) : base(options)
         {
             _httpContextAccessor = httpContextAccessor;
@@ -36,6 +40,7 @@ namespace backend_EventMoment.Data
 
         // Abonnements
         public DbSet<UserSubscription> OrganizerSubscriptions { get; set; }
+        public DbSet<NotchPayPayment> NotchPayPayments { get; set; }
 
         // Livre d'or
         public DbSet<GuestBookEntry> GuestBookEntries { get; set; }
@@ -75,6 +80,9 @@ namespace backend_EventMoment.Data
         // Offres : demandes de passage à une offre payante, avis des clients
         public DbSet<PlanUpgradeRequest> PlanUpgradeRequests { get; set; }
         public DbSet<PlatformReview> PlatformReviews { get; set; }
+
+        // Liens d'invitation envoyés automatiquement aux invités
+        public DbSet<GuestInvitation> GuestInvitations { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -277,6 +285,21 @@ namespace backend_EventMoment.Data
                 .Property(s => s.Status)
                 .HasColumnType("subscription_status");
 
+            // Base en mémoire (tests) : pas de colonnes à respecter, le modèle complet est gardé.
+            if (NotchPayEnabled || !Database.IsNpgsql())
+            {
+                modelBuilder.Entity<UserSubscription>()
+                    .HasIndex(s => s.NotchPayPaymentId)
+                    .IsUnique()
+                    .HasFilter("notchpay_payment_id IS NOT NULL");
+            }
+            else
+            {
+                // Le paiement en ligne est désactivé : sa migration peut ne pas exister en base.
+                modelBuilder.Entity<UserSubscription>().Ignore(s => s.NotchPayPaymentId);
+                modelBuilder.Ignore<NotchPayPayment>();
+            }
+
             modelBuilder.Entity<UserSubscription>()
                 .HasOne<Utilisateur>()
                 .WithMany()
@@ -448,6 +471,19 @@ namespace backend_EventMoment.Data
             modelBuilder.Entity<PlatformReview>()
                 .Property(r => r.Status)
                 .HasConversion<string>();
+
+            // GuestInvitation : relation déclarée pour qu'EF insère l'invité avant son invitation
+            // (sinon violation de clé étrangère quand les deux sont créés ensemble).
+            modelBuilder.Entity<GuestInvitation>()
+                .HasOne<Guest>()
+                .WithOne()
+                .HasForeignKey<GuestInvitation>(i => i.GuestId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<GuestInvitation>()
+                .HasOne<Event>()
+                .WithMany()
+                .HasForeignKey(i => i.EventId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // -----------------------------------------------------------
             // EventModeration — pas de filtre organisateur : c'est la modération

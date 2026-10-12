@@ -72,10 +72,24 @@ namespace backend_EventMoment.Services
             {
                 try
                 {
+                    var adminUrl = _config?["Frontend:AdminUrl"];
+                    var stars = new string('★', review.Rating) + new string('☆', 5 - review.Rating);
                     await _email.SendAsync(adminEmail, $"{(isNew ? "Nouvel avis" : "Avis modifié")} ({review.Rating}/5) · {review.DisplayName}",
-                        $"<p><b>{WebUtility.HtmlEncode(review.DisplayName)}</b> ({review.Rating}/5) :</p>"
-                        + $"<blockquote>{WebUtility.HtmlEncode(review.Comment)}</blockquote>"
-                        + "<p>Publiez-le ou refusez-le depuis la console admin (Modération).</p>");
+                        EmailLayout.Render(new EmailMessage
+                        {
+                            Preheader = $"{review.DisplayName} a donné {review.Rating}/5 à TBF MOMENT.",
+                            Kicker = "Console admin",
+                            Title = isNew ? "Nouvel avis client" : "Avis modifié",
+                            Subtitle = $"{stars}  {review.Rating}/5",
+                            BodyHtml = EmailLayout.P("Un organisateur a laissé un avis sur TBF MOMENT. "
+                                + "Il n'apparaîtra sur la page d'accueil qu'une fois publié."),
+                            Callout = new EmailCallout($"⭐ {review.Rating}/5", review.DisplayName,
+                                $"« {EmailLayout.E(review.Comment)} »"),
+                            ButtonText = string.IsNullOrWhiteSpace(adminUrl) ? null : "Modérer l'avis",
+                            ButtonUrl = string.IsNullOrWhiteSpace(adminUrl) ? null : $"{adminUrl.TrimEnd('/')}/admin/moderation",
+                            SignatureHtml = "<b>TBF MOMENT</b> · notification automatique",
+                            FooterReason = "Vous recevez cet e-mail en tant qu'administrateur de TBF MOMENT.",
+                        }));
                 }
                 catch (Exception ex)
                 {

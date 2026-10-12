@@ -25,7 +25,9 @@ namespace backend_EventMoment.Services
 
             if (plan.PriceCents > 0)
                 throw new InvalidOperationException(
-                    "Le paiement en ligne n'est pas encore disponible : contactez-nous pour souscrire à ce plan.");
+                    AdminDbContext.NotchPayEnabled
+                        ? "Les offres payantes doivent être réglées via le parcours de paiement Notch Pay."
+                        : "Les offres payantes s'activent sur demande depuis votre tableau de bord.");
 
             return plan;
         }

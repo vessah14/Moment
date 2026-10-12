@@ -30,6 +30,24 @@ namespace backend_EventMoment.Controllers
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
         }
 
+        // Envoie (ou renvoie) le lien d'invitation par e-mail à cet invité.
+        [HttpPost("{id:guid}/invitation")]
+        public async Task<IActionResult> SendInvitation(Guid id)
+        {
+            if (!TryGetOrganizerId(out var organizerId))
+                return Unauthorized();
+            return Ok(await _service.QueueInvitationAsync(id, organizerId));
+        }
+
+        // Envoie le lien à tous les invités de l'événement qui ne l'ont pas encore reçu.
+        [HttpPost("invitations")]
+        public async Task<IActionResult> SendPendingInvitations([FromQuery] Guid eventId)
+        {
+            if (!TryGetOrganizerId(out var organizerId))
+                return Unauthorized();
+            return Ok(new { queued = await _service.QueuePendingInvitationsAsync(eventId, organizerId) });
+        }
+
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetById(Guid id)
         {

@@ -175,6 +175,14 @@ public class SecurityFixesTests
         var (service, admin, signup, _) = CreateUserService(facebook);
         SeedPasswordAccount(signup, "victim@example.com", "AttackerPass1");
 
+        // En base, app_signup n'a que SELECT/INSERT sur organizers : toute mise à jour d'un
+        // compte via SignupDbContext échouerait (« droit refusé »). On reproduit cette règle.
+        signup.SavingChanges += (_, _) =>
+        {
+            if (signup.ChangeTracker.Entries<Utilisateur>().Any(e => e.State == EntityState.Modified))
+                throw new InvalidOperationException("app_signup ne peut pas modifier organizers.");
+        };
+
         // ...puis la vraie propriétaire se connecte avec Facebook.
         var result = await service.LoginWithFacebookAsync(new FacebookAuthDto { AccessToken = "x" });
 
@@ -200,17 +208,81 @@ public class SecurityFixesTests
     }
 
     [Fact]
+    public async Task Login_SameMessage_ForUnknownEmailAndWrongPassword()
+    {
+        var (service, admin, signup, _) = CreateUserService();
+        var user = SeedPasswordAccount(signup, "known@example.com", "RightPass1");
+        admin.OrganizerEmailVerifications.Add(new OrganizerEmailVerification { OrganizerId = user.Id, VerifiedAt = DateTimeOffset.UtcNow });
+        admin.SaveChanges();
+
+        var unknown = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.LoginAsync(new LoginDto { Email = "nobody@example.com", Password = "RightPass1" }));
+        var wrong = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.LoginAsync(new LoginDto { Email = "known@example.com", Password = "WrongPass1" }));
+
+        Assert.Equal("E-mail ou mot de passe incorrect.", unknown.Message);
+        Assert.Equal(unknown.Message, wrong.Message);
+    }
+
+    [Fact]
+    public async Task Login_RequiresConfirmedEmail_AndResendsTheLink()
+    {
+        var (service, _, signup, email) = CreateUserService();
+        SeedPasswordAccount(signup, "pending@example.com", "RightPass1");
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.LoginAsync(new LoginDto { Email = "pending@example.com", Password = "RightPass1" }));
+
+        Assert.Equal(UserService.EmailNotVerifiedMessage, ex.Message);
+        var mail = Assert.Single(email.Sent);
+        Assert.Contains("verifier-email?token=", mail.Body);
+    }
+
+    [Fact]
+    public async Task Register_WithExistingEmail_RevealsNothing_AndWarnsTheOwner()
+    {
+        var (service, admin, signup, email) = CreateUserService();
+        var owner = SeedPasswordAccount(signup, "owner@example.com", "OwnerPass1");
+        admin.OrganizerEmailVerifications.Add(new OrganizerEmailVerification { OrganizerId = owner.Id, VerifiedAt = DateTimeOffset.UtcNow });
+        admin.SaveChanges();
+
+        // Même comportement qu'une inscription réussie : pas d'exception.
+        await service.RegisterAsync(new CreateUtilisateurDtos
+        {
+            FullName = "Imposteur", Email = "owner@example.com", Password = "OtherPass1", ConfirmPassword = "OtherPass1",
+        });
+
+        Assert.Single(signup.Organizers);
+        var mail = Assert.Single(email.Sent);
+        Assert.Equal("owner@example.com", mail.To);
+        Assert.Contains("déjà un compte", mail.Body);
+        var login = await service.LoginAsync(new LoginDto { Email = "owner@example.com", Password = "OwnerPass1" });
+        Assert.False(string.IsNullOrWhiteSpace(login.Token));
+    }
+
+    [Fact]
+    public async Task RefreshToken_RefusedAfterMaximumSessionLifetime()
+    {
+        var (service, _, signup, _) = CreateUserService();
+        var user = SeedPasswordAccount(signup, "session@example.com", "RightPass1");
+
+        Assert.NotNull(await service.RefreshTokenAsync(user.Id, DateTimeOffset.UtcNow.AddHours(-1)));
+        Assert.Null(await service.RefreshTokenAsync(user.Id, DateTimeOffset.UtcNow.AddHours(-13)));
+    }
+
+    [Fact]
     public async Task VerifyEmail_WithLinkFromSignupEmail_MarksAccountVerified()
     {
-        var (service, _, _, email) = CreateUserService();
+        var (service, _, signup, email) = CreateUserService();
 
-        var created = await service.RegisterAsync(new CreateUtilisateurDtos
+        await service.RegisterAsync(new CreateUtilisateurDtos
         {
             FullName = "Nouvel Organisateur",
             Email = "new@example.com",
             Password = "Password1",
             ConfirmPassword = "Password1",
         });
+        var created = (await service.GetByIdAsync(Assert.Single(signup.Organizers).Id))!;
         Assert.False(created.EmailVerified);
 
         var mail = Assert.Single(email.Sent);
@@ -258,7 +330,7 @@ public class SecurityFixesTests
         Assert.DoesNotContain("<form", body);
         Assert.Contains("&lt;form", body);
         Assert.Contains("Bonjour Awa", body);
-        Assert.Contains($"<a href=\"http://localhost:5173/invitation/{guest.Id}\">", body);
+        Assert.Contains($"<a href=\"http://localhost:5173/invitation/{guest.Id}\" style=", body);
     }
 
     [Fact]
@@ -306,6 +378,34 @@ public class SecurityFixesTests
         Assert.Equal(0, result.EmailsSentCount);
         Assert.Contains("HTTP 401", result.DeliveryError);
         Assert.DoesNotContain("unit-test", result.DeliveryError);
+    }
+
+    [Fact]
+    public async Task Campaign_DraftCanBeEditedAndSent_ButNotOnceSent()
+    {
+        var organizerId = Guid.NewGuid();
+        var context = TestDbContextFactory.CreateAdminContext(organizerId);
+        var (_, evt) = SeedEvent(context, EventStatus.Publie, organizerId);
+        SeedGuest(context, evt.Id);
+        var email = new OrganizerRecordingEmailSender();
+        var service = new CampaignService(context, email, CreateConfig(), NullLogger<CampaignService>.Instance);
+        var draft = await service.CreateAsync(new CreateCampaignDto
+        {
+            Name = "Brouillon", Channel = "E-mail", Audience = "Tous les invités", Body = "Bonjour", SendNow = false,
+        }, evt.Id, organizerId);
+
+        var edited = await service.UpdateAsync(draft.Id, new UpdateCampaignDto { Name = "Invitation", Audience = "Tous les invités", Body = "Bonjour {prénom}" }, organizerId);
+        Assert.Equal(("Invitation", CampaignStatus.Brouillon), (edited.Name, edited.Status));
+        Assert.Empty(email.SentForOrganizer);
+
+        var sent = await service.UpdateAsync(draft.Id, new UpdateCampaignDto { Name = "Invitation", Audience = "Tous les invités", Body = "Bonjour {prénom}", SendNow = true }, organizerId);
+        Assert.Equal(CampaignStatus.Envoyee, sent.Status);
+        Assert.Single(email.SentForOrganizer);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.UpdateAsync(draft.Id, new UpdateCampaignDto { Name = "Autre", Audience = "Tous les invités", Body = "x" }, organizerId));
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            service.UpdateAsync(draft.Id, new UpdateCampaignDto { Name = "Pirate", Audience = "Tous les invités", Body = "x" }, Guid.NewGuid()));
     }
 
     private sealed class OrganizerRecordingEmailSender : IEmailSender, IOrganizerEmailSender

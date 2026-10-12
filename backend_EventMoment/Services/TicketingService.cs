@@ -152,12 +152,21 @@ namespace backend_EventMoment.Services
             var baseUrl = _config?["Frontend:BaseUrl"] ?? "http://localhost:5173";
             var link = $"{baseUrl}/invitation/{guest.Id}";
 
-            var html = $"""
-                <p>Bonjour {System.Net.WebUtility.HtmlEncode(guest.FullName)},</p>
-                <p>Votre billet « {System.Net.WebUtility.HtmlEncode(ticketType.Name)} » pour « {System.Net.WebUtility.HtmlEncode(eventName)} » est confirmé.</p>
-                <p><a href="{link}">Afficher mon billet et mon QR code d'entrée</a></p>
-                <p>Présentez ce QR code à l'entrée le jour de l'événement.</p>
-                """;
+            var html = EmailLayout.Render(new EmailMessage
+            {
+                Preheader = $"Votre billet {ticketType.Name} pour {eventName} est confirmé.",
+                Kicker = "Billet confirmé",
+                Title = "Votre place est réservée 🎟️",
+                Subtitle = eventName,
+                BodyHtml = EmailLayout.P($"Bonjour {EmailLayout.E(guest.FullName)},")
+                    + EmailLayout.P($"Votre billet pour <b>{EmailLayout.E(eventName)}</b> est confirmé. "
+                        + "Votre QR code d'entrée vous attend : présentez-le à l'accueil le jour de l'événement."),
+                Callout = new EmailCallout("🎟️ Votre billet", ticketType.Name, EmailLayout.Lines(("Titulaire :", guest.FullName))),
+                ButtonText = "Afficher mon billet et mon QR code",
+                ButtonUrl = link,
+                NoteHtml = "Ce lien est personnel : ne le partagez pas, il donne accès à votre QR code d'entrée.",
+                FooterReason = "Vous recevez cet e-mail suite à votre réservation sur un site d'événement TBF MOMENT.",
+            });
 
             try
             {

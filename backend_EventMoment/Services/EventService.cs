@@ -11,12 +11,18 @@ namespace backend_EventMoment.Services
         private readonly AdminDbContext _context;
         private readonly IUploadStorage? _uploads;
         private readonly IPlanService? _plans;
+        private readonly InvitationSignal? _invitations;
 
-        public EventService(AdminDbContext context, IUploadStorage? uploads = null, IPlanService? plans = null)
+        private readonly RlsBypass? _rlsBypass;
+
+        public EventService(AdminDbContext context, IUploadStorage? uploads = null, IPlanService? plans = null,
+            InvitationSignal? invitations = null, RlsBypass? rlsBypass = null)
         {
             _context = context;
+            _rlsBypass = rlsBypass;
             _uploads = uploads;
             _plans = plans;
+            _invitations = invitations;
         }
 
         private static readonly System.Text.RegularExpressions.Regex UploadedCoverPattern =
@@ -48,7 +54,7 @@ namespace backend_EventMoment.Services
                 CategoryId = dto.CategoryId,
                 Name = dto.Name,
                 Slug = await SlugGenerator.GenerateUniqueAsync(dto.Name,
-                    candidate => _context.Events.IgnoreQueryFilters().AnyAsync(e => e.Slug == candidate)),
+                    SlugTakenAnywhereAsync),
                 Status = EventStatus.Brouillon,
                 EventDate = dto.EventDate,
                 StartTime = dto.StartTime,
@@ -118,6 +124,10 @@ namespace backend_EventMoment.Services
 
             await _context.SaveChangesAsync();
 
+            // Publication : les liens d'invitation en attente partent aussitôt.
+            if (entity.Status == EventStatus.Publie)
+                _invitations?.Notify();
+
             // Nettoyage après l'enregistrement : si la sauvegarde échoue, l'ancienne
             // couverture est toujours référencée et ne doit pas être supprimée.
             if (coverChanged && _uploads != null)
@@ -133,6 +143,14 @@ namespace backend_EventMoment.Services
             }
 
             return Map(entity, moderation);
+        }
+
+        // L'adresse d'un événement est unique sur toute la plateforme : la vérification doit
+        // voir les événements des autres organisateurs (RLS levée le temps de ce seul test).
+        private async Task<bool> SlugTakenAnywhereAsync(string candidate)
+        {
+            using (_rlsBypass?.Begin())
+                return await _context.Events.IgnoreQueryFilters().AnyAsync(e => e.Slug == candidate);
         }
 
         public async Task<bool> DeleteAsync(Guid id, Guid organizerId)

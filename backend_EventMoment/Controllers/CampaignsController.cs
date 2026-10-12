@@ -32,6 +32,13 @@ namespace backend_EventMoment.Controllers
             return Ok(await _service.GetAllAsync(eventId, organizerId));
         }
 
+        [HttpPut("{id:guid}")]
+        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCampaignDto dto)
+        {
+            if (!TryGetOrganizerId(out var organizerId)) return Unauthorized();
+            return Ok(await _service.UpdateAsync(id, dto, organizerId));
+        }
+
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete(Guid id)
         {

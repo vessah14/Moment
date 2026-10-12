@@ -1,0 +1,34 @@
+# --- .NET : sorties de compilation (régénérées à chaque build)
+bin/
+obj/
+_build_verify/
+_obj_verify/
+TestResults/
+*.user
+*.suo
+.vs/
+
+# --- Journaux
+*.log
+
+# --- Fichiers envoyés par les utilisateurs en local (le serveur recrée le dossier ;
+#     en production les images vont sur Cloudinary)
+backend_EventMoment/wwwroot/uploads/
+
+# --- Node (scripts utilitaires à la racine)
+node_modules/
+
+# --- Secrets : jamais dans git (utiliser dotnet user-secrets / variables d'environnement)
+.env
+.env.local
+*.pfx
+*.p12
+
+# --- Éditeurs / OS / outils locaux
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+.claude/scheduled_tasks.lock
+.claude/settings.local.json

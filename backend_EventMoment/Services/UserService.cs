@@ -16,6 +16,7 @@ namespace backend_EventMoment.Services
         private readonly IEmailSender _emailSender;
         private readonly IConfiguration _config;
         private readonly IFacebookAuthService _facebookAuthService;
+        private readonly IGoogleAuthService? _googleAuthService;
 
         public UserService(
             AdminDbContext adminContext,
@@ -23,7 +24,8 @@ namespace backend_EventMoment.Services
             JwtService jwtService,
             IEmailSender emailSender,
             IConfiguration config,
-            IFacebookAuthService facebookAuthService)
+            IFacebookAuthService facebookAuthService,
+            IGoogleAuthService? googleAuthService = null)
         {
             _adminContext = adminContext;
             _signupContext = signupContext;
@@ -31,9 +33,17 @@ namespace backend_EventMoment.Services
             _emailSender = emailSender;
             _config = config;
             _facebookAuthService = facebookAuthService;
+            _googleAuthService = googleAuthService;
         }
 
-        public async Task<UtilisateurDtos> RegisterAsync(CreateUtilisateurDtos dto)
+        public const string InvalidCredentialsMessage = "E-mail ou mot de passe incorrect.";
+        public const string EmailNotVerifiedMessage =
+            "Confirmez d'abord votre adresse e-mail : nous venons de vous renvoyer le lien de confirmation.";
+
+        // Inscription : la réponse est toujours la même, que l'adresse soit libre ou déjà
+        // utilisée (sinon le formulaire révélerait quelles adresses ont un compte). Le compte
+        // ne sert qu'après confirmation de l'adresse par le lien reçu par e-mail.
+        public async Task RegisterAsync(CreateUtilisateurDtos dto)
         {
             if (string.IsNullOrWhiteSpace(dto.FullName))
                 throw new InvalidOperationException("Le nom est requis.");
@@ -51,6 +61,15 @@ namespace backend_EventMoment.Services
                 // app_signup n'a pas le droit de les fixer explicitement
             };
 
+            // Le mot de passe est haché ci-dessus dans tous les cas : même temps de réponse
+            // que l'adresse soit libre ou non. La contrainte d'unicité reste le filet de
+            // sécurité si deux inscriptions arrivent en même temps.
+            if (await _signupContext.Organizers.AnyAsync(o => o.Email == dto.Email))
+            {
+                await NotifyExistingAccountAsync(dto.Email);
+                return;
+            }
+
             _signupContext.Organizers.Add(utilisateur);
 
             try
@@ -59,11 +78,64 @@ namespace backend_EventMoment.Services
             }
             catch (DbUpdateException ex) when (IsUniqueViolation(ex))
             {
-                throw new InvalidOperationException("Un utilisateur avec cet email existe déjà.");
+                _signupContext.Entry(utilisateur).State = EntityState.Detached;
+                await NotifyExistingAccountAsync(dto.Email);
+                return;
             }
 
             await SendVerificationEmailAsync(utilisateur);
-            return ToDto(utilisateur);
+        }
+
+        // Adresse déjà inscrite : on prévient son titulaire (et lui seul) plutôt que de
+        // l'afficher à la personne qui remplit le formulaire.
+        private async Task NotifyExistingAccountAsync(string email)
+        {
+            var existing = await _adminContext.Organizers.IgnoreQueryFilters().AsNoTracking()
+                .FirstOrDefaultAsync(o => o.Email == email);
+            if (existing == null || !existing.IsActive)
+                return;
+
+            // Jamais confirmé : la personne a sans doute perdu le premier e-mail.
+            if (!await IsEmailVerifiedAsync(existing.Id))
+            {
+                await SendVerificationEmailAsync(existing);
+                return;
+            }
+
+            var baseUrl = _config["Frontend:BaseUrl"] ?? "http://localhost:5173";
+            var html = EmailLayout.Render(new EmailMessage
+            {
+                Preheader = "Une inscription a été tentée avec votre adresse : vous avez déjà un compte.",
+                Kicker = "Sécurité du compte",
+                Title = "Vous avez déjà un compte",
+                BodyHtml = EmailLayout.P($"Bonjour {EmailLayout.E(existing.FullName)},")
+                    + EmailLayout.P("Quelqu'un (peut-être vous) a essayé de créer un compte TBF MOMENT avec cette adresse. "
+                        + "Elle est déjà associée à votre compte : aucun nouveau compte n'a été créé.")
+                    + EmailLayout.P("Vous pouvez vous connecter directement, ou choisir un nouveau mot de passe si vous l'avez oublié."),
+                ButtonText = "Me connecter",
+                ButtonUrl = $"{baseUrl}/connexion",
+                NoteHtml = $"Mot de passe oublié ? <a href=\"{EmailLayout.E(baseUrl)}/mot-de-passe-oublie\" style=\"color:#6C4BF4;\">Le réinitialiser</a>.<br>"
+                    + "Si ce n'était pas vous, ignorez cet e-mail : votre compte n'a pas été modifié.",
+                FooterReason = "Vous recevez cet e-mail suite à une tentative d'inscription avec votre adresse sur tbfmoment.com.",
+            });
+            try
+            {
+                await _emailSender.SendAsync(existing.Email, "Vous avez déjà un compte TBF Moment", html);
+            }
+            catch
+            {
+                // Même réponse que pour une inscription réussie, e-mail envoyé ou non.
+            }
+        }
+
+        // Renvoi du lien de confirmation depuis la page de connexion (sans être connecté) :
+        // ne dit jamais si l'adresse a un compte.
+        public async Task ResendVerificationByEmailAsync(string email)
+        {
+            var organizer = await _adminContext.Organizers.IgnoreQueryFilters().AsNoTracking()
+                .FirstOrDefaultAsync(o => o.Email == email && o.IsActive);
+            if (organizer != null && !await IsEmailVerifiedAsync(organizer.Id))
+                await SendVerificationEmailAsync(organizer);
         }
 
         public async Task<UtilisateurDtos?> GetByIdAsync(Guid id)
@@ -138,11 +210,20 @@ namespace backend_EventMoment.Services
             // Toujours exécuter un BCrypt.Verify, même pour un e-mail inconnu : sinon la
             // réponse est nettement plus rapide et révèle quels e-mails ont un compte.
             var passwordOk = BCrypt.Net.BCrypt.Verify(dto.Password, user?.PasswordHash ?? DummyPasswordHash);
+            // Même message que l'e-mail soit inconnu ou le mot de passe faux.
             if (user == null || !passwordOk)
-                throw new InvalidOperationException("Identifiants invalides.");
+                throw new InvalidOperationException(InvalidCredentialsMessage);
 
+            // Ces deux cas ne sont signalés qu'avec le bon mot de passe : ils ne révèlent rien
+            // à quelqu'un qui teste des adresses.
             if (!user.IsActive)
                 throw new InvalidOperationException("Ce compte a été désactivé.");
+
+            if (!await IsEmailVerifiedAsync(user.Id))
+            {
+                await SendVerificationEmailAsync(user);
+                throw new InvalidOperationException(EmailNotVerifiedMessage);
+            }
 
             var (token, expiration) = _jwtService.GenerateOrganizerToken(user);
 
@@ -156,6 +237,19 @@ namespace backend_EventMoment.Services
 
         public async Task<LoginResponseDto> LoginWithGoogleAsync(GoogleAuthDto dto)
         {
+            // Jeton d'accès : bouton du site, qui ouvre lui-même la fenêtre Google.
+            if (!string.IsNullOrWhiteSpace(dto.AccessToken))
+            {
+                if (_googleAuthService == null)
+                    throw new InvalidOperationException("La connexion Google n'est pas configurée sur ce serveur.");
+                var (subject, email, emailVerified, name) = await _googleAuthService.ValidateAccessTokenAsync(dto.AccessToken);
+                if (!emailVerified)
+                    throw new InvalidOperationException("Adresse email Google non vérifiée.");
+                return BuildLoginResponse(await FindOrCreateExternalOrganizerAsync("google", subject, email, name));
+            }
+            if (string.IsNullOrWhiteSpace(dto.IdToken))
+                throw new InvalidOperationException("Jeton Google manquant.");
+
             var clientId = _config["Authentication:Google:ClientId"];
             if (string.IsNullOrWhiteSpace(clientId))
                 throw new InvalidOperationException("La connexion Google n'est pas configurée sur ce serveur.");
@@ -168,7 +262,9 @@ namespace backend_EventMoment.Services
                     Audience = new[] { clientId }
                 });
             }
-            catch (InvalidJwtException)
+            // Jeton mal formé (base64 ou JSON illisible) : même réponse qu'un jeton refusé,
+            // plutôt qu'une erreur 500.
+            catch (Exception ex) when (ex is InvalidJwtException or Newtonsoft.Json.JsonException or FormatException or ArgumentException)
             {
                 throw new InvalidOperationException("Jeton Google invalide.");
             }
@@ -276,6 +372,13 @@ namespace backend_EventMoment.Services
             // nouvelle valeur, sinon le jeton émis juste après serait immédiatement refusé.
             organizer.PasswordHash = tracked.PasswordHash;
             organizer.UpdatedAt = tracked.UpdatedAt;
+
+            // L'objet vient de SignupDbContext (app_signup : SELECT/INSERT seulement). La
+            // modification est déjà enregistrée via app_admin : il ne doit pas la ré-écrire
+            // au prochain SaveChanges, sinon UPDATE organizers -> « droit refusé ».
+            var entry = _signupContext.Entry(organizer);
+            if (entry.State == EntityState.Modified)
+                entry.State = EntityState.Unchanged;
         }
 
         private Task<bool> IsEmailVerifiedAsync(Guid organizerId) =>
@@ -308,12 +411,21 @@ namespace backend_EventMoment.Services
             var baseUrl = _config["Frontend:BaseUrl"] ?? "http://localhost:5173";
             var link = $"{baseUrl}/verifier-email?token={Uri.EscapeDataString(token)}";
 
-            var html = $"""
-                <p>Bonjour {System.Net.WebUtility.HtmlEncode(organizer.FullName)},</p>
-                <p>Bienvenue sur TBF Moment ! Confirmez votre adresse e-mail pour sécuriser votre compte.</p>
-                <p><a href="{link}">Confirmer mon adresse e-mail</a> (lien valable 48 heures).</p>
-                <p>Si vous n'avez pas créé de compte, ignorez cet e-mail.</p>
-                """;
+            var html = EmailLayout.Render(new EmailMessage
+            {
+                Preheader = "Confirmez votre adresse pour activer votre compte TBF MOMENT.",
+                Kicker = "Bienvenue",
+                Title = "Bienvenue dans l'aventure ! 🎉",
+                Subtitle = "Merci d'avoir rejoint TBF MOMENT.",
+                BodyHtml = EmailLayout.P($"Bonjour {EmailLayout.E(organizer.FullName)},")
+                    + EmailLayout.P("Votre compte est créé. <b>TBF MOMENT</b> réunit tout votre événement dans <b>un seul lien</b> : "
+                        + "invitations, confirmations de présence, programme, galerie, billetterie…")
+                    + EmailLayout.P("Il ne reste qu'une étape : confirmez votre adresse e-mail pour sécuriser votre compte."),
+                ButtonText = "Confirmer mon adresse e-mail",
+                ButtonUrl = link,
+                NoteHtml = "Ce lien est valable 48 heures. Si vous n'avez pas créé de compte, ignorez simplement cet e-mail.",
+                FooterReason = "Vous recevez cet e-mail car un compte a été créé avec cette adresse sur tbfmoment.com.",
+            });
 
             try
             {
@@ -343,13 +455,18 @@ namespace backend_EventMoment.Services
         // signature, l'expiration et session_version : un mot de passe changé ou un compte
         // désactivé coupe toujours la session). Sans ça, l'organisateur était déconnecté
         // net toutes les 30 minutes, en plein travail dans le Builder.
-        public async Task<LoginResponseDto> RefreshTokenAsync(Guid organizerId)
+        public async Task<LoginResponseDto?> RefreshTokenAsync(Guid organizerId, DateTimeOffset? authTime)
         {
+            // Jeton d'avant l'ajout de auth_time : la durée maximale part de maintenant.
+            var since = authTime ?? DateTimeOffset.UtcNow;
+            if (DateTimeOffset.UtcNow - since > _jwtService.MaxSessionLifetime)
+                return null;
+
             var organizer = await _adminContext.Organizers.IgnoreQueryFilters().AsNoTracking()
                 .FirstOrDefaultAsync(o => o.Id == organizerId && o.IsActive)
                 ?? throw new KeyNotFoundException("Compte introuvable.");
 
-            var (token, expiration) = _jwtService.GenerateOrganizerToken(organizer);
+            var (token, expiration) = _jwtService.GenerateOrganizerToken(organizer, since);
             return new LoginResponseDto
             {
                 Token = token,
@@ -395,12 +512,20 @@ namespace backend_EventMoment.Services
             var baseUrl = _config["Frontend:BaseUrl"] ?? "http://localhost:5173";
             var resetLink = $"{baseUrl}/reinitialiser-mot-de-passe?token={Uri.EscapeDataString(token)}";
 
-            var html = $"""
-                <p>Bonjour {System.Net.WebUtility.HtmlEncode(user.FullName)},</p>
-                <p>Vous avez demandé la réinitialisation de votre mot de passe TBF Moment.</p>
-                <p><a href="{resetLink}">Cliquez ici pour choisir un nouveau mot de passe</a> (lien valable 30 minutes).</p>
-                <p>Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail.</p>
-                """;
+            var html = EmailLayout.Render(new EmailMessage
+            {
+                Preheader = "Choisissez un nouveau mot de passe (lien valable 30 minutes).",
+                Kicker = "Sécurité du compte",
+                Title = "Nouveau mot de passe",
+                BodyHtml = EmailLayout.P($"Bonjour {EmailLayout.E(user.FullName)},")
+                    + EmailLayout.P("Vous avez demandé la réinitialisation du mot de passe de votre compte TBF MOMENT. "
+                        + "Cliquez sur le bouton ci-dessous pour en choisir un nouveau."),
+                ButtonText = "Choisir un nouveau mot de passe",
+                ButtonUrl = resetLink,
+                NoteHtml = "Ce lien est valable 30 minutes et ne fonctionne qu'une fois.<br>"
+                    + "Vous n'êtes pas à l'origine de cette demande ? Ignorez cet e-mail : votre mot de passe reste inchangé.",
+                FooterReason = "Vous recevez cet e-mail suite à une demande de réinitialisation de mot de passe sur tbfmoment.com.",
+            });
 
             try
             {

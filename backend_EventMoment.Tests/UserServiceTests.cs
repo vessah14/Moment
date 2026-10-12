@@ -40,7 +40,7 @@ public class UserServiceTests
         return (service, adminContext, emailSender, jwt);
     }
 
-    private static Utilisateur SeedOrganizer(AdminDbContext context, string email = "user@example.com", string password = "Password1")
+    private static Utilisateur SeedOrganizer(AdminDbContext context, string email = "user@example.com", string password = "Password1", bool verified = true)
     {
         var user = new Utilisateur
         {
@@ -53,6 +53,9 @@ public class UserServiceTests
             UpdatedAt = DateTimeOffset.UtcNow,
         };
         context.Organizers.Add(user);
+        // Connexion par mot de passe réservée aux adresses confirmées.
+        if (verified)
+            context.OrganizerEmailVerifications.Add(new OrganizerEmailVerification { OrganizerId = user.Id, VerifiedAt = DateTimeOffset.UtcNow });
         context.SaveChanges();
         return user;
     }

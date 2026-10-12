@@ -17,5 +17,11 @@ namespace backend_EventMoment.Models
 
         // Arrivée le jour J (null tant que l'invité n'a pas été pointé au check-in).
         public DateTimeOffset? CheckedInAt { get; set; }
+
+        // Lien d'invitation par e-mail : envoyé le…, en attente (événement pas encore
+        // publié ou envoi en cours), ou dernière erreur d'envoi. Tout à null : jamais demandé.
+        public DateTimeOffset? InvitationSentAt { get; set; }
+        public bool InvitationPending { get; set; }
+        public string? InvitationError { get; set; }
     }
 }

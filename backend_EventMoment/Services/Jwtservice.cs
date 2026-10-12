@@ -15,7 +15,14 @@ namespace backend_EventMoment.Services
             _config = config;
         }
 
-        public (string Token, DateTimeOffset Expiration) GenerateOrganizerToken(Utilisateur organizer)
+        // Heure de la connexion d'origine, recopiée à chaque renouvellement : la session a
+        // une durée maximale même pour un utilisateur toujours actif (Jwt:MaxSessionHours).
+        public const string AuthTimeClaim = "auth_time";
+
+        public TimeSpan MaxSessionLifetime =>
+            TimeSpan.FromHours(double.TryParse(_config["Jwt:MaxSessionHours"], out var hours) && hours > 0 ? hours : 12);
+
+        public (string Token, DateTimeOffset Expiration) GenerateOrganizerToken(Utilisateur organizer, DateTimeOffset? authTime = null)
         {
             var claims = new[]
             {
@@ -23,7 +30,8 @@ namespace backend_EventMoment.Services
                 new Claim(ClaimTypes.Email, organizer.Email),
                 new Claim("type", "organizer"),
                 new Claim("Utilisateur_id", organizer.Id.ToString()),
-                new Claim("session_version", organizer.UpdatedAt.ToUnixTimeMilliseconds().ToString())
+                new Claim("session_version", organizer.UpdatedAt.ToUnixTimeMilliseconds().ToString()),
+                new Claim(AuthTimeClaim, (authTime ?? DateTimeOffset.UtcNow).ToUnixTimeSeconds().ToString())
             };
 
             return GenerateToken(claims);

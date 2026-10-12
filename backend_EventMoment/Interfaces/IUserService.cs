@@ -4,7 +4,8 @@ namespace backend_EventMoment.Interfaces
 {
     public interface IUserService
     {
-        Task<UtilisateurDtos> RegisterAsync(CreateUtilisateurDtos dtos);
+        Task RegisterAsync(CreateUtilisateurDtos dtos);
+        Task ResendVerificationByEmailAsync(string email);
         Task<UtilisateurDtos?> GetByIdAsync(Guid id);
         Task<List<UtilisateurDtos>> GetAllAsync();
         Task<UtilisateurDtos> UpdateAsync(Guid id, UpdateUtilisateurDtos dto);
@@ -17,6 +18,7 @@ namespace backend_EventMoment.Interfaces
         Task ResetPasswordAsync(ResetPasswordDto dto);
         Task VerifyEmailAsync(VerifyEmailDto dto);
         Task ResendVerificationEmailAsync(Guid organizerId);
-        Task<LoginResponseDto> RefreshTokenAsync(Guid organizerId);
+        // null si la durée maximale de session est dépassée (reconnexion nécessaire).
+        Task<LoginResponseDto?> RefreshTokenAsync(Guid organizerId, DateTimeOffset? authTime);
     }
 }

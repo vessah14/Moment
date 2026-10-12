@@ -43,6 +43,9 @@ namespace backend_EventMoment.Models
         [Column("ends_at")]
         public DateTimeOffset? EndsAt { get; set; }
 
+        [Column("notchpay_payment_id")]
+        public Guid? NotchPayPaymentId { get; set; }
+
         // Navigation
         public SubscriptionPlan Plan { get; set; } = null!;
         // Navigation vers Organizer si la classe existe déjà

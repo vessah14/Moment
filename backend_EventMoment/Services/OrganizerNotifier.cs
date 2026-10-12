@@ -13,6 +13,9 @@ namespace backend_EventMoment.Services
         private readonly IConfiguration _config;
         private readonly ILogger<OrganizerNotifier> _logger;
 
+        private const string NotificationSettingsNote =
+            "Vous pouvez désactiver ces notifications dans Paramètres › Notifications.";
+
         public OrganizerNotifier(AdminDbContext context, IEmailSender emailSender, IConfiguration config, ILogger<OrganizerNotifier> logger)
         {
             _context = context;
@@ -36,13 +39,21 @@ namespace backend_EventMoment.Services
                 return;
 
             var baseUrl = _config["Frontend:BaseUrl"] ?? "http://localhost:5173";
-            var html = $"""
-                <p>Bonjour {WebUtility.HtmlEncode(target.OrganizerName)},</p>
-                <p><strong>{WebUtility.HtmlEncode(authorName)}</strong> a laissé un message dans le livre d'or de « {WebUtility.HtmlEncode(target.Name)} ».</p>
-                <p>Il n'apparaîtra sur votre site qu'après votre validation.</p>
-                <p><a href="{baseUrl}/dashboard/livre-dor">Modérer le livre d'or</a></p>
-                <p style="color:#888;font-size:12px">Vous pouvez désactiver ces notifications dans Paramètres › Notifications.</p>
-                """;
+            var html = EmailLayout.Render(new EmailMessage
+            {
+                Preheader = $"{authorName} a laissé un message pour {target.Name}.",
+                Kicker = "Livre d'or",
+                Title = "Nouveau message 💌",
+                Subtitle = target.Name,
+                BodyHtml = EmailLayout.P($"Bonjour {EmailLayout.E(target.OrganizerName)},")
+                    + EmailLayout.P($"<b>{EmailLayout.E(authorName)}</b> a laissé un message dans le livre d'or de "
+                        + $"<b>{EmailLayout.E(target.Name)}</b>.")
+                    + EmailLayout.P("Il n'apparaîtra sur votre site qu'après votre validation."),
+                ButtonText = "Modérer le livre d'or",
+                ButtonUrl = $"{baseUrl}/dashboard/livre-dor",
+                NoteHtml = NotificationSettingsNote,
+                FooterReason = "Vous recevez cet e-mail car vous organisez cet événement sur TBF MOMENT.",
+            });
 
             try
             {
@@ -75,12 +86,19 @@ namespace backend_EventMoment.Services
                 ? (accompanyingCount > 0 ? $"a confirmé sa présence (+{accompanyingCount} accompagnant(s))" : "a confirmé sa présence")
                 : "a décliné l'invitation";
 
-            var html = $"""
-                <p>Bonjour {WebUtility.HtmlEncode(target.OrganizerName)},</p>
-                <p><strong>{WebUtility.HtmlEncode(guestName)}</strong> {answer} pour « {WebUtility.HtmlEncode(target.Name)} ».</p>
-                <p><a href="{baseUrl}/dashboard/participants">Voir la liste des invités</a></p>
-                <p style="color:#888;font-size:12px">Vous pouvez désactiver ces notifications dans Paramètres › Notifications.</p>
-                """;
+            var html = EmailLayout.Render(new EmailMessage
+            {
+                Preheader = $"{guestName} {answer}.",
+                Kicker = "Nouvelle réponse",
+                Title = confirmed ? $"{guestName} sera là ✅" : $"{guestName} ne pourra pas venir",
+                Subtitle = target.Name,
+                BodyHtml = EmailLayout.P($"Bonjour {EmailLayout.E(target.OrganizerName)},")
+                    + EmailLayout.P($"<b>{EmailLayout.E(guestName)}</b> {answer} pour <b>{EmailLayout.E(target.Name)}</b>."),
+                ButtonText = "Voir la liste des invités",
+                ButtonUrl = $"{baseUrl}/dashboard/participants",
+                NoteHtml = NotificationSettingsNote,
+                FooterReason = "Vous recevez cet e-mail car vous organisez cet événement sur TBF MOMENT.",
+            });
 
             try
             {

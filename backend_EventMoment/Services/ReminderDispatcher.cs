@@ -103,32 +103,55 @@ namespace backend_EventMoment.Services
 
         private static (string Subject, string Html) BuildMessage(string kind, string eventName, DateOnly eventDate, string guestName, string link)
         {
-            var name = WebUtility.HtmlEncode(guestName);
-            var evt = WebUtility.HtmlEncode(eventName);
-            var date = eventDate.ToDateTime(TimeOnly.MinValue).ToString("d MMMM yyyy", new System.Globalization.CultureInfo("fr-FR"));
+            var name = EmailLayout.E(guestName.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? guestName);
+            var evt = EmailLayout.E(eventName);
+            var date = eventDate.ToDateTime(TimeOnly.MinValue).ToString("dddd d MMMM yyyy", new System.Globalization.CultureInfo("fr-FR"));
+            const string footer = "Vous recevez ce rappel car vous êtes invité·e à cet événement organisé avec TBF MOMENT.";
 
             return kind switch
             {
                 EventReminderKind.NonRespondents => (
                     $"Répondez à l'invitation — {eventName}",
-                    $"""
-                    <p>Bonjour {name},</p>
-                    <p>Vous êtes invité(e) à « {evt} » le {date}. Nous n'avons pas encore reçu votre réponse.</p>
-                    <p><a href="{link}">Répondre à l'invitation</a></p>
-                    """),
+                    EmailLayout.Render(new EmailMessage
+                    {
+                        Preheader = $"Nous attendons encore votre réponse pour {eventName}.",
+                        Kicker = "Petit rappel",
+                        Title = eventName,
+                        Subtitle = "Nous n'avons pas encore reçu votre réponse",
+                        BodyHtml = EmailLayout.P($"Bonjour {name},")
+                            + EmailLayout.P($"Vous êtes invité·e à <b>{evt}</b> le {EmailLayout.E(date)}. "
+                                + "Pour aider l'organisateur à tout préparer, dites-nous si vous serez là : cela ne prend qu'un instant."),
+                        ButtonText = "Répondre à l'invitation",
+                        ButtonUrl = link,
+                        FooterReason = footer,
+                    })),
                 EventReminderKind.DayBefore => (
                     $"C'est demain — {eventName}",
-                    $"""
-                    <p>Bonjour {name},</p>
-                    <p>Petit rappel : « {evt} » a lieu demain, le {date}. Nous avons hâte de vous y voir !</p>
-                    <p><a href="{link}">Revoir votre invitation</a></p>
-                    """),
+                    EmailLayout.Render(new EmailMessage
+                    {
+                        Preheader = $"{eventName} a lieu demain : on a hâte de vous voir !",
+                        Kicker = "C'est demain",
+                        Title = eventName,
+                        Subtitle = "On a hâte de vous y voir !",
+                        BodyHtml = EmailLayout.P($"Bonjour {name},")
+                            + EmailLayout.P($"Petit rappel : <b>{evt}</b> a lieu <b>demain</b>, le {EmailLayout.E(date)}. "
+                                + "Retrouvez l'adresse, le programme et votre réponse sur votre invitation."),
+                        ButtonText = "Revoir mon invitation",
+                        ButtonUrl = link,
+                        FooterReason = footer,
+                    })),
                 _ => (
                     $"Merci d'être venu(e) — {eventName}",
-                    $"""
-                    <p>Bonjour {name},</p>
-                    <p>Merci d'avoir partagé « {evt} » avec nous. Votre présence a compté !</p>
-                    """)
+                    EmailLayout.Render(new EmailMessage
+                    {
+                        Preheader = $"Merci d'avoir partagé {eventName} avec nous.",
+                        Kicker = "Merci",
+                        Title = "Merci d'être venu·e ! 💜",
+                        Subtitle = eventName,
+                        BodyHtml = EmailLayout.P($"Bonjour {name},")
+                            + EmailLayout.P($"Merci d'avoir partagé <b>{evt}</b> avec nous. Votre présence a compté !"),
+                        FooterReason = footer,
+                    }))
             };
         }
     }

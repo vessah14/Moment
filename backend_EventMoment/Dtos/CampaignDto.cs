@@ -20,6 +20,22 @@ namespace backend_EventMoment.Dtos
         public bool SendNow { get; set; }
     }
 
+    // Modification d'une campagne pas encore envoyée (le canal ne change pas).
+    public class UpdateCampaignDto
+    {
+        [Required, MaxLength(150)]
+        public string Name { get; set; } = string.Empty;
+
+        [Required]
+        public string Audience { get; set; } = "Tous les invités";
+
+        [Required, MaxLength(2000)]
+        public string Body { get; set; } = string.Empty;
+
+        // Envoyer maintenant (e-mail) après l'enregistrement.
+        public bool SendNow { get; set; }
+    }
+
     public class CampaignDto
     {
         public Guid Id { get; set; }

@@ -164,13 +164,23 @@ namespace backend_EventMoment.Services
             var adminEmail = _config?["Notifications:AdminEmail"] ?? _config?["Brevo:SenderEmail"];
             if (organizer != null && !string.IsNullOrWhiteSpace(adminEmail))
             {
-                await TrySendAsync(adminEmail, $"Demande d'offre {plan.Label} · {organizer.FullName}", $"""
-                    <p>Nouvelle demande de passage à l'offre <b>{Html(plan.Label)}</b> ({FormatPrice(plan.PriceCents)} par mois).</p>
-                    <p>Organisateur : {Html(organizer.FullName)} &lt;{Html(organizer.Email)}&gt;<br/>
-                    Téléphone Mobile Money : {Html(request.Phone)}</p>
-                    {(request.Message == null ? "" : $"<p>Message : {Html(request.Message)}</p>")}
-                    <p>Une fois le paiement reçu, activez l'offre depuis la console admin (Facturation).</p>
-                    """);
+                var adminUrl = _config?["Frontend:AdminUrl"];
+                await TrySendAsync(adminEmail, $"Demande d'offre {plan.Label} · {organizer.FullName}", EmailLayout.Render(new EmailMessage
+                {
+                    Preheader = $"{organizer.FullName} demande l'offre {plan.Label}.",
+                    Kicker = "Console admin",
+                    Title = $"Demande d'offre {plan.Label}",
+                    Subtitle = $"{FormatPrice(plan.PriceCents)} par mois",
+                    BodyHtml = EmailLayout.P($"<b>{Html(organizer.FullName)}</b> demande à passer à l'offre <b>{Html(plan.Label)}</b>.")
+                        + (request.Message == null ? "" : EmailLayout.P($"Message : « {Html(request.Message)} »"))
+                        + EmailLayout.P("Une fois le paiement Mobile Money reçu, activez l'offre depuis la console admin (Facturation)."),
+                    Callout = new EmailCallout("👤 Organisateur", organizer.FullName,
+                        EmailLayout.Lines(("E-mail :", organizer.Email), ("Mobile Money :", request.Phone))),
+                    ButtonText = string.IsNullOrWhiteSpace(adminUrl) ? null : "Ouvrir la facturation",
+                    ButtonUrl = string.IsNullOrWhiteSpace(adminUrl) ? null : $"{adminUrl.TrimEnd('/')}/admin/facturation",
+                    SignatureHtml = "<b>TBF MOMENT</b> · notification automatique",
+                    FooterReason = "Vous recevez cet e-mail en tant qu'administrateur de TBF MOMENT.",
+                }));
             }
             return Map(request);
         }
@@ -245,9 +255,24 @@ namespace backend_EventMoment.Services
             request.HandledBy = adminId;
             await _context.SaveChangesAsync();
 
+            var until = now.AddMonths(request.Plan.Billing == PlanBilling.Annuel ? 12 : 1);
             var organizer = await NotifyOrganizerAsync(request,
                 $"Votre offre {request.Plan.Label} est activée",
-                $"<p>Bonne nouvelle : votre offre <b>{Html(request.Plan.Label)}</b> est active jusqu'au {now.AddMonths(request.Plan.Billing == PlanBilling.Annuel ? 12 : 1):dd/MM/yyyy}.</p><p>Merci pour votre confiance !</p>");
+                name => new EmailMessage
+                {
+                    Preheader = $"Votre offre {request.Plan.Label} est active : profitez-en !",
+                    Kicker = "Offre activée",
+                    Title = $"Bienvenue en {request.Plan.Label} ! 🚀",
+                    Subtitle = "Merci pour votre confiance.",
+                    BodyHtml = EmailLayout.P($"Bonjour {Html(name)},")
+                        + EmailLayout.P($"Bonne nouvelle : votre offre <b>{Html(request.Plan.Label)}</b> est activée. "
+                            + "Toutes ses fonctionnalités sont disponibles dès maintenant dans votre tableau de bord."),
+                    Callout = new EmailCallout("🎁 Votre offre", request.Plan.Label,
+                        EmailLayout.Lines(("Active jusqu'au :", until.ToString("dd/MM/yyyy")))),
+                    ButtonText = "Ouvrir mon tableau de bord",
+                    ButtonUrl = $"{FrontendUrl}/dashboard",
+                    FooterReason = "Vous recevez cet e-mail suite à votre demande d'offre sur tbfmoment.com.",
+                });
             return MapAdmin(request, organizer);
         }
 
@@ -262,9 +287,21 @@ namespace backend_EventMoment.Services
 
             var organizer = await NotifyOrganizerAsync(request,
                 $"Votre demande d'offre {request.Plan.Label}",
-                $"<p>Votre demande de passage à l'offre <b>{Html(request.Plan.Label)}</b> n'a pas pu être validée.</p>"
-                + (request.AdminNote == null ? "" : $"<p>Motif : {Html(request.AdminNote)}</p>")
-                + "<p>Vous pouvez faire une nouvelle demande depuis votre tableau de bord.</p>");
+                name => new EmailMessage
+                {
+                    Preheader = $"Votre demande d'offre {request.Plan.Label} n'a pas pu être validée.",
+                    Kicker = "Votre demande d'offre",
+                    Title = "Demande non validée",
+                    Subtitle = $"Offre {request.Plan.Label}",
+                    BodyHtml = EmailLayout.P($"Bonjour {Html(name)},")
+                        + EmailLayout.P($"Votre demande de passage à l'offre <b>{Html(request.Plan.Label)}</b> n'a pas pu être validée.")
+                        + (request.AdminNote == null ? "" : EmailLayout.P($"<b>Motif :</b> {Html(request.AdminNote)}"))
+                        + EmailLayout.P("Vous pouvez faire une nouvelle demande depuis votre tableau de bord, "
+                            + "ou simplement répondre à cet e-mail si vous avez une question."),
+                    ButtonText = "Ouvrir mon tableau de bord",
+                    ButtonUrl = $"{FrontendUrl}/dashboard",
+                    FooterReason = "Vous recevez cet e-mail suite à votre demande d'offre sur tbfmoment.com.",
+                });
             return MapAdmin(request, organizer);
         }
 
@@ -277,11 +314,13 @@ namespace backend_EventMoment.Services
             return request;
         }
 
-        private async Task<Utilisateur?> NotifyOrganizerAsync(PlanUpgradeRequest request, string subject, string html)
+        private string FrontendUrl => (_config?["Frontend:BaseUrl"] ?? "http://localhost:5173").TrimEnd('/');
+
+        private async Task<Utilisateur?> NotifyOrganizerAsync(PlanUpgradeRequest request, string subject, Func<string, EmailMessage> message)
         {
             var organizer = await _context.Organizers.AsNoTracking().IgnoreQueryFilters().FirstOrDefaultAsync(o => o.Id == request.OrganizerId);
             if (organizer != null)
-                await TrySendAsync(organizer.Email, subject, $"<p>Bonjour {Html(organizer.FullName)},</p>{html}");
+                await TrySendAsync(organizer.Email, subject, EmailLayout.Render(message(organizer.FullName)));
             return organizer;
         }
 

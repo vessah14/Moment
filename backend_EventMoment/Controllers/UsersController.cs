@@ -6,6 +6,7 @@ using backend_EventMoment.Dtos;
 using backend_EventMoment.Dtos.User;
 using backend_EventMoment.Interfaces;
 using backend_EventMoment.Models;
+using backend_EventMoment.Services;
 
 namespace backend_EventMoment.Controllers
 {
@@ -28,8 +29,18 @@ namespace backend_EventMoment.Controllers
         [EnableRateLimiting("public-write")]
         public async Task<IActionResult> Register([FromBody] CreateUtilisateurDtos dto)
         {
-            var result = await _service.RegisterAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+            await _service.RegisterAsync(dto);
+            // Réponse identique que l'adresse soit nouvelle ou déjà inscrite (anti-énumération).
+            return Accepted(new { message = "Vérifiez votre boîte e-mail pour activer votre compte." });
+        }
+
+        [HttpPost("resend-verification")]
+        [AllowAnonymous]
+        [EnableRateLimiting("login")]
+        public async Task<IActionResult> ResendVerificationByEmail([FromBody] DemanderResetPasswordDto dto)
+        {
+            await _service.ResendVerificationByEmailAsync(dto.Email);
+            return NoContent();
         }
 
         [HttpPost("login")]
@@ -91,7 +102,13 @@ namespace backend_EventMoment.Controllers
         public async Task<IActionResult> RefreshToken()
         {
             if (!TryGetOrganizerId(out var organizerId)) return Unauthorized();
-            return Ok(await _service.RefreshTokenAsync(organizerId));
+            DateTimeOffset? authTime = long.TryParse(User.FindFirst(JwtService.AuthTimeClaim)?.Value, out var seconds)
+                ? DateTimeOffset.FromUnixTimeSeconds(seconds)
+                : null;
+            var result = await _service.RefreshTokenAsync(organizerId, authTime);
+            return result == null
+                ? Unauthorized(new { error = "Session expirée : reconnectez-vous." })
+                : Ok(result);
         }
 
         [HttpPost("me/resend-verification")]

@@ -72,10 +72,15 @@ namespace backend_EventMoment.Dtos.User
         public string ConfirmPassword { get; set; } = string.Empty;
     }
 
+    // Connexion Google : jeton d'accès (bouton du site, fenêtre OAuth) ou ID token
+    // (bouton officiel Google). L'un des deux est requis.
     public class GoogleAuthDto
     {
-        [Required]
-        public string IdToken { get; set; } = string.Empty;
+        [MaxLength(4096)]
+        public string? IdToken { get; set; }
+
+        [MaxLength(4096)]
+        public string? AccessToken { get; set; }
     }
 
     public class FacebookAuthDto

@@ -13,5 +13,9 @@ namespace backend_EventMoment.Models
         [Required, EmailAddress]
         public string Email { get; set; } = string.Empty;
 
+        // Envoyer automatiquement le lien d'invitation (confirmation de présence) par e-mail,
+        // dès que l'événement est publié.
+        public bool SendInvitation { get; set; } = true;
+
     }
 }

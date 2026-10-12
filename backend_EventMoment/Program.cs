@@ -8,6 +8,7 @@ using backend_EventMoment.Services;
 using backend_EventMoment.Services.Email;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Microsoft.IdentityModel.Tokens;
@@ -16,6 +17,9 @@ using Npgsql;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Paiement en ligne Notch Pay : désactivé tant que Payments:NotchPay:Enabled n'est pas à true.
+AdminDbContext.NotchPayEnabled = builder.Configuration.GetValue("Payments:NotchPay:Enabled", false);
 
 // Taille maximale d'une requête : 1 Mo (Kestrel autorise 30 Mo par défaut). Évite qu'un
 // client remplisse la base avec des champs texte géants. Les endpoints de téléversement
@@ -27,19 +31,34 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient();
+// Nombre de requêtes par minute et par IP (RateLimits:<Nom> pour l'ajuster, ex. tests).
+int Limit(string name, int fallback) => builder.Configuration.GetValue($"RateLimits:{name}", fallback);
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    // Message lisible (sinon le site n'affiche que « Erreur 429 »).
+    options.OnRejected = async (context, ct) =>
+    {
+        context.HttpContext.Response.ContentType = "application/json";
+        await context.HttpContext.Response.WriteAsJsonAsync(
+            new { error = "Trop de tentatives. Patientez une minute avant de réessayer." }, ct);
+    };
     options.AddPolicy("login", context => RateLimitPartition.GetFixedWindowLimiter(
         context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-        _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = Limit("Login", 5), Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
     options.AddPolicy("public-write", context => RateLimitPartition.GetFixedWindowLimiter(
         context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-        _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = Limit("PublicWrite", 10), Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+    // Compteurs de visites/partages : quota séparé pour ne pas consommer celui des RSVP
+    // (plusieurs invités peuvent partager la même IP derrière un opérateur mobile).
+    options.AddPolicy("public-track", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = Limit("PublicTrack", 30), Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
     // Lectures publiques sensibles (ex. « Trouver ma place ») : freine l'énumération de noms.
     options.AddPolicy("public-read", context => RateLimitPartition.GetFixedWindowLimiter(
         context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-        _ => new FixedWindowRateLimiterOptions { PermitLimit = 30, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = Limit("PublicRead", 30), Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
 });
 var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
     ?? new[] { "http://localhost:5173", "http://localhost:5174" };
@@ -115,8 +134,12 @@ NpgsqlDataSource BuildDataSource(string connectionString)
 // AdminDbContext → rôle app_admin
 var adminConnString = GetRequiredConnectionString("AdminConnection");
 var adminDataSource = BuildDataSource(adminConnString);
-builder.Services.AddDbContext<AdminDbContext>(options =>
-    options.UseNpgsql(adminDataSource));
+// RLS : chaque connexion indique à PostgreSQL l'organisateur concerné (voir RlsSessionInterceptor).
+builder.Services.AddScoped<RlsBypass>();
+builder.Services.AddDbContext<AdminDbContext>((sp, options) =>
+    options.UseNpgsql(adminDataSource)
+        .AddInterceptors(new RlsSessionInterceptor(
+            sp.GetRequiredService<IHttpContextAccessor>(), sp.GetRequiredService<RlsBypass>())));
 
 // ClientDbContext → rôle app_client
 var clientConnString = GetRequiredConnectionString("ClientConnection");
@@ -156,7 +179,9 @@ builder.Services.AddScoped<IRsvpService, RsvpService>();
 builder.Services.AddScoped<ISubscriptionPlanService, SubscriptionPlanService>();
 builder.Services.AddScoped<IUserSubscriptionService, UserSubscriptionService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<INotchPayPaymentService, NotchPayPaymentService>();
 builder.Services.AddScoped<IFacebookAuthService, FacebookAuthService>();
+builder.Services.AddScoped<IGoogleAuthService, GoogleAuthService>();
 builder.Services.AddHttpClient<BrevoEmailSender>();
 builder.Services.AddScoped<SmtpEmailSender>();
 builder.Services.AddScoped<IEmailSender>(services =>
@@ -178,6 +203,9 @@ builder.Services.AddScoped<INotificationSettingsService, NotificationSettingsSer
 builder.Services.AddScoped<IEventReminderService, EventReminderService>();
 builder.Services.AddScoped<IOrganizerNotifier, OrganizerNotifier>();
 builder.Services.AddHostedService<ReminderDispatcher>();
+// Liens d'invitation envoyés automatiquement aux invités ajoutés (voir GuestService).
+builder.Services.AddSingleton<InvitationSignal>();
+builder.Services.AddHostedService<InvitationDispatcher>();
 builder.Services.AddScoped<JwtService>();
 
 var jwtKey = builder.Configuration["Jwt:Key"];
@@ -245,6 +273,19 @@ builder.Services.AddAuthorization(options =>
 });
 
 var app = builder.Build();
+
+// Derrière un proxy (nginx, hébergeur) : sans ceci, toutes les requêtes semblent venir du
+// proxy et les limites par IP (connexion, formulaires publics) s'appliqueraient à tout le
+// site d'un coup. Seuls les proxys de confiance sont crus : la boucle locale par défaut,
+// plus les adresses de Proxy:KnownProxies — un X-Forwarded-For venu d'Internet est ignoré.
+var forwarded = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+foreach (var proxy in app.Configuration.GetSection("Proxy:KnownProxies").Get<string[]>() ?? Array.Empty<string>())
+    if (System.Net.IPAddress.TryParse(proxy, out var proxyIp))
+        forwarded.KnownProxies.Add(proxyIp);
+app.UseForwardedHeaders(forwarded);
 
 app.UseExceptionHandler(errorApp =>
 {

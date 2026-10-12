@@ -70,13 +70,28 @@ namespace backend_EventMoment.Services
                 var nom = System.Net.WebUtility.HtmlEncode(nameParts.Length > 1 ? nameParts[1].Trim() : "");
                 var lien = $"{baseUrl}/invitation/{guest.Id}";
 
-                var html = RenderTemplate(template, new Dictionary<string, string>
+                var message = RenderTemplate(template, new Dictionary<string, string>
                 {
                     ["{prénom}"] = prenom,
                     ["{nom}"] = nom,
                     ["{date}"] = dateLabel,
                     ["{lieu}"] = lieuLabel,
-                    ["{lien}"] = $"<a href=\"{lien}\">{lien}</a>",
+                    ["{lien}"] = $"<a href=\"{lien}\" style=\"color:#6C4BF4;\">{lien}</a>",
+                });
+                var html = EmailLayout.Render(new EmailMessage
+                {
+                    Preheader = subject,
+                    Kicker = "Message de l'organisateur",
+                    Title = evt.Name,
+                    Subtitle = organizer?.FullName is { Length: > 0 } orgName ? $"De la part de {orgName}" : null,
+                    BodyHtml = EmailLayout.P(message),
+                    ButtonText = "Voir mon invitation",
+                    ButtonUrl = lien,
+                    SignatureHtml = organizer?.FullName is { Length: > 0 } signName
+                        ? $"À très bientôt,<br><b>{EmailLayout.E(signName)}</b>"
+                        : null,
+                    FooterReason = "Vous recevez ce message car vous êtes invité·e à cet événement organisé avec TBF MOMENT. "
+                        + "Pour répondre à l'organisateur, répondez simplement à cet e-mail.",
                 });
 
                 try
@@ -217,6 +232,41 @@ namespace backend_EventMoment.Services
                 .OrderByDescending(c => c.CreatedAt)
                 .ToListAsync();
             return entities.Select(Map).ToList();
+        }
+
+        // Une campagne envoyée ne se modifie plus (les e-mails sont partis) ; un brouillon
+        // ou une campagne programmée peut l'être, et partir aussitôt avec SendNow.
+        public async Task<CampaignDto> UpdateAsync(Guid id, UpdateCampaignDto dto, Guid organizerId)
+        {
+            var entity = await _context.MessageCampaigns
+                .FirstOrDefaultAsync(c => c.Id == id && c.Event.OrganizerId == organizerId)
+                ?? throw new KeyNotFoundException("Campagne introuvable.");
+            if (entity.Status == CampaignStatus.Envoyee)
+                throw new InvalidOperationException("Cette campagne a déjà été envoyée : elle ne peut plus être modifiée. Dupliquez-la pour en créer une nouvelle.");
+
+            var evt = await _context.Events.FirstAsync(e => e.Id == entity.EventId);
+            entity.Subject = dto.Name;
+            entity.Audience = dto.Audience;
+            entity.Body = dto.Body;
+            entity.RecipientCount = await CountRecipientsAsync(entity.EventId, dto.Audience);
+            await _context.SaveChangesAsync();
+
+            var emailResult = new EmailSendResult(0, null);
+            if (dto.SendNow && entity.Channel == "E-mail")
+            {
+                emailResult = await SendInvitationEmailsAsync(evt, dto.Audience, dto.Body, dto.Name);
+                if (emailResult.SentCount > 0)
+                {
+                    entity.Status = CampaignStatus.Envoyee;
+                    entity.SentAt = DateTimeOffset.UtcNow;
+                    await _context.SaveChangesAsync();
+                }
+            }
+
+            var result = Map(entity);
+            result.EmailsSentCount = emailResult.SentCount;
+            result.DeliveryError = emailResult.FailureReason;
+            return result;
         }
 
         public async Task<bool> DeleteAsync(Guid id, Guid organizerId)

@@ -1,0 +1,143 @@
+using System.Globalization;
+using System.Text;
+using backend_EventMoment.Interfaces;
+using backend_EventMoment.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+
+namespace backend_EventMoment.Controllers
+{
+    // Lien de partage d'un site d'événement : https://api.tbfmoment.com/share/e/{slug}.
+    // Le site est une application monopage : les robots de WhatsApp, Facebook, LinkedIn…
+    // n'exécutent pas le JavaScript et ne verraient que l'aperçu générique de l'accueil.
+    // Cette page leur sert les vraies balises (titre, description, couverture), puis envoie
+    // immédiatement les visiteurs sur le site. Événements publiés et non suspendus uniquement.
+    [ApiController]
+    [AllowAnonymous]
+    [EnableRateLimiting("public-read")]
+    public class ShareController : ControllerBase
+    {
+        private readonly IGiftRegistryService _events;
+        private readonly IUploadStorage _uploads;
+        private readonly IConfiguration _config;
+        private readonly IEventStatsService _stats;
+        private readonly ILogger<ShareController> _logger;
+
+        // Robots qui lisent l'aperçu quand le lien est collé dans une conversation ou une
+        // publication : chaque passage correspond à un partage du lien.
+        private static readonly string[] SocialBots =
+        {
+            "WhatsApp", "facebookexternalhit", "Facebot", "TelegramBot", "Twitterbot",
+            "LinkedInBot", "Slackbot", "Discordbot", "SkypeUriPreview", "Pinterest", "Snapchat"
+        };
+
+        public ShareController(IGiftRegistryService events, IUploadStorage uploads, IConfiguration config,
+            IEventStatsService stats, ILogger<ShareController> logger)
+        {
+            _events = events;
+            _uploads = uploads;
+            _config = config;
+            _stats = stats;
+            _logger = logger;
+        }
+
+        [HttpGet("share/e/{slug}")]
+        public async Task<IActionResult> Event(string slug)
+        {
+            var site = (_config["Frontend:BaseUrl"] ?? "http://localhost:5173").TrimEnd('/');
+            // Slug généré par la plateforme : lettres minuscules, chiffres et tirets.
+            var evt = slug.Length <= 200 && slug.All(c => char.IsAsciiLetterLower(c) || char.IsAsciiDigit(c) || c == '-')
+                ? await _events.GetPublicEventAsync(slug)
+                : null;
+            if (evt == null)
+                return Html(404, RedirectPage("Événement introuvable · TBF Moment", "Cet événement n'existe pas ou n'est plus en ligne.", site + "/", null, null, site + "/"));
+
+            await CountSocialShareAsync(evt.Slug);
+
+            var eventUrl = $"{site}/e/{Uri.EscapeDataString(evt.Slug)}";
+            var shareUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}/share/e/{Uri.EscapeDataString(evt.Slug)}";
+            var image = CoverUrl(evt.CoverImageUrl) ?? $"{site}/og-image.png";
+
+            var details = new List<string>();
+            if (evt.EventDate is DateOnly date)
+                details.Add("Le " + date.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR")));
+            var where = !string.IsNullOrWhiteSpace(evt.LocationLabel) && evt.LocationLabel != "Lieu principal" ? evt.LocationLabel : evt.LocationAddress;
+            if (!string.IsNullOrWhiteSpace(where))
+                details.Add("à " + where);
+            var description = Clean(evt.Description)
+                ?? Clean(string.Join(" · ", new[] { evt.Tagline }.Concat(details).Where(s => !string.IsNullOrWhiteSpace(s))))
+                ?? $"Retrouvez toutes les informations de « {evt.Name} » sur son site.";
+
+            return Html(200, RedirectPage(evt.Name, description, eventUrl, shareUrl, image, eventUrl));
+        }
+
+        private async Task CountSocialShareAsync(string slug)
+        {
+            var agent = Request.Headers.UserAgent.ToString();
+            if (!SocialBots.Any(bot => agent.Contains(bot, StringComparison.OrdinalIgnoreCase))) return;
+            try
+            {
+                await _stats.RecordAsync(slug, EventStatKind.Share);
+            }
+            catch (Exception ex)
+            {
+                // Une statistique ne doit jamais empêcher l'aperçu du lien.
+                _logger.LogWarning(ex, "Partage non comptabilisé pour {Slug}", slug);
+            }
+        }
+
+        // Couverture absolue : Cloudinary (déjà absolue) ou fichier local servi par l'API.
+        // Seules les couvertures téléversées sur la plateforme sont reprises.
+        private string? CoverUrl(string? cover)
+        {
+            if (string.IsNullOrWhiteSpace(cover) || !_uploads.IsUploadedCover(cover))
+                return null;
+            return cover.StartsWith("https://", StringComparison.Ordinal)
+                ? cover
+                : $"{Request.Scheme}://{Request.Host}{Request.PathBase}{cover}";
+        }
+
+        private static string? Clean(string? text)
+        {
+            var flat = string.Join(' ', (text ?? string.Empty).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+            if (flat.Length == 0) return null;
+            return flat.Length <= 200 ? flat : flat[..199].TrimEnd() + "…";
+        }
+
+        private ContentResult Html(int status, string html)
+        {
+            // Pas de cache long : un organisateur peut changer sa couverture ou son titre.
+            Response.Headers.CacheControl = "public, max-age=300";
+            return new ContentResult { StatusCode = status, ContentType = "text/html; charset=utf-8", Content = html };
+        }
+
+        private static string RedirectPage(string title, string description, string target, string? shareUrl, string? image, string canonical)
+        {
+            // Seuls les caractères spéciaux HTML sont encodés : les accents restent lisibles.
+            string E(string value) => value.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;").Replace("'", "&#39;");
+            var html = new StringBuilder();
+            html.Append("<!doctype html><html lang=\"fr\"><head><meta charset=\"utf-8\">");
+            html.Append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
+            html.Append($"<title>{E(title)}</title>");
+            html.Append($"<meta name=\"description\" content=\"{E(description)}\">");
+            // Le site de l'événement est la page de référence ; ce lien ne doit pas être indexé.
+            html.Append("<meta name=\"robots\" content=\"noindex, follow\">");
+            html.Append($"<link rel=\"canonical\" href=\"{E(canonical)}\">");
+            html.Append("<meta property=\"og:site_name\" content=\"TBF Moment\"><meta property=\"og:locale\" content=\"fr_FR\"><meta property=\"og:type\" content=\"website\">");
+            html.Append($"<meta property=\"og:title\" content=\"{E(title)}\"><meta property=\"og:description\" content=\"{E(description)}\">");
+            // og:url = ce lien : Facebook relirait sinon l'URL du site, qui n'a que l'aperçu générique.
+            if (shareUrl != null) html.Append($"<meta property=\"og:url\" content=\"{E(shareUrl)}\">");
+            if (image != null)
+            {
+                html.Append($"<meta property=\"og:image\" content=\"{E(image)}\"><meta name=\"twitter:image\" content=\"{E(image)}\">");
+            }
+            html.Append($"<meta name=\"twitter:card\" content=\"summary_large_image\"><meta name=\"twitter:title\" content=\"{E(title)}\"><meta name=\"twitter:description\" content=\"{E(description)}\">");
+            html.Append($"<meta http-equiv=\"refresh\" content=\"0;url={E(target)}\">");
+            html.Append("</head><body style=\"font-family:system-ui,sans-serif;text-align:center;padding:3rem 1rem\">");
+            html.Append($"<p>{E(title)}</p><p><a href=\"{E(target)}\">Ouvrir le site de l'événement</a></p>");
+            html.Append("</body></html>");
+            return html.ToString();
+        }
+    }
+}
