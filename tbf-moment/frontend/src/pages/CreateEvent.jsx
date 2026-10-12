@@ -70,6 +70,13 @@ const STEPS = [
   'Aperçu & Publication'
 ]
 
+// Options de l'assistant qui ajoutent leur section au site si le modèle ne l'a pas.
+const OPTION_BLOCKS = [
+  ['gallery', 'Galerie'],
+  ['ticketing', 'Billetterie'],
+  ['guestbook', "Livre d'or"]
+]
+
 const INITIAL_EVENT = {
   name: '',
   location: '',
@@ -99,7 +106,7 @@ const INITIAL_EVENT = {
   options: {
     checkin: true,
     program: true,
-    gallery: true,
+    gallery: false,
     ticketing: false,
     guestbook: false,
     // Privé par défaut : le site n'est indexé par les moteurs que sur choix explicite.
@@ -444,7 +451,10 @@ export default function CreateEvent () {
           const insertAt = footer === -1 ? pageBlocks.length : footer
           const extra = [
             event.options?.program && !pageBlocks.includes('Programme') && 'Programme',
-            event.options?.checkin && !pageBlocks.includes('RSVP') && 'RSVP'
+            event.options?.checkin && !pageBlocks.includes('RSVP') && 'RSVP',
+            ...OPTION_BLOCKS.filter(([key, type]) => event.options?.[key] && !pageBlocks.includes(type)).map(
+              ([, type]) => type
+            )
           ].filter(Boolean)
           pageBlocks.splice(insertAt, 0, ...extra)
         }
@@ -469,6 +479,8 @@ export default function CreateEvent () {
           await upsertBlockMerge('Programme', {})
         if (event.options?.checkin && !pageHas('RSVP'))
           await upsertBlockMerge('RSVP', {})
+        for (const [key, type] of OPTION_BLOCKS)
+          if (event.options?.[key] && !pageHas(type)) await upsertBlockMerge(type, {})
       } catch {
         warnings.push(
           "Les sections de la page n'ont pas pu être toutes mises à jour."
@@ -517,7 +529,7 @@ export default function CreateEvent () {
         for (const guest of event.guests) {
           try {
             await createGuest(
-              { fullName: guest.name, phone: guest.phone, email: guest.email },
+              { fullName: guest.name, phone: guest.phone, email: guest.email, sendInvitation: event.sendInvitations !== false },
               { eventId: targetId, groupId: groupIdByName.get(guest.group) }
             )
           } catch {

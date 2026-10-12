@@ -3,7 +3,6 @@ import InfoPage from '../components/layout/InfoPage'
 export default function Support() {
   return (
     <InfoPage title="Support"
-      description="Besoin d'aide pour créer le site de votre événement ? Questions fréquentes et contact de l'équipe TBF Moment."
       path='/support'>
       <p>
         Une question sur la création de votre événement, la facturation ou

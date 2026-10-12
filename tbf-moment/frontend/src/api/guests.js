@@ -39,3 +39,13 @@ export function getPublicInvitation(guestId) {
 export function submitPublicRsvp(guestId, dto) {
   return apiFetch(`/public/invitations/${guestId}/rsvp`, { method: 'POST', body: dto, auth: false })
 }
+
+// Lien d'invitation par e-mail (confirmation de présence) : envoi ou renvoi à un invité.
+export function sendGuestInvitation(id) {
+  return apiFetch(`/guests/${id}/invitation`, { method: 'POST' })
+}
+
+// Envoie le lien à tous les invités de l'événement qui ne l'ont pas encore reçu.
+export function sendPendingInvitations(eventId) {
+  return apiFetch(`/guests/invitations?eventId=${eventId}`, { method: 'POST' })
+}

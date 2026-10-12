@@ -1,0 +1,47 @@
+# Hébergement Apache / LiteSpeed (Hostinger, o2switch…) du site tbfmoment.com.
+# Ignoré par les autres hébergeurs (Netlify, Vercel, Nginx…), qui ont leurs propres règles.
+
+Options -MultiViews
+DirectorySlash Off
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Une seule adresse pour Google : https://tbfmoment.com (sans www).
+  RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+  RewriteRule ^ https://%1%{REQUEST_URI} [R=301,L]
+
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+  RewriteCond %{HTTP_HOST} !^localhost [NC]
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+  # Pages publiques pré-générées au build (/tarifs -> /tarifs/index.html), sans
+  # redirection vers une URL avec « / » final : l'URL canonique reste /tarifs.
+  RewriteCond %{REQUEST_FILENAME}/index.html -f
+  RewriteRule ^(.+?)/?$ $1/index.html [L]
+
+  # Fichiers existants (scripts, images, robots.txt, sitemap.xml) servis tels quels.
+  RewriteCond %{REQUEST_FILENAME} -f
+  RewriteRule ^ - [L]
+
+  # Toutes les autres routes : l'application (sites d'événements, tableau de bord…).
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+  # Fichiers versionnés par Vite (nom avec empreinte) : cache d'un an.
+  <If "%{REQUEST_URI} =~ m#^/assets/#">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </If>
+  # Pages HTML : toujours revalidées, pour qu'une mise en ligne soit visible aussitôt.
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml application/xml text/plain
+</IfModule>

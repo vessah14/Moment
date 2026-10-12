@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import logo from '../assets/logo.png'
+import BrandLogo from '../components/ui/BrandLogo'
 import BrandBackdrop from '../components/ui/BrandBackdrop'
 import Button from '../components/ui/Button'
 import CategoryStep from '../components/onboarding/CategoryStep'
@@ -53,7 +53,7 @@ export default function Onboarding() {
 
       <div className="relative flex flex-1 flex-col items-center justify-center px-6 py-12">
         <Link to="/" className="mb-6 inline-flex items-center">
-          <img src={logo} alt="TBF Moment" className="h-9 w-auto" />
+          <BrandLogo className="h-9 w-auto" />
         </Link>
 
         <OnboardingProgress currentStep={step} total={TOTAL_STEPS} />

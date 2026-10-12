@@ -1,15 +1,19 @@
-import { Link2, Plus, Search } from 'lucide-react'
+import { Link2, Mail, Pencil, Plus, Search, Send, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import Avatar from '../../components/ui/Avatar'
 import Button from '../../components/ui/Button'
+import Pagination from '../../components/ui/Pagination'
 import StatusBadge from '../../components/ui/StatusBadge'
 import DashboardLayout from '../../components/layout/DashboardLayout'
-import { createGuest, deleteGuest, listGuests, updateGuest } from '../../api/guests'
+import GuestEditDialog from '../../components/guests/GuestEditDialog'
+import { ConfirmDialog } from '../../components/ui/Dialog'
+import { createGuest, deleteGuest, listGuests, sendGuestInvitation, sendPendingInvitations, updateGuest } from '../../api/guests'
 import { createGuestGroup, listGuestGroups } from '../../api/guestGroups'
 import { listEvents } from '../../api/events'
 import { listRsvps } from '../../api/rsvps'
 import { GUEST_STATUS_BY_LABEL, guestStatusLabel } from '../../utils/guestStatus'
 import { notifyGuestsChanged } from '../../utils/guestEvents'
+import { usePagination } from '../../utils/pagination'
 import { useToast } from '../../utils/useToast'
 
 const FILTERS = ['Tous', 'Confirmés', 'En attente', 'Refus']
@@ -30,6 +34,9 @@ export default function Guests() {
   const [addFormOpen, setAddFormOpen] = useState(false)
   const [newGroupName, setNewGroupName] = useState('')
   const [bulkGroupTarget, setBulkGroupTarget] = useState('')
+  const [editingGuest, setEditingGuest] = useState(null)
+  const [deletingGuest, setDeletingGuest] = useState(null)
+  const [deleteBusy, setDeleteBusy] = useState(false)
 
   useEffect(() => {
     listEvents()
@@ -107,6 +114,9 @@ export default function Guests() {
     })
   }, [guests, filter, query])
 
+  // Pagination : retour à la page 1 quand l'événement, le filtre ou la recherche change.
+  const pagination = usePagination(visible, 'tbf_page_size_guests', `${selectedEventId}|${filter}|${query}`)
+
   const counts = useMemo(
     () => ({
       Tous: guests.length,
@@ -116,6 +126,75 @@ export default function Guests() {
     }),
     [guests],
   )
+
+  const selectedEvent = events.find((e) => e.id === selectedEventId)
+  const eventPublished = selectedEvent?.status === 'Publie'
+  const notInvited = guests.filter((g) => g.email && !g.invitationSentAt && !g.invitationPending)
+
+  // Les invitations partent en quelques secondes : la liste se met à jour seule tant
+  // qu'il en reste en cours d'envoi (événement publié).
+  const hasPendingInvitations = eventPublished && guests.some((g) => g.invitationPending)
+  useEffect(() => {
+    if (!hasPendingInvitations || !selectedEventId) return
+    const timer = setInterval(() => {
+      listGuests(selectedEventId).then((fresh) => setGuests(fresh ?? [])).catch(() => {})
+    }, 5000)
+    const stop = setTimeout(() => clearInterval(timer), 120000)
+    return () => {
+      clearInterval(timer)
+      clearTimeout(stop)
+    }
+  }, [hasPendingInvitations, selectedEventId])
+
+  const handleUpdateGuest = async (dto) => {
+    const updated = await updateGuest(editingGuest.id, dto)
+    setGuests((prev) => prev.map((g) => (g.id === updated.id ? updated : g)))
+    notifyGuestsChanged()
+    toast(`${updated.fullName} modifié(e)`)
+  }
+
+  const handleDeleteOne = async () => {
+    setDeleteBusy(true)
+    setError('')
+    try {
+      await deleteGuest(deletingGuest.id)
+      setGuests((prev) => prev.filter((g) => g.id !== deletingGuest.id))
+      setSelected((prev) => {
+        const next = new Set(prev)
+        next.delete(deletingGuest.id)
+        return next
+      })
+      notifyGuestsChanged()
+      toast(`${deletingGuest.fullName} supprimé(e) de la liste`)
+    } catch (err) {
+      setError(err.message || 'La suppression a échoué.')
+    } finally {
+      setDeleteBusy(false)
+      setDeletingGuest(null)
+    }
+  }
+
+  const handleSendInvitation = async (guest) => {
+    setError('')
+    try {
+      const updated = await sendGuestInvitation(guest.id)
+      setGuests((prev) => prev.map((g) => (g.id === updated.id ? updated : g)))
+      toast(eventPublished ? `Invitation en cours d'envoi à ${guest.fullName}` : `Invitation prête : elle partira à la publication de l'événement`)
+    } catch (err) {
+      setError(err.message || "L'invitation n'a pas pu être envoyée.")
+    }
+  }
+
+  const handleSendAllInvitations = async () => {
+    setError('')
+    try {
+      const { queued } = await sendPendingInvitations(selectedEventId)
+      await reloadGuests()
+      toast(queued > 0 ? `${queued} invitation${queued > 1 ? 's' : ''} en cours d'envoi` : 'Tous les invités ont déjà reçu leur invitation')
+    } catch (err) {
+      setError(err.message || "Les invitations n'ont pas pu être envoyées.")
+    }
+  }
 
   const toggleSelected = (id) => {
     setSelected((prev) => {
@@ -176,13 +255,20 @@ export default function Guests() {
     const phone = form.get('phone')?.toString().trim()
     const email = form.get('email')?.toString().trim()
     const groupId = form.get('group')?.toString() || undefined
+    const sendInvitation = form.get('sendInvitation') === 'on'
     if (!fullName || !phone || !email) return
 
     setError('')
     try {
-      await createGuest({ fullName, phone, email }, { eventId: selectedEventId, groupId })
+      await createGuest({ fullName, phone, email, sendInvitation }, { eventId: selectedEventId, groupId })
       await reloadGuests()
-      toast(`${fullName} ajouté(e) à la liste`)
+      toast(
+        !sendInvitation
+          ? `${fullName} ajouté(e) à la liste`
+          : eventPublished
+            ? `${fullName} ajouté(e) : son lien d'invitation part par e-mail`
+            : `${fullName} ajouté(e) : l'invitation partira à la publication de l'événement`,
+      )
       setAddFormOpen(false)
       e.target.reset()
     } catch (err) {
@@ -266,7 +352,17 @@ export default function Guests() {
             )}
           </div>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
+          {notInvited.length > 0 && (
+            <Button
+              variant="outline"
+              onClick={handleSendAllInvitations}
+              title="Envoyer le lien de confirmation à tous les invités qui ne l'ont pas encore reçu"
+            >
+              <Send className="h-4 w-4" />
+              Envoyer les invitations ({notInvited.length})
+            </Button>
+          )}
           <Button variant="outline" onClick={handleExport} disabled={guests.length === 0}>
             Exporter
           </Button>
@@ -328,9 +424,18 @@ export default function Guests() {
               ))}
             </select>
           </label>
+          <label className="flex items-center gap-2 self-center text-xs font-medium text-ink">
+            <input type="checkbox" name="sendInvitation" defaultChecked className="h-4 w-4 rounded border-border accent-brand-purple" />
+            Envoyer l'invitation par e-mail
+          </label>
           <Button type="submit" variant="gradient">
             Ajouter
           </Button>
+          <p className="w-full text-xs text-faint">
+            {eventPublished
+              ? "L'invité reçoit aussitôt un e-mail avec son lien personnel pour confirmer sa présence."
+              : "L'événement n'est pas encore publié : l'e-mail avec le lien de confirmation partira dès sa publication."}
+          </p>
 
           <div className="flex w-full items-center gap-2 border-t border-border-soft pt-3">
             <input
@@ -390,6 +495,7 @@ export default function Guests() {
                 <th className="px-3 py-3 font-medium">Contact</th>
                 <th className="px-3 py-3 font-medium">Groupe</th>
                 <th className="px-3 py-3 font-medium">Statut</th>
+                <th className="px-3 py-3 font-medium">Invitation</th>
                 <th className="px-3 py-3 font-medium">Accomp.</th>
                 <th className="w-10 px-3 py-3" />
               </tr>
@@ -397,20 +503,20 @@ export default function Guests() {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center text-sm text-faint">
+                  <td colSpan={8} className="px-6 py-10 text-center text-sm text-faint">
                     Chargement…
                   </td>
                 </tr>
               )}
               {!loading && visible.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center text-sm text-faint">
+                  <td colSpan={8} className="px-6 py-10 text-center text-sm text-faint">
                     Aucun invité ne correspond à cette recherche.
                   </td>
                 </tr>
               )}
               {!loading &&
-                visible.map((guest) => (
+                pagination.items.map((guest) => (
                   <tr key={guest.id} className="border-b border-border-soft last:border-b-0">
                     <td className="px-6 py-4">
                       <input
@@ -434,10 +540,24 @@ export default function Guests() {
                     <td className="px-3 py-4">
                       <StatusBadge status={guestStatusLabel(guest.status)} />
                     </td>
+                    <td className="px-3 py-4 text-xs">
+                      <InvitationStatus guest={guest} published={eventPublished} />
+                    </td>
                     <td className="px-3 py-4 font-mono text-muted">
                       {accompanyingByGuest[guest.id] ?? '–'}
                     </td>
-                    <td className="px-3 py-4">
+                    <td className="flex items-center px-3 py-4">
+                      {guest.email && !guest.invitationPending && (
+                        <button
+                          type="button"
+                          onClick={() => handleSendInvitation(guest)}
+                          title={guest.invitationSentAt ? "Renvoyer l'invitation par e-mail" : "Envoyer l'invitation par e-mail"}
+                          aria-label={guest.invitationSentAt ? `Renvoyer l'invitation à ${guest.fullName}` : `Envoyer l'invitation à ${guest.fullName}`}
+                          className="rounded-lg p-2 text-faint transition hover:bg-surface-2 hover:text-brand-purple"
+                        >
+                          <Send className="h-4 w-4" />
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => handleCopyLink(guest)}
@@ -446,12 +566,36 @@ export default function Guests() {
                       >
                         <Link2 className="h-4 w-4" />
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingGuest(guest)}
+                        title="Modifier"
+                        aria-label={`Modifier ${guest.fullName}`}
+                        className="rounded-lg p-2 text-faint transition hover:bg-surface-2 hover:text-brand-purple"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeletingGuest(guest)}
+                        title="Supprimer"
+                        aria-label={`Supprimer ${guest.fullName}`}
+                        className="rounded-lg p-2 text-faint transition hover:bg-danger/10 hover:text-danger"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </td>
                   </tr>
                 ))}
             </tbody>
           </table>
         </div>
+
+        {!loading && (
+          <div className="border-t border-border-soft px-6 py-3">
+            <Pagination pagination={pagination} label="invités" />
+          </div>
+        )}
 
         <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
           <div className="flex flex-wrap items-center gap-4 text-sm">
@@ -486,6 +630,47 @@ export default function Guests() {
           </div>
         </div>
       </div>
+      {editingGuest && (
+        <GuestEditDialog
+          key={editingGuest.id}
+          guest={editingGuest}
+          groups={groups}
+          onClose={() => setEditingGuest(null)}
+          onSave={handleUpdateGuest}
+        />
+      )}
+      <ConfirmDialog
+        open={Boolean(deletingGuest)}
+        title="Supprimer l’invité ?"
+        message={`${deletingGuest?.fullName ?? ''} sera retiré(e) de la liste, avec sa réponse et son placement. Son lien d'invitation ne fonctionnera plus.`}
+        busy={deleteBusy}
+        onConfirm={handleDeleteOne}
+        onClose={() => setDeletingGuest(null)}
+      />
     </DashboardLayout>
   )
+}
+
+// État de l'e-mail d'invitation d'un invité (lien personnel de confirmation de présence).
+function InvitationStatus({ guest, published }) {
+  if (guest.invitationSentAt)
+    return (
+      <span className="inline-flex items-center gap-1 text-success" title={new Date(guest.invitationSentAt).toLocaleString('fr-FR')}>
+        <Mail className="h-3.5 w-3.5" />
+        Envoyée le {new Date(guest.invitationSentAt).toLocaleDateString('fr-FR')}
+      </span>
+    )
+  if (guest.invitationPending)
+    return (
+      <span className="text-brand-orange" title={guest.invitationError ?? undefined}>
+        {published ? (guest.invitationError ? 'Nouvel essai bientôt' : 'Envoi en cours…') : 'À la publication'}
+      </span>
+    )
+  if (guest.invitationError)
+    return (
+      <span className="text-danger" title={guest.invitationError}>
+        Échec de l'envoi
+      </span>
+    )
+  return <span className="text-faint">{guest.email ? 'Non envoyée' : 'Pas d’e-mail'}</span>
 }

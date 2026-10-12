@@ -6,6 +6,19 @@ import { rememberReturnPath, returnPathFrom } from '../../utils/returnPath'
 const APP_ID = import.meta.env.VITE_FACEBOOK_APP_ID
 const REDIRECT_URI = `${window.location.origin}/auth/facebook/callback`
 
+// Logo « f » officiel de Facebook.
+function FacebookLogo() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+      <circle cx="12" cy="12" r="12" fill="#1877F2" />
+      <path
+        fill="#fff"
+        d="M15.6 15.5 16.1 12.4h-3v-2c0-.8.4-1.7 1.7-1.7h1.4V6.1s-1.2-.2-2.4-.2c-2.5 0-4.1 1.5-4.1 4.2v2.3H7v3.1h2.7V24a11 11 0 0 0 3.4 0v-8.5h2.5z"
+      />
+    </svg>
+  )
+}
+
 // N'affiche rien si VITE_FACEBOOK_APP_ID n'est pas configuré : on ne simule jamais
 // une connexion Facebook qui ne peut pas fonctionner.
 //
@@ -26,7 +39,7 @@ export default function FacebookSignInButton() {
     const target = returnPathFrom(location)
     if (target) rememberReturnPath(target)
     const authUrl =
-      'https://www.facebook.com/v19.0/dialog/oauth' +
+      'https://www.facebook.com/v23.0/dialog/oauth' +
       `?client_id=${encodeURIComponent(APP_ID)}` +
       `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
       '&response_type=token' +
@@ -37,7 +50,8 @@ export default function FacebookSignInButton() {
 
   return (
     <Button type="button" variant="outline" onClick={handleClick} className="w-full">
-      Facebook
+      <FacebookLogo />
+      Continuer avec Facebook
     </Button>
   )
 }

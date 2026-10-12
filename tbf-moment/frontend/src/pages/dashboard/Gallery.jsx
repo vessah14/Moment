@@ -1,16 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import Button from '../../components/ui/Button'
 import { listEvents } from '../../api/events'
 import { mediaUrl } from '../../api/client'
-import {
-  deleteGalleryPhoto,
-  listGalleryPhotos,
-  updateGalleryPhotoStatus,
-  uploadGalleryPhoto,
-} from '../../api/gallery'
-
-const STATUS_BY_FILTER = { 'En attente': 'EnAttente', Publiés: 'Publie', Refusées: 'Refuse' }
+import { deleteGalleryPhoto, listGalleryPhotos, uploadGalleryPhoto } from '../../api/gallery'
 
 export default function Gallery() {
   const [events, setEvents] = useState([])
@@ -19,7 +12,6 @@ export default function Gallery() {
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
-  const [filter, setFilter] = useState('En attente')
   const fileInputRef = useRef(null)
 
   useEffect(() => {
@@ -51,51 +43,8 @@ export default function Gallery() {
     reload(selectedEventId)
   }, [selectedEventId])
 
-  const counts = useMemo(
-    () => ({
-      'En attente': media.filter((m) => m.status === 'EnAttente').length,
-      Publiés: media.filter((m) => m.status === 'Publie').length,
-      Refusées: media.filter((m) => m.status === 'Refuse').length,
-    }),
-    [media],
-  )
-  const visible = media.filter((m) => m.status === STATUS_BY_FILTER[filter])
-
-  const setStatus = async (id, status) => {
-    setError('')
-    try {
-      await updateGalleryPhotoStatus(id, status)
-      reload(selectedEventId)
-    } catch (err) {
-      setError(err.message || "L'action a échoué.")
-    }
-  }
-
-  const handleApproveAll = async () => {
-    setError('')
-    try {
-      await Promise.all(
-        media.filter((m) => m.status === 'EnAttente').map((m) => updateGalleryPhotoStatus(m.id, 'Publie')),
-      )
-      setFilter('Publiés')
-      reload(selectedEventId)
-    } catch (err) {
-      setError(err.message || "L'action a échoué.")
-    }
-  }
-
-  const handleRejectAll = async () => {
-    setError('')
-    try {
-      await Promise.all(
-        media.filter((m) => m.status === 'EnAttente').map((m) => updateGalleryPhotoStatus(m.id, 'Refuse')),
-      )
-      setFilter('Refusées')
-      reload(selectedEventId)
-    } catch (err) {
-      setError(err.message || "L'action a échoué.")
-    }
-  }
+  // Les photos sont ajoutées par l'organisateur et publiées directement.
+  const visible = media.filter((m) => m.status === 'Publie')
 
   const handleDelete = async (id) => {
     setError('')
@@ -117,7 +66,6 @@ export default function Gallery() {
       for (const file of files) {
         await uploadGalleryPhoto(file, selectedEventId)
       }
-      setFilter('Publiés')
       reload(selectedEventId)
     } catch (err) {
       setError(err.message || "L'import a échoué.")
@@ -145,7 +93,7 @@ export default function Gallery() {
         <div>
           <h1 className="text-2xl font-bold text-ink">Galerie — {selectedEvent?.name ?? ''}</h1>
           <p className="mt-1.5 text-sm text-muted">
-            {media.length} médias · {counts['En attente']} en attente de validation
+            {visible.length} photo{visible.length > 1 ? 's' : ''} publiée{visible.length > 1 ? 's' : ''}
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -176,45 +124,11 @@ export default function Gallery() {
         </p>
       )}
 
-      {counts['En attente'] > 0 && (
-        <div className="mt-6 flex flex-wrap items-center gap-3 rounded-xl border border-brand-orange/30 bg-brand-orange/10 px-5 py-3">
-          <p className="text-sm text-ink">
-            <span className="font-semibold">Modération</span> · {counts['En attente']} nouvelles
-            photos en attente de validation.
-          </p>
-          <div className="ml-auto flex gap-2">
-            <Button variant="gradient" onClick={handleApproveAll}>
-              Tout approuver
-            </Button>
-            <Button variant="outline" onClick={handleRejectAll}>
-              Tout rejeter
-            </Button>
-          </div>
-        </div>
-      )}
-
-      <div className="mt-8 flex flex-wrap gap-3">
-        {['En attente', 'Publiés', 'Refusées'].map((label) => (
-          <button
-            key={label}
-            type="button"
-            onClick={() => setFilter(label)}
-            className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-              filter === label
-                ? 'bg-[linear-gradient(92deg,_var(--color-brand-indigo),_var(--color-brand-purple))] text-white'
-                : 'border border-border text-muted hover:border-faint hover:text-ink'
-            }`}
-          >
-            {label} · {counts[label]}
-          </button>
-        ))}
-      </div>
-
       <div className="mt-6 rounded-2xl border border-border-soft bg-surface p-5">
         {loading ? (
           <p className="py-10 text-center text-sm text-faint">Chargement…</p>
         ) : visible.length === 0 ? (
-          <p className="py-10 text-center text-sm text-faint">Aucun média dans « {filter} ».</p>
+          <p className="py-10 text-center text-sm text-faint">Aucune photo publiée pour le moment.</p>
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
             {visible.map((item) => (
@@ -225,43 +139,16 @@ export default function Gallery() {
                     alt=""
                     className="h-full w-full object-cover"
                   />
-                  {item.status === 'EnAttente' && (
-                    <span className="absolute top-2 left-2 rounded-full bg-brand-orange/90 px-2 py-0.5 text-[10px] font-semibold text-bg">
-                      À valider
-                    </span>
-                  )}
                 </div>
-                {item.status === 'EnAttente' ? (
-                  <div className="mt-2 flex gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setStatus(item.id, 'Publie')}
-                      className="flex-1 rounded-md bg-success/15 py-1.5 text-xs font-semibold text-success"
-                    >
-                      Valider
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setStatus(item.id, 'Refuse')}
-                      className="flex-1 rounded-md bg-danger/15 py-1.5 text-xs font-semibold text-danger"
-                    >
-                      Refuser
-                    </button>
-                  </div>
-                ) : (
-                  <div className="mt-2 flex items-center justify-between">
-                    <p className="text-xs text-faint">
-                      {item.status === 'Publie' ? 'Publiée' : 'Refusée'}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(item.id)}
-                      className="text-xs text-faint hover:text-danger"
-                    >
-                      Suppr.
-                    </button>
-                  </div>
-                )}
+                <div className="mt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(item.id)}
+                    className="text-xs text-faint hover:text-danger"
+                  >
+                    Supprimer
+                  </button>
+                </div>
               </div>
             ))}
           </div>

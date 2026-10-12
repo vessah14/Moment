@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { verifyEmail } from '../api/users'
-import { getCurrentUser, setCurrentUser } from '../api/client'
+import { getCurrentUser, isAuthenticated, setCurrentUser } from '../api/client'
 import logoMark from '../assets/logo-mark.png'
 import AuthLayout from '../components/layout/AuthLayout'
+import Button from '../components/ui/Button'
 
 export default function VerifyEmail() {
   const [searchParams] = useSearchParams()
@@ -11,6 +12,7 @@ export default function VerifyEmail() {
   const [state, setState] = useState(token ? 'checking' : 'invalid')
   const [error, setError] = useState('')
   const started = useRef(false)
+  const loggedIn = isAuthenticated()
 
   useEffect(() => {
     // StrictMode monte deux fois les effets en développement : un seul appel suffit.
@@ -38,7 +40,7 @@ export default function VerifyEmail() {
 
         {state === 'done' && (
           <p className="mt-6 rounded-lg border border-success/30 bg-success/10 p-4 text-sm text-success">
-            Votre adresse e-mail est confirmée. Merci !
+            Votre adresse e-mail est confirmée. Merci !{loggedIn ? '' : ' Vous pouvez maintenant vous connecter.'}
           </p>
         )}
 
@@ -46,13 +48,26 @@ export default function VerifyEmail() {
           <p className="mt-6 rounded-lg border border-danger/30 bg-danger/10 p-4 text-sm text-danger">
             {error ||
               'Ce lien de vérification est invalide.'}{' '}
-            Vous pouvez demander un nouveau lien depuis Paramètres › Profil.
+            Pour recevoir un nouveau lien, connectez-vous : il vous sera renvoyé automatiquement.
           </p>
         )}
 
-        <Link to="/dashboard" className="mt-6 inline-block text-sm font-medium text-brand-purple hover:underline">
-          Aller au tableau de bord
-        </Link>
+        {loggedIn ? (
+          <Link to="/dashboard" className="mt-6 inline-block text-sm font-medium text-brand-purple hover:underline">
+            Aller au tableau de bord
+          </Link>
+        ) : (
+          // Première connexion après confirmation : accueil des nouveaux inscrits.
+          <Button
+            as={Link}
+            to="/connexion"
+            state={state === 'done' ? { from: { pathname: '/bienvenue' } } : undefined}
+            variant="gradient"
+            className="mt-6 w-full"
+          >
+            Se connecter
+          </Button>
+        )}
       </div>
     </AuthLayout>
   )

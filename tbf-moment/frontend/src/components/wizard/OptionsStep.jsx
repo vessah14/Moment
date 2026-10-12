@@ -22,7 +22,6 @@ const OPTIONS = [
     label: 'Galerie photos partagée',
     description:
       'Créez un espace de dépôt collaboratif où les convives partagent, téléchargent et visualisent les instantanés pris pendant le moment festif.',
-    comingSoon: true,
   },
   {
     key: 'ticketing',
@@ -30,7 +29,6 @@ const OPTIONS = [
     label: 'Billetterie & Vente',
     description:
       'Configurez différents types de tarifs, vendez des places sécurisées en ligne, déterminez des quotas et percevez des versements automatiques.',
-    comingSoon: true,
   },
   {
     key: 'guestbook',
@@ -38,7 +36,6 @@ const OPTIONS = [
     label: "Livre d'or interactif",
     description:
       "Offrez à vos hôtes la liberté d'enregistrer des messages d'affection, mots doux ou remerciements personnalisés en ligne.",
-    comingSoon: true,
   },
   {
     key: 'searchable',
@@ -77,11 +74,6 @@ export default function OptionsStep({ event, onChange }) {
             <div className="min-w-0 flex-1">
               <p className="flex items-center gap-2 text-sm font-semibold text-ink">
                 {opt.label}
-                {opt.comingSoon && (
-                  <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-faint uppercase">
-                    Bientôt disponible
-                  </span>
-                )}
               </p>
               <p className="mt-1 text-xs text-faint">{opt.description}</p>
             </div>

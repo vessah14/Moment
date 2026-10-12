@@ -55,6 +55,12 @@
   --animate-blink: blink 1.4s ease-in-out infinite;
 }
 
+/* Logo complet (BrandLogo) : une variante par thème. */
+:root[data-theme="light"] .brand-logo-dark,
+:root:not([data-theme="light"]) .brand-logo-light {
+  display: none !important;
+}
+
 /* Thème clair — mêmes noms de variables, valeurs inversées. Les couleurs de
    marque/graphiques restent identiques (déjà lisibles sur fond clair) ; seuls
    les tokens de surface et de texte changent réellement. */

@@ -26,18 +26,18 @@ import { listGuests } from '../../api/guests'
 import UpgradeDialog from '../plan/UpgradeDialog'
 import { isEventLimitReached, usePlan } from '../../utils/usePlan'
 import { GUESTS_CHANGED_EVENT } from '../../utils/guestEvents'
-import logo from '../../assets/logo.png'
+import BrandLogo from '../ui/BrandLogo'
 import logoMark from '../../assets/logo-mark.png'
 import { useLocalStorageState } from '../../utils/useLocalStorageState'
 
 const NAV_ITEMS = [
   { label: 'Vue globale', to: '/dashboard', icon: BarChart3, end: true },
-  { label: 'Mes événements', to: '/dashboard/evenements', icon: Calendar, end: true },
   {
     label: 'Créer un événement',
     to: '/dashboard/evenements/nouveau',
     icon: Plus,
   },
+  { label: 'Mes événements', to: '/dashboard/evenements', icon: Calendar, end: true },
   { label: 'Invitations', to: '/dashboard/invitations', icon: Mail },
   {
     label: 'Communication',
@@ -112,19 +112,28 @@ export default function DashboardSidebar({ open, onClose }) {
           collapsed ? 'lg:w-20 lg:px-2' : ''
         } ${open ? 'translate-x-0' : '-translate-x-full'}`}
       >
-        <div className="flex shrink-0 items-center justify-between">
+        <div
+          className={`flex shrink-0 items-center justify-between ${
+            collapsed ? 'lg:flex-col lg:gap-3' : ''
+          }`}
+        >
           <Link to="/" onClick={onClose} title="Retour à l'accueil">
-            <img
-              src={logo}
-              alt="TBF Moment"
-              className={`h-8 w-auto px-2 ${collapsed ? 'lg:hidden' : ''}`}
-            />
+            <BrandLogo className={`h-8 w-auto px-2 ${collapsed ? 'lg:hidden' : ''}`} />
             <img
               src={logoMark}
               alt="TBF Moment"
               className={`hidden h-8 w-8 ${collapsed ? 'lg:block' : ''}`}
             />
           </Link>
+          <button
+            type="button"
+            onClick={() => setCollapsed((v) => !v)}
+            title={collapsed ? 'Développer le menu' : 'Réduire le menu'}
+            aria-label={collapsed ? 'Développer le menu' : 'Réduire le menu'}
+            className="hidden rounded-lg p-1.5 text-muted transition hover:bg-surface-2 hover:text-ink lg:block"
+          >
+            {collapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
+          </button>
           <button
             type="button"
             onClick={onClose}
@@ -183,22 +192,6 @@ export default function DashboardSidebar({ open, onClose }) {
           <Home className="h-4 w-4 shrink-0" />
           <span className={collapsed ? 'lg:hidden' : ''}>Retour au site</span>
         </Link>
-
-        <button
-          type="button"
-          onClick={() => setCollapsed((v) => !v)}
-          title={collapsed ? 'Développer le menu' : 'Réduire le menu'}
-          className="mt-3 mb-3 hidden shrink-0 items-center justify-center gap-2 rounded-lg border border-border-soft py-2 text-xs font-medium text-muted transition hover:bg-surface-2 hover:text-ink lg:flex"
-        >
-          {collapsed ? (
-            <ChevronsRight className="h-4 w-4" />
-          ) : (
-            <>
-              <ChevronsLeft className="h-4 w-4" />
-              Réduire
-            </>
-          )}
-        </button>
 
         {/* Offre en cours, lue en base : nombre d'événements utilisés et demande en cours. */}
         <div

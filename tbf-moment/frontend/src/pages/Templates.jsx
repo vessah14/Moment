@@ -5,7 +5,8 @@ import TemplateCard from '../components/templates/TemplateCard'
 import Header from '../components/layout/Header'
 import Footer from '../components/layout/Footer'
 import { TEMPLATES } from '../data/templates'
-import { useSeo } from '../utils/seo'
+import { routeSeo } from '../data/seoRoutes'
+import { siteUrl, useSeo } from '../utils/seo'
 
 const TEMPLATE_CATEGORIES = [...new Set(TEMPLATES.map(tpl => tpl.category))]
 const CATEGORIES = [
@@ -17,11 +18,7 @@ const CATEGORIES = [
 ]
 
 export default function Templates () {
-  useSeo({
-    title: "Modèles de sites d'événement",
-    description: `${TEMPLATES.length} modèles prêts à publier pour votre mariage, anniversaire, baptême, conférence, concert… Personnalisez-les en quelques clics.`,
-    path: '/modeles'
-  })
+  useSeo(routeSeo('/modeles', siteUrl()))
   const [searchParams] = useSearchParams()
   const initialCategory = searchParams.get('categorie')
   const [category, setCategory] = useState(

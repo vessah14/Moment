@@ -1,7 +1,7 @@
 import { Menu, X } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import logo from '../../assets/logo.png'
+import BrandLogo from '../ui/BrandLogo'
 import Button from '../ui/Button'
 import ThemeToggle from '../ui/ThemeToggle'
 import LanguageSwitcher from '../ui/LanguageSwitcher'
@@ -40,7 +40,7 @@ export default function Header() {
     <header className="sticky top-0 z-40 border-b border-border-soft/60 bg-bg/80 backdrop-blur">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
         <Link to="/" className="flex items-center">
-          <img src={logo} alt="TBF Moment" className="h-9 w-auto" />
+          <BrandLogo className="h-9 w-auto" />
         </Link>
 
         <nav className="hidden items-center gap-8 lg:flex">

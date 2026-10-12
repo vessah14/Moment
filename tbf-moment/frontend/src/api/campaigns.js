@@ -11,3 +11,8 @@ export function createCampaign(dto, eventId) {
 export function deleteCampaign(id) {
   return apiFetch(`/campaigns/${id}`, { method: 'DELETE' })
 }
+
+// Modifie une campagne pas encore envoyée ; sendNow l'envoie aussitôt (e-mail).
+export function updateCampaign(id, dto) {
+  return apiFetch(`/campaigns/${id}`, { method: 'PUT', body: dto })
+}

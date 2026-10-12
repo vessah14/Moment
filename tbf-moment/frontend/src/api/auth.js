@@ -11,11 +11,12 @@ export async function login({ email, password }) {
   return result
 }
 
-export async function loginWithGoogle(idToken) {
+// Jeton d'accès Google (fenêtre OAuth ouverte par le bouton du site).
+export async function loginWithGoogle(accessToken) {
   const result = await apiFetch('/users/oauth/google', {
     method: 'POST',
     auth: false,
-    body: { idToken },
+    body: { accessToken },
   })
   setToken(result.token)
   setCurrentUser(result.utilisateur)
@@ -66,4 +67,10 @@ export async function resetPassword({ token, newPassword, confirmPassword }) {
     auth: false,
     body: { token, newPassword, confirmPassword },
   })
+}
+
+// Renvoi du lien de confirmation sans être connecté : réponse identique que l'adresse
+// ait un compte ou non.
+export function resendVerificationByEmail(email) {
+  return apiFetch('/users/resend-verification', { method: 'POST', auth: false, body: { email } })
 }

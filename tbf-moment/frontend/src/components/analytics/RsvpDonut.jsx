@@ -14,6 +14,9 @@ function ChartTooltip({ active, payload }) {
 
 export default function RsvpDonut({ data }) {
   const total = data?.reduce((sum, d) => sum + d.value, 0) ?? 0
+  // Parts nulles retirées : sinon l'espacement entre parts laisse une entaille dans
+  // l'anneau quand une seule catégorie a des invités.
+  const slices = (data ?? []).filter((d) => d.value > 0)
 
   if (!total) {
     return (
@@ -29,16 +32,16 @@ export default function RsvpDonut({ data }) {
         <PieChart>
           <Tooltip content={<ChartTooltip />} />
           <Pie
-            data={data}
+            data={slices}
             dataKey="value"
             nameKey="name"
             innerRadius="60%"
             outerRadius="85%"
-            paddingAngle={2}
-            stroke="var(--color-panel)"
+            paddingAngle={slices.length > 1 ? 2 : 0}
+            stroke={slices.length > 1 ? 'var(--color-panel)' : 'none'}
             strokeWidth={2}
           >
-            {data.map((entry) => (
+            {slices.map((entry) => (
               <Cell key={entry.name} fill={entry.color} />
             ))}
           </Pie>

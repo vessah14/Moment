@@ -27,7 +27,7 @@ import {
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
-import { mediaUrl } from '../../../api/client'
+import { eventShareUrl, mediaUrl } from '../../../api/client'
 import { signPublicGuestBook } from '../../../api/publicEvents'
 import { safeBlockImagePath, safeCoverPath, siteBlockDomId } from '../../../utils/sitePage'
 import BlockToolbar from '../BlockToolbar'
@@ -872,7 +872,7 @@ export default function ThemedSitePage({
                 className="btn ghost"
                 target="_blank"
                 rel="noopener noreferrer"
-                href={`https://wa.me/?text=${encodeURIComponent(`${heroStyle.title}${dateLong ? ` · ${dateLong}` : ''}. Toutes les infos : ${window.location.origin}/e/${data.slug}`)}`}
+                href={`https://wa.me/?text=${encodeURIComponent(`${heroStyle.title}${dateLong ? ` · ${dateLong}` : ''}. Toutes les infos : ${eventShareUrl(data.slug)}`)}`}
               >
                 <Share2 />
                 Partager sur WhatsApp

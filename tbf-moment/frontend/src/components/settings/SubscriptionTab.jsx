@@ -1,3 +1,4 @@
+import { formatCents } from '../../utils/formatCurrency'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Button from '../ui/Button'
@@ -52,7 +53,7 @@ export default function SubscriptionTab() {
             </Button>
           </div>
           <p className="mt-3 text-sm text-muted">
-            {active.priceCents.toLocaleString('fr-FR')} FCFA · {active.billing === 'Gratuit' ? 'Gratuit' : active.billing === 'Mensuel' ? 'par mois' : 'par an'}
+            {formatCents(active.priceCents)} · {active.billing === 'Gratuit' ? 'Gratuit' : active.billing === 'Mensuel' ? 'par mois' : 'par an'}
           </p>
           <p className="mt-1 text-xs text-faint">
             Débuté le {new Date(active.startedAt).toLocaleDateString('fr-FR')}

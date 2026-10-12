@@ -3,7 +3,6 @@ import InfoPage from '../components/layout/InfoPage'
 export default function PrivacyPolicy () {
   return (
     <InfoPage title='Politique de confidentialité'
-      description="Comment TBF Moment collecte, utilise et protège vos données personnelles et celles de vos invités."
       path='/confidentialite'>
       <p className='text-xs text-faint'>
         Dernière mise à jour : 3 octobre 2026

@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { login, register } from '../../api/auth'
+import { register } from '../../api/auth'
 import logoMark from '../../assets/logo-mark.png'
 import Button from '../ui/Button'
 import FacebookSignInButton from './FacebookSignInButton'
@@ -65,8 +65,8 @@ export default function SignupForm() {
         password,
         confirmPassword,
       })
-      await login({ email, password })
-      navigate('/bienvenue')
+      // Le compte ne sert qu'après confirmation de l'adresse : pas de connexion directe.
+      navigate(`/inscription/verifiez-vos-emails?email=${encodeURIComponent(email)}`)
     } catch (err) {
       setError(err.message || 'Inscription impossible.')
     } finally {

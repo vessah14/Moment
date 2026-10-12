@@ -65,7 +65,8 @@ export default function Ticketing() {
     e.preventDefault()
     const form = new FormData(e.target)
     const name = form.get('name')?.toString().trim()
-    const priceCents = Number(form.get('price')) || 0
+    // Saisie en FCFA, enregistrée en centimes (comme sur le site public).
+    const priceCents = Math.round((Number(form.get('price')) || 0) * 100)
     const quota = Number(form.get('quota')) || 0
     if (!name || !quota) return
     setError('')
@@ -122,7 +123,7 @@ export default function Ticketing() {
 
   const STATS = [
     { label: 'Billets vendus', value: String(totalSold), hint: totalQuota ? `${Math.round((totalSold / totalQuota) * 100)}% des ${totalQuota} places` : '' },
-    { label: 'Recettes', value: totalRevenueCents.toLocaleString('fr-FR'), hint: 'FCFA' },
+    { label: 'Recettes', value: Math.round(totalRevenueCents / 100).toLocaleString('fr-FR'), hint: 'FCFA' },
     { label: 'Types de billets', value: String(ticketTypes.length) },
   ]
 
@@ -243,7 +244,7 @@ export default function Ticketing() {
                       <tr className="border-b border-border-soft last:border-b-0">
                         <td className="px-6 py-4 font-medium text-ink">{ticket.name}</td>
                         <td className="px-3 py-4 font-mono text-muted">
-                          {ticket.priceCents.toLocaleString('fr-FR')}
+                          {Math.round(ticket.priceCents / 100).toLocaleString('fr-FR')}
                         </td>
                         <td className="px-3 py-4">
                           <p className="font-mono text-ink">

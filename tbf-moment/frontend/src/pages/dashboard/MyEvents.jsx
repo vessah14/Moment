@@ -7,7 +7,10 @@ import {
   createEvent,
   deleteEvent
 } from '../../api/events'
+import { eventShareUrl } from '../../api/client'
+import { trackPublicEvent } from '../../api/publicEvents'
 import { listEventCategories } from '../../api/eventCategories'
+import { useToast } from '../../utils/useToast'
 import EventCard from '../../components/events/EventCard'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import Button from '../../components/ui/Button'
@@ -16,6 +19,7 @@ import { formatEventDate, statusLabel } from '../../utils/eventStatus'
 const FILTERS = ['Tous', 'Publiés', 'Brouillons', 'Passés']
 
 export default function MyEvents () {
+  const toast = useToast()
   const [events, setEvents] = useState([])
   const [categories, setCategories] = useState([])
   const [filter, setFilter] = useState('Tous')
@@ -301,6 +305,19 @@ export default function MyEvents () {
                                 to: `/e/${encodeURIComponent(event.slug)}`,
                                 external: true,
                                 highlight: true
+                              },
+                              {
+                                // Lien avec le vrai aperçu (titre, couverture) sur WhatsApp, Facebook…
+                                label: 'Copier le lien de partage',
+                                onClick: async () => {
+                                  try {
+                                    await navigator.clipboard.writeText(eventShareUrl(event.slug))
+                                    trackPublicEvent(event.slug, 'share')
+                                    toast('Lien de partage copié')
+                                  } catch {
+                                    toast('Copie impossible : ' + eventShareUrl(event.slug), { variant: 'error', duration: 10000 })
+                                  }
+                                }
                               }
                             ]
                           : []),

@@ -148,6 +148,23 @@ export default function InvitesStep({ event, onChange }) {
         </div>
       </div>
 
+      {/* Chaque invité reçoit par e-mail son lien personnel pour confirmer sa présence. */}
+      <label className="mt-6 flex items-start gap-3 rounded-xl border border-brand-purple/30 bg-brand-purple/5 p-4">
+        <input
+          type="checkbox"
+          checked={event.sendInvitations !== false}
+          onChange={(e) => update({ sendInvitations: e.target.checked })}
+          className="mt-0.5 h-4 w-4 rounded border-border accent-brand-purple"
+        />
+        <span>
+          <span className="block text-sm font-medium text-ink">Envoyer l’invitation par e-mail à chaque invité</span>
+          <span className="mt-0.5 block text-xs text-muted">
+            Chaque invité reçoit son lien personnel pour confirmer sa présence, dès la publication de l’événement. Vous
+            pourrez aussi l’envoyer plus tard depuis la page Participants.
+          </span>
+        </span>
+      </label>
+
       <div className="mt-6 overflow-hidden rounded-2xl border border-border-soft bg-surface">
         <div className="flex items-center justify-between px-5 py-3">
           <p className="text-sm font-semibold text-ink">Invités ajoutés</p>

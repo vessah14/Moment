@@ -3,7 +3,6 @@ import InfoPage from '../components/layout/InfoPage'
 export default function LegalNotice() {
   return (
     <InfoPage title="Mentions légales"
-      description="Mentions légales de TBF Moment : éditeur, hébergement et contact."
       path='/mentions-legales'>
       <p>
         TBF Moment est un service édité par TBF, plateforme événementielle

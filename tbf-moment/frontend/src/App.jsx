@@ -41,6 +41,7 @@ const Pricing = lazy(() => import('./pages/Pricing'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'))
+const CheckEmail = lazy(() => import('./pages/CheckEmail'))
 const Signup = lazy(() => import('./pages/Signup'))
 const Support = lazy(() => import('./pages/Support'))
 const Templates = lazy(() => import('./pages/Templates'))
@@ -105,6 +106,7 @@ function App () {
           <Route path='/verifier-email' element={<VerifyEmail />} />
           <Route path='/bienvenue' element={<Onboarding />} />
           <Route path='/inscription' element={<Signup />} />
+          <Route path='/inscription/verifiez-vos-emails' element={<CheckEmail />} />
           <Route path='/modeles' element={<Templates />} />
           <Route path='/modeles/:theme' element={<TemplateDemo />} />
           <Route path='/tarifs' element={<Pricing />} />

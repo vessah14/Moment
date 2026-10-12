@@ -5,7 +5,7 @@ import AdminLayout from '../components/layout/AdminLayout'
 import StatCard from '../components/dashboard/StatCard'
 import Button from '../components/ui/Button'
 import { listOrganizations, listTransactions } from '../api/platform'
-import { formatFcfa } from '../utils/formatCurrency'
+import { formatCents } from '../utils/formatCurrency'
 
 export default function AdminBilling() {
   const [organizations, setOrganizations] = useState([])
@@ -35,7 +35,7 @@ export default function AdminBilling() {
   const handleExport = () => {
     const header = 'Organisation,Plan,Montant,Date'
     const rows = transactions.map((t) =>
-      [t.organization, t.plan, t.amountCents, t.date].join(','),
+      [t.organization, t.plan, Math.round(t.amountCents / 100), t.date].join(','),
     )
     const csv = [header, ...rows].join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -71,11 +71,11 @@ export default function AdminBilling() {
       <UpgradeRequestsPanel />
 
       <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="MRR (abonnements actifs)" value={formatFcfa(mrr)} />
+        <StatCard label="MRR (abonnements actifs)" value={formatCents(mrr)} />
         <StatCard label="Comptes payants" value={String(payingAccounts)} />
         <StatCard
           label="Panier moyen"
-          value={formatFcfa(transactions.length ? Math.round(mrr / transactions.length) : 0)}
+          value={formatCents(transactions.length ? mrr / transactions.length : 0)}
         />
         <StatCard label="Organisations" value={String(organizations.length)} />
       </div>
@@ -123,7 +123,7 @@ export default function AdminBilling() {
                   <tr key={t.id} className="border-b border-border-soft last:border-b-0">
                     <td className="px-5 py-4 text-ink">{t.organization}</td>
                     <td className="px-3 py-4 text-muted">{t.plan}</td>
-                    <td className="px-3 py-4 font-mono text-ink">{formatFcfa(t.amountCents)}</td>
+                    <td className="px-3 py-4 font-mono text-ink">{formatCents(t.amountCents)}</td>
                   </tr>
                 ))}
               </tbody>

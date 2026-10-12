@@ -2,6 +2,7 @@ import QRCode from 'qrcode'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getPublicInvitation, submitPublicRsvp } from '../api/guests'
+import { trackPublicEvent } from '../api/publicEvents'
 import logoMark from '../assets/logo-mark.png'
 import Button from '../components/ui/Button'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
@@ -121,12 +122,14 @@ export default function GuestInvitation() {
     if (navigator.share) {
       try {
         await navigator.share(shareData)
+        trackPublicEvent(invitation?.eventSlug, 'share')
       } catch {
         // Utilisateur a annulé le partage
       }
       return
     }
     await navigator.clipboard.writeText(window.location.href)
+    trackPublicEvent(invitation?.eventSlug, 'share')
     setShareMessage('Lien copié !')
     setTimeout(() => setShareMessage(''), 2500)
   }

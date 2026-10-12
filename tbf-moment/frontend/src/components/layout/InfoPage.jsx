@@ -1,9 +1,11 @@
 import Footer from './Footer'
 import Header from './Header'
-import { useSeo } from '../../utils/seo'
+import { routeSeo } from '../../data/seoRoutes'
+import { siteUrl, useSeo } from '../../utils/seo'
 
-export default function InfoPage({ title, description, path, children }) {
-  useSeo({ title, description, path })
+// Métadonnées SEO lues dans data/seoRoutes.js (source unique, reprise au build).
+export default function InfoPage({ title, path, children }) {
+  useSeo(routeSeo(path, siteUrl()))
   return (
     <div className="flex min-h-svh flex-col">
       <Header />

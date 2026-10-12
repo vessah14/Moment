@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
 import AutoReminders from '../../components/communication/AutoReminders'
 import CampaignComposer from '../../components/communication/CampaignComposer'
+import CampaignEditDialog from '../../components/communication/CampaignEditDialog'
 import CampaignsList from '../../components/communication/CampaignsList'
 import StatCard from '../../components/dashboard/StatCard'
 import DashboardLayout from '../../components/layout/DashboardLayout'
+import { ConfirmDialog } from '../../components/ui/Dialog'
 import { listEvents } from '../../api/events'
-import { createCampaign, listCampaigns } from '../../api/campaigns'
+import { createCampaign, deleteCampaign, listCampaigns, updateCampaign } from '../../api/campaigns'
+import { useToast } from '../../utils/useToast'
 
 const TABS = ['Email', 'SMS', 'Notifications', 'Rappels']
 const TAB_CHANNEL = { Email: 'E-mail', SMS: 'SMS', Notifications: 'Push' }
@@ -17,6 +20,10 @@ export default function Communication() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [tab, setTab] = useState('Email')
+  const [editing, setEditing] = useState(null)
+  const [deleting, setDeleting] = useState(null)
+  const [deleteBusy, setDeleteBusy] = useState(false)
+  const toast = useToast()
 
   useEffect(() => {
     listEvents()
@@ -56,6 +63,34 @@ export default function Communication() {
     } catch (err) {
       setError(err.message || "La création a échoué.")
       throw err
+    }
+  }
+
+  const handleUpdate = async (dto) => {
+    const result = await updateCampaign(editing.id, dto)
+    reload(selectedEventId)
+    if (dto.sendNow)
+      toast(
+        result.emailsSentCount > 0
+          ? `Campagne envoyée à ${result.emailsSentCount} destinataire${result.emailsSentCount > 1 ? 's' : ''}`
+          : result.deliveryError || 'Aucun e-mail envoyé : aucun destinataire avec une adresse e-mail.',
+        result.emailsSentCount > 0 ? {} : { variant: 'error', duration: 8000 },
+      )
+    else toast('Campagne modifiée')
+  }
+
+  const handleDelete = async () => {
+    setDeleteBusy(true)
+    try {
+      await deleteCampaign(deleting.id)
+      setCampaigns((prev) => prev.filter((c) => c.id !== deleting.id))
+      toast('Campagne supprimée')
+      setDeleting(null)
+    } catch (err) {
+      setError(err.message || 'La suppression a échoué.')
+      setDeleting(null)
+    } finally {
+      setDeleteBusy(false)
     }
   }
 
@@ -152,13 +187,26 @@ export default function Communication() {
             {loading ? (
               <p className="text-sm text-faint">Chargement…</p>
             ) : (
-              <CampaignsList campaigns={filteredCampaigns} />
+              <CampaignsList campaigns={filteredCampaigns} onEdit={setEditing} onDelete={setDeleting} />
             )}
           </div>
 
           <CampaignComposer key={tab} defaultChannel={activeChannel} onCreate={handleCreate} />
         </div>
       )}
+      {editing && <CampaignEditDialog key={editing.id} campaign={editing} onClose={() => setEditing(null)} onSave={handleUpdate} />}
+      <ConfirmDialog
+        open={Boolean(deleting)}
+        title="Supprimer la campagne ?"
+        message={
+          deleting?.status === 'Envoyee'
+            ? `« ${deleting?.name} » sera retirée de l'historique. Les messages déjà envoyés ne sont pas rappelés.`
+            : `Le brouillon « ${deleting?.name} » sera définitivement supprimé.`
+        }
+        busy={deleteBusy}
+        onConfirm={handleDelete}
+        onClose={() => setDeleting(null)}
+      />
     </DashboardLayout>
   )
 }

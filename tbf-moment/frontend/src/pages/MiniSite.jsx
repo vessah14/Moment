@@ -3,7 +3,7 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import { mediaUrl } from '../api/client'
 import { getPublicGifts } from '../api/giftRegistry'
 import { getPublicInvitation } from '../api/guests'
-import { getPublicSeating, getPublicSite } from '../api/publicEvents'
+import { getPublicSeating, getPublicSite, trackPublicEvent } from '../api/publicEvents'
 import logoMark from '../assets/logo-mark.png'
 import SitePage from '../components/site/SitePage'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
@@ -144,6 +144,7 @@ export default function MiniSite () {
       .then(data => {
         setSite(data)
         setError('')
+        trackPublicEvent(slug, 'visit')
         const types = new Set(data.blocks.map(b => b.blockType))
         if (types.has('Cadeaux'))
           getPublicGifts(slug)

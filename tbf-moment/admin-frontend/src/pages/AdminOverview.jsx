@@ -4,7 +4,7 @@ import AdminLayout from '../components/layout/AdminLayout'
 import StatCard from '../components/dashboard/StatCard'
 import StatusBadge from '../components/ui/StatusBadge'
 import { listModerationQueue, listOrganizations, listPlatformEvents, listTransactions } from '../api/platform'
-import { formatFcfa } from '../utils/formatCurrency'
+import { formatCents } from '../utils/formatCurrency'
 
 export default function AdminOverview() {
   const [organizations, setOrganizations] = useState([])
@@ -42,7 +42,7 @@ export default function AdminOverview() {
       value: String(events.length),
       hint: `${publishedCount} publiés · ${draftCount} brouillon(s)`,
     },
-    { label: 'MRR', value: formatFcfa(mrr) },
+    { label: 'MRR', value: formatCents(mrr) },
     { label: 'Invités cumulés', value: String(totalGuests), hint: 'tous événements confondus' },
   ]
 

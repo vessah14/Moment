@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import BillingTab from '../../components/settings/BillingTab'
 import BrandTab from '../../components/settings/BrandTab'
 import DataExportTab from '../../components/settings/DataExportTab'
@@ -27,26 +28,29 @@ const TABS = [
   { label: 'Intégrations', Component: IntegrationsTab },
   { label: 'Domaine', Component: DomainTab },
   { label: 'Données et export', Component: DataExportTab },
-  { label: 'Supprimer le compte', Component: DeleteAccountTab, danger: true },
+  { label: 'Supprimer le compte', Component: DeleteAccountTab, danger: true }
 ]
 
-export default function Settings() {
-  const [tab, setTab] = useState('Profil')
+export default function Settings () {
+  const [searchParams] = useSearchParams()
+  const [tab, setTab] = useState(() =>
+    searchParams.get('tab') === 'billing' ? 'Facturation' : 'Profil'
+  )
 
-  const ActiveTab = TABS.find((t) => t.label === tab)?.Component ?? ProfileTab
+  const ActiveTab = TABS.find(t => t.label === tab)?.Component ?? ProfileTab
 
   return (
     <DashboardLayout>
-      <h1 className="sr-only">Paramètres du compte</h1>
-      <div className="grid gap-8 lg:grid-cols-[200px_1fr]">
-        <nav className="space-y-1">
-          <p className="px-3 text-xs font-semibold tracking-wider text-faint uppercase">
+      <h1 className='sr-only'>Paramètres du compte</h1>
+      <div className='grid gap-8 lg:grid-cols-[200px_1fr]'>
+        <nav className='space-y-1'>
+          <p className='px-3 text-xs font-semibold tracking-wider text-faint uppercase'>
             Réglages
           </p>
           {TABS.map(({ label, danger }) => (
             <button
               key={label}
-              type="button"
+              type='button'
               onClick={() => setTab(label)}
               className={`block w-full rounded-lg px-3 py-2 text-left text-sm font-medium transition ${
                 tab === label
@@ -54,8 +58,8 @@ export default function Settings() {
                     ? 'bg-danger/15 text-danger'
                     : 'bg-brand-indigo text-white'
                   : danger
-                    ? 'text-danger hover:bg-danger/10'
-                    : 'text-muted hover:bg-surface-2 hover:text-ink'
+                  ? 'text-danger hover:bg-danger/10'
+                  : 'text-muted hover:bg-surface-2 hover:text-ink'
               }`}
             >
               {label}

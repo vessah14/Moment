@@ -4,7 +4,8 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import SitePage from '../components/site/SitePage'
 import { TEMPLATE_DEMOS } from '../data/templateDemos'
 import { TEMPLATES } from '../data/templates'
-import { useSeo } from '../utils/seo'
+import { routeSeo } from '../data/seoRoutes'
+import { siteUrl, useSeo } from '../utils/seo'
 
 // Démo d'un modèle premium (/modeles/:theme) : exactement le rendu du site publié, avec le
 // contenu d'exemple des maquettes. Réponse, livre d'or et recherche de place fonctionnent
@@ -84,11 +85,7 @@ function Demo({ theme }) {
       : null,
   )
 
-  useSeo({
-    title: template ? `Modèle ${template.name} · démo` : 'Modèle',
-    description: template?.description,
-    path: `/modeles/${theme}`,
-  })
+  useSeo(routeSeo(`/modeles/${theme}`, siteUrl()))
 
   if (!template || !demo) return <Navigate to="/modeles" replace />
 

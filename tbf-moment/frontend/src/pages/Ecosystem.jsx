@@ -3,7 +3,6 @@ import InfoPage from '../components/layout/InfoPage'
 export default function Ecosystem() {
   return (
     <InfoPage title="L'écosystème TBF"
-      description="Découvrez l'écosystème TBF : les services qui accompagnent l'organisation de vos événements."
       path='/ecosysteme'>
       <p>
         TBF Moment est la plateforme événementielle de l'écosystème TBF, qui

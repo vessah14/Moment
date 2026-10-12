@@ -1,6 +1,6 @@
 import { Mail } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import logo from '../../assets/logo.png'
+import BrandLogo from '../ui/BrandLogo'
 
 const COLUMNS = [
   {
@@ -37,7 +37,7 @@ export default function Footer () {
       <div className='mx-auto max-w-7xl px-6 py-16'>
         <div className='grid gap-10 lg:grid-cols-[2fr_1fr_1fr_1fr]'>
           <div>
-            <img src={logo} alt='TBF Moment' className='h-9 w-auto' />
+            <BrandLogo className='h-9 w-auto' />
             <p className='mt-4 max-w-xs text-sm text-faint'>
               Plateforme événementielle de l'écosystème TBF.
               <br />
