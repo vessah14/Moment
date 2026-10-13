@@ -42,7 +42,7 @@ export default function FacebookSignInButton() {
       'https://www.facebook.com/v23.0/dialog/oauth' +
       `?client_id=${encodeURIComponent(APP_ID)}` +
       `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
-      '&response_type=token' +
+      '&response_type=code' +
       '&scope=email' +
       `&state=${createOAuthState()}`
     window.location.href = authUrl

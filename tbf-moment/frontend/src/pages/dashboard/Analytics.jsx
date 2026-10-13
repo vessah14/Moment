@@ -7,6 +7,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout'
 import { listEvents } from '../../api/events'
 import { listGuests } from '../../api/guests'
 import { getEventStats } from '../../api/eventStats'
+import { downloadCsv } from '../../utils/csv'
 import { GUEST_STATUS_LABELS } from '../../utils/guestStatus'
 
 export default function Analytics() {
@@ -73,26 +74,11 @@ export default function Analytics() {
     : []
 
   const handleExportGuests = () => {
-    // Valeurs entre guillemets (un nom peut contenir une virgule) ; « = + - @ » en tête
-    // neutralisés pour qu'Excel n'interprète pas une cellule comme une formule.
-    const cell = (value) => {
-      const text = String(value ?? '')
-      const safe = /^[=+\-@]/.test(text) && !/^\+\d/.test(text) ? `'${text}` : text
-      return `"${safe.replace(/"/g, '""')}"`
-    }
-    const header = ['Nom', 'Email', 'Téléphone', 'Statut'].map(cell).join(',')
-    const rows = guests.map((g) =>
-      [g.fullName, g.email, g.phone, GUEST_STATUS_LABELS[g.status] ?? g.status].map(cell).join(','),
+    downloadCsv(
+      'participants.csv',
+      ['Nom', 'Email', 'Téléphone', 'Statut'],
+      guests.map((g) => [g.fullName, g.email, g.phone, GUEST_STATUS_LABELS[g.status] ?? g.status]),
     )
-    const csv = [header, ...rows].join('\r\n')
-    // BOM UTF-8 : Excel affiche correctement les accents.
-    const blob = new Blob(['﻿', csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = 'participants.csv'
-    link.click()
-    URL.revokeObjectURL(url)
   }
 
   if (!loading && events.length === 0) {

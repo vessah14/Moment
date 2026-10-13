@@ -5,6 +5,7 @@ import Button from '../../components/ui/Button'
 import StatusBadge from '../../components/ui/StatusBadge'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import { listEvents } from '../../api/events'
+import { downloadCsv } from '../../utils/csv'
 import {
   createGuestBookEntry,
   deleteGuestBookEntry,
@@ -138,18 +139,12 @@ export default function GuestBook() {
 
   const handleExport = () => {
     const published = messages.filter((m) => m.status === 'Publie')
-    const header = 'Auteur,Message,Date'
-    const rows = published.map((m) =>
-      [m.authorName, `"${m.message.replace(/"/g, '""')}"`, m.createdAt].join(','),
+    // Nom et message saisis par les visiteurs du site : neutralisés par downloadCsv.
+    downloadCsv(
+      'livre-or.csv',
+      ['Auteur', 'Message', 'Date'],
+      published.map((m) => [m.authorName, m.message, m.createdAt]),
     )
-    const csv = [header, ...rows].join('\n')
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = 'livre-or.csv'
-    link.click()
-    URL.revokeObjectURL(url)
   }
 
   if (!loading && events.length === 0) {

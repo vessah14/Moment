@@ -6,14 +6,15 @@ import AdminLogin from './pages/AdminLogin'
 import AdminModeration from './pages/AdminModeration'
 import AdminOrganizations from './pages/AdminOrganizations'
 import AdminOverview from './pages/AdminOverview'
+import AdminReviews from './pages/AdminReviews'
 import AdminSettings from './pages/AdminSettings'
 
-function App() {
+function App () {
   return (
     <Routes>
-      <Route path="/admin/connexion" element={<AdminLogin />} />
+      <Route path='/admin/connexion' element={<AdminLogin />} />
       <Route
-        path="/admin"
+        path='/admin'
         element={
           <RequireAdmin>
             <AdminOverview />
@@ -21,7 +22,7 @@ function App() {
         }
       />
       <Route
-        path="/admin/organisations"
+        path='/admin/organisations'
         element={
           <RequireAdmin>
             <AdminOrganizations />
@@ -29,7 +30,7 @@ function App() {
         }
       />
       <Route
-        path="/admin/evenements"
+        path='/admin/evenements'
         element={
           <RequireAdmin>
             <AdminEvents />
@@ -37,7 +38,7 @@ function App() {
         }
       />
       <Route
-        path="/admin/facturation"
+        path='/admin/facturation'
         element={
           <RequireAdmin>
             <AdminBilling />
@@ -45,7 +46,7 @@ function App() {
         }
       />
       <Route
-        path="/admin/moderation"
+        path='/admin/moderation'
         element={
           <RequireAdmin>
             <AdminModeration />
@@ -53,15 +54,23 @@ function App() {
         }
       />
       <Route
-        path="/admin/parametres"
+        path='/admin/avis'
+        element={
+          <RequireAdmin>
+            <AdminReviews />
+          </RequireAdmin>
+        }
+      />
+      <Route
+        path='/admin/parametres'
         element={
           <RequireAdmin>
             <AdminSettings />
           </RequireAdmin>
         }
       />
-      <Route path="/" element={<Navigate to="/admin" replace />} />
-      <Route path="*" element={<Navigate to="/admin" replace />} />
+      <Route path='/' element={<Navigate to='/admin' replace />} />
+      <Route path='*' element={<Navigate to='/admin' replace />} />
     </Routes>
   )
 }

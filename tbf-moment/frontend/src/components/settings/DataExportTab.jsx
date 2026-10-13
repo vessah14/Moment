@@ -1,3 +1,4 @@
+import { toCsv } from '../../utils/csv'
 import { Check, FileDown, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { getCurrentUser } from '../../api/client'
@@ -42,9 +43,11 @@ export default function DataExportTab() {
         const allGuests = (
           await Promise.all(events.map((ev) => listGuests(ev.id)))
         ).flat()
-        const header = 'Nom,Email,Téléphone,Statut'
-        const rows = allGuests.map((g) => [g.fullName, g.email, g.phone, g.status].join(','))
-        downloadBlob([header, ...rows].join('\n'), 'invites.csv', 'text/csv;charset=utf-8;')
+        downloadBlob(
+          toCsv(['Nom', 'Email', 'Téléphone', 'Statut'], allGuests.map((g) => [g.fullName, g.email, g.phone, g.status])),
+          'invites.csv',
+          'text/csv;charset=utf-8;',
+        )
       }
       setStatus((prev) => ({ ...prev, [key]: 'done' }))
     } catch (err) {

@@ -7,9 +7,10 @@ import {
   Home,
   LayoutDashboard,
   LogOut,
+  MessageSquareText,
   ShieldAlert,
   Sliders,
-  X,
+  X
 } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import logo from '../../assets/logo.png'
@@ -17,22 +18,24 @@ import logoMark from '../../assets/logo-mark.png'
 import { clearAdminAuthenticated } from '../../utils/adminAuth'
 import { useLocalStorageState } from '../../utils/useLocalStorageState'
 
-const CLIENT_APP_URL = import.meta.env.VITE_CLIENT_APP_URL || 'http://localhost:5173'
+const CLIENT_APP_URL =
+  import.meta.env.VITE_CLIENT_APP_URL || 'http://localhost:5173'
 
 const NAV_ITEMS = [
   { label: 'Vue globale', to: '/admin', icon: LayoutDashboard, end: true },
   { label: 'Organisations', to: '/admin/organisations', icon: Building2 },
   { label: 'Événements', to: '/admin/evenements', icon: Calendar },
   { label: 'Facturation', to: '/admin/facturation', icon: Banknote },
+  { label: 'Avis clients', to: '/admin/avis', icon: MessageSquareText },
   { label: 'Modération', to: '/admin/moderation', icon: ShieldAlert },
-  { label: 'Paramètres système', to: '/admin/parametres', icon: Sliders },
+  { label: 'Paramètres système', to: '/admin/parametres', icon: Sliders }
 ]
 
-export default function AdminSidebar({ open, onClose }) {
+export default function AdminSidebar ({ open, onClose }) {
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useLocalStorageState(
     'tbf_admin_sidebar_collapsed',
-    false,
+    false
   )
 
   const handleLogout = () => {
@@ -46,7 +49,7 @@ export default function AdminSidebar({ open, onClose }) {
       {open && (
         <div
           onClick={onClose}
-          className="fixed inset-0 z-40 bg-black/60 lg:hidden"
+          className='fixed inset-0 z-40 bg-black/60 lg:hidden'
         />
       )}
 
@@ -55,23 +58,23 @@ export default function AdminSidebar({ open, onClose }) {
           collapsed ? 'lg:w-20 lg:px-2' : ''
         } ${open ? 'translate-x-0' : '-translate-x-full'}`}
       >
-        <div className="flex items-center justify-between">
+        <div className='flex items-center justify-between'>
           <img
             src={logo}
-            alt="TBF Moment"
+            alt='TBF Moment'
             className={`h-8 w-auto px-2 ${collapsed ? 'lg:hidden' : ''}`}
           />
           <img
             src={logoMark}
-            alt="TBF Moment"
+            alt='TBF Moment'
             className={`hidden h-8 w-8 ${collapsed ? 'lg:block' : ''}`}
           />
           <button
-            type="button"
+            type='button'
             onClick={onClose}
-            className="rounded-lg p-1.5 text-muted hover:bg-surface-2 lg:hidden"
+            className='rounded-lg p-1.5 text-muted hover:bg-surface-2 lg:hidden'
           >
-            <X className="h-5 w-5" />
+            <X className='h-5 w-5' />
           </button>
         </div>
 
@@ -80,12 +83,12 @@ export default function AdminSidebar({ open, onClose }) {
             collapsed ? 'lg:hidden' : ''
           }`}
         >
-          <ShieldAlert className="h-3.5 w-3.5" />
+          <ShieldAlert className='h-3.5 w-3.5' />
           Super Admin
         </span>
 
-        <nav className="mt-6 flex-1 space-y-1 overflow-y-auto">
-          {NAV_ITEMS.map((item) => (
+        <nav className='mt-6 flex-1 space-y-1 overflow-y-auto'>
+          {NAV_ITEMS.map(item => (
             <NavLink
               key={item.label}
               to={item.to}
@@ -102,7 +105,7 @@ export default function AdminSidebar({ open, onClose }) {
                 }`
               }
             >
-              <item.icon className="h-4 w-4 shrink-0" />
+              <item.icon className='h-4 w-4 shrink-0' />
               <span className={`flex-1 ${collapsed ? 'lg:hidden' : ''}`}>
                 {item.label}
               </span>
@@ -111,43 +114,43 @@ export default function AdminSidebar({ open, onClose }) {
         </nav>
 
         <button
-          type="button"
-          onClick={() => setCollapsed((v) => !v)}
+          type='button'
+          onClick={() => setCollapsed(v => !v)}
           title={collapsed ? 'Développer le menu' : 'Réduire le menu'}
-          className="mb-3 hidden shrink-0 items-center justify-center gap-2 rounded-lg border border-border-soft py-2 text-xs font-medium text-muted transition hover:bg-surface-2 hover:text-ink lg:flex"
+          className='mb-3 hidden shrink-0 items-center justify-center gap-2 rounded-lg border border-border-soft py-2 text-xs font-medium text-muted transition hover:bg-surface-2 hover:text-ink lg:flex'
         >
           {collapsed ? (
-            <ChevronsRight className="h-4 w-4" />
+            <ChevronsRight className='h-4 w-4' />
           ) : (
             <>
-              <ChevronsLeft className="h-4 w-4" />
+              <ChevronsLeft className='h-4 w-4' />
               Réduire
             </>
           )}
         </button>
 
-        <div className="space-y-1">
+        <div className='space-y-1'>
           <a
             href={`${CLIENT_APP_URL}/dashboard`}
-            title="Retour au dashboard"
+            title='Retour au dashboard'
             className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted transition hover:bg-surface-2 hover:text-ink ${
               collapsed ? 'lg:justify-center lg:px-2' : ''
             }`}
           >
-            <Home className="h-4 w-4 shrink-0" />
+            <Home className='h-4 w-4 shrink-0' />
             <span className={collapsed ? 'lg:hidden' : ''}>
               Retour au dashboard
             </span>
           </a>
           <button
-            type="button"
+            type='button'
             onClick={handleLogout}
-            title="Se déconnecter"
+            title='Se déconnecter'
             className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-danger transition hover:bg-danger/10 ${
               collapsed ? 'lg:justify-center lg:px-2' : ''
             }`}
           >
-            <LogOut className="h-4 w-4 shrink-0" />
+            <LogOut className='h-4 w-4 shrink-0' />
             <span className={collapsed ? 'lg:hidden' : ''}>Se déconnecter</span>
           </button>
         </div>

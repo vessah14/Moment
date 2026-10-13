@@ -11,6 +11,7 @@ import { createGuest, deleteGuest, listGuests, sendGuestInvitation, sendPendingI
 import { createGuestGroup, listGuestGroups } from '../../api/guestGroups'
 import { listEvents } from '../../api/events'
 import { listRsvps } from '../../api/rsvps'
+import { downloadCsv } from '../../utils/csv'
 import { GUEST_STATUS_BY_LABEL, guestStatusLabel } from '../../utils/guestStatus'
 import { notifyGuestsChanged } from '../../utils/guestEvents'
 import { usePagination } from '../../utils/pagination'
@@ -291,25 +292,18 @@ export default function Guests() {
   }
 
   const handleExport = () => {
-    const header = 'Nom,Téléphone,Email,Groupe,Statut,Accompagnants'
-    const rows = guests.map((g) =>
-      [
+    downloadCsv(
+      'invites.csv',
+      ['Nom', 'Téléphone', 'Email', 'Groupe', 'Statut', 'Accompagnants'],
+      guests.map((g) => [
         g.fullName,
         g.phone,
         g.email,
         groupNameById(g.groupId),
         guestStatusLabel(g.status),
         accompanyingByGuest[g.id] ?? 0,
-      ].join(','),
+      ]),
     )
-    const csv = [header, ...rows].join('\n')
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = 'invites.csv'
-    link.click()
-    URL.revokeObjectURL(url)
     toast(`${guests.length} invité(s) exporté(s) en CSV`)
   }
 

@@ -15,20 +15,22 @@ export default function FacebookCallback() {
     // Une seule fois : le state est à usage unique (StrictMode rejoue les effets).
     if (handled.current) return
     handled.current = true
-    const params = new URLSearchParams(window.location.hash.replace(/^#/, ''))
-    const accessToken = params.get('access_token')
+    // Flux avec code : Facebook renvoie un code à usage unique (dans la requête), que le
+    // serveur échange lui-même contre le jeton d'accès.
+    const params = new URLSearchParams(window.location.search)
+    const code = params.get('code')
     const errorDescription = params.get('error_description')
     // Le retour doit correspondre à une connexion lancée depuis cet onglet.
     const stateOk = consumeOAuthState(params.get('state'))
-    // Le jeton ne doit pas rester dans l'URL (historique, partage de lien).
+    // Le code ne doit pas rester dans l'URL (historique, partage de lien).
     window.history.replaceState(null, '', window.location.pathname)
 
     if (errorDescription) {
-      setError(decodeURIComponent(errorDescription.replace(/\+/g, ' ')))
+      setError(errorDescription)
       return
     }
-    if (!accessToken) {
-      setError('Aucun jeton Facebook reçu.')
+    if (!code) {
+      setError('Aucune réponse de Facebook reçue.')
       return
     }
     if (!stateOk) {
@@ -36,7 +38,7 @@ export default function FacebookCallback() {
       return
     }
 
-    loginWithFacebook(accessToken)
+    loginWithFacebook(code)
       .then(() => navigate(consumeReturnPath() ?? '/dashboard', { replace: true }))
       .catch((err) => setError(err.message || 'Connexion Facebook impossible.'))
   }, [navigate])
