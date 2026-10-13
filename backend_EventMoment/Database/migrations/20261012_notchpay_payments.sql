@@ -1,5 +1,6 @@
 -- Migre les paiements Fapshi existants ou crée le stockage Notch Pay si Fapshi
 -- n'a jamais été activé. Les données historiques sont conservées.
+-- À exécuter avec le compte postgres. Rejouable sans risque.
 BEGIN;
 SET LOCAL app.rls_bypass = 'on';
 
@@ -76,5 +77,9 @@ DROP POLICY IF EXISTS tbf_tenant ON public.notchpay_payments;
 CREATE POLICY tbf_tenant ON public.notchpay_payments FOR ALL TO app_admin
     USING (organizer_id = public.app_current_organizer())
     WITH CHECK (organizer_id = public.app_current_organizer());
+
+-- Le serveur (app_admin) doit pouvoir lire et écrire les paiements : sans ce droit,
+-- toute création de paiement échoue (« droit refusé pour la table notchpay_payments »).
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.notchpay_payments TO app_admin;
 
 COMMIT;

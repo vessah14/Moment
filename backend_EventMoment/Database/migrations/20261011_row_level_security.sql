@@ -12,7 +12,7 @@
 -- À exécuter avec le super-utilisateur postgres (propriétaire de plusieurs tables) :
 --   psql -U postgres -d eventsaas -f 20261011_row_level_security.sql
 -- Le backend contenant RlsSessionInterceptor doit être déployé AVANT ce script, et les
--- migrations précédentes (dont 20261010_fapshi_payments.sql) déjà appliquées.
+-- migrations précédentes (dont 20261012_notchpay_payments.sql) déjà appliquées.
 -- Idempotent : peut être relancé sans risque.
 --
 -- Pour consulter les données à la main avec app_admin après ce script :
@@ -59,7 +59,7 @@ DECLARE
     -- Tables rattachées directement à un organisateur.
     organizer_tables text[] := ARRAY[
         'events', 'external_logins', 'organizer_email_verifications', 'organizer_notification_settings',
-        'organizer_subscriptions', 'plan_upgrade_requests', 'platform_reviews', 'fapshi_payments'];
+        'organizer_subscriptions', 'plan_upgrade_requests', 'platform_reviews', 'notchpay_payments'];
     -- Tables rattachées à un événement.
     event_tables text[] := ARRAY[
         'conference_sessions', 'event_blocks', 'event_locations', 'event_reminders', 'event_stats_daily',
@@ -75,7 +75,9 @@ BEGIN
     event_tables := ARRAY(SELECT x FROM unnest(event_tables) x WHERE to_regclass('public.' || x) IS NOT NULL);
 
     all_tables := organizer_tables || event_tables || shared_tables
-        || ARRAY['organizers', 'event_moderations', 'admin_accounts'];
+        || ARRAY['organizers', 'event_moderations', 'admin_accounts']
+        -- Double authentification admin : accès global uniquement (si la table existe).
+        || ARRAY(SELECT x FROM unnest(ARRAY['admin_mfa']) x WHERE to_regclass('public.' || x) IS NOT NULL);
 
     FOREACH t IN ARRAY all_tables LOOP
         IF NOT pg_temp.can_alter(t) THEN

@@ -24,6 +24,7 @@ namespace backend_EventMoment.Data
         // Comptes
         public DbSet<Utilisateur> Organizers { get; set; }
         public DbSet<AdminAccount> AdminAccounts { get; set; }
+        public DbSet<AdminMfa> AdminMfas { get; set; }
 
         // Catalogue / configuration
         public DbSet<Event_categorie> EventCategories { get; set; }

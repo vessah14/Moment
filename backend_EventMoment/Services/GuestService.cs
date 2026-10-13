@@ -29,6 +29,7 @@ namespace backend_EventMoment.Services
                 throw new KeyNotFoundException("Groupe introuvable pour cet événement.");
 
             await EnsureEmailNotUsedAsync(eventId, dto.Email, exceptGuestId: null);
+            await using var transaction = await OrganizerLock.BeginAsync(_context, organizerId);
             // Nombre d'invités par événement limité par l'offre (Free : 50, Premium : 500…).
             if (_plans != null)
                 await _plans.EnsureCanAddGuestAsync(organizerId, eventId);
@@ -51,6 +52,8 @@ namespace backend_EventMoment.Services
             if (dto.SendInvitation && !string.IsNullOrWhiteSpace(entity.Email))
                 _context.GuestInvitations.Add(new GuestInvitation { GuestId = entity.Id, EventId = eventId, QueuedAt = DateTimeOffset.UtcNow });
             await _context.SaveChangesAsync();
+            if (transaction != null)
+                await transaction.CommitAsync();
             _invitations?.Notify();
             return await WithInvitationAsync(Map(entity, null));
         }

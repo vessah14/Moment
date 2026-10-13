@@ -41,6 +41,7 @@ namespace backend_EventMoment.Controllers
 
         [HttpGet("api/public/events/{slug}/site")]
         [AllowAnonymous]
+        [EnableRateLimiting("public-browse")]
         public async Task<IActionResult> GetPublicSite(string slug)
         {
             var result = await _service.GetPublicSiteAsync(slug);

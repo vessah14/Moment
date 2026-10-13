@@ -11,8 +11,12 @@ using Microsoft.Extensions.Configuration;
 
 namespace backend_EventMoment.Tests;
 
+// Réponses conformes à la documentation Notch Pay : « reference » est la référence Notch Pay
+// (trx.…), « trxref » celle que nous avons envoyée à l'initialisation.
 public class NotchPayPaymentServiceTests
 {
+    private static readonly Guid PlanId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+
     [Fact]
     public async Task CreateCheckoutAsync_UsesPlanPriceAndReturnsHostedLink()
     {
@@ -22,55 +26,66 @@ public class NotchPayPaymentServiceTests
         var handler = new StubHandler(async request =>
         {
             using var body = JsonDocument.Parse(await request.Content!.ReadAsStringAsync());
-            var reference = body.RootElement.GetProperty("reference").GetString();
+            var trxref = body.RootElement.GetProperty("reference").GetString();
             return JsonResponse(JsonSerializer.Serialize(new
             {
-                transaction = new { id = "pay-1", reference, amount = 9900, currency = "XAF", status = "pending" },
-                authorization_url = "https://pay.notchpay.co/pay/1",
+                status = "Accepted",
+                transaction = new { reference = "trx.test_1", trxref, amount = 9900, currency = "XAF", status = "pending" },
+                authorization_url = "https://pay.notchpay.co/pay/trx.test_1",
             }));
         });
         var service = CreateService(context, handler);
 
-        var checkout = await service.CreateCheckoutAsync(organizerId, Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
+        var checkout = await service.CreateCheckoutAsync(organizerId, PlanId);
 
-        Assert.Equal("https://pay.notchpay.co/pay/1", checkout.CheckoutUrl);
-        using var requestBody = JsonDocument.Parse(handler.Requests.Single().Body);
+        Assert.Equal("https://pay.notchpay.co/pay/trx.test_1", checkout.CheckoutUrl);
+        var request = handler.Requests.Single();
+        using var requestBody = JsonDocument.Parse(request.Body);
         Assert.Equal(9900, requestBody.RootElement.GetProperty("amount").GetInt32());
         Assert.Equal("XAF", requestBody.RootElement.GetProperty("currency").GetString());
-        Assert.Equal("test_api_key", handler.Requests.Single().Authorization);
-        Assert.Equal("https://api.notchpay.co/payments", handler.Requests.Single().Uri);
+        Assert.Equal("buyer@example.com", requestBody.RootElement.GetProperty("customer").GetProperty("email").GetString());
+        Assert.StartsWith("https://moment.example/dashboard/parametres?tab=billing&paymentId=",
+            requestBody.RootElement.GetProperty("callback").GetString());
+        Assert.Equal("test_api_key", request.Authorization);
+        Assert.Equal("https://api.notchpay.co/payments", request.Uri);
 
         var saved = await context.NotchPayPayments.SingleAsync();
         Assert.Equal(organizerId, saved.OrganizerId);
-        Assert.Equal("pay-1", saved.TransactionId);
+        Assert.Equal("trx.test_1", saved.TransactionId);
         Assert.Equal("PENDING", saved.Status);
     }
 
     [Fact]
-    public async Task HandleWebhookAsync_ActivatesPlanOnlyOnceAfterNotchPayConfirmsAmount()
+    public async Task CreateCheckoutAsync_RejectsATransactionForAnotherReference()
     {
         var organizerId = Guid.NewGuid();
         await using var context = CreateContext(organizerId);
         SeedPlanAndOrganizer(context, organizerId);
-        context.NotchPayPayments.Add(new NotchPayPayment
-        {
-            Id = Guid.NewGuid(),
-            OrganizerId = organizerId,
-            PlanId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
-            ExternalId = "external-1",
-            TransactionId = "trans-1",
-            Amount = 9900,
-            Status = "PENDING",
-        });
-        await context.SaveChangesAsync();
-        var handler = new StubHandler(_ => Task.FromResult(JsonResponse("""{"transaction":{"id":"pay-1","reference":"external-1","status":"complete","amount":9900,"currency":"XAF"}}""")));
+        var handler = new StubHandler(_ => Task.FromResult(JsonResponse(
+            """{"transaction":{"reference":"trx.x","trxref":"autre","amount":9900,"currency":"XAF","status":"pending"},"authorization_url":"https://pay.notchpay.co/x"}""")));
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => CreateService(context, handler).CreateCheckoutAsync(organizerId, PlanId));
+        Assert.Equal("FAILED", (await context.NotchPayPayments.SingleAsync()).Status);
+    }
+
+    [Fact]
+    public async Task HandleWebhookAsync_ActivatesPlanOnlyOnce_AfterVerifyingWithNotchPayReference()
+    {
+        var organizerId = Guid.NewGuid();
+        await using var context = CreateContext(organizerId);
+        SeedPlanAndOrganizer(context, organizerId);
+        SeedPendingPayment(context, organizerId);
+        var handler = new StubHandler(_ => Task.FromResult(JsonResponse(
+            """{"transaction":{"reference":"trx.test_1","trxref":"external-1","status":"complete","amount":9900,"currency":"XAF"}}""")));
         var service = CreateService(context, handler);
 
-        Assert.True(await service.HandleWebhookAsync("external-1"));
-        Assert.True(await service.HandleWebhookAsync("external-1"));
+        Assert.True(await service.HandleWebhookAsync("trx.test_1", "external-1"));
+        Assert.True(await service.HandleWebhookAsync("trx.test_1"));
 
         Assert.Single(await context.OrganizerSubscriptions.ToListAsync());
         Assert.Equal("SUCCESSFUL", (await context.NotchPayPayments.SingleAsync()).Status);
+        // Vérification auprès de Notch Pay avec SA référence (exigé par la documentation).
+        Assert.All(handler.Requests, r => Assert.Equal("https://api.notchpay.co/payments/trx.test_1", r.Uri));
     }
 
     [Fact]
@@ -79,22 +94,45 @@ public class NotchPayPaymentServiceTests
         var organizerId = Guid.NewGuid();
         await using var context = CreateContext(organizerId);
         SeedPlanAndOrganizer(context, organizerId);
+        SeedPendingPayment(context, organizerId);
+        var handler = new StubHandler(_ => Task.FromResult(JsonResponse(
+            """{"transaction":{"reference":"trx.test_1","trxref":"external-1","status":"complete","amount":100,"currency":"XAF"}}""")));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => CreateService(context, handler).HandleWebhookAsync("trx.test_1"));
+        Assert.Empty(await context.OrganizerSubscriptions.ToListAsync());
+    }
+
+    [Fact]
+    public async Task PendingOrUnknownStatus_DoesNotActivate_AndUnknownPaymentIsIgnored()
+    {
+        var organizerId = Guid.NewGuid();
+        await using var context = CreateContext(organizerId);
+        SeedPlanAndOrganizer(context, organizerId);
+        SeedPendingPayment(context, organizerId);
+        var handler = new StubHandler(_ => Task.FromResult(JsonResponse(
+            """{"transaction":{"reference":"trx.test_1","trxref":"external-1","status":"processing","amount":"9900.00","currency":"XAF"}}""")));
+        var service = CreateService(context, handler);
+
+        Assert.True(await service.HandleWebhookAsync("trx.test_1"));
+        Assert.False(await service.HandleWebhookAsync("trx.inconnue"));
+
+        Assert.Empty(await context.OrganizerSubscriptions.ToListAsync());
+        Assert.Equal("PENDING", (await context.NotchPayPayments.SingleAsync()).Status);
+    }
+
+    private static void SeedPendingPayment(AdminDbContext context, Guid organizerId)
+    {
         context.NotchPayPayments.Add(new NotchPayPayment
         {
             Id = Guid.NewGuid(),
             OrganizerId = organizerId,
-            PlanId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+            PlanId = PlanId,
             ExternalId = "external-1",
-            TransactionId = "trans-1",
+            TransactionId = "trx.test_1",
             Amount = 9900,
             Status = "PENDING",
         });
-        await context.SaveChangesAsync();
-        var handler = new StubHandler(_ => Task.FromResult(JsonResponse("""{"transaction":{"id":"pay-1","reference":"external-1","status":"complete","amount":100,"currency":"XAF"}}""")));
-        var service = CreateService(context, handler);
-
-        await Assert.ThrowsAsync<InvalidOperationException>(() => service.HandleWebhookAsync("external-1"));
-        Assert.Empty(await context.OrganizerSubscriptions.ToListAsync());
+        context.SaveChanges();
     }
 
     private static AdminDbContext CreateContext(Guid organizerId)
@@ -118,7 +156,7 @@ public class NotchPayPaymentServiceTests
     {
         context.SubscriptionPlans.Add(new SubscriptionPlan
         {
-            Id = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+            Id = PlanId,
             Code = "premium",
             Label = "Premium",
             PriceCents = 990000,

@@ -12,10 +12,13 @@ namespace backend_EventMoment.Services
         private readonly AdminDbContext _context;
         private readonly IEmailSender? _emailSender;
         private readonly IConfiguration? _config;
+        private readonly IPlanService? _plans;
 
-        public TicketingService(AdminDbContext context, IEmailSender? emailSender = null, IConfiguration? config = null)
+        public TicketingService(AdminDbContext context, IEmailSender? emailSender = null, IConfiguration? config = null,
+            IPlanService? plans = null)
         {
             _context = context;
+            _plans = plans;
             _emailSender = emailSender;
             _config = config;
         }
@@ -104,6 +107,9 @@ namespace backend_EventMoment.Services
                 .FirstOrDefaultAsync(g => g.EventId == ticketType.EventId && g.Email != null && g.Email.ToLower() == buyerEmail.ToLower());
             if (guest == null)
             {
+                // Un acheteur devient un invité : la limite d'invités de l'offre s'applique.
+                if (_plans != null)
+                    await _plans.EnsureCanAddGuestAsync(organizerId, ticketType.EventId);
                 guest = new Guest
                 {
                     Id = Guid.NewGuid(),

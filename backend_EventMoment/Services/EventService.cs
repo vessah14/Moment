@@ -43,6 +43,11 @@ namespace backend_EventMoment.Services
         public async Task<EventDto> CreateAsync(CreateEventDto dto, Guid organizerId)
         {
             EnsureValidCover(dto.CoverImageUrl);
+            // Adresse calculée avant la transaction : sa vérification lit les événements de
+            // toute la plateforme (accès global ponctuel, impossible sur une connexion déjà ouverte).
+            var slug = await SlugGenerator.GenerateUniqueAsync(dto.Name, SlugTakenAnywhereAsync);
+
+            await using var transaction = await OrganizerLock.BeginAsync(_context, organizerId);
             // Nombre d'événements limité par l'offre (Free : 1, Premium : 5…).
             if (_plans != null)
                 await _plans.EnsureCanCreateEventAsync(organizerId);
@@ -53,8 +58,7 @@ namespace backend_EventMoment.Services
                 OrganizerId = organizerId,
                 CategoryId = dto.CategoryId,
                 Name = dto.Name,
-                Slug = await SlugGenerator.GenerateUniqueAsync(dto.Name,
-                    SlugTakenAnywhereAsync),
+                Slug = slug,
                 Status = EventStatus.Brouillon,
                 EventDate = dto.EventDate,
                 StartTime = dto.StartTime,
@@ -68,6 +72,8 @@ namespace backend_EventMoment.Services
 
             _context.Events.Add(entity);
             await _context.SaveChangesAsync();
+            if (transaction != null)
+                await transaction.CommitAsync();
             return Map(entity);
         }
 

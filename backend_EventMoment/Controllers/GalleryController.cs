@@ -54,6 +54,8 @@ namespace backend_EventMoment.Controllers
             // Propriété de l'événement vérifiée avant tout envoi vers le stockage.
             await _service.GetAllAsync(eventId, organizerId);
 
+            // Position GPS, appareil, date… retirés avant l'enregistrement.
+            file = await ImageMetadataStripper.StripAsync(file, extension);
             var url = await _uploads.SaveImageAsync(file, UploadFolder.Gallery, eventId, extension);
             try
             {

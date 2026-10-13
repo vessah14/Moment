@@ -7,6 +7,7 @@ using backend_EventMoment.Models;
 using backend_EventMoment.Services;
 using backend_EventMoment.Services.Email;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
@@ -55,6 +56,11 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy("public-track", context => RateLimitPartition.GetFixedWindowLimiter(
         context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = Limit("PublicTrack", 30), Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+    // Consultation publique (sites d'événements, invitations, cadeaux, sitemap) : large pour
+    // un visiteur, mais freine l'aspiration massive des données et la surcharge.
+    options.AddPolicy("public-browse", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = Limit("PublicBrowse", 120), Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
     // Lectures publiques sensibles (ex. « Trouver ma place ») : freine l'énumération de noms.
     options.AddPolicy("public-read", context => RateLimitPartition.GetFixedWindowLimiter(
         context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
@@ -154,6 +160,17 @@ builder.Services.AddDbContext<SignupDbContext>(options =>
 
 // -----------------------------------------------------------------
 
+// Blocage des comptes après trop d'échecs de connexion et sessions révoquées (déconnexion).
+builder.Services.AddMemoryCache();
+// Clés de chiffrement des secrets de double authentification admin : conservées sur disque
+// (hors base de données) pour survivre aux redémarrages. Sans elles, les admins devraient
+// reconfigurer leur application. DataProtection:KeysPath pour choisir le dossier.
+builder.Services.AddDataProtection()
+    .SetApplicationName("tbf-moment")
+    .PersistKeysToFileSystem(new DirectoryInfo(
+        builder.Configuration["DataProtection:KeysPath"] ?? Path.Combine(builder.Environment.ContentRootPath, "keys")));
+builder.Services.AddSingleton<LoginThrottle>();
+builder.Services.AddSingleton<SessionRevocations>();
 builder.Services.AddScoped<IAdminAccountService, AdminAccountService>();
 builder.Services.AddScoped<IAdminPlatformService, AdminPlatformService>();
 builder.Services.AddScoped<IPublicSiteService, PublicSiteService>();
@@ -243,6 +260,14 @@ builder.Services.AddAuthentication(options =>
             if (!Guid.TryParse(userId, out var id) || !long.TryParse(sessionVersion, out var version))
             {
                 context.Fail("Jeton invalide.");
+                return;
+            }
+
+            // Session fermée par « Se déconnecter ».
+            var revocations = context.HttpContext.RequestServices.GetRequiredService<SessionRevocations>();
+            if (revocations.IsRevoked(context.Principal?.FindFirst("jti")?.Value))
+            {
+                context.Fail("Session fermée.");
                 return;
             }
 

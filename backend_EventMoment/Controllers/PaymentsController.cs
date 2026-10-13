@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -41,6 +42,7 @@ public class PaymentsController : ControllerBase
 
     [HttpPost("notchpay/webhook")]
     [AllowAnonymous]
+    [EnableRateLimiting("public-browse")]
     public async Task<IActionResult> Webhook()
     {
         var secret = _configuration["NotchPay:WebhookSecret"];
@@ -61,7 +63,7 @@ public class PaymentsController : ControllerBase
         if (dto == null || !dto.Type.StartsWith("payment.", StringComparison.Ordinal))
             return BadRequest();
 
-        return await _payments.HandleWebhookAsync(dto.Data.Reference) ? Ok() : NotFound();
+        return await _payments.HandleWebhookAsync(dto.Data.Reference, dto.Data.Trxref) ? Ok() : NotFound();
     }
 
     private async Task<string> ReadRawBodyAsync()

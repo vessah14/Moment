@@ -108,6 +108,7 @@ namespace backend_EventMoment.Controllers
 
         [HttpGet("~/api/public/invitations/{guestId:guid}")]
         [AllowAnonymous]
+        [EnableRateLimiting("public-browse")]
         public async Task<IActionResult> GetPublicInvitation(Guid guestId)
         {
             var result = await _service.GetPublicInvitationAsync(guestId);

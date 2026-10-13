@@ -71,6 +71,27 @@ namespace backend_EventMoment.Services
             return GenerateToken(claims, TimeSpan.FromHours(48));
         }
 
+        // Étape intermédiaire de la connexion admin : mot de passe vérifié, code de double
+        // authentification attendu. Type dédié, refusé par le middleware d'authentification
+        // (il ne donne accès à rien d'autre qu'à la saisie du code), 5 minutes.
+        public (string Token, DateTimeOffset Expiration) GenerateAdminMfaToken(AdminAccount admin) =>
+            GenerateToken(new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, admin.Id.ToString()),
+                new Claim("type", "admin_mfa"),
+                new Claim("session_version", admin.UpdatedAt.ToUnixTimeMilliseconds().ToString())
+            }, TimeSpan.FromMinutes(5));
+
+        public bool TryValidateAdminMfaToken(string token, out Guid adminId, out long sessionVersion)
+        {
+            adminId = Guid.Empty;
+            sessionVersion = 0;
+            var principal = ValidateTypedToken(token, "admin_mfa");
+            return principal != null
+                && Guid.TryParse(principal.FindFirst(ClaimTypes.NameIdentifier)?.Value, out adminId)
+                && long.TryParse(principal.FindFirst("session_version")?.Value, out sessionVersion);
+        }
+
         public bool TryValidateEmailVerificationToken(string token, out Guid organizerId, out string email)
         {
             organizerId = Guid.Empty;
@@ -185,10 +206,11 @@ namespace backend_EventMoment.Services
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
             var expiration = DateTimeOffset.UtcNow.Add(lifetime ?? TimeSpan.FromMinutes(double.Parse(_config["Jwt:ExpiresInMinutes"]!)));
 
+            // Identifiant unique de la session : permet de la révoquer à la déconnexion.
             var token = new JwtSecurityToken(
                 issuer: _config["Jwt:Issuer"],
                 audience: _config["Jwt:Audience"],
-                claims: claims,
+                claims: claims.Append(new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N"))),
                 expires: expiration.UtcDateTime,
                 signingCredentials: creds
             );

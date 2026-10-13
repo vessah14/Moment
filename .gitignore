@@ -32,3 +32,6 @@ node_modules/
 Thumbs.db
 .claude/scheduled_tasks.lock
 .claude/settings.local.json
+
+# Clés de chiffrement locales (Data Protection) : jamais dans git
+backend_EventMoment/keys/

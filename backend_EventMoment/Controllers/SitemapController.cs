@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.RateLimiting;
 using System.Text;
 using System.Xml;
 using Microsoft.AspNetCore.Authorization;
@@ -27,6 +28,7 @@ namespace backend_EventMoment.Controllers
         [HttpGet("sitemap-events.xml")]
         [AllowAnonymous]
         [ResponseCache(Duration = 3600)]
+        [EnableRateLimiting("public-browse")]
         public async Task<IActionResult> Events()
         {
             var baseUrl = (_config["Frontend:BaseUrl"] ?? "http://localhost:5173").TrimEnd('/');

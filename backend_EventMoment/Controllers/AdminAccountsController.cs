@@ -74,6 +74,23 @@ namespace backend_EventMoment.Controllers
             return Ok(result);
         }
 
+        // Seconde étape de connexion : code de l'application d'authentification.
+        [HttpPost("login/mfa")]
+        [AllowAnonymous]
+        [EnableRateLimiting("login")]
+        public async Task<IActionResult> LoginMfa([FromBody] AdminMfaLoginDto dto) =>
+            Ok(await _service.CompleteMfaLoginAsync(dto));
+
+        // Téléphone perdu : un autre super-administrateur réinitialise la double authentification.
+        [HttpDelete("{id}/mfa")]
+        [Authorize(Policy = "SuperadminOnly")]
+        public async Task<IActionResult> ResetMfa(Guid id)
+        {
+            if (!Guid.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var currentAdminId))
+                return Unauthorized();
+            return await _service.ResetMfaAsync(id, currentAdminId) ? NoContent() : NotFound();
+        }
+
         [HttpPatch("{id}/deactivate")]
         [Authorize(Policy = "SuperadminOnly")]
         public async Task<IActionResult> Deactivate(Guid id)

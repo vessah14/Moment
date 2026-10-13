@@ -17,6 +17,7 @@ namespace backend_EventMoment.Services
         private readonly IConfiguration _config;
         private readonly IFacebookAuthService _facebookAuthService;
         private readonly IGoogleAuthService? _googleAuthService;
+        private readonly LoginThrottle? _loginThrottle;
 
         public UserService(
             AdminDbContext adminContext,
@@ -25,8 +26,10 @@ namespace backend_EventMoment.Services
             IEmailSender emailSender,
             IConfiguration config,
             IFacebookAuthService facebookAuthService,
-            IGoogleAuthService? googleAuthService = null)
+            IGoogleAuthService? googleAuthService = null,
+            LoginThrottle? loginThrottle = null)
         {
+            _loginThrottle = loginThrottle;
             _adminContext = adminContext;
             _signupContext = signupContext;
             _jwtService = jwtService;
@@ -204,6 +207,9 @@ namespace backend_EventMoment.Services
 
         public async Task<LoginResponseDto> LoginAsync(LoginDto dto)
         {
+            // Compte verrouillé après trop d'échecs (même avec le bon mot de passe).
+            _loginThrottle?.EnsureNotLocked("organizer", dto.Email);
+
             var user = await _adminContext.Organizers
                 .FirstOrDefaultAsync(u => u.Email == dto.Email);
 
@@ -212,7 +218,11 @@ namespace backend_EventMoment.Services
             var passwordOk = BCrypt.Net.BCrypt.Verify(dto.Password, user?.PasswordHash ?? DummyPasswordHash);
             // Même message que l'e-mail soit inconnu ou le mot de passe faux.
             if (user == null || !passwordOk)
+            {
+                _loginThrottle?.RecordFailure("organizer", dto.Email);
                 throw new InvalidOperationException(InvalidCredentialsMessage);
+            }
+            _loginThrottle?.Reset("organizer", dto.Email);
 
             // Ces deux cas ne sont signalés qu'avec le bon mot de passe : ils ne révèlent rien
             // à quelqu'un qui teste des adresses.
@@ -278,7 +288,15 @@ namespace backend_EventMoment.Services
 
         public async Task<LoginResponseDto> LoginWithFacebookAsync(FacebookAuthDto dto)
         {
-            var (subject, email, name) = await _facebookAuthService.ValidateAccessTokenAsync(dto.AccessToken);
+            // Flux avec code : le jeton est obtenu par le serveur (clé secrète de l'application)
+            // et ne transite jamais par le navigateur.
+            var accessToken = !string.IsNullOrWhiteSpace(dto.Code)
+                ? await _facebookAuthService.ExchangeCodeAsync(dto.Code)
+                : dto.AccessToken;
+            if (string.IsNullOrWhiteSpace(accessToken))
+                throw new InvalidOperationException("Jeton Facebook manquant.");
+
+            var (subject, email, name) = await _facebookAuthService.ValidateAccessTokenAsync(accessToken);
 
             // Facebook ne renvoie le champ "email" que si l'utilisateur a accordé la
             // permission "email" ET possède une adresse vérifiée sur son compte — dans ce

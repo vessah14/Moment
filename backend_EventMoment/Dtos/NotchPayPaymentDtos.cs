@@ -35,6 +35,11 @@ public class NotchPayWebhookDto
 
 public class NotchPayWebhookData
 {
+    // Référence Notch Pay (« trx.… »).
     [JsonPropertyName("reference")]
     public string Reference { get; set; } = string.Empty;
+
+    // Notre référence, transmise à l'initialisation du paiement.
+    [JsonPropertyName("trxref")]
+    public string? Trxref { get; set; }
 }

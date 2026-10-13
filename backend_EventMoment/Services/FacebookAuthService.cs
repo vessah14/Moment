@@ -64,6 +64,43 @@ namespace backend_EventMoment.Services
             return (profile.Id, profile.Email, profile.Name);
         }
 
+        public async Task<string> ExchangeCodeAsync(string code)
+        {
+            var appId = _config["Authentication:Facebook:AppId"];
+            var appSecret = _config["Authentication:Facebook:AppSecret"];
+            if (string.IsNullOrWhiteSpace(appId) || string.IsNullOrWhiteSpace(appSecret))
+                throw new InvalidOperationException("La connexion Facebook n'est pas configurée sur ce serveur.");
+
+            // Adresse de retour fixée par le serveur (et non fournie par le navigateur) : elle
+            // doit être identique à celle de la demande et déclarée dans l'application Facebook.
+            var redirectUri = $"{(_config["Frontend:BaseUrl"] ?? "http://localhost:5173").TrimEnd('/')}/auth/facebook/callback";
+            TokenResponse? token;
+            try
+            {
+                var url = "https://graph.facebook.com/v23.0/oauth/access_token"
+                    + $"?client_id={Uri.EscapeDataString(appId)}"
+                    + $"&redirect_uri={Uri.EscapeDataString(redirectUri)}"
+                    + $"&client_secret={Uri.EscapeDataString(appSecret)}"
+                    + $"&code={Uri.EscapeDataString(code)}";
+                using var response = await _httpClient.GetAsync(url);
+                token = response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync<TokenResponse>() : null;
+            }
+            catch
+            {
+                token = null;
+            }
+
+            if (string.IsNullOrWhiteSpace(token?.AccessToken))
+                throw new InvalidOperationException("Code Facebook invalide ou expiré. Recommencez la connexion.");
+            return token.AccessToken;
+        }
+
+        private class TokenResponse
+        {
+            [JsonPropertyName("access_token")]
+            public string? AccessToken { get; set; }
+        }
+
         private class DebugTokenResponse
         {
             [JsonPropertyName("data")]

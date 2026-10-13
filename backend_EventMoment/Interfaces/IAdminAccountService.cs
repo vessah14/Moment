@@ -9,6 +9,9 @@ namespace backend_EventMoment.Interfaces
         Task<AdminAccountDto?> GetByIdAsync(Guid id);
         Task<List<AdminAccountDto>> GetAllAsync();
         Task<bool> DeactivateAsync(Guid id, Guid currentAdminId);
-        Task<LoginResponseDto> LoginAsync(LoginDto dto);
+        // Mot de passe vérifié : renvoie l'étape de double authentification (jamais la session).
+        Task<AdminLoginResponseDto> LoginAsync(LoginDto dto);
+        Task<LoginResponseDto> CompleteMfaLoginAsync(AdminMfaLoginDto dto);
+        Task<bool> ResetMfaAsync(Guid adminId, Guid currentAdminId);
     }
 }

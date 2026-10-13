@@ -18,6 +18,27 @@ namespace backend_EventMoment.Dtos.User
         public object Utilisateur { get; set; } = null!;
     }
 
+    // Connexion admin : après le mot de passe, la double authentification est obligatoire.
+    // Token vide tant que le code n'a pas été validé.
+    public class AdminLoginResponseDto : LoginResponseDto
+    {
+        public bool MfaRequired { get; set; }
+        // Premier passage : l'administrateur doit d'abord enregistrer l'application.
+        public bool MfaSetupRequired { get; set; }
+        public string? MfaToken { get; set; }
+        public string? OtpAuthUri { get; set; }
+        public string? MfaSecret { get; set; }
+    }
+
+    public class AdminMfaLoginDto
+    {
+        [Required, MaxLength(2048)]
+        public string MfaToken { get; set; } = string.Empty;
+
+        [Required, MaxLength(12)]
+        public string Code { get; set; } = string.Empty;
+    }
+
     public class SignupDto
     {
         [Required, EmailAddress]
@@ -83,9 +104,14 @@ namespace backend_EventMoment.Dtos.User
         public string? AccessToken { get; set; }
     }
 
+    // Connexion Facebook : code à usage unique renvoyé par Facebook (flux recommandé, le
+    // jeton n'apparaît jamais dans le navigateur), ou jeton d'accès (ancien flux).
     public class FacebookAuthDto
     {
-        [Required]
-        public string AccessToken { get; set; } = string.Empty;
+        [MaxLength(4096)]
+        public string? AccessToken { get; set; }
+
+        [MaxLength(4096)]
+        public string? Code { get; set; }
     }
 }

@@ -6,5 +6,6 @@ public interface INotchPayPaymentService
 {
     Task<NotchPayCheckoutDto> CreateCheckoutAsync(Guid organizerId, Guid planId);
     Task<NotchPayPaymentStatusDto> GetStatusAsync(Guid paymentId, Guid organizerId);
-    Task<bool> HandleWebhookAsync(string reference);
+    // notchReference : référence Notch Pay (« trx.… ») ; merchantReference : la nôtre (trxref).
+    Task<bool> HandleWebhookAsync(string notchReference, string? merchantReference = null);
 }

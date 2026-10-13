@@ -51,6 +51,7 @@ namespace backend_EventMoment.Controllers
 
         [HttpGet("~/api/public/events/{slug}")]
         [AllowAnonymous]
+        [EnableRateLimiting("public-browse")]
         public async Task<IActionResult> GetPublicEvent(string slug)
         {
             var result = await _service.GetPublicEventAsync(slug);
@@ -59,6 +60,7 @@ namespace backend_EventMoment.Controllers
 
         [HttpGet("~/api/public/events/{slug}/gifts")]
         [AllowAnonymous]
+        [EnableRateLimiting("public-browse")]
         public async Task<IActionResult> GetPublicGifts(string slug)
         {
             var result = await _service.GetPublicGiftsAsync(slug);
