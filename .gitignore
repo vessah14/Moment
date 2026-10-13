@@ -1,24 +1,28 @@
 # --- .NET : sorties de compilation (régénérées à chaque build)
 bin/
 obj/
-_build_verify/
-_obj_verify/
 TestResults/
 *.user
 *.suo
 .vs/
+
+# --- Node : dépendances et builds (frontend/, admin/)
+node_modules/
+dist/
+dist-ssr/
+*.local
 
 # --- Journaux
 *.log
 
 # --- Fichiers envoyés par les utilisateurs en local (le serveur recrée le dossier ;
 #     en production les images vont sur Cloudinary)
-backend_EventMoment/wwwroot/uploads/
+backend/src/backend_EventMoment/wwwroot/uploads/
 
-# --- Node (scripts utilitaires à la racine)
-node_modules/
+# --- Clés de chiffrement locales (Data Protection) : jamais dans git
+backend/src/backend_EventMoment/keys/
 
-# --- Secrets : jamais dans git (utiliser dotnet user-secrets / variables d'environnement)
+# --- Secrets : jamais dans git (dotnet user-secrets / variables d'environnement)
 .env
 .env.local
 *.pfx
@@ -32,6 +36,3 @@ node_modules/
 Thumbs.db
 .claude/scheduled_tasks.lock
 .claude/settings.local.json
-
-# Clés de chiffrement locales (Data Protection) : jamais dans git
-backend_EventMoment/keys/

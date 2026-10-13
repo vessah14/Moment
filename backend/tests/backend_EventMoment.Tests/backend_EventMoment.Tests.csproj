@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\backend_EventMoment\backend_EventMoment.csproj" />
+    <ProjectReference Include="..\..\src\backend_EventMoment\backend_EventMoment.csproj" />
   </ItemGroup>
 
 </Project>

@@ -17,11 +17,5 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Remove="hash-tool/**/*.cs" />
-    <Content Remove="hash-tool/**" />
-    <EmbeddedResource Remove="hash-tool/**" />
-    <None Remove="hash-tool/**" />
-  </ItemGroup>
 
 </Project>

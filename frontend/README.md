@@ -37,7 +37,7 @@ L'API se lance séparément depuis `backend_EventMoment` avec le profil `http`
 (`http://localhost:5146`). Elle requiert PostgreSQL et les paramètres locaux
 `Jwt:Key` et `ConnectionStrings:AdminConnection`, `ClientConnection` et
 `SignupConnection` dans .NET User Secrets ou dans l'environnement. Pour lancer
-la console administrateur, démarrez aussi `admin-frontend` (`npm install`, puis
+la console administrateur, démarrez aussi la console (dossier `admin/`) (`npm install`, puis
 `npm run dev`, port 5174). Les deux frontends utilisent `VITE_API_URL` ; sa
 valeur locale par défaut est `http://localhost:5146/api`.
 
@@ -144,7 +144,7 @@ pied de page. Les blocs sélectionnés en édition ont une vraie barre d'outils
 ### Console Super Admin (`/admin/...`)
 
 Distincte du dashboard organisateur et servie par l'application séparée
-`admin-frontend` (autre sidebar, accent rouge). Les routes sont protégées côté
+`admin/` (autre sidebar, accent rouge). Les routes sont protégées côté
 client pour l'expérience utilisateur et l'API vérifie le JWT et le rôle admin
 sur chaque opération sensible.
 
