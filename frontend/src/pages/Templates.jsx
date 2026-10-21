@@ -8,33 +8,61 @@ import { TEMPLATES } from '../data/templates'
 import { routeSeo } from '../data/seoRoutes'
 import { siteUrl, useSeo } from '../utils/seo'
 
-const TEMPLATE_CATEGORIES = [...new Set(TEMPLATES.map(tpl => tpl.category))]
-const CATEGORIES = [
-  { label: 'Tous', count: TEMPLATES.length },
-  ...TEMPLATE_CATEGORIES.map(label => ({
-    label,
-    count: TEMPLATES.filter(tpl => tpl.category === label).length
-  }))
+const PREVIEWABLE_TEMPLATES = TEMPLATES.filter(tpl => tpl.theme)
+
+const TEMPLATE_CATEGORIES = [
+  {
+    id: 'prive',
+    label: 'Événements privés',
+    categories: [
+      'Mariage',
+      'Anniversaire',
+      'Baptême',
+      'Religieux',
+      'Hommage',
+      'Familial',
+      'Soirée privée',
+      'Personnalisé',
+      'Autre',
+      'Baby shower',
+      'Retrait de deuil'
+    ]
+  },
+  {
+    id: 'ecoles',
+    label: 'Écoles',
+    categories: ['Scolaire', 'Graduation']
+  },
+  {
+    id: 'entreprises',
+    label: 'Entreprises et associations',
+    categories: ['Professionnel', 'Conférence', 'Concert', 'Sport']
+  },
+  {
+    id: 'saisons',
+    label: 'Fêtes et saisons',
+    categories: ['Fêtes']
+  }
 ]
 
 export default function Templates () {
   useSeo(routeSeo('/modeles', siteUrl()))
   const [searchParams] = useSearchParams()
   const initialCategory = searchParams.get('categorie')
-  const [category, setCategory] = useState(
-    CATEGORIES.some(c => c.label === initialCategory) ? initialCategory : 'Tous'
+  const initialGroup = TEMPLATE_CATEGORIES.find(group =>
+    group.id === initialCategory || group.categories.includes(initialCategory)
   )
-  const [priceFilter, setPriceFilter] = useState(null)
+  const [category, setCategory] = useState(initialGroup?.id ?? 'Tous')
   const [query, setQuery] = useState('')
 
   const filtered = useMemo(() => {
-    return TEMPLATES.filter(tpl => {
-      const matchesCategory = category === 'Tous' || tpl.category === category
-      const matchesPrice = !priceFilter || tpl.badge === priceFilter
+    return PREVIEWABLE_TEMPLATES.filter(tpl => {
+      const selectedGroup = TEMPLATE_CATEGORIES.find(group => group.id === category)
+      const matchesCategory = !selectedGroup || selectedGroup.categories.includes(tpl.category)
       const matchesQuery = tpl.name.toLowerCase().includes(query.toLowerCase())
-      return matchesCategory && matchesPrice && matchesQuery
+      return matchesCategory && matchesQuery
     })
-  }, [category, priceFilter, query])
+  }, [category, query])
 
   return (
     <div className='flex min-h-svh flex-col'>
@@ -44,7 +72,7 @@ export default function Templates () {
         <div className='flex flex-wrap items-start justify-between gap-6'>
           <div>
             <h1 className='text-3xl font-bold text-ink'>
-              {TEMPLATES.length} modèles prêts à publier
+              {PREVIEWABLE_TEMPLATES.length} modèles prêts à publier
             </h1>
             <p className='mt-2 text-muted'>
               Dupliquez un modèle, il devient le vôtre dans le Builder.
@@ -63,48 +91,38 @@ export default function Templates () {
           </div>
         </div>
 
-        <div className='mt-8 flex flex-wrap items-center justify-between gap-4'>
-          <div className='flex flex-wrap gap-3'>
-            {CATEGORIES.map(cat => {
-              const isActive = cat.label === category
-              return (
-                <button
-                  key={cat.label}
-                  type='button'
-                  onClick={() => setCategory(cat.label)}
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                    isActive
-                      ? 'bg-[linear-gradient(92deg,_var(--color-brand-indigo),_var(--color-brand-purple))] text-white'
-                      : 'border border-border text-muted hover:border-faint hover:text-ink'
-                  }`}
-                >
-                  {cat.label} · {cat.count}
-                </button>
-              )
-            })}
-          </div>
-
-          <div className='flex gap-3'>
-            {['GRATUIT', 'PREMIUM'].map(price => {
-              const isActive = priceFilter === price
-              return (
-                <button
-                  key={price}
-                  type='button'
-                  onClick={() => setPriceFilter(isActive ? null : price)}
-                  className={`rounded-full px-4 py-2 text-sm font-medium capitalize transition ${
-                    isActive
-                      ? price === 'PREMIUM'
-                        ? 'bg-[color:var(--color-gold)] text-bg'
-                        : 'bg-[linear-gradient(92deg,_var(--color-brand-indigo),_var(--color-brand-purple))] text-white'
-                      : 'border border-border text-muted hover:border-faint hover:text-ink'
-                  }`}
-                >
-                  {price === 'GRATUIT' ? 'Gratuit' : 'Premium'}
-                </button>
-              )
-            })}
-          </div>
+        <div className='mt-8 flex flex-wrap gap-3'>
+          <button
+            type='button'
+            aria-pressed={category === 'Tous'}
+            onClick={() => setCategory('Tous')}
+            className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+              category === 'Tous'
+                ? 'bg-[linear-gradient(92deg,_var(--color-brand-indigo),_var(--color-brand-purple))] text-white'
+                : 'border border-border text-muted hover:border-faint hover:text-ink'
+            }`}
+          >
+            Tous · {PREVIEWABLE_TEMPLATES.length}
+          </button>
+          {TEMPLATE_CATEGORIES.map(group => {
+            const isActive = group.id === category
+            const count = PREVIEWABLE_TEMPLATES.filter(tpl => group.categories.includes(tpl.category)).length
+            return (
+              <button
+                key={group.id}
+                type='button'
+                aria-pressed={isActive}
+                onClick={() => setCategory(isActive ? 'Tous' : group.id)}
+                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                  isActive
+                    ? 'bg-[linear-gradient(92deg,_var(--color-brand-indigo),_var(--color-brand-purple))] text-white'
+                    : 'border border-border text-muted hover:border-faint hover:text-ink'
+                }`}
+              >
+                {group.label} · {count}
+              </button>
+            )
+          })}
         </div>
 
         {filtered.some(tpl => tpl.theme) && (

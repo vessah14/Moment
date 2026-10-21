@@ -589,6 +589,274 @@ const RAW_TEMPLATES = [
     },
     presentation: { heroAlign: "center", heroHeight: "32rem", panelRadius: "1rem" }
   },
+  {
+    name: "Câlin",
+    theme: "douceur",
+    sourceModel: "douceur.html",
+    category: "Baby shower",
+    categoryCode: "baby_shower",
+    badge: "PREMIUM",
+    premium: true,
+    subtitle: "Baby shower et naissance",
+    description: "Rose et bleu pastel pour un baby shower, une révélation du sexe ou la présentation du bébé.",
+    features: [
+      { label: "Ouverture", text: "cadeau qui s’ouvre" },
+      { label: "Fond", text: "bulles, couleurs pastel" },
+      { label: "Modules", text: "liste de naissance, conseils aux parents, réponse" }
+    ],
+    preview: {
+      bg: "#F6F8FF",
+      ink: "#22304A",
+      accent: "#E2668E",
+      accent2: "#5B9BD5",
+      font: "\"Fredoka\", sans-serif",
+      eyebrow: "Baby shower",
+      title: "Linda",
+      date: "23 janv. 2027 · Douala"
+    },
+    blocks: ["Rebours", "Programme", "Localisation", "Dress code", "Galerie", "Cadeaux", "Livre d'or", "RSVP", "Pied de page"],
+    headings: {
+      "Dress code": "Rose ou bleu ?",
+      Cadeaux: "Liste de naissance",
+      "Livre d'or": "Conseils aux futurs parents",
+      RSVP: "Tu viens ?"
+    },
+    presentation: { heroAlign: "center", heroHeight: "32rem", panelRadius: "1.25rem" }
+  },
+  {
+    name: "Souvenir",
+    theme: "souvenir",
+    sourceModel: "souvenir.html",
+    category: "Retrait de deuil",
+    categoryCode: "retrait_deuil",
+    badge: "PREMIUM",
+    premium: true,
+    subtitle: "Retrait de deuil",
+    description: "Pour la levée de deuil : on passe du recueillement à la célébration de la vie.",
+    features: [
+      { label: "Ouverture", text: "rideau qui s’ouvre sur la lumière" },
+      { label: "Fond", text: "lumière dorée, motifs du pagne, balafon" },
+      { label: "Modules", text: "biographie, programme sur 2 jours, contributions, témoignages" }
+    ],
+    preview: {
+      bg: "#17130F",
+      ink: "#F6EFE3",
+      accent: "#C9A050",
+      accent2: "#B5432E",
+      font: "\"Marcellus\", serif",
+      eyebrow: "Retrait de deuil",
+      title: "Emmanuel Tchinda",
+      date: "27 févr. 2027 · Bangangté"
+    },
+    blocks: ["Rebours", "Histoire", "Programme", "Localisation", "Dress code", "Galerie", "Cadeaux", "Livre d'or", "RSVP", "Pied de page"],
+    headings: {
+      Histoire: "Sa vie",
+      "Dress code": "Pagne de la cérémonie",
+      Cadeaux: "Contribuer à la cérémonie",
+      "Livre d'or": "Témoignages",
+      RSVP: "Votre présence"
+    },
+    presentation: { heroAlign: "center", heroHeight: "32rem", panelRadius: "1rem" }
+  },
+  {
+    name: "Étoile",
+    theme: "noel",
+    sourceModel: "noel.html",
+    category: "Fêtes",
+    categoryCode: "fetes_saisons",
+    badge: "PREMIUM",
+    premium: true,
+    subtitle: "Noël · 25 décembre",
+    description: "Pour l’arbre de Noël d’une entreprise ou d’une association, ou un Noël en famille.",
+    features: [
+      { label: "Ouverture", text: "cadeau qui s’ouvre" },
+      { label: "Fond", text: "neige, guirlande lumineuse, clochettes" },
+      { label: "Modules", text: "inscription des enfants, lettres au Père Noël, FAQ" }
+    ],
+    preview: {
+      bg: "#0E1B2E",
+      ink: "#F7F3EA",
+      accent: "#E23B3B",
+      accent2: "#2FA36B",
+      font: "\"Mountains of Christmas\", cursive",
+      eyebrow: "Arbre de Noël",
+      title: "Joyeux Noël",
+      date: "19 déc. 2026 · Douala"
+    },
+    blocks: ["Rebours", "Programme", "Localisation", "Dress code", "Galerie", "FAQ", "Livre d'or", "RSVP", "Pied de page"],
+    headings: {
+      "Dress code": "Rouge, vert ou blanc",
+      "Livre d'or": "Lettres au Père Noël",
+      RSVP: "Inscrivez vos enfants"
+    },
+    presentation: { heroAlign: "center", heroHeight: "32rem", panelRadius: "1.25rem" }
+  },
+  {
+    name: "Cœur",
+    theme: "coeur",
+    sourceModel: "coeur.html",
+    category: "Fêtes",
+    categoryCode: "fetes_saisons",
+    badge: "PREMIUM",
+    premium: true,
+    subtitle: "Saint-Valentin · 14 février",
+    description: "Dîner en amoureux pour un restaurant, un hôtel ou une salle : les couples réservent et paient leur table.",
+    features: [
+      { label: "Ouverture", text: "lettre scellée" },
+      { label: "Fond", text: "pétales de rose, musique lounge" },
+      { label: "Modules", text: "billetterie par couple, FAQ" }
+    ],
+    preview: {
+      bg: "#1A0B14",
+      ink: "#FBEFF3",
+      accent: "#E0335A",
+      accent2: "#F7A8B8",
+      font: "\"Playfair Display\", serif",
+      eyebrow: "Saint-Valentin",
+      title: "14.02",
+      date: "14 févr. 2027 · Douala"
+    },
+    blocks: ["Rebours", "Programme", "Billetterie", "Localisation", "Dress code", "Galerie", "FAQ", "Pied de page"],
+    headings: {
+      Billetterie: "Choisissez votre formule",
+      "Dress code": "Tenue chic",
+      FAQ: "Questions fréquentes"
+    },
+    presentation: { heroAlign: "center", heroHeight: "32rem", panelRadius: "1rem" }
+  },
+  {
+    name: "Hilal",
+    theme: "hilal",
+    sourceModel: "hilal.html",
+    category: "Fêtes",
+    categoryCode: "fetes_saisons",
+    badge: "PREMIUM",
+    premium: true,
+    subtitle: "Aïd el-Fitr et Tabaski",
+    description: "Nuit bleue et lanternes dorées, pour le repas de l’Aïd en famille ou en association.",
+    features: [
+      { label: "Ouverture", text: "lettre scellée" },
+      { label: "Fond", text: "étoiles, sans musique" },
+      { label: "Modules", text: "programme de la journée, vœux de l’Aïd, réponse" }
+    ],
+    preview: {
+      bg: "#0E1A2B",
+      ink: "#F6F0E3",
+      accent: "#E0B04B",
+      accent2: "#2FA37A",
+      font: "\"Amiri\", serif",
+      eyebrow: "Aïd Moubarak",
+      title: "Mfouapon",
+      date: "10 mars 2027 · Douala"
+    },
+    blocks: ["Rebours", "Programme", "Localisation", "Dress code", "Galerie", "FAQ", "Livre d'or", "RSVP", "Pied de page"],
+    headings: {
+      "Dress code": "Tenue de fête",
+      "Livre d'or": "Vœux de l’Aïd",
+      RSVP: "Annoncez votre venue"
+    },
+    presentation: { heroAlign: "center", heroHeight: "32rem", panelRadius: "1rem" }
+  },
+  {
+    name: "Lys",
+    theme: "aurore",
+    sourceModel: "aurore.html",
+    category: "Fêtes",
+    categoryCode: "fetes_saisons",
+    badge: "PREMIUM",
+    premium: true,
+    subtitle: "Pâques",
+    description: "Lumière d’aube et lys blancs, pour les célébrations de Pâques d’une paroisse ou d’une famille.",
+    features: [
+      { label: "Ouverture", text: "cierge pascal à allumer" },
+      { label: "Fond", text: "pétales, harpe" },
+      { label: "Modules", text: "veillée, messe, chasse aux œufs, inscription au repas" }
+    ],
+    preview: {
+      bg: "#F7F2FB",
+      ink: "#2A1F3A",
+      accent: "#7B4FB0",
+      accent2: "#E8C04A",
+      font: "\"Cormorant Garamond\", serif",
+      eyebrow: "Joyeuses",
+      title: "Pâques",
+      date: "28 mars 2027 · Douala"
+    },
+    blocks: ["Rebours", "Programme", "Localisation", "Dress code", "Galerie", "Livre d'or", "RSVP", "Pied de page"],
+    headings: {
+      "Dress code": "Tenue de fête claire",
+      "Livre d'or": "Messages de Pâques",
+      RSVP: "Inscription au repas"
+    },
+    presentation: { heroAlign: "center", heroHeight: "32rem", panelRadius: "1rem" }
+  },
+  {
+    name: "Unité",
+    theme: "unite",
+    sourceModel: "unite.html",
+    category: "Fêtes",
+    categoryCode: "fetes_saisons",
+    badge: "PREMIUM",
+    premium: true,
+    subtitle: "Fête nationale · 20 mai",
+    description: "Vert, rouge, jaune et l’étoile, pour les célébrations du 20 mai d’une association, d’une école ou d’une entreprise.",
+    features: [
+      { label: "Ouverture", text: "ouverture en cercle" },
+      { label: "Fond", text: "confettis vert-rouge-jaune" },
+      { label: "Modules", text: "défilé par groupe, village des régions, partenaires" }
+    ],
+    preview: {
+      bg: "#F4F7F2",
+      ink: "#13261C",
+      accent: "#007A5E",
+      accent2: "#CE1126",
+      font: "\"Oswald\", sans-serif",
+      eyebrow: "Fête nationale",
+      title: "20 MAI",
+      date: "20 mai 2027 · Douala"
+    },
+    blocks: ["Rebours", "Programme", "Localisation", "Dress code", "Galerie", "Partenaires", "FAQ", "RSVP", "Pied de page"],
+    headings: {
+      "Dress code": "Aux couleurs nationales",
+      Partenaires: "Avec le soutien de",
+      RSVP: "Inscrire mon groupe"
+    },
+    presentation: { heroAlign: "center", heroHeight: "32rem", panelRadius: "0.75rem" }
+  },
+  {
+    name: "Maman",
+    theme: "maman",
+    sourceModel: "maman.html",
+    category: "Fêtes",
+    categoryCode: "fetes_saisons",
+    badge: "PREMIUM",
+    premium: true,
+    subtitle: "Fête des mères",
+    description: "Rose corail et lilas, pour un déjeuner ou une fête offerte aux mamans.",
+    features: [
+      { label: "Ouverture", text: "fleur qui éclot" },
+      { label: "Fond", text: "pétales, cœurs" },
+      { label: "Modules", text: "inscription par maman, mots pour maman, cagnotte" }
+    ],
+    preview: {
+      bg: "#FFF5F3",
+      ink: "#3A2228",
+      accent: "#D9576B",
+      accent2: "#8E6CC4",
+      font: "\"Dancing Script\", cursive",
+      eyebrow: "Fête des mères",
+      title: "Nos Mamans",
+      date: "30 mai 2027 · Douala"
+    },
+    blocks: ["Rebours", "Programme", "Localisation", "Dress code", "Galerie", "Cadeaux", "Livre d'or", "RSVP", "Pied de page"],
+    headings: {
+      "Dress code": "En fleurs",
+      Cadeaux: "Offrir aux mamans",
+      "Livre d'or": "Mots pour maman",
+      RSVP: "Inscrire une maman"
+    },
+    presentation: { heroAlign: "center", heroHeight: "32rem", panelRadius: "1.25rem" }
+  },
   // Modèles classiques : rendu générique (SitePage), couleurs du modèle.
   {
     name: "Éclat",

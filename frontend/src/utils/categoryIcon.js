@@ -18,7 +18,8 @@ import {
 const KEYWORD_ICONS = [
   [/mariage|fian/i, Heart],
   [/anniversaire/i, Cake],
-  [/bapt/i, Baby],
+  [/bapt|baby|naissance/i, Baby],
+  [/deuil/i, Flower2],
   [/graduation|diplom/i, GraduationCap],
   [/obs|comm[ée]moration|hommage|fun[ée]raille/i, Flower2],
   [/conf[ée]rence|s[ée]minaire|atelier/i, Briefcase],

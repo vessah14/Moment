@@ -9,6 +9,7 @@ import FinalCta from '../components/home/FinalCta'
 import Hero from '../components/home/Hero'
 import PopularTemplates from '../components/home/PopularTemplates'
 import PricingTeaser from '../components/home/PricingTeaser'
+import Souvenirs from '../components/home/Souvenirs'
 import StatsBar from '../components/home/StatsBar'
 import Testimonials from '../components/home/Testimonials'
 import { EVENT_TYPES } from '../data/eventTypes'
@@ -36,6 +37,7 @@ export default function Home() {
       <FeatureShowcase />
       <StatsBar />
       <Testimonials />
+      <Souvenirs />
       <PricingTeaser />
       <Faq />
       <FinalCta />

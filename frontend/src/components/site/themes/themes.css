@@ -762,3 +762,63 @@
 .tbft[data-tbft="velvet"] .hero-names { text-transform: uppercase; letter-spacing: .12em; font-size: clamp(2.4rem, 7cqi, 4.4rem) }
 .tbft[data-tbft="velvet"] .s-head h2 { text-transform: uppercase; letter-spacing: .1em }
 .tbft[data-tbft="velvet"] .card, .tbft[data-tbft="velvet"] .gal > * { border-radius: 24px }
+
+/* Douceur — baby shower */
+.tbft[data-tbft="douceur"] { --f-script: "Fredoka", "Arial Rounded MT Bold", system-ui, sans-serif; --f-display: "Fredoka", "Arial Rounded MT Bold", system-ui, sans-serif; --f-body: "Nunito", "Segoe UI", system-ui, sans-serif; --radius: 26px; --radius-sm: 16px }
+.tbft[data-tbft="douceur"] .hero-names { font-weight: 700; font-size: clamp(3.6rem, 12cqi, 7rem) }
+.tbft[data-tbft="douceur"] .hero-pre { font-weight: 800; text-transform: uppercase; letter-spacing: .16em; font-family: var(--f-body); font-size: .85rem; color: var(--accent-2) }
+.tbft[data-tbft="douceur"] .s-head h2 { font-weight: 700 }
+
+/* Souvenir — retrait de deuil */
+.tbft[data-tbft="souvenir"] { --f-script: "Marcellus", "Trajan Pro", Georgia, serif; --f-display: "Marcellus", "Trajan Pro", Georgia, serif; --f-body: "Lato", "Helvetica Neue", Arial, sans-serif; --radius: 12px; --radius-sm: 8px }
+.tbft[data-tbft="souvenir"] .hero-names { font-size: clamp(2.8rem, 8cqi, 5.2rem); line-height: 1.05 }
+.tbft[data-tbft="souvenir"] .hero-pre { font-family: var(--f-body); text-transform: uppercase; letter-spacing: .22em; font-size: .85rem; color: var(--accent) }
+.tbft[data-tbft="souvenir"] .s-head h2 { font-weight: 400 }
+.tbft[data-tbft="souvenir"] .portrait { width: 150px; height: 150px }
+
+/* Étoile — Noël */
+.tbft[data-tbft="noel"] { --f-script: "Mountains of Christmas", "Comic Sans MS", cursive; --f-display: "Mountains of Christmas", "Comic Sans MS", cursive; --f-body: "Nunito", "Segoe UI", system-ui, sans-serif; --radius: 22px; --radius-sm: 14px }
+.tbft[data-tbft="noel"] .hero-names { font-weight: 700; font-size: clamp(3.4rem, 11cqi, 7rem); line-height: 1 }
+.tbft[data-tbft="noel"] .hero-pre { font-family: var(--f-body); font-weight: 800; text-transform: uppercase; letter-spacing: .18em; font-size: .9rem; color: var(--accent-2) }
+.tbft[data-tbft="noel"] .s-head h2 { font-weight: 700; font-size: clamp(2.4rem, 6cqi, 3.6rem) }
+.tbft[data-tbft="noel"] .hero-frame { place-items: start center }
+.tbft[data-tbft="noel"] .hero-frame svg { width: 100%; height: auto; margin-top: -4px }
+.tbft[data-tbft="noel"] .hero-frame .draw { stroke-width: 2 }
+.tbft[data-tbft="noel"] .card { border-width: 2px }
+
+/* Cœur — Saint-Valentin */
+.tbft[data-tbft="coeur"] { --f-script: "Great Vibes", "Snell Roundhand", cursive; --f-display: "Playfair Display", Georgia, serif; --f-body: "Lato", "Helvetica Neue", Arial, sans-serif; --radius: 18px; --radius-sm: 12px }
+.tbft[data-tbft="coeur"] .hero-big { font-family: var(--f-display); font-style: italic; font-weight: 500 }
+.tbft[data-tbft="coeur"] .hero-big small { font-family: var(--f-body) }
+.tbft[data-tbft="coeur"] .hero-names { font-size: clamp(3rem, 9cqi, 6rem) }
+.tbft[data-tbft="coeur"] .hero-pre { font-family: var(--f-display); font-style: italic }
+.tbft[data-tbft="coeur"] .s-head h2 { font-style: italic }
+
+/* Hilal — Aïd */
+.tbft[data-tbft="hilal"] { --f-script: "Amiri", "Times New Roman", serif; --f-display: "Amiri", "Times New Roman", serif; --f-body: "Nunito Sans", "Segoe UI", Arial, sans-serif; --radius: 14px; --radius-sm: 10px }
+.tbft[data-tbft="hilal"] .hero-names { font-weight: 700; font-size: clamp(3.4rem, 11cqi, 6.6rem) }
+.tbft[data-tbft="hilal"] .hero-pre { font-style: italic; font-size: clamp(1.3rem, 3cqi, 1.8rem) }
+.tbft[data-tbft="hilal"] .s-head h2 { font-weight: 700 }
+.tbft[data-tbft="hilal"] .greet, .tbft[data-tbft="hilal"] .sig { font-family: var(--f-display); font-style: italic }
+
+/* Aurore — Pâques */
+.tbft[data-tbft="aurore"] { --f-script: "Cormorant Garamond", Georgia, serif; --f-display: "Cormorant Garamond", Georgia, serif; --f-body: "Lato", "Helvetica Neue", Arial, sans-serif; --radius: 16px; --radius-sm: 12px }
+.tbft[data-tbft="aurore"] .hero-names { font-style: italic; font-weight: 600; font-size: clamp(3.6rem, 12cqi, 7rem) }
+.tbft[data-tbft="aurore"] .hero-pre { font-style: italic }
+.tbft[data-tbft="aurore"] .s-head h2 { font-weight: 600 }
+
+/* Unité — 20 mai */
+.tbft[data-tbft="unite"] { --f-script: "Oswald", "Bebas Neue", Impact, sans-serif; --f-display: "Oswald", "Bebas Neue", Impact, sans-serif; --f-body: "Source Sans 3", "Segoe UI", Arial, sans-serif; --radius: 10px; --radius-sm: 8px }
+.tbft[data-tbft="unite"] .hero-big { font-weight: 700; letter-spacing: .01em; white-space: nowrap; font-size: clamp(5rem, 18cqi, 11rem) }
+.tbft[data-tbft="unite"] .hero-big small { font-family: var(--f-body) }
+.tbft[data-tbft="unite"] .hero-names { font-weight: 700; text-transform: uppercase; letter-spacing: .02em; font-size: clamp(2.8rem, 8cqi, 5.4rem) }
+.tbft[data-tbft="unite"] .hero-pre { text-transform: uppercase; letter-spacing: .2em; font-family: var(--f-body); font-weight: 700; font-size: .9rem; color: var(--accent-2) }
+.tbft[data-tbft="unite"] .s-head h2 { text-transform: uppercase; letter-spacing: .03em }
+.tbft[data-tbft="unite"] .topbar::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 6px; background: linear-gradient(90deg, #007A5E 0 33.3%, #CE1126 33.3% 66.6%, #FCD116 66.6%) }
+.tbft[data-tbft="unite"] .btn { border-radius: 8px; text-transform: uppercase; letter-spacing: .1em; font-size: .82rem }
+
+/* Maman — fête des mères */
+.tbft[data-tbft="maman"] { --f-script: "Dancing Script", "Segoe Script", cursive; --f-display: "Dancing Script", "Segoe Script", cursive; --f-body: "Nunito Sans", "Segoe UI", Arial, sans-serif; --radius: 26px; --radius-sm: 16px }
+.tbft[data-tbft="maman"] .hero-names { font-weight: 700; font-size: clamp(4rem, 13cqi, 8rem) }
+.tbft[data-tbft="maman"] .hero-pre { font-weight: 800; text-transform: uppercase; letter-spacing: .16em; font-family: var(--f-body); font-size: .85rem; color: var(--accent-2) }
+.tbft[data-tbft="maman"] .s-head h2 { font-weight: 700; font-size: clamp(2.4rem, 6cqi, 3.6rem) }

@@ -160,6 +160,19 @@ h3 {
   animation: site-float 12s ease-in-out infinite;
 }
 
+/* Page 404 : billets qui se balancent */
+@keyframes nf-sway {
+  50% {
+    transform: rotate(-4deg) translateY(-4px);
+  }
+}
+
+.nf-sway {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: nf-sway 4s ease-in-out infinite;
+}
+
 /* Animations reduites : respecte le reglage systeme automatiquement, et/ou
    l'interrupteur manuel (Parametres > Langue et fuseau > Apparence). */
 @media (prefers-reduced-motion: reduce) {

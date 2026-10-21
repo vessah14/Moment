@@ -31,7 +31,7 @@ describe('routes publiques', () => {
     const faq = home.find((ld) => ld['@type'] === 'FAQPage')
     expect(faq.mainEntity).toHaveLength(HOME_FAQ.length)
     const pricing = routeSeo('/tarifs', SITE).jsonLd.find((ld) => ld['@type'] === 'SoftwareApplication')
-    expect(pricing.offers.map((o) => o.price)).toEqual(['0', '9900', '24900', '49900'])
+    expect(pricing.offers.map((o) => o.price)).toEqual(['0', '5000', '15000', '30000'])
   })
 })
 

@@ -1,7 +1,7 @@
 // Effets des modèles premium : particules de fond (canvas), explosion festive et
 // musique d'ambiance générée en direct (Web Audio, aucun fichier audio).
 
-const COUNT = { or: 60, petales: 24, confetti: 38, ballons: 9, etoiles: 46, bulles: 20, braises: 30 }
+const COUNT = { or: 60, petales: 24, confetti: 38, ballons: 9, etoiles: 46, bulles: 20, braises: 30, neige: 70 }
 
 // ---------- Particules de fond ----------
 export function createParticles(canvas, kind) {
@@ -38,6 +38,7 @@ export function createParticles(canvas, kind) {
     if (kind === 'ballons') return { ...b, s: r() * 14 + 18, vy: -(r() * 0.35 + 0.25), vx: 0 }
     if (kind === 'bulles') return { ...b, s: r() * 16 + 6, vy: -(r() * 0.3 + 0.15), vx: 0 }
     if (kind === 'braises') return { ...b, s: r() * 1.6 + 0.6, vy: -(r() * 0.25 + 0.08), vx: (r() - 0.5) * 0.1 }
+    if (kind === 'neige') return { ...b, s: r() * 2.6 + 1, vy: r() * 0.55 + 0.25, vx: (r() - 0.5) * 0.2 }
     return { ...b, s: r() * 3 + 1.5, vy: -(r() * 0.1 + 0.02), vx: 0 }
   }
 
@@ -115,6 +116,12 @@ export function createParticles(canvas, kind) {
         ctx.fillStyle = '#fff'
         ctx.beginPath()
         ctx.arc(p.x - p.s * 0.35, p.y - p.s * 0.35, p.s * 0.18, 0, 7)
+        ctx.fill()
+      } else if (kind === 'neige') {
+        p.x += Math.sin(p.ph) * 0.35
+        ctx.globalAlpha = 0.55 + 0.35 * Math.abs(Math.sin(p.ph * 0.5))
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, p.s, 0, 7)
         ctx.fill()
       } else if (kind === 'braises') {
         ctx.globalAlpha = 0.15 + 0.4 * Math.abs(Math.sin(p.ph * 0.6))
@@ -237,6 +244,7 @@ const STYLES = {
   kalimba: { bpm: 118, root: 62, prog: [0, 7, 9, 5], q: [0, 0, 1, 0], arp: [0, 2, 1, 3, 0, 2, 3, 1], decay: 0.9, bright: 3, perc: 'shaker' },
   lounge: { bpm: 84, root: 55, prog: [0, 9, 2, 7], q: [0, 1, 1, 0], chords: [[0, 4, 7, 11], [0, 3, 7, 10], [0, 3, 7, 10], [0, 4, 7, 10]], arp: [0, 2, 1, 3, null, 2, 3, 1], decay: 1.3, bright: 2, pad: true, perc: 'brush', swing: 0.2 },
   pulse: { bpm: 122, root: 57, prog: [0, 8, 3, 10], q: [1, 0, 0, 0], arp: [0, 2, 3, 2, 0, 2, 3, 1], decay: 0.28, bright: 2, perc: 'four' },
+  clochettes: { bpm: 104, root: 64, prog: [0, 5, 7, 0], q: [0, 0, 0, 0], arp: [0, 2, 3, 2, 1, 2, 3, null], decay: 1.4, bright: 4.2, pad: true, perc: 'shaker' },
   recueil: { bpm: 54, root: 50, prog: [0, 5, 9, 7], q: [0, 0, 1, 0], arp: [0, null, 2, null, 1, null, 3, null], decay: 2.8, bright: 2, pad: true },
 }
 

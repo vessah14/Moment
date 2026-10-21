@@ -14,7 +14,7 @@ export const PRICING_PLANS = [
   },
   {
     name: 'Premium',
-    price: '9 900',
+    price: '5 000',
     period: '/mois',
     tagline: 'Personnalisation complète',
     features: [
@@ -28,7 +28,7 @@ export const PRICING_PLANS = [
   },
   {
     name: 'Business',
-    price: '24 900',
+    price: '15 000',
     period: '/mois',
     tagline: 'Équipes et organisations',
     recommended: true,
@@ -43,7 +43,7 @@ export const PRICING_PLANS = [
   },
   {
     name: 'Event Pro',
-    price: '49 900',
+    price: '30 000',
     period: '/mois',
     tagline: "Billetterie et contrôle d'accès",
     features: [

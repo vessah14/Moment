@@ -3,6 +3,7 @@
 // (vite.config.js : sitemap.xml et une page HTML par route, lisible sans JavaScript).
 // Importé par Node au build : pas de JSX, pas d'import.meta.env, imports avec extension.
 import { HOME_FAQ } from './homeFaq.js'
+import { PRICING_FAQ } from './pricingFaq.js'
 import { TEMPLATES } from './templates.js'
 
 // ---------- Données structurées (schema.org) ----------
@@ -12,9 +13,31 @@ export function organizationLd(site) {
     '@type': 'Organization',
     name: 'TBF Moment',
     url: site,
-    logo: `${site}/favicon.png`,
+    // Carré d'au moins 112 × 112 px, lisible sur fond blanc (exigences Google).
+    logo: `${site}/logo-schema.png`,
     slogan: 'Create. Connect. Celebrate.',
     email: 'contact@tbfmoment.com',
+    areaServed: 'CM',
+    contactPoint: [
+      {
+        '@type': 'ContactPoint',
+        contactType: 'customer support',
+        email: 'contact@tbfmoment.com',
+        telephone: '+237680264060',
+        availableLanguage: ['French', 'English'],
+      },
+    ],
+  }
+}
+
+// Page Support : page de contact rattachée à l'organisation.
+export function contactPageLd(site) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ContactPage',
+    name: 'Support TBF Moment',
+    url: `${site}/support`,
+    about: organizationLd(site),
   }
 }
 
@@ -33,9 +56,9 @@ export function faqLd(questions = HOME_FAQ) {
 // Offres de la page Tarifs (prix mensuels en FCFA), identiques aux offres en base.
 export const PRICE_OFFERS = [
   { name: 'Free', price: 0 },
-  { name: 'Premium', price: 9900 },
-  { name: 'Business', price: 24900 },
-  { name: 'Event Pro', price: 49900 },
+  { name: 'Premium', price: 5000 },
+  { name: 'Business', price: 15000 },
+  { name: 'Event Pro', price: 30000 },
 ]
 
 export function pricingLd(site) {
@@ -91,7 +114,7 @@ export const STATIC_ROUTES = [
     title: 'Tarifs',
     description:
       'Gratuit pour commencer, Premium pour aller plus loin : comparez les offres TBF Moment pour créer le site de votre événement.',
-    jsonLd: (site) => [pricingLd(site), breadcrumbLd(site, [['Accueil', '/'], ['Tarifs', '/tarifs']])],
+    jsonLd: (site) => [pricingLd(site), faqLd(PRICING_FAQ), breadcrumbLd(site, [['Accueil', '/'], ['Tarifs', '/tarifs']])],
   },
   {
     path: '/ecosysteme',
@@ -106,6 +129,7 @@ export const STATIC_ROUTES = [
     changefreq: 'monthly',
     title: 'Support',
     description: "Besoin d'aide pour créer le site de votre événement ? Questions fréquentes et contact de l'équipe TBF Moment.",
+    jsonLd: (site) => [contactPageLd(site), breadcrumbLd(site, [['Accueil', '/'], ['Support', '/support']])],
   },
   {
     path: '/inscription',

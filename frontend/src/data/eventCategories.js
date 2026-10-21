@@ -58,6 +58,13 @@ export const EVENT_CATEGORIES = [
     modules: DEFAULT_MODULES,
   },
   {
+    label: 'Baby shower et naissance',
+    description: "Fêtez l'arrivée de bébé avec vos proches",
+    icon: Baby,
+    templateCategory: 'Baby shower',
+    modules: ['Cadeaux', 'Galerie', 'RSVP', "Livre d'or"],
+  },
+  {
     label: 'Graduation',
     description: 'Célébrez un diplôme ou une réussite',
     icon: GraduationCap,
@@ -70,6 +77,20 @@ export const EVENT_CATEGORIES = [
     icon: Flower2,
     templateCategory: 'Hommage',
     modules: ['Biographie', 'Veillée', 'Condoléances', 'Souvenirs'],
+  },
+  {
+    label: 'Retrait de deuil',
+    description: "Levez le deuil et célébrez la vie d'un être cher",
+    icon: Flower2,
+    templateCategory: 'Retrait de deuil',
+    modules: ['Biographie', 'Programme', 'Cadeaux', "Livre d'or"],
+  },
+  {
+    label: 'Fêtes et saisons',
+    description: 'Noël, Saint-Valentin, Aïd, Pâques, 20 mai, fête des mères',
+    icon: PartyPopper,
+    templateCategory: 'Fêtes',
+    modules: DEFAULT_MODULES,
   },
   {
     label: 'Soirée privée',
