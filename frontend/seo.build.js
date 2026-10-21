@@ -24,6 +24,11 @@ const DISALLOWED = [
   "/auth/",
   "/loading",
   "/chargement",
+  // Étape « vérifiez vos e-mails » après l'inscription (la page /inscription reste indexée).
+  "/inscription/",
+  // Liens d'invitation personnels sur le site d'un événement (/e/slug?invite=…).
+  "/*?invite=",
+  "/*&invite=",
 ];
 
 const escapeAttr = (value) =>

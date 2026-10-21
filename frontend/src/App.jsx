@@ -5,6 +5,7 @@ import Footer from './components/layout/Footer'
 import Header from './components/layout/Header'
 import Hero from './components/home/Hero'
 import RequireAuth from './components/auth/RequireAuth'
+import ErrorBoundary from './components/ErrorBoundary'
 
 const Builder = lazy(() => import('./pages/Builder'))
 const CookiesPolicy = lazy(() => import('./pages/CookiesPolicy'))
@@ -83,6 +84,8 @@ function RouteLoader ({ children }) {
 function App () {
   return (
     <>
+      {/* Page d'erreur au lieu d'un écran blanc si une page plante. */}
+      <ErrorBoundary>
       <RouteLoader>
         <Routes>
           <Route
@@ -293,6 +296,7 @@ function App () {
           />
         </Routes>
       </RouteLoader>
+      </ErrorBoundary>
       <CookieConsent />
     </>
   )

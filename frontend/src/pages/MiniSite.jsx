@@ -9,7 +9,7 @@ import SitePage from '../components/site/SitePage'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
 import { formatEventDate } from '../utils/eventStatus'
 import { isInviteCode } from '../utils/mobileMoney'
-import { useSeo } from '../utils/seo'
+import { absoluteUrl, useSeo } from '../utils/seo'
 import { safeCoverPath } from '../utils/sitePage'
 import {
   findTemplate,
@@ -65,7 +65,21 @@ function eventSeo (site, slug) {
           : event.eventDate,
         eventStatus: 'https://schema.org/EventScheduled',
         eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+        url: absoluteUrl(`/e/${event.slug}`),
         ...(image && { image: [image] }),
+        // Billets en vente : prix affiché par Google dans les résultats « événement ».
+        ...(site.ticketTypes?.length && {
+          offers: site.ticketTypes.map(ticket => ({
+            '@type': 'Offer',
+            name: ticket.name,
+            price: Math.round((ticket.priceCents ?? 0) / 100),
+            priceCurrency: 'XAF',
+            availability: ticket.quota > 0 && ticket.soldCount >= ticket.quota
+              ? 'https://schema.org/SoldOut'
+              : 'https://schema.org/InStock',
+            url: absoluteUrl(`/e/${event.slug}`)
+          }))
+        }),
         ...(event.locationAddress && {
           location: {
             '@type': 'Place',

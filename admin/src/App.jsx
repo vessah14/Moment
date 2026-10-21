@@ -8,9 +8,13 @@ import AdminOrganizations from './pages/AdminOrganizations'
 import AdminOverview from './pages/AdminOverview'
 import AdminReviews from './pages/AdminReviews'
 import AdminSettings from './pages/AdminSettings'
+import AdminNotFound from './pages/AdminNotFound'
+import ErrorBoundary from './components/ErrorBoundary'
 
 function App () {
   return (
+    // Page d'erreur au lieu d'un écran blanc si une page plante.
+    <ErrorBoundary>
     <Routes>
       <Route path='/admin/connexion' element={<AdminLogin />} />
       <Route
@@ -70,8 +74,9 @@ function App () {
         }
       />
       <Route path='/' element={<Navigate to='/admin' replace />} />
-      <Route path='*' element={<Navigate to='/admin' replace />} />
+      <Route path='*' element={<AdminNotFound />} />
     </Routes>
+    </ErrorBoundary>
   )
 }
 
