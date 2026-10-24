@@ -1,21 +1,10 @@
 import { apiFetch, clearCurrentAdmin, clearToken, setCurrentAdmin, setToken, getToken } from './client'
 
-// Étape 1 : mot de passe. Ne donne jamais accès à la console à lui seul : le serveur
-// renvoie l'étape de double authentification (mfaToken, et le QR code au premier passage).
 export async function login({ email, password }) {
-  return apiFetch('/admin/accounts/login', {
+  const result = await apiFetch('/admin/accounts/login', {
     method: 'POST',
     auth: false,
     body: { email, password },
-  })
-}
-
-// Étape 2 : code à 6 chiffres de l'application d'authentification.
-export async function verifyMfa({ mfaToken, code }) {
-  const result = await apiFetch('/admin/accounts/login/mfa', {
-    method: 'POST',
-    auth: false,
-    body: { mfaToken, code },
   })
   setToken(result.token)
   setCurrentAdmin(result.utilisateur)

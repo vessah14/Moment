@@ -74,14 +74,7 @@ namespace backend_EventMoment.Controllers
             return Ok(result);
         }
 
-        // Seconde étape de connexion : code de l'application d'authentification.
-        [HttpPost("login/mfa")]
-        [AllowAnonymous]
-        [EnableRateLimiting("login")]
-        public async Task<IActionResult> LoginMfa([FromBody] AdminMfaLoginDto dto) =>
-            Ok(await _service.CompleteMfaLoginAsync(dto));
-
-        // Téléphone perdu : un autre super-administrateur réinitialise la double authentification.
+        // Nettoyage d'une ancienne configuration MFA.
         [HttpDelete("{id}/mfa")]
         [Authorize(Policy = "SuperadminOnly")]
         public async Task<IActionResult> ResetMfa(Guid id)
