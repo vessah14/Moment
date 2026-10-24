@@ -3,7 +3,7 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import { mediaUrl } from '../api/client'
 import { getPublicGifts } from '../api/giftRegistry'
 import { getPublicInvitation } from '../api/guests'
-import { getPublicSeating, getPublicSite, trackPublicEvent } from '../api/publicEvents'
+import { getPublicSeating, getPublicSite, submitPublicEventRsvp, trackPublicEvent } from '../api/publicEvents'
 import logoMark from '../assets/logo-mark.png'
 import SitePage from '../components/site/SitePage'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
@@ -13,6 +13,7 @@ import { absoluteUrl, useSeo } from '../utils/seo'
 import { safeCoverPath } from '../utils/sitePage'
 import {
   findTemplate,
+  ensureRsvpBlock,
   normalizeBlockType,
   resolveSiteStyle
 } from '../utils/templateTheme'
@@ -110,6 +111,8 @@ export default function MiniSite () {
   // Données des modules (liste de cadeaux, tables) et invité arrivé par son lien personnel.
   const [extras, setExtras] = useState({ gifts: [], seatingTables: [] })
   const [invitation, setInvitation] = useState(null)
+  const [invitationLoading, setInvitationLoading] = useState(false)
+  const [invitationError, setInvitationError] = useState('')
   const [searchParams] = useSearchParams()
   const inviteParam = searchParams.get('invite')
   useSeo(eventSeo(error ? null : site, slug))
@@ -128,11 +131,21 @@ export default function MiniSite () {
     }
     if (!isInviteCode(code)) return
     let cancelled = false
+    setInvitation(null)
+    setInvitationLoading(true)
+    setInvitationError('')
     getPublicInvitation(code)
       .then(inv => {
         if (cancelled) return
         // Lien d'un autre événement : ignoré.
-        if (inv?.eventSlug && inv.eventSlug !== slug) return
+        if (inv?.eventSlug && inv.eventSlug !== slug) {
+          setInvitationError("Ce lien d'invitation ne correspond pas à cet événement.")
+          return
+        }
+        if (!inv?.guestId || !inv.guestFullName) {
+          setInvitationError("Cette invitation est introuvable. Demandez à l'organisateur de vous renvoyer votre lien personnel.")
+          return
+        }
         setInvitation(inv)
         try {
           localStorage.setItem(storageKey, code)
@@ -141,11 +154,17 @@ export default function MiniSite () {
         }
       })
       .catch(() => {
+        if (!cancelled) {
+          setInvitationError("Impossible de charger cette invitation. Utilisez le lien personnel envoyé par l'organisateur.")
+        }
         try {
           localStorage.removeItem(storageKey)
         } catch {
           // ignoré
         }
+      })
+      .finally(() => {
+        if (!cancelled) setInvitationLoading(false)
       })
     return () => {
       cancelled = true
@@ -222,6 +241,7 @@ export default function MiniSite () {
     blockContent[type] = parseContent(block.content)
     pageBlocks.push(type)
   }
+  const publicPageBlocks = ensureRsvpBlock(pageBlocks)
 
   return (
     <>
@@ -240,7 +260,7 @@ export default function MiniSite () {
           subtitle:
             heroContent.subtitle || event.tagline || defaultSubtitle(event)
         }}
-        blocks={pageBlocks}
+        blocks={publicPageBlocks}
         blockContent={blockContent}
         data={{
           slug: event.slug,
@@ -256,9 +276,26 @@ export default function MiniSite () {
           guestBookEntries: site.guestBookEntries,
           gifts: extras.gifts,
           seatingTables: extras.seatingTables,
-          invitation,
-          onInvitationChange: setInvitation,
-          ticketTypes: site.ticketTypes
+          invitation: invitation?.eventSlug === slug ? invitation : null,
+          invitationLoading,
+          invitationError,
+          onInvitationChange: value => {
+            setInvitation(value)
+            if (value?.guestId && value.eventSlug === event.slug) {
+              try {
+                localStorage.setItem(`tbf_invite_${event.slug}`, value.guestId)
+              } catch {
+                // Le billet reste visible pendant cette visite si le stockage est indisponible.
+              }
+            }
+          },
+          submitOpenRsvp: dto => submitPublicEventRsvp(event.slug, dto),
+          ticketTypes: site.ticketTypes,
+          // Faux pour les offres qui retirent la mention TBF Moment (Business et plus).
+          showBranding: site.showBranding !== false,
+          organizer: site.organizerName || site.organizerLogoUrl
+            ? { name: site.organizerName, logoUrl: site.organizerLogoUrl }
+            : null
         }}
         className='min-h-svh'
       />

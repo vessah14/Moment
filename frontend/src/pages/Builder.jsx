@@ -42,6 +42,8 @@ import {
   templatesForCategory,
 } from '../utils/templateTheme'
 import { useSeo } from '../utils/seo'
+import { defaultTicketStyle, ticketFromCustomFields } from '../utils/ticketStyles'
+import { ticketEventInfo } from '../components/tickets/TicketCard'
 
 const PALETTE = ['#6549e8', '#ec4ec2', '#ff7a3d', '#f6c945', '#c026d3']
 
@@ -255,6 +257,21 @@ export default function Builder() {
   // Seuls les modèles de la catégorie de l'événement sont proposés.
   const categoryTemplates = templatesForCategory(category?.code, category?.label)
 
+  // Billet choisi pour l'événement, rangé dans customFields.ticket (enregistré avec l'événement).
+  const ticket = ticketFromCustomFields(event?.customFields)
+  const handleChangeTicket = (patch) => {
+    setEvent((prev) => {
+      let fields = {}
+      try {
+        fields = JSON.parse(prev.customFields || '{}') ?? {}
+      } catch {
+        fields = {}
+      }
+      return { ...prev, customFields: JSON.stringify({ ...fields, ticket: { ...(fields.ticket ?? {}), ...patch } }) }
+    })
+    setTemplateDirty(true)
+  }
+
   const handleApplyTemplate = (next) => {
     setEvent((prev) => {
       let fields = {}
@@ -348,16 +365,19 @@ export default function Builder() {
     setUploading(true)
     setSaveError('')
     const failed = []
+    let reason = ''
     for (const file of files) {
       try {
         const photo = await uploadGalleryPhoto(file, eventId)
         setGalleryPhotos((prev) => [photo, ...prev])
-      } catch {
+      } catch (err) {
         failed.push(file.name)
+        reason ||= err.message
       }
     }
+    // La raison du serveur (ex. limite de photos de l'offre) est affichée telle quelle.
     if (failed.length)
-      setSaveError(`Photo(s) non envoyée(s) : ${failed.join(', ')}.`)
+      setSaveError(`Photo(s) non envoyée(s) : ${failed.join(', ')}.${reason ? ` ${reason}` : ''}`)
     setUploading(false)
   }
 
@@ -647,6 +667,10 @@ export default function Builder() {
             currentTemplate={template}
             categoryLabel={category?.label}
             onApplyTemplate={handleApplyTemplate}
+            ticket={ticket}
+            defaultTicketStyle={defaultTicketStyle(template?.theme)}
+            onChangeTicket={handleChangeTicket}
+            ticketEvent={event ? ticketEventInfo({ name: event.name, eventDate: event.eventDate, startTime: event.startTime, slug: event.slug }) : null}
           />
         )}
       </div>

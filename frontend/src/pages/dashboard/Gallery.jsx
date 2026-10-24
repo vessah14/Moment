@@ -66,10 +66,11 @@ export default function Gallery() {
       for (const file of files) {
         await uploadGalleryPhoto(file, selectedEventId)
       }
-      reload(selectedEventId)
     } catch (err) {
+      // Ex. limite de photos de l'offre atteinte : les photos déjà envoyées restent affichées.
       setError(err.message || "L'import a échoué.")
     } finally {
+      reload(selectedEventId)
       setUploading(false)
     }
   }

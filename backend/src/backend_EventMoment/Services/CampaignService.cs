@@ -51,7 +51,7 @@ namespace backend_EventMoment.Services
                 .OrderBy(l => l.Position)
                 .FirstOrDefaultAsync();
 
-            var baseUrl = _config["Frontend:BaseUrl"] ?? "http://localhost:5173";
+            var baseUrl = (_config["Frontend:BaseUrl"] ?? "http://localhost:5173").TrimEnd('/');
             var dateLabel = evt.EventDate.HasValue
                 ? evt.EventDate.Value.ToDateTime(TimeOnly.MinValue).ToString("d MMMM yyyy", new System.Globalization.CultureInfo("fr-FR"))
                 : "";
@@ -68,7 +68,7 @@ namespace backend_EventMoment.Services
                 var nameParts = guest.FullName.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
                 var prenom = System.Net.WebUtility.HtmlEncode(nameParts.Length > 0 ? nameParts[0] : guest.FullName);
                 var nom = System.Net.WebUtility.HtmlEncode(nameParts.Length > 1 ? nameParts[1].Trim() : "");
-                var lien = $"{baseUrl}/invitation/{guest.Id}";
+                var lien = $"{baseUrl.TrimEnd('/')}/e/{Uri.EscapeDataString(evt.Slug)}?invite={guest.Id}";
 
                 var message = RenderTemplate(template, new Dictionary<string, string>
                 {

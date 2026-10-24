@@ -5,6 +5,7 @@ using backend_EventMoment.Data;
 using backend_EventMoment.Interfaces;
 using backend_EventMoment.Models;
 using backend_EventMoment.Services;
+using backend_EventMoment.Services.Exceptions;
 using backend_EventMoment.Services.Email;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
@@ -15,12 +16,35 @@ using Microsoft.OpenApi.Models;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.RateLimiting;
 using Npgsql;
+using Prometheus;
+using Serilog;
+using Serilog.Events;
+using Serilog.Sinks.Grafana.Loki;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Paiement en ligne Notch Pay : désactivé tant que Payments:NotchPay:Enabled n'est pas à true.
-AdminDbContext.NotchPayEnabled = builder.Configuration.GetValue("Payments:NotchPay:Enabled", false);
+builder.Host.UseSerilog((context, _, logger) =>
+{
+    logger.MinimumLevel.Information()
+        .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+        .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+        .Enrich.FromLogContext()
+        .Enrich.WithProperty("service", "moment-api")
+        .WriteTo.Console();
+
+    var lokiUrl = context.Configuration["Loki:Url"];
+    if (!string.IsNullOrWhiteSpace(lokiUrl))
+    {
+        logger.WriteTo.GrafanaLoki(lokiUrl,
+        [
+            new LokiLabel { Key = "service", Value = "moment-api" },
+            new LokiLabel { Key = "environment", Value = context.HostingEnvironment.EnvironmentName }
+        ]);
+    }
+});
+
+AdminDbContext.KPayEnabled = builder.Configuration.GetValue("Payments:KPay:Enabled", false);
 
 // Taille maximale d'une requête : 1 Mo (Kestrel autorise 30 Mo par défaut). Évite qu'un
 // client remplisse la base avec des champs texte géants. Les endpoints de téléversement
@@ -30,8 +54,29 @@ builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+builder.Services.AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"]);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient();
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.ForwardLimit = 1;
+
+    if (builder.Environment.IsDevelopment()
+        && builder.Configuration.GetValue("ForwardedHeaders:TrustAllProxiesInDevelopment", false))
+    {
+        options.KnownNetworks.Clear();
+        options.KnownProxies.Clear();
+        return;
+    }
+
+    foreach (var proxy in builder.Configuration.GetSection("ForwardedHeaders:KnownProxies").Get<string[]>() ?? [])
+    {
+        if (System.Net.IPAddress.TryParse(proxy, out var address))
+            options.KnownProxies.Add(address);
+    }
+});
 // Nombre de requêtes par minute et par IP (RateLimits:<Nom> pour l'ajuster, ex. tests).
 int Limit(string name, int fallback) => builder.Configuration.GetValue($"RateLimits:{name}", fallback);
 
@@ -196,7 +241,7 @@ builder.Services.AddScoped<IRsvpService, RsvpService>();
 builder.Services.AddScoped<ISubscriptionPlanService, SubscriptionPlanService>();
 builder.Services.AddScoped<IUserSubscriptionService, UserSubscriptionService>();
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<INotchPayPaymentService, NotchPayPaymentService>();
+builder.Services.AddScoped<IKPayPaymentService, KPayPaymentService>();
 builder.Services.AddScoped<IFacebookAuthService, FacebookAuthService>();
 builder.Services.AddScoped<IGoogleAuthService, GoogleAuthService>();
 builder.Services.AddHttpClient<BrevoEmailSender>();
@@ -321,6 +366,7 @@ app.UseExceptionHandler(errorApp =>
         var (statusCode, message) = exception switch
         {
             KeyNotFoundException => (StatusCodes.Status404NotFound, exception.Message),
+            IdempotencyConflictException => (StatusCodes.Status409Conflict, exception.Message),
             // Messages métier de nos services uniquement : une InvalidOperationException levée
             // par le framework (EF, sérialisation…) contient des détails techniques internes.
             InvalidOperationException when IsOwnException(exception) => (StatusCodes.Status400BadRequest, exception.Message),
@@ -367,6 +413,8 @@ app.Use(async (context, next) =>
     await next();
 });
 
+app.UseForwardedHeaders();
+app.UseHttpMetrics();
 app.UseHttpsRedirection();
 app.UseStaticFiles(new StaticFileOptions
 {
@@ -382,6 +430,15 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapMetrics("/metrics").AllowAnonymous();
+app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = _ => false
+}).AllowAnonymous();
+app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+}).AllowAnonymous();
 
 app.Run();
 

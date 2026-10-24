@@ -9,7 +9,7 @@ import UpgradeDialog from '../plan/UpgradeDialog'
 const PLAN_CODES = { Premium: 'premium', Business: 'business', 'Event Pro': 'eventpro' }
 
 function UpgradeCta({ plan, className }) {
-  const current = usePlan()
+  const { plan: current } = usePlan()
   const [open, setOpen] = useState(false)
   const code = PLAN_CODES[plan.name]
   const isCurrent = current?.planCode === code

@@ -10,11 +10,13 @@ namespace backend_EventMoment.Services
     {
         private readonly AdminDbContext _context;
         private readonly IGiftRegistryService _giftRegistryService;
+        private readonly IPlanService? _plans;
 
-        public PublicSiteService(AdminDbContext context, IGiftRegistryService giftRegistryService)
+        public PublicSiteService(AdminDbContext context, IGiftRegistryService giftRegistryService, IPlanService? plans = null)
         {
             _context = context;
             _giftRegistryService = giftRegistryService;
+            _plans = plans;
         }
 
         public async Task<List<(string Slug, DateTimeOffset LastModified)>> GetSearchableSitesAsync(int max)
@@ -116,6 +118,9 @@ namespace backend_EventMoment.Services
                     .ToListAsync()
                 : new List<TicketTypeDto>();
 
+            var branding = _plans != null && await _plans.HasFeatureAsync(eventEntity.OrganizerId, PlanFeature.Branding);
+            var organizer = OrganizerSettings.Read(eventEntity.CustomFields);
+
             return new PublicSiteDto
             {
                 Event = eventDto,
@@ -124,6 +129,12 @@ namespace backend_EventMoment.Services
                 GalleryPhotos = galleryPhotos,
                 GuestBookEntries = guestBookEntries,
                 TicketTypes = ticketTypes,
+                // Mention « Créé avec TBF MOMENT » retirée pour les offres qui l'incluent (Business et plus).
+                TicketStyle = TicketSettings.Read(eventEntity.CustomFields).Style,
+                TicketNote = TicketSettings.Read(eventEntity.CustomFields).Note,
+                ShowBranding = !branding,
+                OrganizerName = organizer.Name,
+                OrganizerLogoUrl = branding ? organizer.LogoUrl : null,
             };
         }
     }

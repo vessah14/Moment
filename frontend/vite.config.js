@@ -33,6 +33,10 @@ export default defineConfig(({ mode }) => {
           if (!id.includes("node_modules")) return undefined;
 
           if (id.includes("recharts")) return "charts";
+          // jsPDF et ses dépendances : laissés au découpage automatique, pour qu'ils ne soient
+          // chargés qu'au téléchargement d'un billet (import dynamique dans utils/ticketPrint.js).
+          if (/node_modules[\\/](jspdf|fflate|html2canvas|canvg|rgbcolor|stackblur-canvas|svg-pathdata|dompurify|core-js|raf|performance-now)[\\/]/.test(id))
+            return undefined;
           if (id.includes("react-router-dom")) return "router";
           if (id.includes("lucide-react") || id.includes("country-flag-icons"))
             return "icons";

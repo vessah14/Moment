@@ -17,8 +17,9 @@ export const TEMPLATE_DEMOS = {
     kicker: 'Ensemble, pour la vie',
     description: 'Avec la bénédiction de leurs familles, Awa et Ibrahim ont la joie de vous convier à la célébration de leur union.',
     eventDateTime: t('2027-03-14', '16:00'),
-    locationLabel: 'Espace Les Almadies',
-    locationAddress: 'Route des Almadies, Dakar',
+    locationLabel: 'Cérémonie',
+    locationAddress: 'Grande Mosquée de Dakar',
+    additionalVenues: [{ label: 'Réception', address: 'Espace Les Almadies, Dakar', time: '19 h – 23 h' }],
     program: program('2027-03-14', [
       ['16:00', 'Cérémonie religieuse', 'Célébration du mariage à la Grande Mosquée'],
       ['17:30', 'Séance photo', 'Corniche ouest, avec les familles'],
@@ -54,8 +55,9 @@ export const TEMPLATE_DEMOS = {
     kicker: 'Le printemps de notre amour',
     description: 'Entourés de leurs familles, Grâce et Junior vous invitent à partager le plus beau jour de leur vie, entre fleurs, rires et musique.',
     eventDateTime: t('2027-04-24', '10:00'),
-    locationLabel: 'Le Jardin des Roses',
-    locationAddress: 'Kotto, Douala',
+    locationLabel: 'Cérémonie',
+    locationAddress: 'Paroisse Saint-Jean, Bonamoussadi',
+    additionalVenues: [{ label: 'Réception', address: 'Le Jardin des Roses, Kotto', time: '18 h 30 – 23 h 30' }],
     program: program('2027-04-24', [
       ['10:00', 'Mariage civil', 'Mairie de Douala 5e, Kotto'],
       ['13:00', 'Bénédiction nuptiale', 'Paroisse Saint-Jean, Bonamoussadi'],
@@ -162,10 +164,6 @@ export const TEMPLATE_DEMOS = {
       accounts: [['Orange Money', 'Ange (organisatrice)', '6 90 00 00 00'], ['MTN MoMo', 'Ange (organisatrice)', '6 70 00 00 00']],
       wishlist: [['Week-end détente à Kribi'], ['Enceinte Bluetooth', true], ['Cours de pâtisserie']],
     },
-    faq: [
-      ['Je peux venir accompagné·e ?', 'Bien sûr ! Indique simplement le nombre de personnes dans ta réponse.'],
-      ['Il y a un parking ?', 'Oui, un parking gardé est disponible au pied du rooftop.'],
-    ],
     guestbookHeading: 'Mur des vœux',
     guestbook: guestbook([
       ['Ange', '30 ans et toujours la plus drôle de la bande. Joyeux anniversaire !'],

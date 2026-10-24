@@ -17,7 +17,7 @@ namespace backend_EventMoment.Interfaces
     // E-mails envoyés à l'organisateur, filtrés par ses préférences de notification.
     public interface IOrganizerNotifier
     {
-        Task NotifyNewRsvpAsync(Guid eventId, string guestName, bool confirmed, int accompanyingCount);
+        Task NotifyNewRsvpAsync(Guid eventId, string guestName, bool? confirmed, int accompanyingCount);
         Task NotifyNewGuestbookEntryAsync(Guid eventId, string authorName);
     }
 }

@@ -14,6 +14,7 @@ import { useToast } from '../../utils/useToast'
 import EventCard from '../../components/events/EventCard'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import Button from '../../components/ui/Button'
+import { ConfirmDialog } from '../../components/ui/Dialog'
 import { formatEventDate, statusLabel } from '../../utils/eventStatus'
 
 const FILTERS = ['Tous', 'Publiés', 'Brouillons', 'Passés']
@@ -27,6 +28,8 @@ export default function MyEvents () {
   const [showArchived, setShowArchived] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [deletingEvent, setDeletingEvent] = useState(null)
+  const [deleteBusy, setDeleteBusy] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -80,8 +83,10 @@ export default function MyEvents () {
       await action()
       const fresh = await listEvents()
       setEvents(fresh ?? [])
+      return true
     } catch (err) {
       setError(err.message || "L'action a échoué.")
+      return false
     }
   }
 
@@ -114,13 +119,14 @@ export default function MyEvents () {
     )
   }
 
-  const handleDelete = event => {
-    const confirmed = window.confirm(
-      `Supprimer définitivement « ${event.name} » et son site ? Cette action est irréversible.`
-    )
-    if (!confirmed) return
+  const handleDelete = event => setDeletingEvent(event)
 
-    return runAction(() => deleteEvent(event.id))
+  const confirmDelete = async () => {
+    if (!deletingEvent || deleteBusy) return
+    setDeleteBusy(true)
+    const deleted = await runAction(() => deleteEvent(deletingEvent.id))
+    if (deleted) setDeletingEvent(null)
+    setDeleteBusy(false)
   }
 
   const handleArchive = event =>
@@ -355,6 +361,15 @@ export default function MyEvents () {
           </div>
         </>
       )}
+      <ConfirmDialog
+        open={Boolean(deletingEvent)}
+        title="Supprimer cet événement ?"
+        message={`L’événement « ${deletingEvent?.name ?? ''} », son site et ses données associées seront supprimés définitivement. Cette action est irréversible.`}
+        confirmLabel="Supprimer définitivement"
+        busy={deleteBusy}
+        onConfirm={confirmDelete}
+        onClose={() => !deleteBusy && setDeletingEvent(null)}
+      />
     </DashboardLayout>
   )
 }

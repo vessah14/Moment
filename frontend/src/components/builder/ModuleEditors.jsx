@@ -1,5 +1,6 @@
 import { Plus, Trash2 } from 'lucide-react'
 import { MOBILE_MONEY_OPERATORS } from '../../utils/mobileMoney'
+import { MAX_COMPANIONS, rsvpRules } from '../../utils/rsvpRules'
 
 // Éditeurs des blocs « Familles », « Dress code », « Cadeaux », « Intervenants » et
 // « Partenaires » (onglet Contenu du Builder). Tout est rangé dans le contenu JSON du
@@ -11,6 +12,94 @@ const labelClass = 'block text-xs font-medium text-muted'
 const addClass =
   'flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border px-3 py-2.5 text-sm font-medium text-muted transition hover:border-brand-purple hover:text-brand-purple disabled:opacity-40'
 const removeClass = 'rounded p-1 text-danger hover:bg-danger/10'
+
+// Section « Invitation » : la salutation générale, le début de la salutation adressée à
+// un invité (« Cher·e Awa, » sur son lien personnel) et la signature.
+export function InvitationEditor({ content, onChange }) {
+  return (
+    <div className="space-y-3">
+      <label className={labelClass}>
+        Salutation
+        <input className={`${inputClass} mt-1`} maxLength={80} placeholder="Ex. : Chers parents, chers amis," value={content.greeting ?? ''} onChange={(e) => onChange({ greeting: e.target.value })} />
+      </label>
+      <label className={labelClass}>
+        Sur le lien d'un invité
+        <input className={`${inputClass} mt-1`} maxLength={20} placeholder="Cher·e" value={content.prefix ?? ''} onChange={(e) => onChange({ prefix: e.target.value })} />
+        <span className="mt-1 block text-faint">Suivi du prénom de l'invité : « {(content.prefix ?? '').trim() || 'Cher·e'} Awa, ».</span>
+      </label>
+      <label className={labelClass}>
+        Signature
+        <input className={`${inputClass} mt-1`} maxLength={120} placeholder="Ex. : Awa & Ibrahim" value={content.signature ?? ''} onChange={(e) => onChange({ signature: e.target.value })} />
+      </label>
+    </div>
+  )
+}
+
+// Bloc RSVP : question « côté » posée à ceux qui viennent (un choix par ligne) et texte
+// du bouton d'en-tête.
+export function RsvpSidesEditor({ content, onChange }) {
+  const sides = Array.isArray(content.sides) ? content.sides : []
+  return (
+    <div className="space-y-3">
+      <label className={labelClass}>
+        Question
+        <input className={`${inputClass} mt-1`} maxLength={80} placeholder="Vous êtes invité par" value={content.sideLabel ?? ''} onChange={(e) => onChange({ sideLabel: e.target.value })} />
+      </label>
+      <label className={labelClass}>
+        Choix proposés (un par ligne, 8 au plus)
+        <textarea
+          className={`${inputClass} mt-1 resize-none`}
+          rows={5}
+          placeholder={'Famille de la mariée\nFamille du marié\nAmis du couple'}
+          value={sides.join('\n')}
+          onChange={(e) => onChange({ sides: e.target.value.split('\n').slice(0, 8).map((s) => s.slice(0, 80)) })}
+        />
+        <span className="mt-1 block text-faint">Sans choix, la question n'est pas posée. La réponse figure sur le pass et dans la liste des invités.</span>
+      </label>
+      <label className={labelClass}>
+        Bouton de l'en-tête
+        <input className={`${inputClass} mt-1`} maxLength={40} placeholder="Confirmer ma présence" value={content.cta ?? ''} onChange={(e) => onChange({ cta: e.target.value })} />
+      </label>
+      <RsvpRulesFields content={content} onChange={onChange} />
+    </div>
+  )
+}
+
+// Règles de réponse, vérifiées aussi par le serveur : date limite, accompagnants par
+// invitation, « Peut-être » et messages affichés après la réponse.
+export function RsvpRulesFields({ content, onChange }) {
+  const rules = rsvpRules(content)
+  return (
+    <div className="space-y-3 border-t border-border-soft pt-3">
+      <p className="text-sm font-medium text-ink">Règles de réponse</p>
+      <label className={labelClass}>
+        Répondre avant le
+        <input type="date" className={`${inputClass} mt-1`} value={rules.deadline} onChange={(e) => onChange({ deadline: e.target.value || null })} />
+        <span className="mt-1 block text-faint">Sans date, les invités peuvent répondre jusqu'au jour de l'événement.</span>
+      </label>
+      <label className={labelClass}>
+        Accompagnants par invitation
+        <select className={`${inputClass} mt-1`} value={rules.maxCompanions} onChange={(e) => onChange({ maxCompanions: Number(e.target.value) })}>
+          {Array.from({ length: MAX_COMPANIONS + 1 }, (_, i) => (
+            <option key={i} value={i}>{i === 0 ? 'Aucun (invitation personnelle)' : `${i} au plus`}</option>
+          ))}
+        </select>
+      </label>
+      <label className="flex items-center gap-2 text-sm text-ink">
+        <input type="checkbox" className="h-4 w-4 accent-brand-purple" checked={rules.allowMaybe} onChange={(e) => onChange({ allowMaybe: e.target.checked })} />
+        Proposer la réponse « Peut-être »
+      </label>
+      <label className={labelClass}>
+        Message après un « oui »
+        <input className={`${inputClass} mt-1`} maxLength={200} placeholder="Ex. : Nous avons hâte de danser avec vous !" value={content.yesMessage ?? ''} onChange={(e) => onChange({ yesMessage: e.target.value })} />
+      </label>
+      <label className={labelClass}>
+        Message après un « non »
+        <input className={`${inputClass} mt-1`} maxLength={200} placeholder="Ex. : Vous nous manquerez, merci de nous avoir prévenus." value={content.noMessage ?? ''} onChange={(e) => onChange({ noMessage: e.target.value })} />
+      </label>
+    </div>
+  )
+}
 
 function FamilyFields({ title, value = {}, onChange }) {
   const set = (patch) => onChange({ ...value, ...patch })
@@ -75,6 +164,85 @@ export function DressCodeEditor({ content, onChange }) {
       <button type="button" className={addClass} disabled={colors.length >= MAX_COLORS} onClick={() => onChange({ colors: [...colors, { hex: '#e8b4b8', name: '' }] })}>
         <Plus className="h-4 w-4" />
         Ajouter une couleur
+      </button>
+    </div>
+  )
+}
+
+const MAX_ADDITIONAL_VENUES = 4
+
+export function AdditionalVenuesEditor({ content, onChange }) {
+  const venues = Array.isArray(content.additionalVenues)
+    ? content.additionalVenues.map((venue) => ({
+        label: typeof venue?.label === 'string' ? venue.label : '',
+        address: typeof venue?.address === 'string' ? venue.address : '',
+        time: typeof venue?.time === 'string' ? venue.time : '',
+      }))
+    : []
+  const updateVenue = (index, patch) =>
+    onChange({
+      additionalVenues: venues.map((venue, i) => (i === index ? { ...venue, ...patch } : venue)),
+    })
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm font-medium text-ink">Autres lieux</p>
+      <p className="text-xs text-faint">
+        Le lieu principal est défini dans les informations de l’événement. Ajoutez ici la cérémonie, la réception ou d’autres étapes.
+      </p>
+      {venues.map((venue, index) => (
+        <div key={index} className="space-y-2 rounded-lg border border-border-soft bg-surface-2/40 p-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-faint">Lieu supplémentaire {index + 1}</span>
+            <button
+              type="button"
+              className={removeClass}
+              aria-label={`Retirer le lieu supplémentaire ${index + 1}`}
+              onClick={() => onChange({ additionalVenues: venues.filter((_, i) => i !== index) })}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <label className={labelClass}>
+            Étape ou type de lieu
+            <input
+              className={`${inputClass} mt-1`}
+              maxLength={60}
+              placeholder="Ex. : Cérémonie"
+              value={venue.label ?? ''}
+              onChange={(e) => updateVenue(index, { label: e.target.value })}
+            />
+          </label>
+          <label className={labelClass}>
+            Adresse
+            <input
+              className={`${inputClass} mt-1`}
+              maxLength={200}
+              placeholder="Ex. : Paroisse Saint-Jean, Douala"
+              value={venue.address ?? ''}
+              onChange={(e) => updateVenue(index, { address: e.target.value })}
+            />
+          </label>
+          <label className={labelClass}>
+            Horaire
+            <input
+              className={`${inputClass} mt-1`}
+              maxLength={60}
+              placeholder="Ex. : 10 h – 14 h 30"
+              value={venue.time ?? ''}
+              onChange={(e) => updateVenue(index, { time: e.target.value })}
+            />
+          </label>
+        </div>
+      ))}
+      <button
+        type="button"
+        className={addClass}
+        disabled={venues.length >= MAX_ADDITIONAL_VENUES}
+        onClick={() => onChange({ additionalVenues: [...venues, { label: '', address: '', time: '' }] })}
+      >
+        <Plus className="h-4 w-4" />
+        Ajouter un lieu
       </button>
     </div>
   )

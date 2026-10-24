@@ -15,7 +15,7 @@ const RAW_TEMPLATES = [
     premium: true,
     subtitle: "Mariage",
     description: "Émeraude, ivoire et or. Pour un mariage élégant, civil, religieux ou les deux.",
-    features: [{"label":"Ouverture","text":"enveloppe scellée qui s'ouvre et libère la carte"},{"label":"Fond","text":"poussière d'or flottante, motif étoile à huit branches"},{"label":"Modules","text":"histoire, programme, 2 lieux, galerie, liste de mariage, livre d’or, RSVP"}],
+    features: [{"label":"Ouverture","text":"enveloppe scellée qui s'ouvre et libère la carte"},{"label":"Fond","text":"poussière d'or flottante, motif étoile à huit branches"},{"label":"Modules","text":"histoire, programme, 2 lieux, tenue, plan de table, galerie, liste de mariage, livre d’or, RSVP"}],
     preview: {
       bg: "#0C2620",
       ink: "#F6F0E3",
@@ -25,7 +25,7 @@ const RAW_TEMPLATES = [
       title: "Awa & Ibrahim",
       date: "14 mars 2027 · Dakar"
     },
-    blocks: ["Histoire","Programme","Localisation","Galerie","Cadeaux","Livre d'or","RSVP","Pied de page"],
+    blocks: ["Histoire","Programme","Localisation","Dress code","Plan de table","Galerie","Cadeaux","Livre d'or","RSVP","Pied de page"],
     presentation: {
       heroAlign: "center",
       heroHeight: "32rem",
@@ -42,7 +42,7 @@ const RAW_TEMPLATES = [
     premium: true,
     subtitle: "Mariage",
     description: "Rose poudré et vert sauge. Pour un mariage champêtre, fleuri et lumineux.",
-    features: [{"label":"Ouverture","text":"une fleur éclot et libère l'invitation"},{"label":"Fond","text":"pétales qui tombent, couronne de feuillage qui pousse"},{"label":"Modules","text":"histoire, 2 lieux, plan de table, liste de mariage, livre d’or, pass QR"}],
+    features: [{"label":"Ouverture","text":"une fleur éclot et libère l'invitation"},{"label":"Fond","text":"pétales qui tombent, couronne de feuillage qui pousse"},{"label":"Modules","text":"histoire, programme, 2 lieux, tenue, plan de table, galerie, liste de mariage, livre d’or, RSVP et pass QR"}],
     preview: {
       bg: "#FBF3EF",
       ink: "#3A2A2E",
@@ -52,7 +52,7 @@ const RAW_TEMPLATES = [
       title: "Grâce & Junior",
       date: "24 avril 2027 · Douala"
     },
-    blocks: ["Histoire","Programme","Localisation","Plan de table","Cadeaux","Livre d'or","RSVP","Pied de page"],
+    blocks: ["Histoire","Programme","Localisation","Dress code","Plan de table","Galerie","Cadeaux","Livre d'or","RSVP","Pied de page"],
     presentation: {
       heroAlign: "center",
       heroHeight: "32rem",
@@ -123,7 +123,7 @@ const RAW_TEMPLATES = [
     premium: true,
     subtitle: "Anniversaire",
     description: "Couleurs vives et gros chiffre de l'âge. Pour les anniversaires qui se fêtent en grand.",
-    features: [{"label":"Ouverture","text":"cadeau qui s'ouvre dans une pluie de confettis"},{"label":"Fond","text":"ballons qui montent, motif confettis"},{"label":"Modules","text":"programme, lieu, cagnotte Mobile Money, mur des vœux, FAQ, RSVP"}],
+    features: [{"label":"Ouverture","text":"cadeau qui s'ouvre dans une pluie de confettis"},{"label":"Fond","text":"ballons qui montent, motif confettis"},{"label":"Modules","text":"programme, lieu, tenue, galerie, cagnotte Mobile Money, mur des vœux et RSVP"}],
     preview: {
       bg: "#FFF6EE",
       ink: "#2A1640",
@@ -132,7 +132,7 @@ const RAW_TEMPLATES = [
       title: "Les 30 ans de Manuella",
       date: "21 nov. · Douala"
     },
-    blocks: ["Rebours","Programme","Localisation","Dress code","Galerie","Cadeaux","Livre d'or","RSVP","FAQ","Pied de page"],
+    blocks: ["Rebours","Programme","Localisation","Dress code","Galerie","Cadeaux","Livre d'or","RSVP","Pied de page"],
     presentation: {
       heroAlign: "center",
       heroHeight: "32rem",
@@ -590,7 +590,7 @@ const RAW_TEMPLATES = [
     presentation: { heroAlign: "center", heroHeight: "32rem", panelRadius: "1rem" }
   },
   {
-    name: "Câlin",
+    name: "Douceur",
     theme: "douceur",
     sourceModel: "douceur.html",
     category: "Baby shower",
@@ -758,7 +758,7 @@ const RAW_TEMPLATES = [
     presentation: { heroAlign: "center", heroHeight: "32rem", panelRadius: "1rem" }
   },
   {
-    name: "Lys",
+    name: "Aurore",
     theme: "aurore",
     sourceModel: "aurore.html",
     category: "Fêtes",
@@ -883,7 +883,7 @@ const RAW_TEMPLATES = [
     name: "Signal",
     category: "Conférence",
     categoryCode: "conference",
-    badge: "PREMIUM",
+    badge: "GRATUIT",
     preview: {
       bg: "#0f1024",
       ink: "#f2f2ff",
@@ -923,7 +923,7 @@ const RAW_TEMPLATES = [
     name: "Promo",
     category: "Graduation",
     categoryCode: "graduation",
-    badge: "PREMIUM",
+    badge: "GRATUIT",
     preview: {
       bg: "#0d2a3a",
       ink: "#eef7fb",
@@ -943,7 +943,7 @@ const RAW_TEMPLATES = [
     name: "Amplify",
     category: "Concert",
     categoryCode: "concert",
-    badge: "PREMIUM",
+    badge: "GRATUIT",
     preview: {
       bg: "#140a1f",
       ink: "#fff1e8",
@@ -984,7 +984,7 @@ const RAW_TEMPLATES = [
     name: "Ivoire",
     category: "Mariage",
     categoryCode: "mariage",
-    badge: "PREMIUM",
+    badge: "GRATUIT",
     preview: {
       bg: "#fffdf8",
       ink: "#2f2a24",
@@ -1043,7 +1043,7 @@ const RAW_TEMPLATES = [
     name: "Néon",
     category: "Anniversaire",
     categoryCode: "anniversaire",
-    badge: "PREMIUM",
+    badge: "GRATUIT",
     preview: {
       bg: "#120c24",
       ink: "#f7f2ff",
@@ -1067,7 +1067,7 @@ const RAW_TEMPLATES = [
     }
   },
   {
-    name: "Douceur",
+    name: "Tendresse",
     category: "Anniversaire",
     categoryCode: "anniversaire",
     badge: "GRATUIT",
@@ -1155,7 +1155,7 @@ const RAW_TEMPLATES = [
     name: "Forum",
     category: "Conférence",
     categoryCode: "conference",
-    badge: "PREMIUM",
+    badge: "GRATUIT",
     preview: {
       bg: "#f7f9fc",
       ink: "#0f172a",
@@ -1242,7 +1242,7 @@ const RAW_TEMPLATES = [
     name: "Plume",
     category: "Baptême",
     categoryCode: "bapteme",
-    badge: "PREMIUM",
+    badge: "GRATUIT",
     minimal: true,
     preview: {
       bg: "#fdf7f9",
@@ -1271,7 +1271,7 @@ const RAW_TEMPLATES = [
     name: "Velours",
     category: "Soirée privée",
     categoryCode: "soiree_privee",
-    badge: "PREMIUM",
+    badge: "GRATUIT",
     preview: {
       bg: "#1a0f14",
       ink: "#fbeff2",
@@ -1378,7 +1378,7 @@ const RAW_TEMPLATES = [
     name: "Ferveur",
     category: "Religieux",
     categoryCode: "evenement_religieux",
-    badge: "PREMIUM",
+    badge: "GRATUIT",
     preview: {
       bg: "#13213a",
       ink: "#f1f5ff",
@@ -1407,7 +1407,7 @@ const RAW_TEMPLATES = [
     name: "Arène",
     category: "Sport",
     categoryCode: "competition_sportive",
-    badge: "PREMIUM",
+    badge: "GRATUIT",
     preview: {
       bg: "#0d1117",
       ink: "#f0f6fc",
@@ -1515,10 +1515,10 @@ const RAW_TEMPLATES = [
     }
   },
   {
-    name: "Aurore",
+    name: "Aube",
     category: "Personnalisé",
     categoryCode: "evenement_personnalise",
-    badge: "PREMIUM",
+    badge: "GRATUIT",
     preview: {
       bg: "#140f2b",
       ink: "#f5f3ff",
@@ -1553,11 +1553,17 @@ function isDark(hex) {
 
 // `meta` (ligne descriptive des cartes) est calculé : il reste toujours fidèle
 // à la composition réelle du modèle (Hero + blocs).
+// Chaque modèle s'ouvre sur la section « Invitation » (salutation, texte, signature),
+// juste après le Hero.
 export const TEMPLATES = RAW_TEMPLATES.map((template) => ({
   ...template,
+  blocks: ['Invitation', ...template.blocks.filter((b) => b !== 'Invitation')],
+  // Le badge suit la liste vérifiée par le serveur (PremiumTemplates.cs) : un modèle sans
+  // `premium` est utilisable avec l'offre Free, quel que soit son badge d'origine.
+  badge: template.premium ? 'PREMIUM' : 'GRATUIT',
   meta: [
     template.category,
-    `${template.blocks.length + 1} blocs`,
+    `${template.blocks.filter((b) => b !== 'Invitation').length + 2} blocs`,
     template.minimal ? 'sobre' : isDark(template.preview.bg) ? 'sombre' : 'clair',
   ].join(' · '),
 }))

@@ -42,8 +42,9 @@ export default function cspPlugin(env) {
           "font-src 'self' data: https://fonts.gstatic.com",
           // Couvertures (API, Cloudinary), photos Google, cartes : images https uniquement.
           "img-src 'self' data: blob: https:",
-          `connect-src 'self' ${apiOrigin} ${google.join(" ")} ${translate.join(" ")}`,
-          `frame-src https://www.google.com https://maps.google.com ${google.join(" ")} https://translate.google.com`,
+          // fonts.* : la capture des billets (PDF, image) intègre les polices des modèles.
+          `connect-src 'self' ${apiOrigin} https://fonts.googleapis.com https://fonts.gstatic.com ${google.join(" ")} ${translate.join(" ")}`,
+          `frame-src 'self' https://www.google.com https://maps.google.com ${google.join(" ")} https://translate.google.com`,
           "object-src 'none'",
           "base-uri 'self'",
         ].join("; ");

@@ -541,7 +541,7 @@ export const MORE_THEMES = {
   },
   douceur: {
     id: 'douceur',
-    name: 'Câlin',
+    name: 'Douceur',
     fonts: `${GF}family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap`,
     intro: 'gift',
     hero: 'split',
@@ -579,6 +579,7 @@ export const MORE_THEMES = {
     ornament: ORN.flame,
     frame: '',
     kicker: 'Retrait de deuil',
+    ticketPre: 'Célébrons la vie de',
     introFor: 'La famille vous convie',
     countdownLabel: 'La cérémonie dans',
     portrait: true,
@@ -679,7 +680,7 @@ export const MORE_THEMES = {
   },
   aurore: {
     id: 'aurore',
-    name: 'Lys',
+    name: 'Aurore',
     fonts: `${GF}family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Lato:wght@400;700&display=swap`,
     intro: 'candle',
     hero: 'centered',

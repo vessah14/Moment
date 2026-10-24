@@ -1,105 +1,156 @@
+import { Check, QrCode, Ticket } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import heroPreview from '../../assets/img001.jpg'
-import { EVENT_CATEGORIES } from '../../data/eventCategories'
+import campusShot from '../../assets/home/campus.webp'
+import fiestaShot from '../../assets/home/fiesta.webp'
+import ndopShot from '../../assets/home/ndop.webp'
+import toghuShot from '../../assets/home/toghu.webp'
 import { TEMPLATES } from '../../data/templates'
-import BrandBackdrop from '../ui/BrandBackdrop'
 import Button from '../ui/Button'
+import FestiveBackground from './FestiveBackground'
 
-const STATS = [
-  { value: String(EVENT_CATEGORIES.length), label: "types d'événements" },
-  { value: String(TEMPLATES.length), label: 'modèles prêts' },
-  { value: '10 min', label: 'pour publier' },
+// En-tête de l'accueil (repris du prototype) : titre, trois téléphones qui montrent de
+// vrais modèles (captures des démos) et changent toutes les 4,5 s, bulles de notifications
+// qui flottent, puis bande défilante des types d'événements.
+
+const PREMIUM_COUNT = TEMPLATES.filter((t) => t.theme).length
+const SHOTS = [
+  { src: toghuShot, alt: 'Modèle Toghu Royal pour une dot' },
+  { src: ndopShot, alt: 'Modèle Ndop pour une dot' },
+  { src: campusShot, alt: 'Modèle Campus pour une journée culturelle' },
+  { src: fiestaShot, alt: 'Modèle Fiesta pour un anniversaire' },
 ]
+const OCCASIONS = [
+  'Mariage', 'Dot', 'Anniversaire', 'Baptême', 'Baby shower', 'Obsèques', 'Retrait de deuil',
+  'Remise des diplômes', 'Journée culturelle', 'Portes ouvertes', 'Kermesse', 'Conférence',
+  'Séminaire', 'Lancement de produit', "Soirée d'entreprise", 'Concert', 'Tournoi',
+  'Journée citoyenne', 'Noël', 'Nouvel An', 'Saint-Valentin', 'Pâques', 'Aïd', '20 mai',
+  'Fête des mères', 'Réunion familiale', 'Crémaillère', 'Culte et veillée',
+]
+const TRUST = ['Gratuit pour commencer', 'Aucune application à installer', 'Orange Money et MTN MoMo']
+
+// Les quatre captures sont empilées et déjà chargées dans chaque téléphone : seule leur
+// opacité change, d'où un fondu enchaîné sans écran vide pendant le chargement.
+function Phone({ active, className }) {
+  return (
+    <div className={`hero-phone ${className}`}>
+      <div className="hero-phone-screen">
+        {SHOTS.map((s, i) => (
+          <img
+            key={s.src}
+            src={s.src}
+            alt={i === active ? s.alt : ''}
+            decoding="async"
+            className={`hero-phone-img ${i === active ? 'is-active' : ''}`}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function Float({ className, color, icon: Icon, title, text }) {
+  return (
+    <div className={`hero-float ${className}`}>
+      <span className="grid h-9 w-9 flex-none place-items-center rounded-[10px] text-white" style={{ background: color }}>
+        <Icon className="h-[18px] w-[18px]" />
+      </span>
+      <span>
+        <b className="block text-[0.84rem]">{title}</b>
+        <small className="text-[#5B5680]">{text}</small>
+      </span>
+    </div>
+  )
+}
 
 export default function Hero() {
-  return (
-    <section className="relative overflow-hidden">
-      <BrandBackdrop />
+  const [k, setK] = useState(0)
 
-      <div className="relative mx-auto grid max-w-7xl gap-16 px-6 py-20 lg:grid-cols-2 lg:items-center lg:py-28">
+  // Les téléphones changent de modèle toutes les 4,5 s (pas si on réduit les animations,
+  // ni quand l'onglet est caché).
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined
+    const id = window.setInterval(() => {
+      if (!document.hidden) setK((v) => (v + 1) % SHOTS.length)
+    }, 4500)
+    return () => window.clearInterval(id)
+  }, [])
+
+
+  return (
+    <section className="relative isolate overflow-x-clip" data-no-reveal>
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-[-20%] -top-[10%] -z-10 h-[720px]"
+        style={{
+          background:
+            'radial-gradient(40% 50% at 18% 30%, #FF7A3D26, transparent 70%), radial-gradient(45% 55% at 78% 25%, #6C4BF44D, transparent 70%), radial-gradient(35% 40% at 55% 75%, #E2337E1F, transparent 70%)',
+        }}
+      />
+      <FestiveBackground />
+
+      <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-6 pt-14 pb-8 text-center lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:text-left">
         <div>
-          <span className="inline-flex items-center rounded-full border border-border px-4 py-1.5 text-xs font-semibold tracking-widest text-brand-purple uppercase">
-            Create. Connect. Celebrate.
+          <span className="inline-flex items-center gap-2 rounded-full border border-border-soft bg-surface/70 py-1.5 pr-3 pl-1.5 text-[0.82rem] text-muted">
+            <b className="rounded-full bg-[linear-gradient(100deg,#FF7A3D_0%,#E2337E_50%,#6C4BF4_100%)] px-2 py-0.5 text-[0.7rem] font-bold text-white">
+              Nouveau
+            </b>
+            Mariages, dots, écoles, concerts : {PREMIUM_COUNT} modèles premium
           </span>
 
-          <h1 className="mt-6 text-5xl leading-[1.05] font-bold tracking-tight text-ink lg:text-6xl">
-            Vos événements.
-            <br />
-            Votre univers.
-            <br />
-            <span className="text-brand-gradient">Votre moment.</span>
+          <h1 className="mt-5 text-[clamp(2.5rem,6.4vw,4.6rem)] leading-[1.02] font-extrabold tracking-[-0.045em] text-ink">
+            Vos moments importants méritent{' '}
+            <span className="bg-[linear-gradient(100deg,#FF7A3D_0%,#E2337E_50%,#6C4BF4_100%)] bg-clip-text text-transparent">
+              mieux qu'un flyer.
+            </span>
           </h1>
 
-          <p className="mt-6 max-w-lg text-lg text-muted">
-            Créez un site d'événement, envoyez vos invitations, suivez vos
-            confirmations et accueillez vos invités au QR code. Sans une
-            ligne de code.
+          <p className="mx-auto mt-5 max-w-xl text-[clamp(1.02rem,1.6vw,1.17rem)] text-muted lg:mx-0">
+            Créez en 5 minutes une page qui s'ouvre comme une vraie invitation. Partagez-la sur
+            WhatsApp, voyez qui vient, vendez vos billets par Mobile Money et accueillez vos
+            invités avec un QR code.
           </p>
 
-          <div className="mt-8 flex flex-wrap items-center gap-4">
-            <Button as={Link} to="/inscription" variant="gradient">
-              Créer mon événement
+          <div className="mt-7 flex flex-wrap justify-center gap-3 lg:justify-start">
+            <Button as={Link} to="/inscription" variant="gradient" className="rounded-[14px] px-6 py-3.5 text-base shadow-[0_14px_40px_-14px_#E2337E]">
+              Créer mon événement gratuitement
             </Button>
-            <Button as={Link} to="/modeles" variant="outline">
-              Explorer les modèles
+            <Button as={Link} to="/modeles" variant="outline" className="rounded-[14px] px-6 py-3.5 text-base">
+              Voir les modèles
             </Button>
           </div>
 
-          <div className="mt-12 flex max-w-md items-center gap-8 border-t border-border-soft pt-8">
-            {STATS.map((stat) => (
-              <div key={stat.label}>
-                <p className="font-mono text-2xl font-bold text-ink">
-                  {stat.value}
-                </p>
-                <p className="mt-1 text-xs text-faint">{stat.label}</p>
-              </div>
+          <ul className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2 text-[0.84rem] text-muted lg:justify-start">
+            {TRUST.map((t) => (
+              <li key={t} className="inline-flex items-center gap-1.5">
+                <Check aria-hidden="true" className="h-4 w-4 text-[#3DD68C]" strokeWidth={2.6} />
+                {t}
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
 
-        <div className="relative">
-          <div className="rounded-2xl border border-border bg-surface shadow-2xl shadow-black/40">
-            <div className="flex items-center gap-2 border-b border-border-soft px-4 py-3">
-              <span className="h-2.5 w-2.5 rounded-full bg-brand-orange" />
-              <span className="h-2.5 w-2.5 rounded-full bg-brand-pink" />
-              <span className="h-2.5 w-2.5 rounded-full bg-brand-purple" />
-              <span className="ml-2 font-mono text-xs text-faint">
-                tbfmoment.com/awa-ibrahim
+        <div className="hero-stage" aria-hidden="true">
+          <Phone active={(k + 1) % SHOTS.length} className="hero-phone-left" />
+          <Phone active={(k + 2) % SHOTS.length} className="hero-phone-right" />
+          <Phone active={k} className="hero-phone-main" />
+          <Float className="hero-float-1" color="#25A86A" icon={Check} title="Brenda a répondu oui" text="3 personnes · Famille de la mariée" />
+          <Float className="hero-float-2" color="#FF7900" icon={Ticket} title="2 billets Gradins vendus" text="20 000 FCFA · Orange Money" />
+          <Float className="hero-float-3" color="#6C4BF4" icon={QrCode} title="Pass valide" text="Laure Ndjock · 4 places" />
+        </div>
+      </div>
+
+      <div className="relative pt-4 pb-10" aria-label="Types d'événements">
+        <p className="mb-4 text-center font-mono text-[0.72rem] tracking-[0.12em] text-faint uppercase">
+          Un modèle pour chaque occasion
+        </p>
+        <div className="hero-marquee">
+          <div>
+            {[...OCCASIONS, ...OCCASIONS].map((t, i) => (
+              <span key={i} aria-hidden={i >= OCCASIONS.length || undefined}>
+                {t}
               </span>
-            </div>
-            <div className="aspect-4/3 overflow-hidden">
-              <img
-                src={heroPreview}
-                alt="Alliances de mariage"
-                className="h-full w-full object-cover"
-              />
-            </div>
-          </div>
-
-          <div className="absolute -bottom-6 -left-6 hidden w-56 rounded-xl border border-border bg-panel p-4 shadow-xl shadow-black/40 sm:block">
-            <div className="flex items-center gap-2 text-sm font-semibold text-success">
-              <span className="h-2 w-2 rounded-full bg-success" />
-              Entrée validée
-            </div>
-            <p className="mt-2 text-sm font-medium text-ink">Fatou Ndiaye</p>
-            <p className="mt-1 font-mono text-xs text-faint">
-              00:41 · +2 accomp.
-            </p>
-          </div>
-
-          <div className="absolute -right-4 -bottom-10 hidden gap-3 sm:flex">
-            <div className="rounded-xl border border-border bg-panel px-4 py-3 shadow-xl shadow-black/40">
-              <p className="text-brand-gradient font-mono text-xl font-bold">
-                32
-              </p>
-              <p className="mt-1 text-xs text-faint">en attente</p>
-            </div>
-            <div className="rounded-xl border border-border bg-panel px-4 py-3 shadow-xl shadow-black/40">
-              <p className="text-brand-gradient font-mono text-xl font-bold">
-                240
-              </p>
-              <p className="mt-1 text-xs text-faint">invités</p>
-            </div>
+            ))}
           </div>
         </div>
       </div>

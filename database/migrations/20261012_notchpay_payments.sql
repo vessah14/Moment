@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS public.notchpay_payments (
     organizer_id   UUID NOT NULL REFERENCES public.organizers(id) ON DELETE CASCADE,
     plan_id        UUID NOT NULL REFERENCES public.subscription_plans(id),
     external_id    VARCHAR(100) NOT NULL UNIQUE,
+    idempotency_key UUID,
     transaction_id VARCHAR(100) UNIQUE,
     status         VARCHAR(20) NOT NULL DEFAULT 'PENDING'
                    CHECK (status IN ('CREATED', 'PENDING', 'SUCCESSFUL', 'FAILED', 'EXPIRED')),
@@ -42,6 +43,9 @@ CREATE TABLE IF NOT EXISTS public.notchpay_payments (
     updated_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
     paid_at        TIMESTAMPTZ
 );
+
+ALTER TABLE public.notchpay_payments
+    ADD COLUMN IF NOT EXISTS idempotency_key UUID;
 
 ALTER TABLE public.organizer_subscriptions
     ADD COLUMN IF NOT EXISTS notchpay_payment_id UUID
@@ -67,6 +71,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_organizer_subscriptions_notchpay_payment
     WHERE notchpay_payment_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_notchpay_payments_organizer
     ON public.notchpay_payments(organizer_id, created_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_notchpay_payments_idempotency
+    ON public.notchpay_payments(organizer_id, idempotency_key)
+    WHERE idempotency_key IS NOT NULL;
 
 ALTER TABLE public.notchpay_payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notchpay_payments FORCE ROW LEVEL SECURITY;

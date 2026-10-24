@@ -5,45 +5,14 @@ import TemplateCard from '../components/templates/TemplateCard'
 import Header from '../components/layout/Header'
 import Footer from '../components/layout/Footer'
 import { TEMPLATES } from '../data/templates'
+import { TEMPLATE_UNIVERSES } from '../data/templateUniverses'
 import { routeSeo } from '../data/seoRoutes'
 import { siteUrl, useSeo } from '../utils/seo'
 
 const PREVIEWABLE_TEMPLATES = TEMPLATES.filter(tpl => tpl.theme)
 
-const TEMPLATE_CATEGORIES = [
-  {
-    id: 'prive',
-    label: 'Événements privés',
-    categories: [
-      'Mariage',
-      'Anniversaire',
-      'Baptême',
-      'Religieux',
-      'Hommage',
-      'Familial',
-      'Soirée privée',
-      'Personnalisé',
-      'Autre',
-      'Baby shower',
-      'Retrait de deuil'
-    ]
-  },
-  {
-    id: 'ecoles',
-    label: 'Écoles',
-    categories: ['Scolaire', 'Graduation']
-  },
-  {
-    id: 'entreprises',
-    label: 'Entreprises et associations',
-    categories: ['Professionnel', 'Conférence', 'Concert', 'Sport']
-  },
-  {
-    id: 'saisons',
-    label: 'Fêtes et saisons',
-    categories: ['Fêtes']
-  }
-]
+// Univers partagés avec l'accueil (data/templateUniverses.js).
+const TEMPLATE_CATEGORIES = TEMPLATE_UNIVERSES
 
 export default function Templates () {
   useSeo(routeSeo('/modeles', siteUrl()))

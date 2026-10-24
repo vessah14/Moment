@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { GUEST_STATUS_BY_LABEL, guestStatusLabel } from './guestStatus'
+import { GUEST_STATUS_BY_FILTER, guestStatusLabel, hasGuestStatus } from './guestStatus'
 
 describe('guestStatusLabel', () => {
   it('maps known backend statuses to French labels', () => {
@@ -13,10 +13,18 @@ describe('guestStatusLabel', () => {
   })
 })
 
-describe('GUEST_STATUS_BY_LABEL', () => {
-  it('is the exact inverse of the label map', () => {
-    expect(GUEST_STATUS_BY_LABEL['Confirmé']).toBe('Present')
-    expect(GUEST_STATUS_BY_LABEL['Refus']).toBe('Absent')
-    expect(GUEST_STATUS_BY_LABEL['En attente']).toBe('EnAttente')
+describe('GUEST_STATUS_BY_FILTER', () => {
+  it('maps each dashboard filter label to its backend status', () => {
+    expect(GUEST_STATUS_BY_FILTER.Confirmés).toBe('Present')
+    expect(GUEST_STATUS_BY_FILTER.Refus).toBe('Absent')
+    expect(GUEST_STATUS_BY_FILTER['En attente']).toBe('EnAttente')
+  })
+})
+
+describe('hasGuestStatus', () => {
+  it('matches status values without case or surrounding whitespace differences', () => {
+    expect(hasGuestStatus(' present ', 'Present')).toBe(true)
+    expect(hasGuestStatus('EnAttente', 'enattente')).toBe(true)
+    expect(hasGuestStatus('Absent', 'Present')).toBe(false)
   })
 })

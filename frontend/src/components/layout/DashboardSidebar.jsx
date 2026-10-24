@@ -24,7 +24,7 @@ import { useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { listGuests } from '../../api/guests'
 import UpgradeDialog from '../plan/UpgradeDialog'
-import { isEventLimitReached, usePlan } from '../../utils/usePlan'
+import { eventUsagePercent, isEventLimitReached, usePlan } from '../../utils/usePlan'
 import { GUESTS_CHANGED_EVENT } from '../../utils/guestEvents'
 import BrandLogo from '../ui/BrandLogo'
 import logoMark from '../../assets/logo-mark.png'
@@ -91,7 +91,7 @@ function useGuestCount() {
 export default function DashboardSidebar({ open, onClose }) {
   const guestCount = useGuestCount()
   const badges = { guests: guestCount }
-  const plan = usePlan()
+  const { plan, loading: planLoading, error: planError, retry: retryPlan } = usePlan()
   const [upgradeOpen, setUpgradeOpen] = useState(false)
   const [collapsed, setCollapsed] = useLocalStorageState(
     'tbf_sidebar_collapsed',
@@ -200,7 +200,7 @@ export default function DashboardSidebar({ open, onClose }) {
           }`}
         >
           <span className="font-mono text-[11px] font-semibold tracking-wider text-brand-orange uppercase">
-            Plan {plan?.planLabel ?? '…'}
+            Plan {plan?.planLabel ?? (planLoading ? '…' : 'indisponible')}
           </span>
           {plan && (
             <p className="mt-1.5 text-sm text-muted">
@@ -208,6 +208,30 @@ export default function DashboardSidebar({ open, onClose }) {
                 ? `${plan.eventsUsed} événement${plan.eventsUsed > 1 ? 's' : ''} · illimité`
                 : `${plan.eventsUsed} événement${plan.eventsUsed > 1 ? 's' : ''} sur ${plan.maxEvents} utilisé${plan.eventsUsed > 1 ? 's' : ''}`}
             </p>
+          )}
+          {!plan && planLoading && (
+            <>
+              <p className="mt-1.5 text-sm text-muted">Chargement du quota d’événements…</p>
+              <div
+                className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-border-soft"
+                role="progressbar"
+                aria-label="Chargement du quota d’événements"
+              >
+                <div className="h-full w-1/3 animate-pulse rounded-full bg-[color:var(--color-gold)]" />
+              </div>
+            </>
+          )}
+          {!plan && planError && (
+            <div className="mt-2.5">
+              <p className="text-xs text-danger">{planError}</p>
+              <button
+                type="button"
+                onClick={retryPlan}
+                className="mt-2 text-xs font-medium text-brand-purple hover:underline"
+              >
+                Réessayer
+              </button>
+            </div>
           )}
           {plan?.maxEvents != null && (
             <div
@@ -220,7 +244,7 @@ export default function DashboardSidebar({ open, onClose }) {
             >
               <div
                 className={`h-full rounded-full ${isEventLimitReached(plan) ? 'bg-danger' : 'bg-[linear-gradient(92deg,_var(--color-brand-orange),_var(--color-brand-pink))]'}`}
-                style={{ width: `${Math.min(100, Math.round((plan.eventsUsed / Math.max(1, plan.maxEvents)) * 100))}%` }}
+                style={{ width: `${eventUsagePercent(plan)}%` }}
               />
             </div>
           )}
@@ -230,7 +254,7 @@ export default function DashboardSidebar({ open, onClose }) {
           {plan?.pendingRequest && (
             <p className="mt-2 text-xs font-medium text-brand-orange">Demande {plan.pendingRequest.planLabel} en cours</p>
           )}
-          {plan?.planCode !== 'eventpro' && (
+          {plan && plan.planCode !== 'eventpro' && (
             <button
               type="button"
               onClick={() => setUpgradeOpen(true)}

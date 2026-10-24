@@ -138,6 +138,35 @@ export function templateBlocks(template) {
   return Array.isArray(template?.blocks) ? template.blocks : [];
 }
 
+// Composition minimale d'un nouveau site : sections du modèle, programme, RSVP et
+// contributions. Les sections ajoutées restent avant le pied de page.
+export function newEventPageBlocks(template) {
+  const blocks = [...templateBlocks(template)];
+  const additions = ["Programme", "Cadeaux", "RSVP"].filter(
+    (type) => !blocks.includes(type),
+  );
+  const footer = blocks.indexOf("Pied de page");
+  blocks.splice(footer < 0 ? blocks.length : footer, 0, ...additions);
+  return blocks;
+}
+
+export function missingEventPageBlocks(template, existingBlocks = []) {
+  const existing = new Set(
+    existingBlocks.map((block) =>
+      normalizeBlockType(typeof block === "string" ? block : block?.blockType),
+    ),
+  );
+  return newEventPageBlocks(template).filter((type) => !existing.has(type));
+}
+
+export function ensureRsvpBlock(blocks) {
+  if (blocks.includes("RSVP")) return [...blocks];
+  const result = [...blocks];
+  const footer = result.indexOf("Pied de page");
+  result.splice(footer < 0 ? result.length : footer, 0, "RSVP");
+  return result;
+}
+
 // Titre de section proposé par un modèle (« Line-up » pour un concert, « Registre de
 // condoléances » pour un hommage…), sinon le titre par défaut du bloc.
 export function templateBlockHeading(template, type) {
@@ -150,6 +179,7 @@ export function templateBlockHeading(template, type) {
 }
 
 const PREMIUM_HEADINGS = {
+  Invitation: "Invitation",
   Histoire: "Notre histoire",
   Programme: "Programme",
   Localisation: "Le lieu",

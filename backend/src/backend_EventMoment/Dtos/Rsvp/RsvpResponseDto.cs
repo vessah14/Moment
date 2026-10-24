@@ -8,6 +8,7 @@ namespace backend_EventMoment.Dtos
         public bool? Confirmed { get; set; }
         public short AccompanyingCount { get; set; }
         public string? Message { get; set; }
+        public string? Side { get; set; }
         public DateTimeOffset? RespondedAt { get; set; }
     }
 }

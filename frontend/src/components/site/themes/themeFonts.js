@@ -6,6 +6,8 @@ export function loadThemeFonts(theme) {
   const link = document.createElement('link')
   link.id = id
   link.rel = 'stylesheet'
+  // CORS : la capture des billets peut lire ces polices pour les intégrer au PDF et à l'image.
+  link.crossOrigin = 'anonymous'
   link.href = theme.fonts
   document.head.appendChild(link)
 }

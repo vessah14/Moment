@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { getPublicReviews } from '../../api/account'
 import Avatar from '../ui/Avatar'
 import BrandBackdrop from '../ui/BrandBackdrop'
+import SectionHeader from './SectionHeader'
 
 // Témoignages : avis réels des clients, publiés après validation par l'équipe (console
 // admin, Modération). Sans avis publié, la section invite les clients à donner le leur.
@@ -24,19 +25,17 @@ export default function Testimonials() {
     <section className="relative overflow-hidden">
       <BrandBackdrop side="left" />
       <div className="relative mx-auto max-w-7xl px-6 py-20">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <span className="text-xs font-semibold tracking-widest text-brand-purple uppercase">
-              Témoignages
-            </span>
-            <h2 className="mt-3 text-3xl font-bold text-ink">Ils ont créé leur moment</h2>
-          </div>
-          {reviews?.length > 0 && (
-            <Link to="/dashboard/avis" className="text-sm font-medium text-brand-purple hover:underline">
-              Donner mon avis
-            </Link>
-          )}
-        </div>
+        <SectionHeader
+          eyebrow="Témoignages"
+          title="Ils ont créé leur moment"
+          action={
+            reviews?.length > 0 && (
+              <Link to="/dashboard/avis" className="text-sm font-medium text-brand-purple hover:underline">
+                Donner mon avis
+              </Link>
+            )
+          }
+        />
 
         {reviews === null ? (
           <div className="mt-10 grid gap-6 lg:grid-cols-3" aria-hidden="true">

@@ -28,5 +28,13 @@ namespace backend_EventMoment.Dtos
         public List<GalleryPhotoDto> GalleryPhotos { get; set; } = new();
         public List<PublicGuestBookEntryDto> GuestBookEntries { get; set; } = new();
         public List<TicketTypeDto> TicketTypes { get; set; } = new();
+        // Faux si l'offre de l'organisateur retire la mention « Créé avec TBF MOMENT ».
+        public bool ShowBranding { get; set; } = true;
+        // Modèle de billet et mention sous le QR code (null = modèle conseillé pour le modèle de site).
+        public string? TicketStyle { get; set; }
+        public string? TicketNote { get; set; }
+        // Organisateur affiché sur la page (« Organisé par … ») ; logo seulement avec l'offre Business et plus.
+        public string? OrganizerName { get; set; }
+        public string? OrganizerLogoUrl { get; set; }
     }
 }

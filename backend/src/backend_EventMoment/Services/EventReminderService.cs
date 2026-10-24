@@ -9,10 +9,12 @@ namespace backend_EventMoment.Services
     public class EventReminderService : IEventReminderService
     {
         private readonly AdminDbContext _context;
+        private readonly IPlanService? _plans;
 
-        public EventReminderService(AdminDbContext context)
+        public EventReminderService(AdminDbContext context, IPlanService? plans = null)
         {
             _context = context;
+            _plans = plans;
         }
 
         private Task<bool> OwnsEventAsync(Guid eventId, Guid organizerId) =>
@@ -43,6 +45,9 @@ namespace backend_EventMoment.Services
 
             if (!await OwnsEventAsync(eventId, organizerId))
                 throw new KeyNotFoundException("Événement introuvable.");
+            // Activer un rappel automatique demande une offre qui l'inclut ; le désactiver reste libre.
+            if (enabled && _plans != null)
+                await _plans.EnsureFeatureAsync(organizerId, PlanFeature.AutoReminders);
 
             var entity = await _context.EventReminders
                 .FirstOrDefaultAsync(r => r.EventId == eventId && r.Kind == kind);

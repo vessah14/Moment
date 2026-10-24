@@ -27,6 +27,9 @@ namespace backend_EventMoment.Services
         {
             if (!await _context.Events.AnyAsync(e => e.Id == eventId && e.OrganizerId == organizerId))
                 throw new KeyNotFoundException("Événement introuvable.");
+            // Billetterie réservée aux offres qui l'incluent (Business et plus).
+            if (_plans != null)
+                await _plans.EnsureFeatureAsync(organizerId, PlanFeature.Ticketing);
 
             var entity = new TicketType
             {
@@ -73,6 +76,8 @@ namespace backend_EventMoment.Services
                 .FirstOrDefaultAsync(t => t.Id == ticketTypeId && t.Event.OrganizerId == organizerId);
             if (ticketType == null)
                 throw new KeyNotFoundException("Type de billet introuvable.");
+            if (_plans != null)
+                await _plans.EnsureFeatureAsync(organizerId, PlanFeature.Ticketing);
 
             // Incrément conditionnel atomique (UPDATE ... WHERE sold_count < quota) dans la même
             // transaction que la vente : deux ventes simultanées ne peuvent plus dépasser le quota.
@@ -151,12 +156,15 @@ namespace backend_EventMoment.Services
             if (_emailSender == null || string.IsNullOrWhiteSpace(guest.Email))
                 return;
 
-            var eventName = await _context.Events.AsNoTracking()
+            var eventInfo = await _context.Events.AsNoTracking()
                 .Where(e => e.Id == ticketType.EventId)
-                .Select(e => e.Name)
-                .FirstOrDefaultAsync() ?? string.Empty;
-            var baseUrl = _config?["Frontend:BaseUrl"] ?? "http://localhost:5173";
-            var link = $"{baseUrl}/invitation/{guest.Id}";
+                .Select(e => new { e.Name, e.Slug })
+                .FirstOrDefaultAsync();
+            var eventName = eventInfo?.Name ?? string.Empty;
+            var baseUrl = (_config?["Frontend:BaseUrl"] ?? "http://localhost:5173").TrimEnd('/');
+            var link = eventInfo?.Slug is { Length: > 0 } slug
+                ? $"{baseUrl}/e/{Uri.EscapeDataString(slug)}?invite={guest.Id}"
+                : $"{baseUrl}/invitation/{guest.Id}";
 
             var html = EmailLayout.Render(new EmailMessage
             {

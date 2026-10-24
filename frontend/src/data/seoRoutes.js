@@ -117,6 +117,15 @@ export const STATIC_ROUTES = [
     jsonLd: (site) => [pricingLd(site), faqLd(PRICING_FAQ), breadcrumbLd(site, [['Accueil', '/'], ['Tarifs', '/tarifs']])],
   },
   {
+    path: '/billets',
+    priority: '0.6',
+    changefreq: 'monthly',
+    title: 'Modèles de billets',
+    description:
+      "Dix modèles de billets pour vos invités : faire-part, pagne, concert, stade, badge, polaroid, sobre, classique, doré et minimal. QR code unique, PDF et image WhatsApp.",
+    jsonLd: (site) => breadcrumbLd(site, [['Accueil', '/'], ['Billets', '/billets']]),
+  },
+  {
     path: '/ecosysteme',
     priority: '0.6',
     changefreq: 'monthly',

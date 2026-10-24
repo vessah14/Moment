@@ -3,6 +3,7 @@ import { useState } from 'react'
 
 const BLOCKS = [
   'Hero',
+  'Invitation',
   'Histoire',
   'Programme',
   'Galerie',

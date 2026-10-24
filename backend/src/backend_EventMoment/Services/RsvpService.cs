@@ -96,6 +96,7 @@ namespace backend_EventMoment.Services
             Confirmed = entity.Confirmed,
             AccompanyingCount = entity.AccompanyingCount,
             Message = entity.Message,
+            Side = entity.Side,
             RespondedAt = entity.RespondedAt
         };
     }

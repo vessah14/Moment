@@ -98,6 +98,7 @@ namespace backend_EventMoment.Services
                     GuestEmail = g.Email!,
                     EventId = e.Id,
                     EventName = e.Name,
+                    EventSlug = e.Slug,
                     e.EventDate,
                     e.StartTime,
                     OrganizerName = o.FullName,
@@ -122,7 +123,7 @@ namespace backend_EventMoment.Services
                     .FirstOrDefaultAsync(ct);
 
                 var (subject, html) = BuildMessage(item.GuestName, item.EventName, item.EventDate, item.StartTime, location,
-                    item.OrganizerName, $"{baseUrl}/invitation/{item.GuestId}");
+                    item.OrganizerName, $"{baseUrl}/e/{Uri.EscapeDataString(item.EventSlug)}?invite={item.GuestId}");
                 string? error = null;
                 try
                 {

@@ -13,6 +13,9 @@ namespace backend_EventMoment.Services
         Task<PlanUsageDto> GetUsageAsync(Guid organizerId);
         Task EnsureCanCreateEventAsync(Guid organizerId);
         Task EnsureCanAddGuestAsync(Guid organizerId, Guid eventId);
+        Task EnsureCanAddPhotoAsync(Guid organizerId, Guid eventId);
+        Task<bool> HasFeatureAsync(Guid organizerId, PlanFeature feature);
+        Task EnsureFeatureAsync(Guid organizerId, PlanFeature feature);
 
         Task<UpgradeRequestDto> RequestUpgradeAsync(Guid organizerId, CreateUpgradeRequestDto dto);
         Task<UpgradeRequestDto?> GetLatestRequestAsync(Guid organizerId);
@@ -23,16 +26,52 @@ namespace backend_EventMoment.Services
         Task<AdminUpgradeRequestDto> RejectAsync(Guid requestId, Guid adminId, string? note);
     }
 
+    // Fonctions réservées à certaines offres (clé dans subscription_plans.features).
+    public enum PlanFeature
+    {
+        PremiumTemplates, // modèles premium (thèmes animés)
+        Seating,          // plan de table
+        Checkin,          // scanner des pass d'entrée
+        Ticketing,        // billetterie
+        Branding,         // page sans la mention « Créé avec TBF MOMENT »
+        AutoReminders,    // rappels automatiques par e-mail
+    }
+
     // Offres et limites. Sans abonnement actif, l'organisateur est sur l'offre « free ».
-    // Les limites viennent de subscription_plans.features ({"maxEvents": 1, "maxGuests": 50},
-    // null = illimité). Aucun paiement en ligne : une demande de passage à une offre payante
-    // est validée par l'admin une fois le paiement reçu hors ligne.
+    // Les limites viennent de subscription_plans.features :
+    //   {"maxEvents": 3, "maxGuests": 50, "maxPhotos": 20, "seating": false, …}
+    // Nombre absent ou null = illimité ; fonction absente = autorisée (offres créées avant ces
+    // clés). Une demande de passage à une offre payante est validée par l'admin ou via KPay.
     public class PlanService : IPlanService
     {
         public const string FreePlanCode = "free";
-        // Valeurs de secours si l'offre « free » est absente de la base.
-        private const int DefaultFreeMaxEvents = 1;
+        // Limites serveur pour Free et Premium, même si la base n'a pas encore été migrée.
+        private const int DefaultFreeMaxEvents = 3;
+        private const int DefaultPremiumMaxEvents = 3;
         private const int DefaultFreeMaxGuests = 50;
+        private const int DefaultFreeMaxPhotos = 20;
+
+        public static string FeatureKey(PlanFeature feature) => feature switch
+        {
+            PlanFeature.PremiumTemplates => "premiumTemplates",
+            PlanFeature.Seating => "seating",
+            PlanFeature.Checkin => "checkin",
+            PlanFeature.Ticketing => "ticketing",
+            PlanFeature.Branding => "branding",
+            PlanFeature.AutoReminders => "autoReminders",
+            _ => throw new ArgumentOutOfRangeException(nameof(feature)),
+        };
+
+        private static string FeatureName(PlanFeature feature) => feature switch
+        {
+            PlanFeature.PremiumTemplates => "Les modèles premium sont inclus",
+            PlanFeature.Seating => "Le plan de table est inclus",
+            PlanFeature.Checkin => "Le scanner des pass d'entrée est inclus",
+            PlanFeature.Ticketing => "La billetterie est incluse",
+            PlanFeature.Branding => "La page sans la mention TBF MOMENT est incluse",
+            PlanFeature.AutoReminders => "Les rappels automatiques sont inclus",
+            _ => "Cette fonction est incluse",
+        };
 
         private readonly AdminDbContext _context;
         private readonly IEmailSender? _email;
@@ -47,23 +86,39 @@ namespace backend_EventMoment.Services
             _logger = logger;
         }
 
-        private sealed record PlanLimits(SubscriptionPlan? Plan, string Code, string Label, int PriceCents, int? MaxEvents, int? MaxGuests, DateTimeOffset? EndsAt);
-
-        private static (int? maxEvents, int? maxGuests) ReadLimits(string? features)
+        private sealed record PlanLimits(SubscriptionPlan? Plan, string Code, string Label, int PriceCents, int? MaxEvents, int? MaxGuests, DateTimeOffset? EndsAt)
         {
+            public int? MaxPhotos { get; init; }
+            public IReadOnlyDictionary<string, bool> Features { get; init; } = new Dictionary<string, bool>();
+            public bool Has(PlanFeature feature) =>
+                feature == PlanFeature.Checkin || !Features.TryGetValue(FeatureKey(feature), out var on) || on;
+        }
+
+        private sealed record PlanSettings(int? MaxEvents, int? MaxGuests, int? MaxPhotos, Dictionary<string, bool> Features);
+
+        private static PlanSettings ReadSettings(string? features)
+        {
+            var flags = new Dictionary<string, bool>();
             try
             {
                 using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(features) ? "{}" : features);
+                if (doc.RootElement.ValueKind != JsonValueKind.Object)
+                    return new PlanSettings(null, null, null, flags);
                 int? Read(string name) =>
-                    doc.RootElement.ValueKind == JsonValueKind.Object
-                    && doc.RootElement.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out var n)
+                    doc.RootElement.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out var n)
                         ? n
                         : null;
-                return (Read("maxEvents"), Read("maxGuests"));
+                foreach (var feature in Enum.GetValues<PlanFeature>())
+                {
+                    var key = FeatureKey(feature);
+                    if (doc.RootElement.TryGetProperty(key, out var v) && v.ValueKind is JsonValueKind.True or JsonValueKind.False)
+                        flags[key] = v.GetBoolean();
+                }
+                return new PlanSettings(Read("maxEvents"), Read("maxGuests"), Read("maxPhotos"), flags);
             }
             catch (JsonException)
             {
-                return (null, null);
+                return new PlanSettings(null, null, null, flags);
             }
         }
 
@@ -83,10 +138,36 @@ namespace backend_EventMoment.Services
             var plan = subscription?.Plan
                 ?? await _context.SubscriptionPlans.AsNoTracking().FirstOrDefaultAsync(p => p.Code == FreePlanCode);
             if (plan == null)
-                return new PlanLimits(null, FreePlanCode, "Free", 0, DefaultFreeMaxEvents, DefaultFreeMaxGuests, null);
+                return new PlanLimits(null, FreePlanCode, "Free", 0, DefaultFreeMaxEvents, DefaultFreeMaxGuests, null)
+                {
+                    MaxPhotos = DefaultFreeMaxPhotos,
+                    Features = Enum.GetValues<PlanFeature>().ToDictionary(FeatureKey, _ => false),
+                };
 
-            var (maxEvents, maxGuests) = ReadLimits(plan.Features);
-            return new PlanLimits(plan, plan.Code, plan.Label, plan.PriceCents, maxEvents, maxGuests, subscription?.EndsAt);
+            var settings = ReadSettings(plan.Features);
+            var maxEvents = plan.Code.ToLowerInvariant() switch
+            {
+                FreePlanCode => DefaultFreeMaxEvents,
+                "premium" => DefaultPremiumMaxEvents,
+                _ => settings.MaxEvents,
+            };
+            return new PlanLimits(plan, plan.Code, plan.Label, plan.PriceCents, maxEvents, settings.MaxGuests, subscription?.EndsAt)
+            {
+                MaxPhotos = settings.MaxPhotos,
+                Features = settings.Features,
+            };
+        }
+
+        // Offre la moins chère qui inclut la fonction, pour le message d'erreur.
+        private async Task<string?> CheapestPlanWithAsync(PlanFeature feature)
+        {
+            var plans = await _context.SubscriptionPlans.AsNoTracking()
+                .Where(p => p.IsActive && p.PriceCents > 0)
+                .OrderBy(p => p.PriceCents)
+                .Select(p => new { p.Label, p.Features })
+                .ToListAsync();
+            var key = FeatureKey(feature);
+            return plans.FirstOrDefault(p => !ReadSettings(p.Features).Features.TryGetValue(key, out var on) || on)?.Label;
         }
 
         // Événements comptés : tous ceux de l'organisateur sauf les archivés.
@@ -108,6 +189,8 @@ namespace backend_EventMoment.Services
                 MaxEvents = limits.MaxEvents,
                 EventsUsed = await CountEventsAsync(organizerId),
                 MaxGuests = limits.MaxGuests,
+                MaxPhotos = limits.MaxPhotos,
+                Features = Enum.GetValues<PlanFeature>().ToDictionary(FeatureKey, limits.Has),
                 EndsAt = limits.EndsAt,
                 PendingRequest = pending == null ? null : Map(pending),
             };
@@ -127,6 +210,28 @@ namespace backend_EventMoment.Services
             if (limits.MaxGuests is int max && await _context.Guests.IgnoreQueryFilters().CountAsync(g => g.EventId == eventId) >= max)
                 throw new InvalidOperationException(
                     $"Votre offre {limits.Label} permet {max} invités par événement. Passez à une offre supérieure pour en ajouter.");
+        }
+
+        public async Task EnsureCanAddPhotoAsync(Guid organizerId, Guid eventId)
+        {
+            var limits = await GetLimitsAsync(organizerId);
+            if (limits.MaxPhotos is int max && await _context.GalleryPhotos.IgnoreQueryFilters().CountAsync(p => p.EventId == eventId) >= max)
+                throw new InvalidOperationException(
+                    $"Votre offre {limits.Label} permet {max} photos par galerie. Supprimez des photos ou passez à une offre supérieure.");
+        }
+
+        public async Task<bool> HasFeatureAsync(Guid organizerId, PlanFeature feature) =>
+            (await GetLimitsAsync(organizerId)).Has(feature);
+
+        public async Task EnsureFeatureAsync(Guid organizerId, PlanFeature feature)
+        {
+            var limits = await GetLimitsAsync(organizerId);
+            if (limits.Has(feature))
+                return;
+            var plan = await CheapestPlanWithAsync(feature);
+            throw new InvalidOperationException(plan == null
+                ? $"{FeatureName(feature)} dans une offre supérieure à {limits.Label}."
+                : $"{FeatureName(feature)} à partir de l'offre {plan}. Votre offre actuelle : {limits.Label}.");
         }
 
         // ------------------------------------------------------------------ Demandes

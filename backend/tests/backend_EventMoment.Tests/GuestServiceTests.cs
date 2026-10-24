@@ -164,4 +164,145 @@ public class GuestServiceTests
 
         Assert.Null(result);
     }
+
+    private static void SeedRsvpBlock(Data.AdminDbContext context, Guid eventId, string content)
+    {
+        context.EventBlocks.Add(new EventBlock
+        {
+            Id = Guid.NewGuid(),
+            EventId = eventId,
+            BlockType = "RSVP",
+            Position = 1,
+            Content = content,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow,
+        });
+        context.SaveChanges();
+    }
+
+    [Fact]
+    public async Task SubmitPublicRsvpAsync_StoresSide_FromEventChoices()
+    {
+        var context = TestDbContextFactory.CreateAdminContext();
+        var (_, _, evt) = SeedEvent(context);
+        var guest = SeedGuest(context, evt.Id);
+        SeedRsvpBlock(context, evt.Id, """{"sideLabel":"Vous êtes invité par","sides":["Famille de la mariée","Famille du marié"]}""");
+        var service = new GuestService(context);
+
+        var result = await service.SubmitPublicRsvpAsync(guest.Id, new SubmitPublicRsvpDto { Confirmed = true, Side = " Famille du marié " });
+
+        Assert.Equal("Famille du marié", result!.RsvpSide);
+        Assert.Equal("Famille du marié", context.RsvpResponses.IgnoreQueryFilters().Single(r => r.GuestId == guest.Id).Side);
+    }
+
+    [Fact]
+    public async Task SubmitPublicRsvpAsync_RejectsSide_NotOfferedByEvent()
+    {
+        var context = TestDbContextFactory.CreateAdminContext();
+        var (_, _, evt) = SeedEvent(context);
+        var guest = SeedGuest(context, evt.Id);
+        SeedRsvpBlock(context, evt.Id, """{"sides":["Famille de la mariée"]}""");
+        var service = new GuestService(context);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.SubmitPublicRsvpAsync(guest.Id, new SubmitPublicRsvpDto { Confirmed = true, Side = "<script>" }));
+    }
+
+    [Fact]
+    public async Task SubmitPublicRsvpAsync_DropsSide_WhenDeclining()
+    {
+        var context = TestDbContextFactory.CreateAdminContext();
+        var (_, _, evt) = SeedEvent(context);
+        var guest = SeedGuest(context, evt.Id);
+        var service = new GuestService(context);
+
+        var result = await service.SubmitPublicRsvpAsync(guest.Id, new SubmitPublicRsvpDto { Confirmed = false, Side = "Peu importe" });
+
+        Assert.Null(result!.RsvpSide);
+    }
+
+    [Fact]
+    public async Task SubmitPublicEventRsvpAsync_CreatesGuestAndResponse_ForPublishedEvent()
+    {
+        var context = TestDbContextFactory.CreateAdminContext();
+        var (_, _, evt) = SeedEvent(context);
+        evt.CustomFields = """{"template":"Live","ticket":{"style":"concert","note":"Tenue sombre"}}""";
+        context.SaveChanges();
+        SeedRsvpBlock(context, evt.Id, """{"sides":["Famille de la mariée"]}""");
+
+        var invitation = await new GuestService(context).SubmitPublicEventRsvpAsync(evt.Slug, new SubmitPublicEventRsvpDto
+        {
+            FullName = "  Awa Diallo ",
+            Email = " awa@example.com ",
+            Confirmed = true,
+            AccompanyingCount = 2,
+            Message = "  Avec plaisir  ",
+            Side = "Famille de la mariée",
+        });
+
+        Assert.NotNull(invitation);
+        Assert.Equal(evt.Slug, invitation!.EventSlug);
+        Assert.Equal("Awa Diallo", invitation.GuestFullName);
+        Assert.Equal("Live", invitation.Template);
+        Assert.Equal("concert", invitation.TicketStyle);
+        Assert.Equal("Tenue sombre", invitation.TicketNote);
+        Assert.True(invitation.RsvpConfirmed);
+        Assert.Equal(2, invitation.RsvpAccompanyingCount);
+        var guest = await context.Guests.IgnoreQueryFilters().SingleAsync(g => g.EventId == evt.Id);
+        Assert.Equal("Awa Diallo", guest.FullName);
+        Assert.Equal("awa@example.com", guest.Email);
+        Assert.Equal(GuestStatus.Present, guest.Status);
+        var response = await context.RsvpResponses.IgnoreQueryFilters().SingleAsync(r => r.GuestId == guest.Id);
+        Assert.True(response.Confirmed);
+        Assert.Equal(2, response.AccompanyingCount);
+        Assert.Equal("Avec plaisir", response.Message);
+        Assert.Equal("Famille de la mariée", response.Side);
+    }
+
+    [Fact]
+    public async Task SubmitPublicEventRsvpAsync_RequiresContactInformation()
+    {
+        var context = TestDbContextFactory.CreateAdminContext();
+        var (_, _, evt) = SeedEvent(context);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            new GuestService(context).SubmitPublicEventRsvpAsync(evt.Slug, new SubmitPublicEventRsvpDto
+            {
+                FullName = "Awa Diallo",
+                Confirmed = true,
+            }));
+    }
+
+    [Fact]
+    public async Task SubmitPublicEventRsvpAsync_ReturnsFalse_ForUnpublishedEvent()
+    {
+        var context = TestDbContextFactory.CreateAdminContext();
+        var (_, _, evt) = SeedEvent(context, EventStatus.Brouillon);
+
+        var result = await new GuestService(context).SubmitPublicEventRsvpAsync(evt.Slug, new SubmitPublicEventRsvpDto
+        {
+            FullName = "Awa Diallo",
+            Phone = "+221 77 000 00 00",
+            Confirmed = false,
+        });
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task GetPublicInvitationAsync_ReportsFirstCheckIn()
+    {
+        var context = TestDbContextFactory.CreateAdminContext();
+        var (_, _, evt) = SeedEvent(context);
+        var guest = SeedGuest(context, evt.Id);
+        var service = new GuestService(context);
+
+        Assert.Null((await service.GetPublicInvitationAsync(guest.Id))!.CheckedInAt);
+
+        var at = DateTimeOffset.UtcNow.AddMinutes(-5);
+        context.GuestCheckins.Add(new GuestCheckin { GuestId = guest.Id, EventId = evt.Id, CheckedInAt = at });
+        context.SaveChanges();
+
+        Assert.Equal(at, (await service.GetPublicInvitationAsync(guest.Id))!.CheckedInAt);
+    }
 }

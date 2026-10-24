@@ -21,12 +21,14 @@ namespace backend_EventMoment.Controllers
         private readonly IGalleryService _service;
         private readonly IEventService _events;
         private readonly IUploadStorage _uploads;
+        private readonly IPlanService? _plans;
 
-        public GalleryController(IGalleryService service, IEventService events, IUploadStorage uploads)
+        public GalleryController(IGalleryService service, IEventService events, IUploadStorage uploads, IPlanService? plans = null)
         {
             _service = service;
             _events = events;
             _uploads = uploads;
+            _plans = plans;
         }
 
         [HttpPost]
@@ -53,6 +55,9 @@ namespace backend_EventMoment.Controllers
 
             // Propriété de l'événement vérifiée avant tout envoi vers le stockage.
             await _service.GetAllAsync(eventId, organizerId);
+            // Nombre de photos limité par l'offre (Free : 20, Premium : 200…), vérifié avant l'envoi.
+            if (_plans != null)
+                await _plans.EnsureCanAddPhotoAsync(organizerId, eventId);
 
             // Position GPS, appareil, date… retirés avant l'enregistrement.
             file = await ImageMetadataStripper.StripAsync(file, extension);

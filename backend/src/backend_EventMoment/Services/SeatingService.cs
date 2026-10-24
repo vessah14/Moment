@@ -9,11 +9,17 @@ namespace backend_EventMoment.Services
     public class SeatingService : ISeatingService
     {
         private readonly AdminDbContext _context;
+        private readonly IPlanService? _plans;
 
-        public SeatingService(AdminDbContext context)
+        public SeatingService(AdminDbContext context, IPlanService? plans = null)
         {
             _context = context;
+            _plans = plans;
         }
+
+        // Plan de table réservé aux offres qui l'incluent (Premium et plus).
+        private Task EnsureSeatingAsync(Guid organizerId) =>
+            _plans?.EnsureFeatureAsync(organizerId, PlanFeature.Seating) ?? Task.CompletedTask;
 
         private Task<bool> OwnsEventAsync(Guid eventId, Guid organizerId) =>
             _context.Events.AnyAsync(e => e.Id == eventId && e.OrganizerId == organizerId);
@@ -22,6 +28,7 @@ namespace backend_EventMoment.Services
         {
             if (!await OwnsEventAsync(eventId, organizerId))
                 throw new KeyNotFoundException("Événement introuvable.");
+            await EnsureSeatingAsync(organizerId);
 
             var entity = new EventTable
             {
@@ -79,6 +86,7 @@ namespace backend_EventMoment.Services
         {
             if (!await OwnsEventAsync(eventId, organizerId))
                 throw new KeyNotFoundException("Événement introuvable.");
+            await EnsureSeatingAsync(organizerId);
 
             if (!await _context.Guests.AnyAsync(g => g.Id == dto.GuestId && g.EventId == eventId))
                 throw new KeyNotFoundException("Invité introuvable pour cet événement.");

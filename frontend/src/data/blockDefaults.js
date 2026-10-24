@@ -9,6 +9,16 @@ export const BLOCK_CONTENT_DEFAULTS = {
     showHeading: false,
     tinted: false
   },
+  // Salutation (ou « Cher·e Awa, » sur le lien d'un invité), texte et signature.
+  Invitation: {
+    heading: "Invitation",
+    body: "",
+    greeting: "",
+    prefix: "Cher·e",
+    signature: "",
+    showHeading: false,
+    tinted: false
+  },
   Histoire: {
     heading: "Notre Histoire",
     body: "",
@@ -40,7 +50,8 @@ export const BLOCK_CONTENT_DEFAULTS = {
     body: "",
     showHeading: true,
     tinted: false,
-    transport: ""
+    transport: "",
+    additionalVenues: []
   },
   RSVP: {
     heading: "Confirmez Votre Présence",

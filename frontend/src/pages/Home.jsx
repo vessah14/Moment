@@ -1,24 +1,20 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
-import Benefits from '../components/home/Benefits'
-import CreateConnectCelebrate from '../components/home/CreateConnectCelebrate'
-import EventTypeTabs from '../components/home/EventTypeTabs'
+import AllIncluded from '../components/home/AllIncluded'
 import Faq from '../components/home/Faq'
-import FeatureShowcase from '../components/home/FeatureShowcase'
 import FinalCta from '../components/home/FinalCta'
 import Hero from '../components/home/Hero'
+import HowItWorks from '../components/home/HowItWorks'
 import PopularTemplates from '../components/home/PopularTemplates'
 import PricingTeaser from '../components/home/PricingTeaser'
 import Souvenirs from '../components/home/Souvenirs'
-import StatsBar from '../components/home/StatsBar'
 import Testimonials from '../components/home/Testimonials'
-import { EVENT_TYPES } from '../data/eventTypes'
+import Universes from '../components/home/Universes'
 import { routeSeo } from '../data/seoRoutes'
 import { siteUrl, useSeo } from '../utils/seo'
 
 export default function Home() {
   useSeo(routeSeo('/', siteUrl()))
-  const [eventType, setEventType] = useState(EVENT_TYPES[0])
   const location = useLocation()
 
   useEffect(() => {
@@ -30,12 +26,10 @@ export default function Home() {
   return (
     <>
       <Hero />
-      <EventTypeTabs active={eventType} onChange={setEventType} />
-      <Benefits />
-      <CreateConnectCelebrate />
-      <PopularTemplates category={eventType} />
-      <FeatureShowcase />
-      <StatsBar />
+      <Universes />
+      <HowItWorks />
+      <PopularTemplates />
+      <AllIncluded />
       <Testimonials />
       <Souvenirs />
       <PricingTeaser />

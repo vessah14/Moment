@@ -6,6 +6,9 @@ import Header from './components/layout/Header'
 import Hero from './components/home/Hero'
 import RequireAuth from './components/auth/RequireAuth'
 import ErrorBoundary from './components/ErrorBoundary'
+import PageAnimations from './components/PageAnimations'
+import ScrollToTop from './components/ScrollToTop'
+import BackToTop from './components/layout/BackToTop'
 
 const Builder = lazy(() => import('./pages/Builder'))
 const CookiesPolicy = lazy(() => import('./pages/CookiesPolicy'))
@@ -39,6 +42,7 @@ const MiniSite = lazy(() => import('./pages/MiniSite'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 const Onboarding = lazy(() => import('./pages/Onboarding'))
 const Pricing = lazy(() => import('./pages/Pricing'))
+const TicketModels = lazy(() => import('./pages/TicketModels'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'))
@@ -85,6 +89,9 @@ function App () {
   return (
     <>
       {/* Page d'erreur au lieu d'un écran blanc si une page plante. */}
+      <ScrollToTop />
+      <BackToTop />
+      <PageAnimations />
       <ErrorBoundary>
       <RouteLoader>
         <Routes>
@@ -113,6 +120,7 @@ function App () {
           <Route path='/modeles' element={<Templates />} />
           <Route path='/modeles/:theme' element={<TemplateDemo />} />
           <Route path='/tarifs' element={<Pricing />} />
+          <Route path='/billets' element={<TicketModels />} />
           <Route path='/ecosysteme' element={<Ecosystem />} />
           <Route path='/support' element={<Support />} />
           <Route path='/mentions-legales' element={<LegalNotice />} />
@@ -297,7 +305,8 @@ function App () {
         </Routes>
       </RouteLoader>
       </ErrorBoundary>
-      <CookieConsent />
+      {/* Pas de bandeau cookies dans un cadre (aperçu « Téléphone » d'un modèle). */}
+      {window.self === window.top && <CookieConsent />}
     </>
   )
 }

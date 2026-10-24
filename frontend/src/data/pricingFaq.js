@@ -7,7 +7,7 @@ export const PRICING_FAQ = [
   },
   {
     q: 'Comment je paie ?',
-    a: "Par Orange Money ou MTN Mobile Money, sur la page de paiement sécurisée de Notch Pay. Votre offre s'active dès que le paiement est confirmé.",
+    a: "Par Mobile Money ou carte, sur la page de paiement sécurisée de KPay. Votre offre s'active dès que le paiement est confirmé.",
   },
   {
     q: "Et si j'ai plus d'invités que prévu ?",

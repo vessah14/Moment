@@ -9,9 +9,8 @@ namespace backend_EventMoment.Data
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
 
-        // Paiement en ligne Notch Pay (Payments:NotchPay:Enabled), lu une fois au démarrage : le
-        // modèle EF est construit une seule fois par processus.
-        public static bool NotchPayEnabled { get; set; }
+        // Le fournisseur de paiement est lu au démarrage avant la construction du modèle EF.
+        public static bool KPayEnabled { get; set; }
 
         public AdminDbContext(DbContextOptions<AdminDbContext> options, IHttpContextAccessor httpContextAccessor) : base(options)
         {
@@ -41,7 +40,7 @@ namespace backend_EventMoment.Data
 
         // Abonnements
         public DbSet<UserSubscription> OrganizerSubscriptions { get; set; }
-        public DbSet<NotchPayPayment> NotchPayPayments { get; set; }
+        public DbSet<KPayPayment> KPayPayments { get; set; }
 
         // Livre d'or
         public DbSet<GuestBookEntry> GuestBookEntries { get; set; }
@@ -287,18 +286,22 @@ namespace backend_EventMoment.Data
                 .HasColumnType("subscription_status");
 
             // Base en mémoire (tests) : pas de colonnes à respecter, le modèle complet est gardé.
-            if (NotchPayEnabled || !Database.IsNpgsql())
+            if (KPayEnabled || !Database.IsNpgsql())
             {
                 modelBuilder.Entity<UserSubscription>()
-                    .HasIndex(s => s.NotchPayPaymentId)
+                    .HasIndex(s => s.KPayPaymentId)
                     .IsUnique()
-                    .HasFilter("notchpay_payment_id IS NOT NULL");
+                    .HasFilter("kpay_payment_id IS NOT NULL");
+                modelBuilder.Entity<KPayPayment>()
+                    .HasIndex(p => new { p.OrganizerId, p.IdempotencyKey })
+                    .IsUnique()
+                    .HasFilter("idempotency_key IS NOT NULL");
             }
             else
             {
                 // Le paiement en ligne est désactivé : sa migration peut ne pas exister en base.
-                modelBuilder.Entity<UserSubscription>().Ignore(s => s.NotchPayPaymentId);
-                modelBuilder.Ignore<NotchPayPayment>();
+                modelBuilder.Entity<UserSubscription>().Ignore(s => s.KPayPaymentId);
+                modelBuilder.Ignore<KPayPayment>();
             }
 
             modelBuilder.Entity<UserSubscription>()

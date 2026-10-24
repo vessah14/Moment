@@ -47,23 +47,29 @@ public class PlanAndReviewTests
     }
 
     [Fact]
-    public async Task FreePlan_LimitsEvents_ButIgnoresArchivedOnes()
+    public async Task FreePlan_AllowsThreeEvents_ThenRequiresUpgrade_AndIgnoresArchivedOnes()
     {
         var context = TestDbContextFactory.CreateAdminContext();
-        AddPlan(context, "free", 0, """{"maxEvents": 1, "maxGuests": 50}""", PlanBilling.Gratuit);
+        // The server must keep the Free quota at three even if the database still says five.
+        AddPlan(context, "free", 0, """{"maxEvents": 5, "maxGuests": 50}""", PlanBilling.Gratuit);
         var organizer = AddOrganizer(context);
         var service = new PlanService(context);
 
+        await service.EnsureCanCreateEventAsync(organizer.Id);
+        AddEvent(context, organizer.Id);
+        await service.EnsureCanCreateEventAsync(organizer.Id);
+        AddEvent(context, organizer.Id);
         await service.EnsureCanCreateEventAsync(organizer.Id);
         AddEvent(context, organizer.Id);
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => service.EnsureCanCreateEventAsync(organizer.Id));
         Assert.Contains("Free", ex.Message);
 
         var usage = await service.GetUsageAsync(organizer.Id);
-        Assert.Equal(("free", 1, 1, 50), (usage.PlanCode, usage.MaxEvents, usage.EventsUsed, usage.MaxGuests));
+        Assert.Contains("3 événements", ex.Message);
+        Assert.Equal(("free", 3, 3, 50), (usage.PlanCode, usage.MaxEvents, usage.EventsUsed, usage.MaxGuests));
 
-        // Un événement archivé libère la place.
-        context.Events.IgnoreQueryFilters().Single().Status = EventStatus.Archive;
+        // Un événement archivé libère une place.
+        context.Events.IgnoreQueryFilters().First().Status = EventStatus.Archive;
         context.SaveChanges();
         await service.EnsureCanCreateEventAsync(organizer.Id);
     }
@@ -88,7 +94,7 @@ public class PlanAndReviewTests
     {
         var context = TestDbContextFactory.CreateAdminContext();
         AddPlan(context, "free", 0, """{"maxEvents": 1}""", PlanBilling.Gratuit);
-        var premium = AddPlan(context, "premium", 990000, """{"maxEvents": 5, "maxGuests": 500}""");
+        var premium = AddPlan(context, "premium", 990000, """{"maxEvents": 3, "maxGuests": 500}""");
         var organizer = AddOrganizer(context);
         AddEvent(context, organizer.Id);
         var service = new PlanService(context);
@@ -103,7 +109,7 @@ public class PlanAndReviewTests
         var approved = await service.ApproveAsync(request.Id, Guid.NewGuid(), "Paiement reçu");
         Assert.Equal(UpgradeRequestStatus.Approuvee, approved.Status);
         var usage = await service.GetUsageAsync(organizer.Id);
-        Assert.Equal(("premium", 5), (usage.PlanCode, usage.MaxEvents));
+        Assert.Equal(("premium", 3), (usage.PlanCode, usage.MaxEvents));
         Assert.True(usage.EndsAt > DateTimeOffset.UtcNow.AddDays(27));
         await service.EnsureCanCreateEventAsync(organizer.Id);
         await Assert.ThrowsAsync<InvalidOperationException>(() => service.ApproveAsync(request.Id, Guid.NewGuid(), null));

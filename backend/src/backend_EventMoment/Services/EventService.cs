@@ -48,9 +48,13 @@ namespace backend_EventMoment.Services
             var slug = await SlugGenerator.GenerateUniqueAsync(dto.Name, SlugTakenAnywhereAsync);
 
             await using var transaction = await OrganizerLock.BeginAsync(_context, organizerId);
-            // Nombre d'événements limité par l'offre (Free : 1, Premium : 5…).
+            // Le quota d'événements de l'offre est vérifié côté serveur avant création.
             if (_plans != null)
+            {
                 await _plans.EnsureCanCreateEventAsync(organizerId);
+                if (PremiumTemplates.FromCustomFields(dto.CustomFields) != null)
+                    await _plans.EnsureFeatureAsync(organizerId, PlanFeature.PremiumTemplates);
+            }
 
             var entity = new Event
             {
@@ -113,6 +117,12 @@ namespace backend_EventMoment.Services
             var moderation = await _context.EventModerations.AsNoTracking().FirstOrDefaultAsync(m => m.EventId == id);
             if (moderation != null && dto.Status == EventStatus.Publie && entity.Status != EventStatus.Publie)
                 throw new InvalidOperationException("Cet événement a été suspendu par la modération et ne peut pas être publié.");
+
+            // Passer à un modèle premium demande une offre qui l'inclut. Un événement qui l'avait
+            // déjà (offre arrivée à échéance) reste modifiable sans perdre son modèle.
+            var premiumTemplate = PremiumTemplates.FromCustomFields(dto.CustomFields);
+            if (_plans != null && premiumTemplate != null && premiumTemplate != PremiumTemplates.FromCustomFields(entity.CustomFields))
+                await _plans.EnsureFeatureAsync(organizerId, PlanFeature.PremiumTemplates);
 
             entity.Name = dto.Name;
             entity.CategoryId = dto.CategoryId;

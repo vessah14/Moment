@@ -28,6 +28,11 @@ namespace backend_EventMoment.Models
         [Column("message")]
         public string? Message { get; set; }
 
+        // Choix « côté » du formulaire (famille, pronostic, département…), parmi ceux du bloc RSVP.
+        [MaxLength(80)]
+        [Column("side")]
+        public string? Side { get; set; }
+
         [Column("responded_at")]
         public DateTimeOffset? RespondedAt { get; set; }
 

@@ -24,21 +24,24 @@ import {
   Wine,
   X,
 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { eventShareUrl, mediaUrl } from '../../../api/client'
 import { signPublicGuestBook } from '../../../api/publicEvents'
 import { safeBlockImagePath, safeCoverPath, siteBlockDomId } from '../../../utils/sitePage'
 import BlockToolbar from '../BlockToolbar'
-import { DressCodeModule, FamiliesModule, GiftModule, PartnersModule, RsvpModule, SeatingModule, SpeakersModule } from '../modules/SiteModules'
-import { usableAccounts, usableColors } from '../../../utils/mobileMoney'
-import { usablePartners, usablePeople } from '../../../utils/blockLists'
+import { DressCodeModule, FamiliesModule, GiftModule, GuestPass, PartnersModule, RsvpModule, SeatingModule, SpeakersModule } from '../modules/SiteModules'
+import { usableColors } from '../../../utils/mobileMoney'
+import { usablePartners, usablePeople, usableVenues } from '../../../utils/blockLists'
 import { burst, createMusic, createParticles } from './effects'
 import { motifStyle } from './motifs'
 import { loadThemeFonts } from './themeFonts'
 import { getSiteTheme, themeMotif, themePalette } from './themeDefs'
 import { monogramOf, parseTitle } from './titleParts'
+import { invitationGreeting, invitationParagraphs, invitationWords } from '../../../utils/invitationText'
+import { ILLUS } from '../../../utils/illus'
+import { invitationFor } from '../../../data/invitations'
 import './themes.css'
 
 // Rendu « premium » du site d'un événement (Noor, Bloom, Toghu, Ndop, Fiesta,
@@ -59,6 +62,7 @@ const NAV_LABELS = {
 }
 
 const EYEBROWS = {
+  Invitation: 'Invitation',
   Histoire: 'Notre histoire',
   Programme: 'Le déroulé',
   Localisation: 'Où nous retrouver',
@@ -269,6 +273,35 @@ function GuestBookBox({ slug, onSubmitOverride }) {
   )
 }
 
+// Fenêtre « Mon pass » : le billet de l'invité par-dessus la page.
+function PassModal({ onClose, children }) {
+  const close = useRef(null)
+  useEffect(() => {
+    const prev = document.activeElement
+    close.current?.focus()
+    const onKey = (e) => e.key === 'Escape' && onClose()
+    document.addEventListener('keydown', onKey)
+    const overflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = overflow
+      prev?.focus?.()
+    }
+  }, [onClose])
+  return (
+    <div className="tbft-passmodal" role="dialog" aria-modal="true" aria-label="Mon pass d'entrée" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div>
+        {children}
+        <p>Imprimez-le, ou gardez-le en image : il sera scanné à l'entrée.</p>
+        <button ref={close} type="button" onClick={onClose}>
+          Fermer
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function ThemedSitePage({
   template,
   heroStyle,
@@ -277,6 +310,7 @@ export default function ThemedSitePage({
   data,
   editor = null,
   fullPage = false,
+  startOpen = false,
   className = '',
 }) {
   const theme = getSiteTheme(template?.theme)
@@ -290,12 +324,14 @@ export default function ThemedSitePage({
   const guestFull = data.invitation?.guestFullName?.trim() || hashGuest
   const guest = guestFull.split(' ')[0]
 
-  // Ouverture : 'closed' -> 'opening' -> 'gone'. Dans le Builder, la page est déjà ouverte.
-  const [intro, setIntro] = useState(embedded ? 'gone' : 'closed')
+  // Ouverture : 'closed' -> 'opening' -> 'gone'. Dans le Builder et l'aperçu de l'assistant,
+  // la page est déjà ouverte.
+  const [intro, setIntro] = useState(embedded || startOpen ? 'gone' : 'closed')
   const opened = intro === 'gone'
   const [musicOn, setMusicOn] = useState(false)
   const [withMusic, setWithMusic] = useState(true)
   const [lightboxIndex, setLightboxIndex] = useState(-1)
+  const [passOpen, setPassOpen] = useState(false)
   const [activeSection, setActiveSection] = useState(null)
 
   const rootRef = useRef(null)
@@ -309,6 +345,27 @@ export default function ThemedSitePage({
 
   const titleInfo = parseTitle(heroStyle.title, theme.hero, theme.joiner)
   const monogram = monogramOf(titleInfo)
+  // Habillage du billet de l'invité : celui de la page (surtitre, noms, palette, motif).
+  const passTicket = {
+    kicker: heroStyle.kicker || theme.kicker,
+    pre: titleInfo.pre || theme.ticketPre,
+    names: titleInfo.names,
+    monogram,
+    brand: `${theme.name} · ${palette.label}`,
+    look: { theme, palette, motif },
+  }
+  // « Mon pass » : l'invité qui a confirmé retrouve son billet depuis la barre du haut.
+  const hasPass = !editable && Boolean(data.invitation?.rsvpConfirmed)
+  // Organisateur : « Organisé par … » sous le héros, et son logo à la place du monogramme
+  // (barre du haut, sceau d'ouverture). Le logo n'est fourni qu'aux offres qui l'incluent.
+  const organizerName = data.organizer?.name?.trim() || ''
+  const logoSrc = data.organizer?.logoSrc || mediaUrl(data.organizer?.logoUrl)
+  const mark = logoSrc ? <img className="org-mark" src={logoSrc} alt="" /> : monogram
+  // Illustration du modèle (utils/illus.js), aux couleurs de la palette : à côté de
+  // l'invitation et dans la galerie tant qu'elle n'a pas de photos.
+  const art = invitationFor(theme.id)
+  const artSvg = useMemo(() => (art ? ILLUS.svg(art.illus) : ''), [art])
+  const artTiles = useMemo(() => (art ? Array.from({ length: 6 }, (_, i) => ILLUS.tile(art.illus, i)) : []), [art])
   const coverPath = safeCoverPath(data.coverPath)
   const start = data.eventDateTime ? new Date(data.eventDateTime) : null
   const validStart = start && !Number.isNaN(start.getTime()) ? start : null
@@ -476,6 +533,47 @@ export default function ThemedSitePage({
           ? sectionShell(block, index, placeholder('Le compte à rebours de ce modèle s’affiche dans l’en-tête, à côté du titre.'))
           : null
 
+      case 'Invitation': {
+        const paragraphs = invitationParagraphs(content.body)
+        const greeting = invitationGreeting(content, guest)
+        const signature = (content.signature ?? '').trim()
+        if (!editable && !paragraphs.length && !greeting) return null
+        return sectionShell(
+          block,
+          index,
+          <div className={`invitation ${artSvg ? 'inv-grid' : 'narrow'}`}>
+            {artSvg && (
+              // SVG produit par utils/illus.js (dessins du modèle), sans aucune saisie.
+              <figure className={`inv-art rv frame-${art.frame}`} aria-hidden="true" dangerouslySetInnerHTML={{ __html: artSvg }} />
+            )}
+            <div className="inv-text">
+            {content.showHeading && headFor(block, content)}
+            {greeting && <p className="greet rv">{greeting}</p>}
+            {paragraphs.length ? (
+              <div className="lead-text words rv" style={{ '--d': 1 }}>
+                {invitationWords(paragraphs).map((words, i) => (
+                  <p key={i}>
+                    {words.map(({ word, index: w }) => (
+                      <span key={w} style={{ '--w': w }}>
+                        {word}{' '}
+                      </span>
+                    ))}
+                  </p>
+                ))}
+              </div>
+            ) : (
+              placeholder('Écrivez le texte de votre invitation dans l’onglet Contenu, à droite.')
+            )}
+            {signature && (
+              <p className="sig rv" style={{ '--d': 2 }}>
+                {signature}
+              </p>
+            )}
+            </div>
+          </div>,
+        )
+      }
+
       case 'Histoire': {
         const imagePath = safeBlockImagePath(content.imageUrl)
         if (!editable && !body && !imagePath) return null
@@ -551,8 +649,9 @@ export default function ThemedSitePage({
       case 'Localisation': {
         const address = data.locationAddress || content.address
         const transport = (content.transport ?? '').trim()
-        if (!address && !transport && !body && !editable) return null
-        if (!address && !transport && !body) {
+        const additionalVenues = usableVenues(content.additionalVenues)
+        if (!address && !additionalVenues.length && !transport && !body && !editable) return null
+        if (!address && !additionalVenues.length && !transport && !body) {
           return sectionShell(block, index, <>{headFor(block, content)}{placeholder('Ajoutez l’adresse dans les informations de l’événement.')}</>)
         }
         const mapsUrl = address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}` : null
@@ -590,6 +689,25 @@ export default function ThemedSitePage({
                   referrerPolicy="no-referrer-when-downgrade"
                 />
               )}
+              {additionalVenues.map((venue, venueIndex) => {
+                const venueAddress = venue.address?.trim()
+                const venueMapsUrl = venueAddress
+                  ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venueAddress)}`
+                  : null
+                return (
+                  <article key={venueIndex} className="card venue rv" style={{ '--d': venueIndex + 2 }}>
+                    {venue.label?.trim() && <p className="kicker">{venue.label.trim()}</p>}
+                    {venueAddress && <h3>{venueAddress}</h3>}
+                    {venue.time?.trim() && <span className="when"><Clock />{venue.time.trim()}</span>}
+                    {venueMapsUrl && (
+                      <a className="btn ghost" href={venueMapsUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                        <Navigation />
+                        Voir l'itinéraire
+                      </a>
+                    )}
+                  </article>
+                )
+              })}
             </div>
           </>,
         )
@@ -597,7 +715,9 @@ export default function ThemedSitePage({
 
       case 'Galerie': {
         const photos = data.galleryPhotos ?? []
-        if (!photos.length && !editable) return null
+        // Sans photo : vignettes illustrées du modèle (légendes de la démo, s'il y en a).
+        const tiles = photos.length ? [] : artTiles
+        if (!photos.length && !editable && !tiles.length) return null
         return sectionShell(
           block,
           index,
@@ -617,6 +737,12 @@ export default function ThemedSitePage({
                   <img src={mediaUrl(photo.url)} alt={photo.caption ?? ''} loading="lazy" />
                 </button>
               ))}
+              {tiles.map((svg, i) => (
+                <div key={i} className="ph art" aria-hidden="true">
+                  <span className="art-svg" dangerouslySetInnerHTML={{ __html: svg }} />
+                  {data.galleryLabels?.[i] && <span className="art-label">{data.galleryLabels[i]}</span>}
+                </div>
+              ))}
               {editable && (
                 <label className="add" onClick={(e) => e.stopPropagation()}>
                   <ImagePlus />
@@ -635,9 +761,14 @@ export default function ThemedSitePage({
                 </label>
               )}
             </div>
-            {editable && !photos.length && (
-              <p className="form-note muted">
-                <Images style={{ width: 16, height: 16, display: 'inline', verticalAlign: '-3px' }} /> La galerie n'apparaîtra sur le site qu'avec au moins une photo.
+            {!photos.length && !data.galleryLabels?.length && (
+              <p className="form-note muted" style={{ textAlign: 'center' }}>
+                <Images style={{ width: 16, height: 16, display: 'inline', verticalAlign: '-3px' }} />{' '}
+                {editable
+                  ? tiles.length
+                    ? 'Ces illustrations attendent vos photos : elles disparaissent dès la première photo publiée.'
+                    : "La galerie n'apparaîtra sur le site qu'avec au moins une photo."
+                  : 'Les photos de l’événement apparaîtront ici.'}
               </p>
             )}
           </>,
@@ -681,9 +812,16 @@ export default function ThemedSitePage({
               themed
               editable={editable}
               invitation={data.invitation}
+              invitationLoading={data.invitationLoading}
+              invitationError={data.invitationError}
               onInvitationChange={data.onInvitationChange}
+              submitOpenRsvp={data.submitOpenRsvp}
               body={body}
               eventTitle={heroStyle.title}
+              sideLabel={content.sideLabel}
+              sides={content.sides}
+              rules={content}
+              ticket={passTicket}
               onCelebrate={celebrate}
               submitRsvp={data.submitRsvp}
             />
@@ -718,7 +856,6 @@ export default function ThemedSitePage({
 
       case 'Cadeaux': {
         const gifts = data.gifts ?? []
-        if (!usableAccounts(content.accounts).length && !gifts.length && !body && !editable) return null
         return sectionShell(
           block,
           index,
@@ -883,9 +1020,11 @@ export default function ThemedSitePage({
               <Link to="/confidentialite">Confidentialité</Link>
               <Link to="/mentions-legales">Mentions légales</Link>
             </div>
-            <p className="made">
-              Créé avec <b>TBF MOMENT</b> · Create. Connect. Celebrate.
-            </p>
+            {data.showBranding !== false && (
+              <p className="made">
+                Créé avec <b>TBF MOMENT</b> · Create. Connect. Celebrate.
+              </p>
+            )}
           </footer>
         )
 
@@ -949,7 +1088,7 @@ export default function ThemedSitePage({
       <div className="tbft-c">
         <div className="topbar">
           <a className="mono" href={`#${siteBlockDomId('Hero')}`} onClick={scrollTo('Hero')} aria-label="Haut de page">
-            {monogram}
+            {mark}
           </a>
           <nav className="topnav" aria-label="Sections">
             {navBlocks.map((b) => (
@@ -958,7 +1097,12 @@ export default function ThemedSitePage({
               </a>
             ))}
           </nav>
-          {rsvpVisible && (
+          {hasPass ? (
+            <button type="button" className="btn sm top-cta" onClick={() => setPassOpen(true)}>
+              <Ticket />
+              Mon pass
+            </button>
+          ) : rsvpVisible && (
             <a className="btn sm top-cta" href={`#${siteBlockDomId('RSVP')}`} onClick={scrollTo('RSVP')}>
               <Check />
               Répondre
@@ -1040,6 +1184,11 @@ export default function ThemedSitePage({
                   )}
                 </div>
               )}
+              {organizerName && (
+                <p className="hero-org h-in" style={{ '--i': 4 }}>
+                  Organisé par <b>{organizerName}</b>
+                </p>
+              )}
               <div className="ctas h-in" style={{ '--i': 5 }}>
                 {ticketsVisible ? (
                   <a className="btn" href={`#${siteBlockDomId('Billetterie')}`} onClick={scrollTo('Billetterie')}>
@@ -1049,7 +1198,7 @@ export default function ThemedSitePage({
                 ) : rsvpVisible && (
                   <a className="btn" href={`#${siteBlockDomId('RSVP')}`} onClick={scrollTo('RSVP')}>
                     <Check />
-                    Confirmer ma présence
+                    {blockContent.RSVP?.cta?.trim() || 'Confirmer ma présence'}
                   </a>
                 )}
                 {calendarUrl && (
@@ -1077,7 +1226,7 @@ export default function ThemedSitePage({
 
         {sections}
 
-        {!has('Pied de page') && (
+        {!has('Pied de page') && data.showBranding !== false && (
           <footer className="footer">
             <p className="made">
               Créé avec <b>TBF MOMENT</b> · Create. Connect. Celebrate.
@@ -1113,6 +1262,12 @@ export default function ThemedSitePage({
       )}
 
       {/* Musique */}
+      {passOpen && hasPass && createPortal(
+        <PassModal onClose={() => setPassOpen(false)}>
+          <GuestPass invitation={data.invitation} eventTitle={heroStyle.title} ticket={passTicket} onInvitationChange={data.onInvitationChange} watch={!data.submitRsvp} />
+        </PassModal>,
+        document.body,
+      )}
       {!embedded && theme.music && opened && (
         <button
           type="button"
@@ -1153,7 +1308,7 @@ export default function ThemedSitePage({
               </div>
               <div className="medal">
                 <p className="intro-for">{forText}</p>
-                {sealButton(monogram, { autoFocus: true })}
+                {sealButton(mark, { autoFocus: true })}
                 <p className="intro-hint">Touchez pour entrer</p>
                 {musicToggle}
               </div>
@@ -1212,7 +1367,7 @@ export default function ThemedSitePage({
                     <div className="front" />
                     <div className="flap" />
                     <button type="button" className="seal" onClick={openIntro} aria-label="Ouvrir l'invitation" autoFocus>
-                      {monogram}
+                      {mark}
                     </button>
                   </div>
                 )}
@@ -1221,7 +1376,7 @@ export default function ThemedSitePage({
                     {Array.from({ length: 10 }, (_, k) => (
                       <span key={k} className="petal" style={{ '--k': k }} aria-hidden="true" />
                     ))}
-                    {sealButton(monogram, { autoFocus: true })}
+                    {sealButton(mark, { autoFocus: true })}
                   </div>
                 )}
                 {theme.intro === 'iris' && (
@@ -1231,7 +1386,7 @@ export default function ThemedSitePage({
                       <circle cx="100" cy="100" r="84" strokeDasharray="3 7" />
                       <path d="M100 4v18M100 178v18M4 100h18M178 100h18M32 32l13 13M155 155l13 13M168 32l-13 13M45 155l-13 13" />
                     </svg>
-                    {sealButton(monogram, { autoFocus: true })}
+                    {sealButton(mark, { autoFocus: true })}
                   </div>
                 )}
                 {theme.intro === 'gift' && (

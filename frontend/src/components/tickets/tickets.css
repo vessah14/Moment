@@ -1,0 +1,191 @@
+/* Billet de l'invité (TicketCard). Le haut prend les couleurs, le motif, l'ornement et les polices
+   du modèle de site (variables de .tbft[data-tbft]), le talon est clair. --deco : cadre, surtitre,
+   pastille ; --stub-bg / --stub-ink : talon. */
+.tbft.tbtk { display: grid; justify-items: center; width: 100%; overflow: visible; line-height: 1.5; color: var(--fg); container-type: inline-size }
+
+.tbtk .tkc { position: relative; width: min(100%, 380px); margin: 1.2rem auto 0; text-align: center; filter: drop-shadow(0 26px 40px rgba(0, 0, 0, .35)) }
+
+/* ---------- Haut : panneau de l'événement ---------- */
+.tbtk .tkc-top { position: relative; overflow: hidden; padding: 16px; background: var(--bg); color: var(--fg); border-radius: 22px 22px 0 0 }
+.tbtk .tkc-motif { position: absolute; inset: 0; opacity: calc(var(--motif-opacity, .12) * 2.2); background-repeat: repeat; pointer-events: none }
+.tbtk .tkc-frame { position: relative; display: grid; justify-items: center; gap: .4rem; padding: 1.7rem 1.1rem 1.5rem; border: 1.5px solid var(--deco) }
+.tbtk .tkc-orn { display: grid; place-items: center; width: 40px; height: 40px; color: var(--deco) }
+.tbtk .tkc-orn svg { width: 100%; height: 100%; overflow: visible }
+.tbtk .tks-sobre .tkc-orn { width: 64px; height: 24px }
+.tbtk .tkc-seal { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: var(--deco); color: var(--deco-ink); font-family: var(--f-display); font-size: .95rem; box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--deco) 70%, #000) }
+.tbtk .tkc-k { margin: .35rem 0 0; color: var(--deco); font-family: var(--f-body); font-size: .66rem; font-weight: 800; letter-spacing: .2em; line-height: 1.5; text-transform: uppercase }
+.tbtk .tkc-pre { margin: .1rem 0 0; color: var(--muted); font-size: .92rem }
+.tbtk .tkc-names { margin: .1rem 0 0; font-family: var(--f-script); font-weight: 400; font-size: clamp(1.9rem, 8vw, 2.5rem); line-height: 1.08; color: var(--fg); overflow-wrap: anywhere; text-wrap: balance }
+.tbtk .tkc-names i { font-style: normal; color: var(--deco); margin: 0 .12em }
+.tbtk .tkc-invite { margin: 0; color: var(--muted); font-size: .84rem }
+.tbtk .tkc-date { margin: .55rem 0 0; font-family: var(--f-display); font-size: 1.12rem; color: var(--fg) }
+.tbtk .tkc-place { margin: 0; color: var(--muted); font-size: .78rem; line-height: 1.55 }
+.tbtk .tkc-pill { margin-top: .75rem; padding: .45rem 1.05rem; border-radius: 999px; background: var(--deco); color: var(--deco-ink); font-family: var(--f-body); font-size: .68rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase }
+
+/* ---------- Perforation : encoches réelles (le fond apparaît à travers) ---------- */
+.tbtk .tkc-perf { position: relative; height: 26px; background: linear-gradient(to bottom, var(--bg) 50%, var(--stub-bg) 50%);
+  -webkit-mask: radial-gradient(circle 13px at 0 50%, #0000 97%, #000) left / 51% 100% no-repeat, radial-gradient(circle 13px at 100% 50%, #0000 97%, #000) right / 51% 100% no-repeat;
+  mask: radial-gradient(circle 13px at 0 50%, #0000 97%, #000) left / 51% 100% no-repeat, radial-gradient(circle 13px at 100% 50%, #0000 97%, #000) right / 51% 100% no-repeat }
+
+/* ---------- Talon nominatif ---------- */
+.tbtk .tkc-bot { padding: .7rem 1.4rem 1.15rem; background: var(--stub-bg); color: var(--stub-ink); border-radius: 0 0 22px 22px; text-align: left }
+.tbtk .tkc-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem; align-items: start }
+.tbtk .tkc-lbl { display: block; font-family: var(--f-body); font-size: .6rem; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; color: color-mix(in srgb, var(--stub-ink) 62%, var(--stub-bg)) }
+.tbtk .tkc-name { margin: .35rem 0 .25rem; font-family: var(--f-display); font-size: 1.55rem; line-height: 1.15; color: var(--stub-ink); overflow-wrap: anywhere }
+.tbtk .tkc-meta { margin: 0; font-size: .78rem; color: color-mix(in srgb, var(--stub-ink) 75%, var(--stub-bg)) }
+.tbtk .tkc-qr { display: grid; justify-items: center; gap: .35rem }
+.tbtk .tkc-qr .qr { width: 92px; padding: 5px; background: #fff; border: 1px solid color-mix(in srgb, var(--stub-ink) 14%, var(--stub-bg)); border-radius: 12px }
+.tbtk .tkc-qr .qr img { display: block; width: 100%; height: auto }
+.tbtk .tkc-qr small { font-family: var(--f-body); font-size: .58rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: color-mix(in srgb, var(--stub-ink) 62%, var(--stub-bg)) }
+.tbtk .tkc-sep { height: 1px; margin: .95rem 0 .85rem; background: color-mix(in srgb, var(--stub-ink) 14%, var(--stub-bg)) }
+.tbtk .tkc-ref { margin: .45rem 0 0; font-family: ui-monospace, Menlo, monospace; font-size: 1.05rem; font-weight: 700; letter-spacing: .22em; color: var(--stub-ink) }
+.tbtk .tkc-bar { display: flex; align-items: center; justify-content: center; gap: .5rem; width: 100%; min-height: 46px; margin: 1.05rem 0 0; padding: .5rem 1rem; border: 0; border-radius: 12px;
+  background: var(--stub-ink); color: var(--stub-bg); font-family: var(--f-body); font-size: .74rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; text-align: center }
+.tbtk .tkc-dl { cursor: pointer; font-size: .82rem }
+.tbtk .tkc-dl:disabled { opacity: .6; cursor: wait }
+.tbtk .tkc-url:not(.always) { display: none }
+.tbtk .tkc-hint { margin: .65rem 0 0; text-align: center; font-size: .76rem; color: color-mix(in srgb, var(--stub-ink) 75%, var(--stub-bg)) }
+.tbtk .tkc-hint button { border: 0; background: none; padding: 0; color: inherit; font: inherit; text-decoration: underline; cursor: pointer }
+.tbtk .tkc-brand { margin: .35rem 0 0; text-align: center; font-family: var(--f-body); font-size: .62rem; letter-spacing: .3em; text-transform: uppercase; color: color-mix(in srgb, var(--stub-ink) 55%, var(--stub-bg)) }
+
+/* ---------- Décorations propres à chaque style de billet ---------- */
+/* Pagne : bords en dents de scie aux couleurs du décor */
+.tbtk .tkc-saw { position: absolute; left: 0; right: 0; height: 9px; z-index: 2; pointer-events: none;
+  background: linear-gradient(135deg, transparent 50%, var(--deco) 50%) 0 0 / 12px 9px repeat-x, linear-gradient(225deg, transparent 50%, var(--deco) 50%) 0 0 / 12px 9px repeat-x }
+.tbtk .tkc-saw.top { top: -1px; transform: scaleY(-1); border-radius: 22px 22px 0 0 }
+.tbtk .tkc-saw.mid { top: 50%; left: 18px; right: 18px; transform: translateY(-1px) }
+.tbtk .tkc-saw.bottom { bottom: -1px; border-radius: 0 0 22px 22px }
+.tbtk .tks-pagne .tkc-top { border-radius: 4px 4px 0 0 }
+.tbtk .tks-pagne .tkc-bot { border-radius: 0 0 4px 4px; padding-bottom: 1.6rem }
+/* Doré et faire-part : double filet */
+.tbtk .tks-or .tkc-frame, .tbtk .tks-fairepart .tkc-frame { outline: 1px solid color-mix(in srgb, var(--deco) 60%, transparent); outline-offset: -7px }
+/* Minimal : cadre discret */
+.tbtk .tks-minimal .tkc-frame { border-color: color-mix(in srgb, var(--fg) 18%, transparent) }
+/* Concert : reflet holographique en haut */
+.tbtk .tkc-holo { position: absolute; left: 0; right: 0; top: 0; height: 5px; background: linear-gradient(90deg, #ff5ea8, #ffd36e, #5ef2d6, #7a8bff, #ff5ea8); background-size: 200% 100% }
+/* Stade : bande rayée */
+.tbtk .tkc-stripes { position: absolute; left: 0; right: 0; top: 0; height: 12px; background: repeating-linear-gradient(135deg, var(--deco) 0 12px, color-mix(in srgb, var(--deco) 70%, #000) 12px 24px) }
+.tbtk .tks-stade .tkc-names { text-transform: uppercase; letter-spacing: .02em }
+/* Badge : fente du cordon */
+.tbtk .tkc-slot { width: 54px; height: 9px; margin-bottom: .3rem; border-radius: 9px; background: color-mix(in srgb, var(--fg) 25%, var(--bg)); box-shadow: inset 0 1px 2px rgba(0, 0, 0, .35) }
+/* Polaroid : ruban adhésif */
+.tbtk .tkc-tape { width: 92px; height: 20px; margin: -2.4rem 0 .6rem; transform: rotate(-3deg); background: color-mix(in srgb, var(--deco) 40%, rgba(255, 255, 255, .7)) }
+
+@media (prefers-reduced-motion: no-preference) {
+  .tbtk .tkc-holo { animation: tbtk-holo 4s linear infinite }
+}
+@keyframes tbtk-holo { to { background-position: 200% 0 } }
+
+/* ---------- Billet d'entrée : horizontal, perforation verticale, talon détachable ---------- */
+.tbtk .tkc-billet { display: grid; grid-template-columns: minmax(0, 1fr) 22px 152px; width: min(100%, 640px); text-align: left }
+.tbtk .tkb-main { position: relative; overflow: hidden; padding: 14px; background: var(--bg); color: var(--fg); border-radius: 18px 0 0 18px }
+.tbtk .tkb-frame { position: relative; display: grid; gap: .3rem; height: 100%; padding: 1.1rem 1.2rem 1rem; border: 1.5px solid var(--deco) }
+.tbtk .tkb-head { display: flex; align-items: center; gap: .55rem }
+.tbtk .tkb-head .tkc-k { margin: 0 }
+.tbtk .tkc-orn.sm { width: 24px; height: 24px }
+.tbtk .tkc-seal.sm { width: 28px; height: 28px; font-size: .62rem; box-shadow: none }
+.tbtk .tkb-title { margin: .2rem 0 0; font-family: var(--f-display); font-weight: 600; font-size: clamp(1.35rem, 5.2cqi, 2.1rem); line-height: 1.05; color: var(--fg); overflow-wrap: anywhere }
+.tbtk .tks-stade .tkb-title, .tbtk .tks-concert .tkb-title { text-transform: uppercase; letter-spacing: .01em }
+.tbtk .tkb-date { margin: .25rem 0 0; font-family: var(--f-display); font-size: 1rem; color: var(--fg) }
+.tbtk .tkb-foot { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: .6rem; margin-top: .7rem }
+.tbtk .tkb-foot .tkc-lbl { color: var(--muted) }
+.tbtk .tkb-name { margin: .2rem 0 0; font-family: var(--f-display); font-size: 1.2rem; line-height: 1.15; color: var(--fg) }
+.tbtk .tkb-meta { margin: .1rem 0 0; font-size: .76rem; color: var(--muted) }
+.tbtk .tkb-foot .tkc-pill { margin: 0 }
+.tbtk .tkb-perf { position: relative; background: linear-gradient(to right, var(--bg) 50%, var(--stub-bg) 50%);
+  -webkit-mask: radial-gradient(circle 11px at 50% 0, #0000 97%, #000) top / 100% 51% no-repeat, radial-gradient(circle 11px at 50% 100%, #0000 97%, #000) bottom / 100% 51% no-repeat;
+  mask: radial-gradient(circle 11px at 50% 0, #0000 97%, #000) top / 100% 51% no-repeat, radial-gradient(circle 11px at 50% 100%, #0000 97%, #000) bottom / 100% 51% no-repeat }
+.tbtk .tkb-perf::before { content: ""; position: absolute; top: 16px; bottom: 16px; left: calc(50% + 4px); border-left: 2px dashed color-mix(in srgb, var(--stub-ink) 25%, var(--stub-bg)) }
+.tbtk .tkb-stub { display: grid; justify-items: center; align-content: center; gap: .25rem; padding: 1rem .7rem; background: var(--stub-bg); color: var(--stub-ink); border-radius: 0 18px 18px 0; text-align: center }
+.tbtk .tkb-stub .qr { width: 104px }
+.tbtk .tkb-stub .tkc-ref { margin: .1rem 0 0; font-size: .86rem; letter-spacing: .14em }
+.tbtk .tkb-url { display: none; margin: .2rem 0 0; font-family: var(--f-body); font-size: .5rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: color-mix(in srgb, var(--stub-ink) 70%, var(--stub-bg)); overflow-wrap: anywhere }
+.tbtk .tkc-actions { width: min(100%, 640px); margin: .9rem auto 0 }
+.tbtk .tkc-actions .tkc-dl { margin: 0; background: var(--deco); color: var(--deco-ink) }
+.tbtk .tkc-actions .tkc-hint { color: var(--muted) }
+@container (max-width: 520px) {
+  .tbtk .tkc-billet { grid-template-columns: minmax(0, 1fr) 18px 108px }
+  .tbtk .tkb-main { padding: 9px }
+  .tbtk .tkb-frame { padding: .8rem .75rem }
+  .tbtk .tkb-stub .qr { width: 80px }
+  .tbtk .tkb-stub .tkc-ref { font-size: .7rem; letter-spacing: .06em }
+  .tbtk .tkb-name { font-size: 1rem }
+}
+
+/* ---------- Capture pour le PDF et l'image : le billet seul, adresse à la place du bouton ---------- */
+.tbtk[data-printing] .tkc { margin: 0; filter: none }
+.tbtk[data-printing] [data-print-hide] { display: none }
+.tbtk[data-printing] .tkc-url { display: flex }
+.tbtk[data-printing] .tkb-url { display: block }
+
+/* ---------- Billet vivant (repris du prototype) : compte à rebours, jour J, tampon d'entrée ---------- */
+.tbtk .tkc-qr .qr { display: block; cursor: zoom-in; font: inherit; transition: width .5s cubic-bezier(.34, 1.56, .64, 1), opacity .4s, filter .4s }
+.tbtk .tkc-qr .qr:disabled { cursor: default }
+.tbtk .tkc-qr .qr:focus-visible { outline: 2px solid var(--deco); outline-offset: 3px }
+.tbtk .tkc-bot, .tbtk .tkb-stub { position: relative }
+.tbtk .tkc-live { margin: .9rem 0 .2rem; padding: .65rem .8rem; border-radius: 12px; background: color-mix(in srgb, var(--stub-ink) 7%, transparent); color: var(--stub-ink); font-size: .8rem; line-height: 1.45; text-align: center }
+.tbtk .tkc-actions .tkc-live { width: 100%; max-width: 420px; background: color-mix(in srgb, var(--fg) 8%, transparent); color: var(--fg) }
+.tbtk .lv-cd { display: flex; justify-content: center; gap: .35rem }
+.tbtk .lv-cd span { display: grid; min-width: 3.05rem; padding: .35rem .2rem .3rem; border-radius: 9px; background: color-mix(in srgb, currentColor 9%, transparent) }
+.tbtk .lv-cd b { font-family: var(--f-display); font-size: 1.35rem; line-height: 1.1; font-variant-numeric: tabular-nums }
+.tbtk .lv-cd small { font-size: .52rem; letter-spacing: .14em; text-transform: uppercase }
+.tbtk .lv-cap { display: block; margin-top: .45rem; font-size: .72rem; opacity: .8 }
+.tbtk .lv-dot { display: inline-block; width: .55rem; height: .55rem; margin-right: .2rem; border-radius: 50%; background: #1FA35B; vertical-align: .05em; animation: tk-lv-pulse 1.6s infinite }
+@keyframes tk-lv-pulse { 0% { box-shadow: 0 0 0 0 rgba(31, 163, 91, .55) } 70%, 100% { box-shadow: 0 0 0 9px rgba(31, 163, 91, 0) } }
+.tbtk .lv-ok { display: inline-grid; place-items: center; width: 1.25rem; height: 1.25rem; margin-right: .15rem; border-radius: 50%; background: #1F8A4C; color: #fff; font-size: .72rem; font-weight: 800 }
+.tbtk.is-today .tkc-live { background: color-mix(in srgb, #1FA35B 14%, transparent) }
+.tbtk.is-in .tkc-live { background: color-mix(in srgb, #1F8A4C 13%, transparent) }
+/* Jour J : le QR passe en grand */
+.tbtk.is-today .tkc-row { grid-template-columns: 1fr; justify-items: center; text-align: center }
+.tbtk.is-today .tkc-row .tkc-qr { order: -1 }
+.tbtk.is-today .tkc-row .qr { width: min(200px, 62cqi) }
+.tbtk.is-today .tkb-stub .qr { width: 132px }
+/* Après le scan, ou après l'événement : le QR est grisé */
+.tbtk.is-in .tkc-qr .qr, .tbtk.is-past .tkc-qr .qr { opacity: .3; filter: grayscale(1) }
+.tbtk.is-in .tkc-qr small { visibility: hidden }
+.tbtk .tkc-stamp { --stamp: #B3261E; position: absolute; right: .9rem; top: 1.4rem; z-index: 3; padding: .35rem .75rem .3rem; border: 3px solid var(--stamp); border-radius: 8px; color: var(--stamp);
+  transform: rotate(-13deg); text-align: center; text-transform: uppercase; line-height: 1.05; pointer-events: none; animation: tk-stamp .55s cubic-bezier(.3, 1.5, .5, 1);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='80'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.85' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.4 2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='80'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.85' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.4 2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E") }
+.tbtk .tkc-stamp b { display: block; font-family: var(--f-body); font-size: 1.3rem; font-weight: 900; letter-spacing: .16em }
+.tbtk .tkc-stamp i { display: block; margin-top: .1rem; font-style: normal; font-family: ui-monospace, Menlo, monospace; font-size: .8rem; font-weight: 700; letter-spacing: .1em }
+.tbtk .tkb-stub .tkc-stamp { right: .4rem; top: .8rem }
+@keyframes tk-stamp { 0% { transform: rotate(-13deg) scale(2.6); opacity: 0 } 60% { opacity: 1 } 100% { transform: rotate(-13deg) scale(1) } }
+
+/* QR agrandi */
+.tk-qrbig { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 24px; background: rgba(5, 5, 12, .9); color: #fff; text-align: center }
+.tk-qrbig > div { display: grid; justify-items: center; gap: .8rem }
+.tk-qrbig .qr { width: min(78vw, 340px); padding: 14px; background: #fff; border-radius: 18px }
+.tk-qrbig .qr img { display: block; width: 100%; height: auto }
+.tk-qrbig code { font-family: ui-monospace, Menlo, monospace; font-size: 1.3rem; letter-spacing: .18em }
+.tk-qrbig p { margin: 0; opacity: .75; font-size: .9rem }
+.tk-qrbig button { min-height: 42px; padding: 0 1.2rem; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .35); background: transparent; color: #fff; font: 600 .9rem system-ui, sans-serif; cursor: pointer }
+
+/* Ouverture en enveloppe */
+.tk-env { --env-paper: color-mix(in srgb, var(--accent) 12%, #F4EEE3); --env-flap: color-mix(in srgb, var(--accent) 20%, #EBE2D3);
+  position: fixed; inset: 0; z-index: 95; display: grid; place-items: center; align-content: center; gap: 1.4rem; padding: 16px; cursor: pointer;
+  background: radial-gradient(70% 55% at 50% 42%, color-mix(in srgb, var(--accent) 28%, var(--bg)), var(--bg) 75%); animation: tk-env-out .45s ease 3s forwards }
+.tk-env.mourn { --env-paper: #F7F6F3; --env-flap: #ECEAE5 }
+.tk-env-box { position: relative; width: min(86vw, 360px); aspect-ratio: 1.45; perspective: 1100px; animation: tk-env-in .65s cubic-bezier(.34, 1.56, .64, 1) both }
+.tk-env-back { position: absolute; inset: 0; border-radius: 12px; overflow: hidden; background: var(--bg); box-shadow: 0 30px 60px rgba(0, 0, 0, .45) }
+.tk-env-back .tkc-motif { position: absolute; inset: 0; opacity: .4 }
+.tk-env-card { position: absolute; left: 6%; right: 6%; top: 6%; height: 90%; z-index: 2; border-radius: 16px 16px 0 0; border: 2px solid var(--deco);
+  background: linear-gradient(170deg, color-mix(in srgb, var(--bg) 82%, var(--accent)), var(--bg)); animation: tk-env-card 1s 2s cubic-bezier(.2, .8, .2, 1) forwards }
+.tk-env-front { position: absolute; inset: 0; z-index: 3; border-radius: 12px; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding: 0 1rem 7%; text-align: center; color: #2B2226;
+  clip-path: polygon(0 0, 50% 54%, 100% 0, 100% 100%, 0 100%); background: var(--env-paper) }
+.tk-env-front small { font: 700 .62rem system-ui, sans-serif; letter-spacing: .24em; text-transform: uppercase; color: #6B6070 }
+.tk-env-front b { display: block; max-width: 100%; margin-top: .15rem; font-family: var(--f-script, var(--f-display)); font-weight: 400; font-size: clamp(1.5rem, 6.5vw, 1.9rem); line-height: 1.15; overflow-wrap: anywhere }
+.tk-env-flap { position: absolute; left: 0; right: 0; top: 0; height: 60%; z-index: 4; transform-origin: 50% 0; clip-path: polygon(0 0, 100% 0, 50% 100%); border-radius: 12px 12px 0 0;
+  background: linear-gradient(180deg, var(--env-flap), color-mix(in srgb, var(--env-flap) 88%, #000)); animation: tk-env-flap .75s 1.25s cubic-bezier(.5, 0, .3, 1) forwards, tk-env-z 0s 1.62s forwards }
+.tk-env-seal { position: absolute; left: 50%; top: 58%; z-index: 5; width: 60px; height: 60px; margin: -30px 0 0 -30px; border-radius: 50%; display: grid; place-items: center;
+  background: radial-gradient(circle at 34% 30%, color-mix(in srgb, var(--deco) 65%, #fff), var(--deco) 58%, color-mix(in srgb, var(--deco) 65%, #000)); color: var(--deco-ink);
+  font-family: var(--f-display); font-size: 1.05rem; box-shadow: 0 4px 10px rgba(0, 0, 0, .35), inset 0 0 0 3px color-mix(in srgb, var(--deco) 75%, #000); animation: tk-env-seal .45s .95s ease-in forwards }
+.tk-env.mourn .tk-env-seal { background: #2A2A2A; color: #fff }
+.tk-env-skip { padding: .55rem 1.2rem; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--fg) 35%, transparent); background: transparent; color: var(--fg); font: 600 .85rem system-ui, sans-serif; cursor: pointer }
+@keyframes tk-env-in { from { opacity: 0; transform: translateY(50px) scale(.88) rotate(-3deg) } }
+@keyframes tk-env-seal { 40% { transform: scale(1.2) } 100% { transform: scale(.3) rotate(-30deg); opacity: 0 } }
+@keyframes tk-env-flap { to { transform: rotateX(180deg) } }
+@keyframes tk-env-z { to { z-index: 1 } }
+@keyframes tk-env-card { to { transform: translateY(-70%) } }
+@keyframes tk-env-out { to { opacity: 0; visibility: hidden } }
+@media (prefers-reduced-motion: reduce) { .tk-env { display: none } .tbtk .lv-dot, .tbtk .tkc-stamp { animation: none } }

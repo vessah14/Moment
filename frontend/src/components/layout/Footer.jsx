@@ -8,6 +8,7 @@ const COLUMNS = [
     links: [
       { label: 'Fonctionnalités', to: '/#fonctionnalites' },
       { label: 'Modèles', to: '/modeles' },
+      { label: 'Modèles de billets', to: '/billets' },
       { label: 'Tarifs', to: '/tarifs' }
     ]
   },
@@ -20,11 +21,10 @@ const COLUMNS = [
     ]
   },
   {
-    title: 'Écosystème',
+    title: 'Ressources',
     links: [
-      { label: 'TBF Digital', to: '/ecosysteme' },
-      { label: 'Support', to: '/support' },
-      { label: 'Mentions légales', to: '/mentions-legales' }
+      { label: 'Écosystème TBF', to: '/ecosysteme' },
+      { label: 'Support', to: '/support' }
     ]
   }
 ]
@@ -87,12 +87,6 @@ export default function Footer () {
             </Link>
             <Link to='/cookies' className='transition hover:text-ink'>
               Cookies
-            </Link>
-            <Link to='/support' className='transition hover:text-ink'>
-              Support
-            </Link>
-            <Link to='/tarifs' className='transition hover:text-ink'>
-              Tarifs
             </Link>
           </div>
         </div>

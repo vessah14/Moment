@@ -12,6 +12,9 @@ namespace backend_EventMoment.Dtos
         public int? MaxEvents { get; set; }
         public int EventsUsed { get; set; }
         public int? MaxGuests { get; set; }
+        public int? MaxPhotos { get; set; }
+        // Fonctions de l'offre : premiumTemplates, seating, checkin, ticketing, branding, autoReminders.
+        public Dictionary<string, bool> Features { get; set; } = new();
         public DateTimeOffset? EndsAt { get; set; }
         public UpgradeRequestDto? PendingRequest { get; set; }
     }

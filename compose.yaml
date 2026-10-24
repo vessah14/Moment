@@ -1,0 +1,159 @@
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: eventsaas
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-moment_postgres_dev_only}
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - moment_db:/var/lib/postgresql
+      - ./database/docker/00-roles.sql:/docker-entrypoint-initdb.d/00-roles.sql:ro
+      - ./database/docker/01-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/docker/02-seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d eventsaas"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    deploy:
+      replicas: 2
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:5146
+      ForwardedHeaders__TrustAllProxiesInDevelopment: "true"
+      Jwt__Key: ${JWT_KEY:-moment-local-development-signing-key-change-for-shared-use}
+      Jwt__Issuer: TBFMoment.Local
+      Jwt__Audience: TBFMoment.Local
+      ConnectionStrings__AdminConnection: Host=db;Port=5432;Database=eventsaas;Username=app_admin;Password=${APP_ADMIN_PASSWORD:-moment_admin_dev_only}
+      ConnectionStrings__ClientConnection: Host=db;Port=5432;Database=eventsaas;Username=app_client;Password=${APP_CLIENT_PASSWORD:-moment_client_dev_only}
+      ConnectionStrings__SignupConnection: Host=db;Port=5432;Database=eventsaas;Username=app_signup;Password=${APP_SIGNUP_PASSWORD:-moment_signup_dev_only}
+      Cors__AllowedOrigins__0: http://localhost:5173
+      Cors__AllowedOrigins__1: http://localhost:5174
+      Payments__KPay__Enabled: ${KPAY_ENABLED:-false}
+      KPay__ApiKey: ${KPAY_API_KEY:-}
+      KPay__SecretKey: ${KPAY_SECRET_KEY:-}
+      KPay__WebhookSecret: ${KPAY_WEBHOOK_SECRET:-}
+      KPay__AllowLive: ${KPAY_ALLOW_LIVE:-false}
+      Loki__Url: http://loki:3100
+      Cloudinary__CloudName: ""
+      Cloudinary__ApiKey: ""
+      Cloudinary__ApiSecret: ""
+      Smtp__Host: ""
+    volumes:
+      - moment_uploads:/app/wwwroot/uploads
+      - moment_keys:/root/.aspnet/DataProtection-Keys
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  lb:
+    image: nginx:1.28-alpine
+    ports:
+      - "127.0.0.1:5147:5146"
+    volumes:
+      - ./ops/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ops/nginx/proxy_params:/etc/nginx/proxy_params:ro
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:1.4.2
+    command:
+      - --nginx.scrape-uri=http://lb:8080/stub_status
+    depends_on:
+      - lb
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./ops/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - moment_prometheus:/prometheus
+    depends_on:
+      - api
+      - nginx-exporter
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:3.5.3
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./ops/loki/config.yaml:/etc/loki/local-config.yaml:ro
+      - moment_loki:/loki
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:12.0.0
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-moment_dev_only_change_me}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ./ops/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./ops/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - moment_grafana:/var/lib/grafana
+    depends_on:
+      - prometheus
+      - loki
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      VITE_API_URL: http://localhost:5147/api
+      VITE_SITE_URL: http://localhost:5173
+      VITE_GOOGLE_CLIENT_ID: ""
+      VITE_FACEBOOK_APP_ID: ""
+      VITE_KPAY_ENABLED: ${KPAY_ENABLED:-false}
+    ports:
+      - "127.0.0.1:5173:5173"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    depends_on:
+      - lb
+    restart: unless-stopped
+
+  admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    environment:
+      VITE_API_URL: http://localhost:5147/api
+      VITE_CLIENT_APP_URL: http://localhost:5173
+    ports:
+      - "127.0.0.1:5174:5174"
+    volumes:
+      - ./admin/src:/app/src
+      - ./admin/public:/app/public
+    depends_on:
+      - lb
+    restart: unless-stopped
+
+volumes:
+  moment_db:
+  moment_uploads:
+  moment_keys:
+  moment_prometheus:
+  moment_loki:
+  moment_grafana:

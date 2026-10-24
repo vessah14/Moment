@@ -2,18 +2,18 @@ import { formatCents } from '../../utils/formatCurrency'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
-  getNotchPayPaymentStatus,
+  getKPayPaymentStatus,
   listMySubscriptions
 } from '../../api/subscriptions'
 import { notifyPlanChanged } from '../../utils/usePlan'
 
-const NOTCHPAY_ENABLED = import.meta.env.VITE_NOTCHPAY_ENABLED === 'true'
+const KPAY_ENABLED = import.meta.env.VITE_KPAY_ENABLED === 'true'
 
 export default function BillingTab () {
   const [subscriptions, setSubscriptions] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchParams] = useSearchParams()
-  const paymentId = NOTCHPAY_ENABLED ? searchParams.get('paymentId') : null
+  const paymentId = KPAY_ENABLED ? searchParams.get('paymentId') : null
   const [payment, setPayment] = useState(null)
   const [paymentError, setPaymentError] = useState('')
   const [refreshKey, setRefreshKey] = useState(0)
@@ -33,11 +33,23 @@ export default function BillingTab () {
     const checkStatus = async () => {
       checks += 1
       try {
-        const result = await getNotchPayPaymentStatus(paymentId)
+        const result = await getKPayPaymentStatus(paymentId)
         if (!mounted) return
         setPayment(result)
         setPaymentError('')
-        if (result.status === 'SUCCESSFUL') notifyPlanChanged()
+        if (result.status === 'SUCCESSFUL') {
+          notifyPlanChanged()
+          try {
+            const updatedSubscriptions = await listMySubscriptions()
+            if (mounted) setSubscriptions(updatedSubscriptions ?? [])
+          } catch (error) {
+            if (mounted)
+              setPaymentError(
+                error.message ||
+                  'Paiement confirmé, mais impossible d’actualiser votre formule.'
+              )
+          }
+        }
         if (
           (result.status === 'PENDING' || result.status === 'CREATED') &&
           checks < 5
@@ -65,8 +77,8 @@ export default function BillingTab () {
     <div className='rounded-2xl border border-border-soft bg-surface p-6'>
       <h2 className='text-xl font-bold text-ink'>Facturation</h2>
       <p className='mt-1 text-sm text-muted'>
-        {NOTCHPAY_ENABLED
-          ? 'Les paiements d’abonnement sont traités de manière sécurisée par Notch Pay via Mobile Money.'
+        {KPAY_ENABLED
+          ? 'Les paiements d’abonnement sont traités de manière sécurisée par KPay.'
           : 'Les offres payantes s’activent sur demande : choisissez votre offre avec « Passer en Premium », puis réglez par Mobile Money ; nous activons l’offre dès réception.'}
       </p>
 
@@ -91,7 +103,7 @@ export default function BillingTab () {
               ? 'Le paiement n’a pas été accepté. Vous pouvez relancer la souscription depuis la page Tarifs.'
               : payment?.status === 'EXPIRED'
               ? 'Le lien de paiement a expiré. Relancez la souscription depuis la page Tarifs.'
-              : 'Le statut sera actualisé automatiquement après la confirmation de Notch Pay.'}
+              : 'Le statut sera actualisé automatiquement après la confirmation de KPay.'}
           </p>
           {payment &&
             payment.status !== 'SUCCESSFUL' &&

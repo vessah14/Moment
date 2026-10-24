@@ -102,11 +102,11 @@ public class GuestInvitationTests
     public void Email_ContainsThePersonalLink_AndEscapesOrganizerText()
     {
         var (subject, html) = InvitationDispatcher.BuildMessage("Fatou Ndiaye", "Mariage <Awa & Ibrahim>",
-            new DateOnly(2027, 3, 14), new TimeOnly(16, 0), "Route des Almadies", "Awa <script>", "https://tbfmoment.com/invitation/abc");
+            new DateOnly(2027, 3, 14), new TimeOnly(16, 0), "Route des Almadies", "Awa <script>", "https://tbfmoment.com/e/mariage?invite=abc");
 
         Assert.Equal("Invitation : Mariage <Awa & Ibrahim>", subject);
         Assert.Contains("Bonjour Fatou,", html);
-        Assert.Contains("href=\"https://tbfmoment.com/invitation/abc\"", html);
+        Assert.Contains("href=\"https://tbfmoment.com/e/mariage?invite=abc\"", html);
         Assert.Contains("Confirmer ma présence", html);
         Assert.Contains("Dimanche 14 mars 2027 à 16h00", html);
         Assert.Contains("Mariage &lt;Awa &amp; Ibrahim&gt;", html);

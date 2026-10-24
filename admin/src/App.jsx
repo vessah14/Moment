@@ -10,11 +10,13 @@ import AdminReviews from './pages/AdminReviews'
 import AdminSettings from './pages/AdminSettings'
 import AdminNotFound from './pages/AdminNotFound'
 import ErrorBoundary from './components/ErrorBoundary'
+import ScrollToTop from './components/ScrollToTop'
 
 function App () {
   return (
     // Page d'erreur au lieu d'un écran blanc si une page plante.
     <ErrorBoundary>
+    <ScrollToTop />
     <Routes>
       <Route path='/admin/connexion' element={<AdminLogin />} />
       <Route

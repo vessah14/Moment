@@ -330,7 +330,7 @@ public class SecurityFixesTests
         Assert.DoesNotContain("<form", body);
         Assert.Contains("&lt;form", body);
         Assert.Contains("Bonjour Awa", body);
-        Assert.Contains($"<a href=\"http://localhost:5173/invitation/{guest.Id}\" style=", body);
+        Assert.Contains($"<a href=\"http://localhost:5173/e/{Uri.EscapeDataString(evt.Slug)}?invite={guest.Id}\" style=", body);
     }
 
     [Fact]

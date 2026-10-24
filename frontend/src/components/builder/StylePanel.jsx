@@ -3,11 +3,13 @@ import { Check } from 'lucide-react'
 import TemplatePreview from '../templates/TemplatePreview'
 import { getSiteTheme } from '../site/themes/themeDefs'
 import FaqEditor from './FaqEditor'
-import { DressCodeEditor, FamiliesEditor, GiftAccountsEditor, PartnersEditor, PeopleEditor } from './ModuleEditors'
+import { AdditionalVenuesEditor, DressCodeEditor, FamiliesEditor, GiftAccountsEditor, InvitationEditor, PartnersEditor, PeopleEditor, RsvpSidesEditor } from './ModuleEditors'
 import PremiumThemeFields from './PremiumThemeFields'
 import Toggle from './Toggle'
+import TicketCard from '../tickets/TicketCard'
+import { TICKET_FORMATS, TICKET_STYLES } from '../../utils/ticketStyles'
 
-const TABS = ['Style', 'Contenu', 'Modèle']
+const TABS = ['Style', 'Contenu', 'Modèle', 'Billet']
 
 export default function StylePanel({
   palette,
@@ -20,6 +22,10 @@ export default function StylePanel({
   currentTemplate,
   categoryLabel,
   onApplyTemplate,
+  ticket = { style: null, note: '' },
+  defaultTicketStyle = 'classique',
+  onChangeTicket,
+  ticketEvent,
 }) {
   const [tab, setTab] = useState('Style')
 
@@ -45,6 +51,19 @@ export default function StylePanel({
           </button>
         ))}
       </div>
+
+      {tab === 'Billet' && (
+        <TicketTab
+          ticket={ticket}
+          recommended={defaultTicketStyle}
+          onChange={onChangeTicket}
+          event={ticketEvent}
+          accent={heroStyle?.color || currentTemplate?.preview?.accent}
+          themeId={currentTemplate?.theme}
+          paletteId={heroStyle?.palette}
+          motif={heroStyle?.motif}
+        />
+      )}
 
       {tab === 'Style' && premiumTheme && (
         <PremiumThemeFields theme={premiumTheme} heroStyle={heroStyle} onChange={update} />
@@ -157,10 +176,18 @@ export default function StylePanel({
                   className="mt-2 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-brand-purple"
                 />
               </label>
+              {selectedBlock === 'Invitation' && (
+                <InvitationEditor content={content} onChange={(patch) => onChangeBlockContent(selectedBlock, patch)} />
+              )}
               <label className="block">
-                <span className="text-sm font-medium text-ink">Texte</span>
+                <span className="text-sm font-medium text-ink">
+                  {selectedBlock === 'Invitation' ? "Texte de l'invitation" : 'Texte'}
+                </span>
+                {selectedBlock === 'Invitation' && (
+                  <span className="mt-1 block text-xs text-faint">Laissez une ligne vide entre deux paragraphes. Le texte apparaît mot à mot.</span>
+                )}
                 <textarea
-                  rows={4}
+                  rows={selectedBlock === 'Invitation' ? 7 : 4}
                   value={content.body}
                   onChange={(e) =>
                     onChangeBlockContent(selectedBlock, { body: e.target.value })
@@ -181,6 +208,9 @@ export default function StylePanel({
               {selectedBlock === 'Partenaires' && (
                 <PartnersEditor content={content} onChange={(patch) => onChangeBlockContent(selectedBlock, patch)} />
               )}
+              {selectedBlock === 'RSVP' && (
+                <RsvpSidesEditor content={content} onChange={(patch) => onChangeBlockContent(selectedBlock, patch)} />
+              )}
               {selectedBlock === 'Cadeaux' && (
                 <GiftAccountsEditor content={content} onChange={(patch) => onChangeBlockContent(selectedBlock, patch)} />
               )}
@@ -193,18 +223,24 @@ export default function StylePanel({
               )}
 
               {selectedBlock === 'Localisation' && (
-                <label className="block">
-                  <span className="text-sm font-medium text-ink">Moyens de transport</span>
-                  <textarea
-                    rows={3}
-                    value={content.transport ?? ''}
-                    placeholder="Parking, transports en commun…"
-                    onChange={(e) =>
-                      onChangeBlockContent(selectedBlock, { transport: e.target.value })
-                    }
-                    className="mt-2 w-full resize-none rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-brand-purple"
+                <>
+                  <label className="block">
+                    <span className="text-sm font-medium text-ink">Moyens de transport</span>
+                    <textarea
+                      rows={3}
+                      value={content.transport ?? ''}
+                      placeholder="Parking, transports en commun…"
+                      onChange={(e) =>
+                        onChangeBlockContent(selectedBlock, { transport: e.target.value })
+                      }
+                      className="mt-2 w-full resize-none rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-brand-purple"
+                    />
+                  </label>
+                  <AdditionalVenuesEditor
+                    content={content}
+                    onChange={(patch) => onChangeBlockContent(selectedBlock, patch)}
                   />
-                </label>
+                </>
               )}
 
               <div className="space-y-4 border-t border-border-soft pt-4">
@@ -281,5 +317,76 @@ export default function StylePanel({
         Pensez à cliquer sur Enregistrer pour conserver vos modifications.
       </p>
     </aside>
+  )
+}
+
+// Onglet « Billet » : le modèle de billet que reçoit chaque invité (écran, PDF, image WhatsApp).
+function TicketTab({ ticket, recommended, onChange, event, accent, themeId, paletteId, motif }) {
+  const current = ticket.style || recommended
+  return (
+    <div className="mt-6 space-y-5">
+      <p className="text-xs text-muted">
+        Ce que reçoit chaque invité qui confirme, à l'écran, en PDF à imprimer et en image pour WhatsApp : une carte
+        d'invitation pour un événement privé, un billet d'entrée pour un événement à billetterie, un badge pour une
+        conférence. Un billet acheté prend toujours le format billet.
+      </p>
+      {event && (
+        <div className="overflow-hidden rounded-xl bg-surface-2 p-2">
+          <TicketCard
+            style={current}
+            note={ticket.note}
+            accent={accent}
+            themeId={themeId}
+            paletteId={paletteId}
+            motif={motif}
+            event={event}
+            guest={{ id: '00000000-0000-0000-0000-000000000000', name: 'Brenda Mbappé', n: 2 }}
+            downloads={false}
+          />
+        </div>
+      )}
+      {TICKET_FORMATS.map((f) => (
+        <div key={f.id}>
+          <p className="text-xs font-semibold tracking-wider text-faint uppercase">{f.label}</p>
+          <p className="mt-0.5 text-xs text-muted">{f.hint}</p>
+          <div role="radiogroup" aria-label={f.label} className="mt-2 grid gap-2">
+            {TICKET_STYLES.filter((s) => s.format === f.id).map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            role="radio"
+            aria-checked={current === s.id}
+            onClick={() => onChange?.({ style: s.id })}
+            className={`rounded-lg border px-3 py-2 text-left transition ${
+              current === s.id ? 'border-brand-purple bg-brand-purple/10' : 'border-border-soft hover:border-faint'
+            }`}
+          >
+            <span className="flex items-center justify-between gap-2 text-sm font-semibold text-ink">
+              {s.label}
+              {s.id === recommended && (
+                <span className="rounded-full bg-[color:var(--color-gold)]/20 px-2 py-0.5 text-[10px] font-bold text-[color:var(--color-gold)]">
+                  Conseillé
+                </span>
+              )}
+            </span>
+            <span className="mt-0.5 block text-xs text-muted">{s.description}</span>
+          </button>
+        ))}
+          </div>
+        </div>
+      ))}
+      <label className="block">
+        <span className="text-sm font-medium text-ink">Mention sous le QR code</span>
+        <input
+          type="text"
+          maxLength={40}
+          value={ticket.note || ''}
+          onChange={(e) => onChange?.({ note: e.target.value })}
+          placeholder="À présenter à l'accueil"
+          className="mt-2 w-full rounded-lg border border-border-soft bg-surface px-3 py-2 text-sm text-ink"
+        />
+        <span className="mt-1 block text-xs text-faint">40 caractères maximum. Ex. « Tenue blanche exigée ».</span>
+      </label>
+    </div>
   )
 }

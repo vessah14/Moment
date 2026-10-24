@@ -16,5 +16,6 @@ namespace backend_EventMoment.Interfaces
 
         Task<PublicInvitationDto?> GetPublicInvitationAsync(Guid guestId);
         Task<PublicInvitationDto?> SubmitPublicRsvpAsync(Guid guestId, SubmitPublicRsvpDto dto);
+        Task<PublicInvitationDto?> SubmitPublicEventRsvpAsync(string slug, SubmitPublicEventRsvpDto dto);
     }
 }

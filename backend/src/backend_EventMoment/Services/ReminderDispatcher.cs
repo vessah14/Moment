@@ -62,11 +62,23 @@ namespace backend_EventMoment.Services
                     && r.Event.Status == EventStatus.Publie
                     && r.Event.EventDate != null
                     && !db.EventModerations.Any(m => m.EventId == r.EventId))
-                .Select(r => new { r.Id, r.Kind, r.EventId, EventName = r.Event.Name, EventDate = r.Event.EventDate!.Value })
+                .Select(r => new { r.Id, r.Kind, r.EventId, r.Event.OrganizerId, EventName = r.Event.Name, EventSlug = r.Event.Slug, EventDate = r.Event.EventDate!.Value })
                 .ToListAsync(ct);
 
+            // Rappels automatiques réservés aux offres qui les incluent : si l'offre a pris fin,
+            // le rappel attend (il repartira si l'organisateur reprend une offre qui l'inclut).
+            var plans = scope.ServiceProvider.GetService<IPlanService>();
+            var allowed = new Dictionary<Guid, bool>();
             foreach (var reminder in candidates.Where(c => IsDue(c.Kind, c.EventDate, today)))
             {
+                if (plans != null)
+                {
+                    if (!allowed.TryGetValue(reminder.OrganizerId, out var ok))
+                        allowed[reminder.OrganizerId] = ok = await plans.HasFeatureAsync(reminder.OrganizerId, PlanFeature.AutoReminders);
+                    if (!ok)
+                        continue;
+                }
+
                 // Réservation atomique avant l'envoi : une seule instance du serveur envoie
                 // ce rappel, et un plantage en cours d'envoi ne provoque pas de doublon.
                 var claimed = await db.EventReminders.IgnoreQueryFilters()
@@ -84,7 +96,8 @@ namespace backend_EventMoment.Services
                 var sent = 0;
                 foreach (var guest in guests)
                 {
-                    var (subject, html) = BuildMessage(reminder.Kind, reminder.EventName, reminder.EventDate, guest.FullName, $"{baseUrl}/invitation/{guest.Id}");
+                    var link = $"{baseUrl.TrimEnd('/')}/e/{Uri.EscapeDataString(reminder.EventSlug)}?invite={guest.Id}";
+                    var (subject, html) = BuildMessage(reminder.Kind, reminder.EventName, reminder.EventDate, guest.FullName, link);
                     try
                     {
                         if (await emailSender.SendAsync(guest.Email!, subject, html))

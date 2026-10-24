@@ -65,7 +65,7 @@ namespace backend_EventMoment.Services
             }
         }
 
-        public async Task NotifyNewRsvpAsync(Guid eventId, string guestName, bool confirmed, int accompanyingCount)
+        public async Task NotifyNewRsvpAsync(Guid eventId, string guestName, bool? confirmed, int accompanyingCount)
         {
             // Appelé depuis l'endpoint RSVP public (requête anonyme) : les filtres
             // organisateur de AdminDbContext masqueraient tout, d'où IgnoreQueryFilters.
@@ -82,7 +82,9 @@ namespace backend_EventMoment.Services
                 return;
 
             var baseUrl = _config["Frontend:BaseUrl"] ?? "http://localhost:5173";
-            var answer = confirmed
+            var answer = confirmed == null
+                ? "hésite encore (réponse « Peut-être »)"
+                : confirmed == true
                 ? (accompanyingCount > 0 ? $"a confirmé sa présence (+{accompanyingCount} accompagnant(s))" : "a confirmé sa présence")
                 : "a décliné l'invitation";
 
@@ -90,7 +92,7 @@ namespace backend_EventMoment.Services
             {
                 Preheader = $"{guestName} {answer}.",
                 Kicker = "Nouvelle réponse",
-                Title = confirmed ? $"{guestName} sera là ✅" : $"{guestName} ne pourra pas venir",
+                Title = confirmed == null ? $"{guestName} hésite encore" : confirmed == true ? $"{guestName} sera là ✅" : $"{guestName} ne pourra pas venir",
                 Subtitle = target.Name,
                 BodyHtml = EmailLayout.P($"Bonjour {EmailLayout.E(target.OrganizerName)},")
                     + EmailLayout.P($"<b>{EmailLayout.E(guestName)}</b> {answer} pour <b>{EmailLayout.E(target.Name)}</b>."),

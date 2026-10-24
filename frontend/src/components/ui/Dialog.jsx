@@ -1,4 +1,4 @@
-import { X } from 'lucide-react'
+import { AlertTriangle, X } from 'lucide-react'
 import { useEffect, useId, useRef } from 'react'
 import { createPortal } from 'react-dom'
 
@@ -81,7 +81,12 @@ export function ConfirmDialog({ open, title, message, confirmLabel = 'Supprimer'
         </>
       }
     >
-      <p className="text-sm text-muted">{message}</p>
+      <div className="flex items-start gap-3 rounded-xl border border-danger/20 bg-danger/5 p-4">
+        <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-danger/10 text-danger">
+          <AlertTriangle className="h-5 w-5" aria-hidden="true" />
+        </span>
+        <p className="text-sm leading-relaxed text-ink">{message}</p>
+      </div>
     </Dialog>
   )
 }

@@ -124,6 +124,15 @@ namespace backend_EventMoment.Controllers
             return result == null ? NotFound() : Ok(result);
         }
 
+        [HttpPost("~/api/public/events/{slug}/rsvp")]
+        [AllowAnonymous]
+        [EnableRateLimiting("public-write")]
+        public async Task<IActionResult> SubmitPublicEventRsvp(string slug, [FromBody] SubmitPublicEventRsvpDto dto)
+        {
+            var result = await _service.SubmitPublicEventRsvpAsync(slug, dto);
+            return result == null ? NotFound() : Ok(result);
+        }
+
         private bool TryGetOrganizerId(out Guid organizerId)
         {
             organizerId = Guid.Empty;

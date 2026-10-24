@@ -291,8 +291,25 @@ namespace backend_EventMoment.Services
                 .OrderByDescending(r => r.CreatedAt)
                 .FirstOrDefaultAsync();
 
-            return MapInvitation(guest, eventEntity, location, rsvp);
+            // Première entrée scannée : le billet de l'invité affiche alors le tampon « Entré ».
+            var checkedInAt = await _context.GuestCheckins.IgnoreQueryFilters().AsNoTracking()
+                .Where(c => c.GuestId == guestId)
+                .OrderBy(c => c.CheckedInAt)
+                .Select(c => (DateTimeOffset?)c.CheckedInAt)
+                .FirstOrDefaultAsync();
+
+            var rules = RsvpRules.Read(await RsvpBlockContentAsync(guest.EventId));
+            return MapInvitation(guest, eventEntity, location, rsvp, rules, checkedInAt);
         }
+
+        // Contenu du bloc RSVP : choix « côté », date limite, accompagnants, « Peut-être ».
+        private Task<string?> RsvpBlockContentAsync(Guid eventId) =>
+            _context.EventBlocks.IgnoreQueryFilters().AsNoTracking()
+                .Where(b => b.EventId == eventId && (b.BlockType == "RSVP" || b.BlockType == "Rsvp"))
+                .Select(b => b.Content)
+                .FirstOrDefaultAsync();
+
+        private static DateOnly Today => DateOnly.FromDateTime(DateTime.UtcNow);
 
         public async Task<PublicInvitationDto?> SubmitPublicRsvpAsync(Guid guestId, SubmitPublicRsvpDto dto)
         {
@@ -305,10 +322,17 @@ namespace backend_EventMoment.Services
                     && !_context.EventModerations.Any(m => m.EventId == e.Id));
             if (eventEntity == null) return null;
 
-            if (IsRsvpClosed(eventEntity))
-                throw new InvalidOperationException("Les réponses sont closes : l'événement a déjà eu lieu.");
+            var rsvpBlock = await RsvpBlockContentAsync(guest.EventId);
+            var rules = RsvpRules.Read(rsvpBlock);
+            EnsureOpen(rules, eventEntity);
+            // « Peut-être » : réponse enregistrée, présence ni confirmée ni déclinée.
+            var confirmed = dto.Confirmed && !dto.Maybe;
+            rules.Validate(confirmed, dto.Maybe, dto.AccompanyingCount);
 
-            guest.Status = dto.Confirmed ? GuestStatus.Present : GuestStatus.Absent;
+            // Le choix « côté » n'a de sens que pour une présence confirmée.
+            var side = confirmed ? RsvpSides.Validate(rsvpBlock, dto.Side) : null;
+
+            guest.Status = dto.Maybe ? GuestStatus.EnAttente : confirmed ? GuestStatus.Present : GuestStatus.Absent;
             guest.UpdatedAt = DateTimeOffset.UtcNow;
 
             var rsvp = await _context.RsvpResponses.IgnoreQueryFilters()
@@ -328,25 +352,95 @@ namespace backend_EventMoment.Services
                 _context.RsvpResponses.Add(rsvp);
             }
 
-            rsvp.Confirmed = dto.Confirmed;
-            rsvp.AccompanyingCount = dto.AccompanyingCount;
+            rsvp.Confirmed = dto.Maybe ? null : confirmed;
+            rsvp.AccompanyingCount = confirmed ? dto.AccompanyingCount : (short)0;
             rsvp.Message = dto.Message;
+            rsvp.Side = side;
             rsvp.RespondedAt = DateTimeOffset.UtcNow;
 
             await _context.SaveChangesAsync();
 
             if (_notifier != null)
-                await _notifier.NotifyNewRsvpAsync(guest.EventId, guest.FullName, dto.Confirmed, dto.AccompanyingCount);
+                await _notifier.NotifyNewRsvpAsync(guest.EventId, guest.FullName, rsvp.Confirmed, rsvp.AccompanyingCount);
 
             var location = await _context.EventLocations.IgnoreQueryFilters().AsNoTracking()
                 .Where(l => l.EventId == guest.EventId)
                 .OrderBy(l => l.Position)
                 .FirstOrDefaultAsync();
 
-            return MapInvitation(guest, eventEntity, location, rsvp);
+            return MapInvitation(guest, eventEntity, location, rsvp, rules);
         }
 
-        private static PublicInvitationDto MapInvitation(Guest guest, Event eventEntity, Event_Location? location, RsvpResponse? rsvp) => new()
+        public async Task<PublicInvitationDto?> SubmitPublicEventRsvpAsync(string slug, SubmitPublicEventRsvpDto dto)
+        {
+            var eventEntity = await _context.Events.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(e => e.Slug == slug && e.Status == EventStatus.Publie
+                    && !_context.EventModerations.Any(m => m.EventId == e.Id));
+            if (eventEntity == null) return null;
+
+            var rsvpBlock = await RsvpBlockContentAsync(eventEntity.Id);
+            var rules = RsvpRules.Read(rsvpBlock);
+            EnsureOpen(rules, eventEntity);
+            var confirmed = dto.Confirmed && !dto.Maybe;
+            rules.Validate(confirmed, dto.Maybe, dto.AccompanyingCount);
+
+            var fullName = dto.FullName.Trim();
+            var phone = string.IsNullOrWhiteSpace(dto.Phone) ? null : dto.Phone.Trim();
+            var email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim();
+            if (fullName.Length == 0)
+                throw new InvalidOperationException("Veuillez indiquer votre nom.");
+            if (phone == null && email == null)
+                throw new InvalidOperationException("Veuillez indiquer un numéro de téléphone ou une adresse e-mail.");
+
+            var side = confirmed ? RsvpSides.Validate(rsvpBlock, dto.Side) : null;
+
+            await using var transaction = await OrganizerLock.BeginAsync(_context, eventEntity.OrganizerId);
+            if (_plans != null)
+                await _plans.EnsureCanAddGuestAsync(eventEntity.OrganizerId, eventEntity.Id);
+
+            var now = DateTimeOffset.UtcNow;
+            var guest = new Guest
+            {
+                Id = Guid.NewGuid(),
+                EventId = eventEntity.Id,
+                FullName = fullName,
+                Phone = phone,
+                Email = email,
+                Status = dto.Maybe ? GuestStatus.EnAttente : confirmed ? GuestStatus.Present : GuestStatus.Absent,
+                CreatedAt = now,
+                UpdatedAt = now,
+            };
+            _context.Guests.Add(guest);
+            var response = new RsvpResponse
+            {
+                Id = Guid.NewGuid(),
+                GuestId = guest.Id,
+                EventId = eventEntity.Id,
+                Confirmed = dto.Maybe ? null : confirmed,
+                AccompanyingCount = confirmed ? dto.AccompanyingCount : (short)0,
+                Message = string.IsNullOrWhiteSpace(dto.Message) ? null : dto.Message.Trim(),
+                Side = side,
+                RespondedAt = now,
+                CreatedAt = now,
+            };
+            _context.RsvpResponses.Add(response);
+
+            await _context.SaveChangesAsync();
+            if (transaction != null)
+                await transaction.CommitAsync();
+
+            if (_notifier != null)
+                await _notifier.NotifyNewRsvpAsync(eventEntity.Id, fullName, response.Confirmed, response.AccompanyingCount);
+
+            var location = await _context.EventLocations.IgnoreQueryFilters().AsNoTracking()
+                .Where(l => l.EventId == eventEntity.Id)
+                .OrderBy(l => l.Position)
+                .FirstOrDefaultAsync();
+
+            return MapInvitation(guest, eventEntity, location, response, rules);
+        }
+
+        private static PublicInvitationDto MapInvitation(Guest guest, Event eventEntity, Event_Location? location, RsvpResponse? rsvp, RsvpRules rules, DateTimeOffset? checkedInAt = null) => new()
         {
             GuestId = guest.Id,
             GuestFullName = guest.FullName,
@@ -356,12 +450,20 @@ namespace backend_EventMoment.Services
             EventStartTime = eventEntity.StartTime,
             ThemeColor = eventEntity.ThemeColor,
             Template = ReadTemplate(eventEntity.CustomFields),
+            TicketStyle = TicketSettings.Read(eventEntity.CustomFields).Style,
+            TicketNote = TicketSettings.Read(eventEntity.CustomFields).Note,
             LocationLabel = location?.Label,
             LocationAddress = location?.Address,
             RsvpConfirmed = rsvp?.Confirmed,
             RsvpAccompanyingCount = rsvp?.AccompanyingCount ?? 0,
             RsvpMessage = rsvp?.Message,
-            RsvpClosed = IsRsvpClosed(eventEntity),
+            RsvpSide = rsvp?.Side,
+            RsvpMaybe = rsvp is { Confirmed: null, RespondedAt: not null },
+            RsvpClosed = rules.IsClosed(eventEntity, Today),
+            RsvpDeadline = rules.Deadline,
+            RsvpMaxCompanions = rules.MaxCompanions,
+            RsvpAllowMaybe = rules.AllowMaybe,
+            CheckedInAt = checkedInAt,
         };
 
         // Modèle de site choisi dans l'assistant (rangé dans CustomFields) : l'invitation
@@ -383,9 +485,13 @@ namespace backend_EventMoment.Services
             }
         }
 
-        // On peut répondre jusqu'au jour de l'événement inclus.
-        private static bool IsRsvpClosed(Event eventEntity) =>
-            eventEntity.EventDate.HasValue && eventEntity.EventDate.Value < DateOnly.FromDateTime(DateTime.UtcNow);
+        private static void EnsureOpen(RsvpRules rules, Event eventEntity)
+        {
+            if (!rules.IsClosed(eventEntity, Today)) return;
+            throw new InvalidOperationException(eventEntity.EventDate.HasValue && eventEntity.EventDate.Value < Today
+                ? "Les réponses sont closes : l'événement a déjà eu lieu."
+                : "Les réponses sont closes : la date limite est passée.");
+        }
 
         private static GuestDTO Map(Guest entity, DateTimeOffset? checkedInAt) => new()
         {

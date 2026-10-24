@@ -1,13 +1,17 @@
-import QRCode from 'qrcode'
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { getPublicInvitation, submitPublicRsvp } from '../api/guests'
 import { trackPublicEvent } from '../api/publicEvents'
 import logoMark from '../assets/logo-mark.png'
+import TicketCard, { ticketEventInfo } from '../components/tickets/TicketCard'
 import Button from '../components/ui/Button'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
 import { useSeo } from '../utils/seo'
 import { findTemplate, resolveSiteStyle, siteRootStyle } from '../utils/templateTheme'
+import { resolveTicketStyle } from '../utils/ticketStyles'
+import { eventStartIso } from '../utils/ticketLive'
+import { useCheckInWatch } from '../utils/useCheckInWatch'
+import { getSiteTheme, themePalette } from '../components/site/themes/themeDefs'
 
 function formatEventDateTime(dateStr, timeStr) {
   if (!dateStr) return ''
@@ -38,13 +42,15 @@ function buildIcs(invitation) {
 
 export default function GuestInvitation() {
   const { code: guestId } = useParams()
+  const navigate = useNavigate()
   const [invitation, setInvitation] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [accompanyingCount, setAccompanyingCount] = useState(0)
-  const [qrDataUrl, setQrDataUrl] = useState(null)
   const [shareMessage, setShareMessage] = useState('')
+  // Jour J : le billet se met à jour dès que l'accueil scanne le QR code (tampon « Entré »).
+  useCheckInWatch(invitation, setInvitation)
   useSeo({
     title: invitation?.eventName ? `Invitation · ${invitation.eventName}` : 'Invitation',
     description: invitation?.eventName
@@ -56,17 +62,16 @@ export default function GuestInvitation() {
   useEffect(() => {
     getPublicInvitation(guestId)
       .then((data) => {
-        setInvitation(data)
-        setAccompanyingCount(data.rsvpAccompanyingCount ?? 0)
+        if (!data?.eventSlug) {
+          setError("Le site associé à cette invitation est introuvable.")
+          setLoading(false)
+          return
+        }
+        navigate(`/e/${encodeURIComponent(data.eventSlug)}?invite=${encodeURIComponent(guestId)}`, { replace: true })
       })
       .catch((err) => setError(err.message || 'Invitation introuvable.'))
       .finally(() => setLoading(false))
-  }, [guestId])
-
-  useEffect(() => {
-    if (invitation?.rsvpConfirmed !== true) return
-    QRCode.toDataURL(guestId, { margin: 1, width: 240 }).then(setQrDataUrl)
-  }, [invitation?.rsvpConfirmed, guestId])
+  }, [guestId, navigate])
 
   const handleRsvp = async (confirmed) => {
     setSubmitting(true)
@@ -83,14 +88,6 @@ export default function GuestInvitation() {
     } finally {
       setSubmitting(false)
     }
-  }
-
-  const handleSaveQr = () => {
-    if (!qrDataUrl) return
-    const link = document.createElement('a')
-    link.href = qrDataUrl
-    link.download = `billet-${guestId.slice(0, 8)}.png`
-    link.click()
   }
 
   const handleAddToCalendar = () => {
@@ -164,6 +161,8 @@ export default function GuestInvitation() {
   // Même habillage que le site de l'événement (modèle choisi par l'organisateur).
   const template = findTemplate(invitation.template)
   const siteStyle = resolveSiteStyle({ template, themeColor: invitation.themeColor })
+  const siteTheme = template?.theme ? getSiteTheme(template.theme) : null
+  const ticketPaletteDef = siteTheme ? themePalette(siteTheme) : null
 
   return (
     <div
@@ -286,23 +285,32 @@ export default function GuestInvitation() {
                 </p>
               </div>
 
-              <div className="mt-5 flex aspect-square items-center justify-center rounded-lg bg-white p-4">
-                {qrDataUrl && (
-                  <img src={qrDataUrl} alt="QR code du billet" className="h-full w-full" />
-                )}
+              <div className="mt-5">
+                <TicketCard
+                  live={{ start: eventStartIso(invitation.eventDate, invitation.eventStartTime), checkedInAt: invitation.checkedInAt }}
+                  reveal
+                  style={resolveTicketStyle(invitation.ticketStyle, template?.theme)}
+                  note={invitation.ticketNote}
+                  accent={siteStyle.accent}
+                  themeId={template?.theme}
+                  event={{
+                    pre: siteTheme?.ticketPre,
+                    ...ticketEventInfo({
+                    name: invitation.eventName,
+                    eventDate: invitation.eventDate,
+                    startTime: invitation.eventStartTime,
+                    locationLabel: invitation.locationLabel,
+                    locationAddress: invitation.locationAddress,
+                    slug: invitation.eventSlug,
+                    kicker: siteTheme?.kicker || template?.preview?.eyebrow || template?.subtitle,
+                    brand: siteTheme ? siteTheme.name + ' · ' + ticketPaletteDef.label : template?.name,
+                    }),
+                  }}
+                  guest={{ id: guestId, name: invitation.guestFullName, n: seats, side: invitation.rsvpSide || undefined }}
+                />
               </div>
 
-              <p className="mt-3 text-center font-mono text-sm text-ink">
-                {guestId.slice(0, 8).toUpperCase()}
-              </p>
-              <p className="mt-1 text-center text-xs text-faint">
-                À présenter à l'entrée.
-              </p>
-
               <div className="mt-5 space-y-3">
-                <Button variant="outline" className="w-full" onClick={handleSaveQr}>
-                  Enregistrer le QR
-                </Button>
                 {!closed && (
                   <button
                     type="button"

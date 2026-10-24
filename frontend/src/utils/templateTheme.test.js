@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { BLOCK_CONTENT_DEFAULTS } from "../data/blockDefaults";
+import { TEMPLATE_DEMOS } from "../data/templateDemos";
 import { TEMPLATES } from "../data/templates";
 import {
   findTemplate,
+  ensureRsvpBlock,
+  missingEventPageBlocks,
+  newEventPageBlocks,
   resolveSiteStyle,
   templateBlocks,
   templateFromCustomFields,
@@ -12,7 +16,7 @@ import {
 describe("templatesForCategory", () => {
   it.each([
     ["mariage", "Mariage et fiançailles", ["Noor", "Bloom", "Toghu Royal", "Ndop", "Éclat", "Ivoire", "Jardin"]],
-    ["anniversaire", "Anniversaire", ["Fiesta", "Prestige", "Confetti", "Néon", "Douceur"]],
+    ["anniversaire", "Anniversaire", ["Fiesta", "Prestige", "Confetti", "Néon", "Tendresse"]],
     ["conference", "Conférence / séminaire / atelier", ["Summit", "Signal", "Forum"]],
     ["obseques", "Obsèques / commémoration / hommage", ["Mémoire", "Lumière"]],
     ["concert", "Concert / spectacle", ["Live", "Amplify", "Scène"]],
@@ -31,7 +35,7 @@ describe("templatesForCategory", () => {
     ["Événement religieux", ["Grâce", "Sérénité", "Ferveur"]],
     ["Compétition sportive", ["Arena", "Arène", "Sprint"]],
     ["Événement familial", ["Racines", "Pique-nique"]],
-    ["Événement personnalisé", ["Atelier", "Canvas", "Aurore"]],
+    ["Événement personnalisé", ["Atelier", "Canvas", "Aube"]],
     ["Autre", ["Libre"]],
   ])("matches %s by its label", (label, names) => {
     expect(
@@ -107,12 +111,49 @@ describe("TEMPLATES", () => {
     }
   });
 
-  it("keeps Noor and Bloom compositions faithful to their model cards", () => {
+  it("keeps premium model sections faithful to their source previews", () => {
     expect(templateBlocks(findTemplate("Noor"))).toEqual([
-      "Histoire", "Programme", "Localisation", "Galerie", "Cadeaux", "Livre d'or", "RSVP", "Pied de page",
+      "Invitation", "Histoire", "Programme", "Localisation", "Dress code", "Plan de table", "Galerie", "Cadeaux", "Livre d'or", "RSVP", "Pied de page",
     ]);
     expect(templateBlocks(findTemplate("Bloom"))).toEqual([
-      "Histoire", "Programme", "Localisation", "Plan de table", "Cadeaux", "Livre d'or", "RSVP", "Pied de page",
+      "Invitation", "Histoire", "Programme", "Localisation", "Dress code", "Plan de table", "Galerie", "Cadeaux", "Livre d'or", "RSVP", "Pied de page",
+    ]);
+    expect(templateBlocks(findTemplate("Fiesta"))).toEqual([
+      "Invitation", "Rebours", "Programme", "Localisation", "Dress code", "Galerie", "Cadeaux", "Livre d'or", "RSVP", "Pied de page",
+    ]);
+  });
+
+  it("shows both venue stops in the Noor and Bloom previews", () => {
+    for (const theme of ["noor", "bloom"]) {
+      expect(TEMPLATE_DEMOS[theme].locationAddress).toBeTruthy();
+      expect(TEMPLATE_DEMOS[theme].additionalVenues).toHaveLength(1);
+      expect(TEMPLATE_DEMOS[theme].additionalVenues[0].address).toBeTruthy();
+    }
+  });
+
+  it("includes all model sections plus a program, RSVP and contribution area on new sites", () => {
+    for (const template of TEMPLATES) {
+      const blocks = newEventPageBlocks(template);
+      expect(blocks).toEqual(expect.arrayContaining(templateBlocks(template)));
+      expect(blocks).toEqual(expect.arrayContaining(["Programme", "Cadeaux", "RSVP"]));
+      expect(new Set(blocks).size, template.name).toBe(blocks.length);
+      if (blocks.includes("Pied de page")) expect(blocks.at(-1), template.name).toBe("Pied de page");
+    }
+  });
+
+  it("fills missing model sections even when a site already has blocks", () => {
+    expect(missingEventPageBlocks(findTemplate("Noor"), ["Hero", "Histoire", "Rsvp"])).toEqual([
+      "Invitation", "Programme", "Localisation", "Dress code", "Plan de table", "Galerie",
+      "Cadeaux", "Livre d'or", "Pied de page",
+    ]);
+  });
+
+  it("adds the RSVP section to older public sites before the footer", () => {
+    expect(ensureRsvpBlock(["Invitation", "Pied de page"])).toEqual([
+      "Invitation", "RSVP", "Pied de page",
+    ]);
+    expect(ensureRsvpBlock(["Invitation", "RSVP", "Pied de page"])).toEqual([
+      "Invitation", "RSVP", "Pied de page",
     ]);
   });
 });

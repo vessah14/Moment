@@ -15,9 +15,8 @@ namespace backend_EventMoment.Services
             _context = context;
         }
 
-        // Aucun paiement en ligne n'est branché : un organisateur ne peut activer lui-même
-        // qu'un plan gratuit. Sans ce contrôle, n'importe qui obtenait un plan payant
-        // gratuitement via l'API, et la console admin le comptait comme un revenu.
+        // Les plans payants doivent passer par le checkout KPay ou l'activation administrateur,
+        // jamais par cet endpoint qui permettrait de les obtenir gratuitement.
         private async Task<SubscriptionPlan> GetSelfServicePlanAsync(Guid planId)
         {
             var plan = await _context.SubscriptionPlans.FirstOrDefaultAsync(x => x.Id == planId && x.IsActive)
@@ -25,9 +24,7 @@ namespace backend_EventMoment.Services
 
             if (plan.PriceCents > 0)
                 throw new InvalidOperationException(
-                    AdminDbContext.NotchPayEnabled
-                        ? "Les offres payantes doivent être réglées via le parcours de paiement Notch Pay."
-                        : "Les offres payantes s'activent sur demande depuis votre tableau de bord.");
+                    "Les offres payantes doivent être réglées via KPay ou activées sur demande depuis votre tableau de bord.");
 
             return plan;
         }

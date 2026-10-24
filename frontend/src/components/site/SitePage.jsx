@@ -3,7 +3,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
-  ArrowUp,
   ImagePlus,
   Images,
   MapPin,
@@ -27,9 +26,10 @@ import { HEADING_FONT_STACKS, siteRootStyle } from '../../utils/templateTheme'
 import GuestBookForm from '../minisite/GuestBookForm'
 import BlockToolbar from './BlockToolbar'
 import { DressCodeModule, FamiliesModule, GiftModule, PartnersModule, RsvpModule, SeatingModule, SpeakersModule } from './modules/SiteModules'
-import { usablePartners, usablePeople } from '../../utils/blockLists'
-import { usableAccounts, usableColors } from '../../utils/mobileMoney'
+import { usablePartners, usablePeople, usableVenues } from '../../utils/blockLists'
+import { usableColors } from '../../utils/mobileMoney'
 import ThemedSitePage from './themes/ThemedSitePage'
+import { invitationGreeting, invitationParagraphs } from '../../utils/invitationText'
 import { getSiteTheme } from './themes/themeDefs'
 
 // Rendu unique du site d'un événement : le Builder (mode édition / aperçu) et le
@@ -41,6 +41,7 @@ const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp'
 
 // Petite mention au-dessus du titre de section, et libellé court dans la navigation.
 const SECTION_META = {
+  Invitation: { eyebrow: 'Invitation' },
   Rebours: { eyebrow: 'Bientôt' },
   Histoire: { eyebrow: 'À propos', nav: 'Histoire' },
   Programme: { eyebrow: 'Déroulé', nav: 'Programme' },
@@ -477,6 +478,37 @@ function renderBlockBody({ block, content, data, editable, editor, fullPage, ani
       )
     }
 
+    case 'Invitation': {
+      const paragraphs = invitationParagraphs(content.body)
+      const greeting = invitationGreeting(content, data.invitation?.guestFullName?.trim().split(' ')[0])
+      if (!editable && !paragraphs.length && !greeting) return null
+      return (
+        <div className="mx-auto max-w-2xl text-center">
+          {greeting && (
+            <p className="mb-4 text-2xl italic" style={{ fontFamily: 'var(--site-heading-font)', color: 'var(--color-brand-purple)' }}>
+              {greeting}
+            </p>
+          )}
+          {paragraphs.length ? (
+            paragraphs.map((p, i) => (
+              <p key={i} className={`mb-4 leading-relaxed text-ink ${fullPage ? 'text-lg' : ''}`}>
+                {p}
+              </p>
+            ))
+          ) : (
+            <p className="rounded-xl border border-dashed border-border px-4 py-6 text-sm text-faint italic">
+              Écrivez le texte de votre invitation… {TEXT_HINT}
+            </p>
+          )}
+          {content.signature?.trim() && (
+            <p className="mt-6 text-2xl italic" style={{ fontFamily: 'var(--site-heading-font)', color: 'var(--color-brand-purple)' }}>
+              {content.signature.trim()}
+            </p>
+          )}
+        </div>
+      )
+    }
+
     case 'Histoire': {
       const imagePath = safeBlockImagePath(content.imageUrl)
       if (!editable) {
@@ -594,7 +626,8 @@ function renderBlockBody({ block, content, data, editable, editor, fullPage, ani
     case 'Localisation': {
       const address = data.locationAddress || content.address
       const transport = (content.transport ?? '').trim()
-      if (!address && !transport && !bodyText) {
+      const additionalVenues = usableVenues(content.additionalVenues)
+      if (!address && !additionalVenues.length && !transport && !bodyText) {
         return editable ? (
           <Placeholder>
             Aucun lieu renseigné. Ajoutez l'adresse dans les informations de
@@ -649,6 +682,31 @@ function renderBlockBody({ block, content, data, editable, editor, fullPage, ani
                 Itinéraire
               </a>
             )}
+            {additionalVenues.map((venue, index) => {
+              const venueAddress = venue.address?.trim()
+              const venueMapsUrl = venueAddress
+                ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venueAddress)}`
+                : null
+              return (
+                <div key={index} className="border-t border-border-soft pt-4">
+                  {venue.label?.trim() && <p className="font-semibold text-ink">{venue.label.trim()}</p>}
+                  {venueAddress && <p className="mt-0.5 text-sm text-muted">{venueAddress}</p>}
+                  {venue.time?.trim() && <p className="mt-1 text-xs text-faint">{venue.time.trim()}</p>}
+                  {venueMapsUrl && (
+                    <a
+                      href={venueMapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-brand-purple hover:underline"
+                    >
+                      <Navigation className="h-4 w-4" />
+                      Itinéraire
+                    </a>
+                  )}
+                </div>
+              )
+            })}
           </div>
           {address ? (
             <iframe
@@ -670,16 +728,22 @@ function renderBlockBody({ block, content, data, editable, editor, fullPage, ani
     }
 
     case 'RSVP':
-      // Réponse intégrée quand l'invité arrive par son lien personnel (?invite=).
+      // Réponse intégrée par lien personnel ou formulaire public sans lien.
       return (
         <div className="mx-auto max-w-xl">
           <RsvpModule
             editable={editable}
             invitation={data.invitation}
+            invitationLoading={data.invitationLoading}
+            invitationError={data.invitationError}
             onInvitationChange={data.onInvitationChange}
+            submitOpenRsvp={data.submitOpenRsvp}
             body={body}
             eventTitle={data.title}
             submitRsvp={data.submitRsvp}
+            sideLabel={content.sideLabel}
+            sides={content.sides}
+            rules={content}
           />
         </div>
       )
@@ -720,7 +784,6 @@ function renderBlockBody({ block, content, data, editable, editor, fullPage, ani
 
     case 'Cadeaux': {
       const gifts = data.gifts ?? []
-      if (!usableAccounts(content.accounts).length && !gifts.length && !body && !editable) return null
       return <GiftModule content={content} gifts={gifts} slug={data.slug} editable={editable} />
     }
 
@@ -845,10 +908,12 @@ function renderBlockBody({ block, content, data, editable, editor, fullPage, ani
               Mentions légales
             </Link>
           </div>
-          <span className="inline-flex items-center gap-2 rounded-full bg-surface-2 px-3 py-1 text-[11px] font-semibold text-faint">
-            <img src={logoMark} alt="" className="h-4 w-4" />
-            Créé avec TBF Moment
-          </span>
+          {data.showBranding !== false && (
+            <span className="inline-flex items-center gap-2 rounded-full bg-surface-2 px-3 py-1 text-[11px] font-semibold text-faint">
+              <img src={logoMark} alt="" className="h-4 w-4" />
+              Créé avec TBF Moment
+            </span>
+          )}
         </div>
       )
 
@@ -888,7 +953,6 @@ function renderBlockBody({ block, content, data, editable, editor, fullPage, ani
 // fait défiler ; la section visible est mise en avant ; menu déroulant sur mobile.
 function SiteNav({ title, links, cta, onHero }) {
   const [scrolled, setScrolled] = useState(() => window.scrollY > 24)
-  const [showTop, setShowTop] = useState(() => window.scrollY > window.innerHeight)
   const [menuOpen, setMenuOpen] = useState(false)
   const [active, setActive] = useState(null)
   const progressRef = useRef(null)
@@ -899,7 +963,6 @@ function SiteNav({ title, links, cta, onHero }) {
       frame = 0
       const y = window.scrollY
       setScrolled(y > 24)
-      setShowTop(y > window.innerHeight)
       const max = document.documentElement.scrollHeight - window.innerHeight
       if (progressRef.current)
         progressRef.current.style.transform = `scaleX(${max > 0 ? Math.min(1, y / max) : 0})`
@@ -1060,17 +1123,6 @@ function SiteNav({ title, links, cta, onHero }) {
       />
     </header>
 
-    <button
-      type="button"
-      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-      aria-label="Revenir en haut"
-      className={`fixed bottom-4 left-4 z-30 flex h-11 w-11 items-center justify-center rounded-full text-white shadow-lg transition duration-300 hover:-translate-y-0.5 ${
-        showTop ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-4 opacity-0'
-      }`}
-      style={{ backgroundColor: 'var(--color-brand-purple)' }}
-    >
-      <ArrowUp className="h-5 w-5" />
-    </button>
     </>
   )
 }
@@ -1215,7 +1267,7 @@ function ClassicSitePage({
     .map(({ block }) => ({ block, label: SECTION_META[block].nav }))
   const has = (block) => visible.some((b) => b.block === block)
   const cta = has('RSVP')
-    ? { block: 'RSVP', label: 'Confirmer ma présence' }
+    ? { block: 'RSVP', label: blockContent.RSVP?.cta?.trim() || 'Confirmer ma présence' }
     : has('Billetterie')
       ? { block: 'Billetterie', label: 'Réserver' }
       : null
@@ -1332,6 +1384,11 @@ function ClassicSitePage({
                 </span>
               )}
             </div>
+          )}
+          {data.organizer?.name && (
+            <p className={`${enter(2).className} text-sm ${onImage ? 'text-white/80' : 'text-muted'}`} style={enter(2).style}>
+              Organisé par <b className={onImage ? 'text-white' : 'text-ink'}>{data.organizer.name}</b>
+            </p>
           )}
           {(cta || firstSection) && (
             <div

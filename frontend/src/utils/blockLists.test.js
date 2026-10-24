@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { initialsOf, usablePartners, usablePeople } from './blockLists'
+import { initialsOf, usablePartners, usablePeople, usableVenues } from './blockLists'
 
 describe('usablePeople', () => {
   it('keeps only named people, as trimmed strings', () => {
@@ -22,6 +22,22 @@ describe('usablePeople', () => {
 describe('usablePartners', () => {
   it('keeps non-empty names', () => {
     expect(usablePartners(['Wouri Digital', ' ', 42, { name: 'Radio FM' }])).toEqual(['Wouri Digital', 'Radio FM'])
+  })
+})
+
+describe('usableVenues', () => {
+  it('keeps usable venue details and rejects malformed entries', () => {
+    expect(
+      usableVenues([
+        { label: ' Cérémonie ', address: ' Paroisse Saint-Jean ', time: ' 10 h – 14 h ' },
+        { address: 42, label: null },
+        null,
+      ]),
+    ).toEqual([{ label: 'Cérémonie', address: 'Paroisse Saint-Jean', time: '10 h – 14 h' }])
+  })
+
+  it('caps the list at four locations', () => {
+    expect(usableVenues(Array.from({ length: 6 }, (_, i) => ({ address: `Lieu ${i}` })))).toHaveLength(4)
   })
 })
 

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { HOME_FAQ } from '../../data/homeFaq'
 import BrandBackdrop from '../ui/BrandBackdrop'
+import SectionHeader from './SectionHeader'
 
 const QUESTIONS = HOME_FAQ
 
@@ -11,16 +12,9 @@ export default function Faq() {
     <section className="relative overflow-hidden">
       <BrandBackdrop side="left" />
       <div className="relative mx-auto max-w-2xl px-6 py-20 text-center">
-        <span className="text-xs font-semibold tracking-widest text-brand-purple uppercase">
-          Questions
-        </span>
-        <h2 className="mt-3 text-3xl font-bold text-ink">
-          Foire Aux Questions
-        </h2>
-        <p className="mt-3 text-muted">
-          Tout ce que vous devez savoir pour démarrer sereinement sur notre
-          plateforme.
-        </p>
+        <SectionHeader eyebrow="Questions" title="Questions fréquentes">
+          Tout ce que vous devez savoir pour démarrer sereinement sur notre plateforme.
+        </SectionHeader>
 
         <div className="mt-8 space-y-3 text-left">
           {QUESTIONS.map((item, index) => {

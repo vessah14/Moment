@@ -1,4 +1,4 @@
-import { Link2, Mail, Pencil, Plus, Search, Send, Trash2 } from 'lucide-react'
+import { Link2, Mail, Pencil, Plus, Printer, Search, Send, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import Avatar from '../../components/ui/Avatar'
 import Button from '../../components/ui/Button'
@@ -6,13 +6,14 @@ import Pagination from '../../components/ui/Pagination'
 import StatusBadge from '../../components/ui/StatusBadge'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import GuestEditDialog from '../../components/guests/GuestEditDialog'
+import PrintTicketsDialog from '../../components/guests/PrintTicketsDialog'
 import { ConfirmDialog } from '../../components/ui/Dialog'
 import { createGuest, deleteGuest, listGuests, sendGuestInvitation, sendPendingInvitations, updateGuest } from '../../api/guests'
 import { createGuestGroup, listGuestGroups } from '../../api/guestGroups'
 import { listEvents } from '../../api/events'
 import { listRsvps } from '../../api/rsvps'
 import { downloadCsv } from '../../utils/csv'
-import { GUEST_STATUS_BY_LABEL, guestStatusLabel } from '../../utils/guestStatus'
+import { GUEST_STATUS_BY_FILTER, guestStatusLabel, hasGuestStatus } from '../../utils/guestStatus'
 import { notifyGuestsChanged } from '../../utils/guestEvents'
 import { usePagination } from '../../utils/pagination'
 import { useToast } from '../../utils/useToast'
@@ -26,6 +27,9 @@ export default function Guests() {
   const [groups, setGroups] = useState([])
   const [guests, setGuests] = useState([])
   const [accompanyingByGuest, setAccompanyingByGuest] = useState({})
+  const [sideByGuest, setSideByGuest] = useState({})
+  // Invités qui ont répondu « Peut-être » (réponse enregistrée sans présence confirmée).
+  const [maybeGuests, setMaybeGuests] = useState(() => new Set())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -38,6 +42,7 @@ export default function Guests() {
   const [editingGuest, setEditingGuest] = useState(null)
   const [deletingGuest, setDeletingGuest] = useState(null)
   const [deleteBusy, setDeleteBusy] = useState(false)
+  const [printOpen, setPrintOpen] = useState(false)
 
   useEffect(() => {
     listEvents()
@@ -66,8 +71,16 @@ export default function Guests() {
         setGuests(guestsData ?? [])
         setGroups(groupsData ?? [])
         const accompMap = {}
-        for (const r of rsvpsData ?? []) accompMap[r.guestId] = r.accompanyingCount
+        const sideMap = {}
+        const maybe = new Set()
+        for (const r of rsvpsData ?? []) {
+          accompMap[r.guestId] = r.accompanyingCount
+          if (r.side) sideMap[r.guestId] = r.side
+          if (r.confirmed === null && r.respondedAt) maybe.add(r.guestId)
+        }
         setAccompanyingByGuest(accompMap)
+        setSideByGuest(sideMap)
+        setMaybeGuests(maybe)
         setError('')
       })
       .catch((err) => {
@@ -94,7 +107,10 @@ export default function Guests() {
   }
 
   const handleCopyLink = async (guest) => {
-    const url = `${window.location.origin}/invitation/${guest.id}`
+    const eventSlug = events.find((event) => event.id === selectedEventId)?.slug
+    const url = eventSlug
+      ? `${window.location.origin}/e/${encodeURIComponent(eventSlug)}?invite=${encodeURIComponent(guest.id)}`
+      : `${window.location.origin}/invitation/${guest.id}`
     try {
       await navigator.clipboard.writeText(url)
     } catch {
@@ -104,13 +120,14 @@ export default function Guests() {
   }
 
   const visible = useMemo(() => {
+    const expectedStatus = GUEST_STATUS_BY_FILTER[filter]
+    const q = query.trim().toLocaleLowerCase('fr')
     return guests.filter((g) => {
-      const matchesFilter = filter === 'Tous' || g.status === GUEST_STATUS_BY_LABEL[filter]
-      const q = query.toLowerCase()
+      const matchesFilter = filter === 'Tous' || hasGuestStatus(g.status, expectedStatus)
       const matchesQuery =
-        g.fullName.toLowerCase().includes(q) ||
-        g.email.toLowerCase().includes(q) ||
-        g.phone.toLowerCase().includes(q)
+        String(g.fullName ?? '').toLocaleLowerCase('fr').includes(q) ||
+        String(g.email ?? '').toLocaleLowerCase('fr').includes(q) ||
+        String(g.phone ?? '').toLocaleLowerCase('fr').includes(q)
       return matchesFilter && matchesQuery
     })
   }, [guests, filter, query])
@@ -121,9 +138,9 @@ export default function Guests() {
   const counts = useMemo(
     () => ({
       Tous: guests.length,
-      Confirmés: guests.filter((g) => g.status === 'Present').length,
-      'En attente': guests.filter((g) => g.status === 'EnAttente').length,
-      Refus: guests.filter((g) => g.status === 'Absent').length,
+      Confirmés: guests.filter((g) => hasGuestStatus(g.status, 'Present')).length,
+      'En attente': guests.filter((g) => hasGuestStatus(g.status, 'EnAttente')).length,
+      Refus: guests.filter((g) => hasGuestStatus(g.status, 'Absent')).length,
     }),
     [guests],
   )
@@ -294,7 +311,7 @@ export default function Guests() {
   const handleExport = () => {
     downloadCsv(
       'invites.csv',
-      ['Nom', 'Téléphone', 'Email', 'Groupe', 'Statut', 'Accompagnants'],
+      ['Nom', 'Téléphone', 'Email', 'Groupe', 'Statut', 'Accompagnants', 'Choix'],
       guests.map((g) => [
         g.fullName,
         g.phone,
@@ -302,6 +319,7 @@ export default function Guests() {
         groupNameById(g.groupId),
         guestStatusLabel(g.status),
         accompanyingByGuest[g.id] ?? 0,
+        sideByGuest[g.id] ?? '',
       ]),
     )
     toast(`${guests.length} invité(s) exporté(s) en CSV`)
@@ -346,7 +364,7 @@ export default function Guests() {
             )}
           </div>
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex w-full max-w-full flex-wrap gap-3 xl:w-auto xl:justify-end">
           {notInvited.length > 0 && (
             <Button
               variant="outline"
@@ -357,6 +375,10 @@ export default function Guests() {
               Envoyer les invitations ({notInvited.length})
             </Button>
           )}
+          <Button variant="outline" onClick={() => setPrintOpen(true)} disabled={guests.length === 0}>
+            <Printer className="h-4 w-4" />
+            Imprimer les billets
+          </Button>
           <Button variant="outline" onClick={handleExport} disabled={guests.length === 0}>
             Exporter
           </Button>
@@ -365,6 +387,20 @@ export default function Guests() {
           </Button>
         </div>
       </div>
+
+      <PrintTicketsDialog
+        open={printOpen}
+        onClose={() => setPrintOpen(false)}
+        event={selectedEvent}
+        guests={guests}
+        visible={visible}
+        accompanyingByGuest={accompanyingByGuest}
+        sideByGuest={sideByGuest}
+        onDone={(message) => {
+          setPrintOpen(false)
+          toast(message)
+        }}
+      />
 
       {error && (
         <p className="mt-6 rounded-lg border border-danger/30 bg-danger/10 px-4 py-2.5 text-sm text-danger">
@@ -505,7 +541,25 @@ export default function Guests() {
               {!loading && visible.length === 0 && (
                 <tr>
                   <td colSpan={8} className="px-6 py-10 text-center text-sm text-faint">
-                    Aucun invité ne correspond à cette recherche.
+                    <div className="flex flex-col items-center gap-3">
+                      <span>
+                        {guests.length === 0
+                          ? 'Aucun invité dans cet événement.'
+                          : 'Aucun invité ne correspond aux filtres sélectionnés.'}
+                      </span>
+                      {(query || filter !== 'Tous') && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuery('')
+                            setFilter('Tous')
+                          }}
+                          className="font-medium text-brand-purple hover:underline"
+                        >
+                          Effacer la recherche et les filtres
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               )}
@@ -523,7 +577,11 @@ export default function Guests() {
                     <td className="px-3 py-4">
                       <div className="flex items-center gap-3">
                         <Avatar name={guest.fullName} />
-                        <p className="font-medium text-ink">{guest.fullName}</p>
+                        <div>
+                          <p className="font-medium text-ink">{guest.fullName}</p>
+                          {sideByGuest[guest.id] && <p className="text-xs text-faint">{sideByGuest[guest.id]}</p>}
+                          {maybeGuests.has(guest.id) && <p className="text-xs text-brand-orange">A répondu « Peut-être »</p>}
+                        </div>
                       </div>
                     </td>
                     <td className="px-3 py-4 text-muted">

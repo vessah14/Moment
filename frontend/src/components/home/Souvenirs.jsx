@@ -1,4 +1,11 @@
 import BrandBackdrop from '../ui/BrandBackdrop'
+import SectionHeader from './SectionHeader'
+import invitationPhoto from '../../assets/home/souvenir-invitation.jpeg'
+import studioPhoto from '../../assets/home/souvenir-studio.jpeg'
+import portraitPhoto from '../../assets/home/souvenir-portrait.jpeg'
+import framePhoto from '../../assets/home/souvenir-frame.jpeg'
+import printPhoto from '../../assets/home/souvenir-print.jpeg'
+import mugPhoto from '../../assets/home/souvenir-mug.jpeg'
 
 // « Et après la fête ? » : souvenirs imprimés par TBF DIGITAL, commandés sur WhatsApp.
 const WHATSAPP = '237680264060'
@@ -14,6 +21,7 @@ const PRODUCTS = [
   {
     name: 'Photo sur bois',
     text: 'Votre plus belle photo de ce jour, imprimée sur bois. Chaleureux, prêt à poser.',
+    image: portraitPhoto,
     art: (
       <>
         <rect x="8" y="10" width="48" height="40" rx="3" fill="#C9935B" />
@@ -27,6 +35,7 @@ const PRODUCTS = [
   {
     name: 'Photo sur plexiglas',
     text: 'Rendu brillant, effet galerie, à accrocher au salon.',
+    image: printPhoto,
     art: (
       <>
         <rect x="10" y="8" width="44" height="44" rx="3" fill={ACCENT_2} opacity=".9" />
@@ -39,6 +48,7 @@ const PRODUCTS = [
   {
     name: 'Tasse personnalisée',
     text: 'Avec la photo, les prénoms et la date. Un cadeau parfait pour les témoins et les proches.',
+    image: mugPhoto,
     art: (
       <>
         <path d="M14 16h30v30a6 6 0 0 1-6 6H20a6 6 0 0 1-6-6z" fill="#fff" />
@@ -51,6 +61,7 @@ const PRODUCTS = [
   {
     name: 'Cadre photo connecté',
     text: 'Un cadre avec puce NFC : on approche le téléphone et la page souvenir s’ouvre, avec photos et messages.',
+    image: framePhoto,
     art: (
       <>
         <rect x="8" y="8" width="48" height="48" rx="4" fill="#2A2245" />
@@ -63,6 +74,7 @@ const PRODUCTS = [
   {
     name: 'Cartons et faire-part',
     text: 'Les invitations papier, chacune avec le QR code de l’invité.',
+    image: invitationPhoto,
     art: (
       <>
         <rect x="12" y="14" width="34" height="42" rx="2" fill="#fff" transform="rotate(-8 29 35)" />
@@ -82,26 +94,16 @@ export default function Souvenirs() {
     <section id="souvenirs" className="relative overflow-hidden" aria-labelledby="souvenirs-heading">
       <BrandBackdrop side="left" />
       <div className="relative mx-auto max-w-7xl px-6 py-20">
-        <div className="mx-auto max-w-2xl text-center">
-          <span className="text-xs font-semibold tracking-widest text-brand-purple uppercase">
-            Souvenirs · TBF DIGITAL
-          </span>
-          <h2 id="souvenirs-heading" className="mt-3 text-3xl font-bold text-ink">
-            Et après la fête ? On imprime vos souvenirs.
-          </h2>
-          <p className="mt-3 text-muted">
-            Plus besoin de chercher un imprimeur : photos sur bois ou plexiglas, tasses, cadre connecté et
-            cartons d’invitation, commandés en un message et livrés à Douala.
-          </p>
-        </div>
+        <SectionHeader id="souvenirs-heading" eyebrow="Souvenirs · TBF Digital" title="Et après la fête ? On imprime vos souvenirs.">
+          Plus besoin de chercher un imprimeur : photos sur bois ou plexiglas, tasses, cadre connecté et
+          cartons d’invitation, commandés en un message et livrés à Douala.
+        </SectionHeader>
 
-        <ul className="mt-10 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
+        <ul className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-5">
           {PRODUCTS.map((product) => (
-            <li key={product.name} className="flex flex-col rounded-2xl border border-border-soft bg-surface p-4 sm:p-5">
-              <span className="mb-4 grid aspect-[4/3] place-items-center rounded-xl bg-[radial-gradient(circle_at_50%_40%,#2B2266,#1A1442)]">
-                <svg viewBox="0 0 64 64" aria-hidden="true" className="w-[56%]">
-                  {product.art}
-                </svg>
+            <li key={product.name} className="flex min-w-0 flex-col rounded-2xl border border-border-soft bg-surface p-3 sm:p-4">
+              <span className="mb-3 flex h-40 items-center justify-center overflow-hidden rounded-xl bg-[#f4f1fa] p-2 sm:h-44">
+                <img src={product.image} alt={`Exemple de ${product.name.toLowerCase()}`} loading="lazy" className="h-full w-full object-contain" />
               </span>
               <h3 className="text-sm font-semibold text-ink sm:text-base">{product.name}</h3>
               <p className="mt-1 flex-1 text-xs text-muted sm:text-sm">{product.text}</p>

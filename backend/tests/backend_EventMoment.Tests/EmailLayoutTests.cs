@@ -37,12 +37,12 @@ public class EmailLayoutTests
     public void Invitation_UsesTheLayout_WithEventDetailsAndPersonalLink()
     {
         var (subject, html) = InvitationDispatcher.BuildMessage("Awa Diop", "Mariage <Awa & Paul>",
-            new DateOnly(2027, 6, 12), new TimeOnly(15, 0), "Douala", "Paul", "https://tbfmoment.com/invitation/abc");
+            new DateOnly(2027, 6, 12), new TimeOnly(15, 0), "Douala", "Paul", "https://tbfmoment.com/e/mariage?invite=abc");
 
         Assert.Equal("Invitation : Mariage <Awa & Paul>", subject);
         Assert.Contains("Mariage &lt;Awa &amp; Paul&gt;", html);
         Assert.Contains("Confirmer ma présence", html);
-        Assert.Contains("https://tbfmoment.com/invitation/abc", html);
+        Assert.Contains("https://tbfmoment.com/e/mariage?invite=abc", html);
         Assert.Contains("12 juin 2027 à 15h00", html);
         Assert.Contains("Douala", html);
     }

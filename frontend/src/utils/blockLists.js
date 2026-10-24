@@ -18,6 +18,19 @@ export function usablePartners(list) {
   return list.map((p) => text(typeof p === 'string' ? p : p?.name, 60)).filter(Boolean)
 }
 
+// Lieux secondaires d'un événement : { label, address, time }.
+export function usableVenues(list) {
+  if (!Array.isArray(list)) return []
+  return list
+    .map((venue) => ({
+      label: text(venue?.label, 60),
+      address: text(venue?.address, 200),
+      time: text(venue?.time, 60),
+    }))
+    .filter((venue) => venue.label || venue.address)
+    .slice(0, 4)
+}
+
 // Initiales d'un intervenant pour son avatar : « Dr. Aline Mbappé » -> « AM ».
 export function initialsOf(name) {
   const words = name.split(/\s+/).filter((w) => w && !/\.$/.test(w))

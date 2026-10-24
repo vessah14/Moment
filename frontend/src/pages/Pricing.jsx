@@ -24,9 +24,9 @@ const AUDIENCES = [
   { id: 'concert', label: 'Concert ou soirée payante', plan: 'Business', badge: 'Billetterie Mobile Money',
     why: 'Business ouvre la billetterie Mobile Money (5 % de commission). Si vous organisez souvent, Event Pro baisse la commission à 3 %.' },
   { id: 'agence', label: 'Agence ou salle de fêtes', plan: 'Event Pro', badge: 'Pour les organisateurs',
-    why: 'Event Pro : événements et invités illimités, 15 co-organisateurs, rappels WhatsApp automatiques et adresse personnalisée.' },
+    why: 'Event Pro : événements et invités illimités, 5 000 photos, rappels automatiques par e-mail et billetterie à 3 %.' },
   { id: 'institution', label: 'Institution ou grand groupe', plan: 'Enterprise', badge: 'Sur mesure',
-    why: 'Enterprise : modèle créé sur mesure, intégrations, plusieurs sites et un interlocuteur dédié.' },
+    why: 'Enterprise : modèle créé sur mesure, capacité adaptée, commission négociée et un interlocuteur dédié.' },
 ]
 
 const PAYMENT_METHODS = [
@@ -40,13 +40,13 @@ const COMPARISON_SECTIONS = [
   {
     name: 'Capacité',
     rows: [
-      { name: 'Événements en ligne en même temps', values: ['1', '5', 'Illimité', 'Illimité', 'Sur mesure'] },
+      { name: 'Événements en ligne en même temps', values: ['1', '3', 'Illimité', 'Illimité', 'Sur mesure'] },
       { name: 'Invités ou billets par événement', values: ['50', '500', '2 000', 'Illimité', 'Sur mesure'] },
       { name: 'Photos dans la galerie', values: ['20', '200', '1 000', '5 000', 'Illimité'] },
-      { name: 'Co-organisateurs', values: ['1', '2', '5', '15', 'Illimité'] },
+      // Pas encore disponibles : affichés comme tels, jamais vendus comme acquis.
+      { name: 'Co-organisateurs (bientôt)', values: ['1', '2', '5', '15', 'Illimité'] },
       { name: 'Postes d’accueil (scanner)', values: ['—', '1', '5', 'Illimité', 'Illimité'] },
-      { name: 'Rappels WhatsApp automatiques / mois', values: ['—', '—', '—', '500', 'Illimité'] },
-      { name: 'Commission billetterie (hors frais Notch Pay)', values: ['—', '—', '5 %', '3 %', 'Négociée'] },
+      { name: 'Commission billetterie (hors frais KPay)', values: ['—', '—', '5 %', '3 %', 'Négociée'] },
     ],
   },
   {
@@ -63,7 +63,7 @@ const COMPARISON_SECTIONS = [
     rows: [
       { name: 'Liens personnels par invité', values: ['—', true, true, true, true] },
       { name: 'Relances WhatsApp en un geste', values: [true, true, true, true, true] },
-      { name: 'Rappels automatiques (J-7, J-1, jour J)', values: ['—', '—', '—', true, true] },
+      { name: 'Rappels automatiques par e-mail (J-7, veille, remerciements)', values: ['—', '—', '—', true, true] },
       { name: 'Export Excel de la liste', values: ['—', true, true, true, true] },
     ],
   },
@@ -80,14 +80,14 @@ const COMPARISON_SECTIONS = [
     rows: [
       { name: 'Logo de l’organisateur', values: ['—', '—', true, true, true] },
       { name: 'Sans la mention « Créé avec TBF MOMENT »', values: ['—', '—', true, true, true] },
-      { name: 'Adresse personnalisée', values: ['—', '—', '—', true, true] },
+      { name: 'Adresse personnalisée (bientôt)', values: ['—', '—', '—', true, true] },
       { name: 'Modèle créé sur mesure à vos couleurs', values: ['—', '—', '—', '—', true] },
     ],
   },
   {
     name: 'Services',
     rows: [
-      { name: 'API et intégrations', values: ['—', '—', '—', '—', true] },
+      { name: 'API et intégrations (bientôt)', values: ['—', '—', '—', '—', true] },
       { name: 'Facture au nom de la structure', values: ['—', '—', true, true, true] },
     ],
   },
@@ -216,7 +216,7 @@ export default function Pricing() {
               {[
                 'Événements et invités sans limite',
                 'Modèle créé sur mesure à vos couleurs',
-                'API, intégrations et facturation',
+                'Facture au nom de la structure',
                 'Commission billetterie négociée',
                 'Interlocuteur dédié',
               ].map((feature) => (
