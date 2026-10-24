@@ -3,13 +3,14 @@ using backend_EventMoment.Data;
 using backend_EventMoment.Dtos.User;
 using backend_EventMoment.Models;
 using backend_EventMoment.Services;
+using backend_EventMoment.Services.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 
 namespace backend_EventMoment.Tests;
 
-// Durcissement : double authentification admin, blocage des comptes, déconnexion.
+// Durcissement : connexion admin, blocage des comptes, déconnexion.
 public class SecurityHardeningTests
 {
     private static IConfiguration Config() => new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
@@ -58,43 +59,32 @@ public class SecurityHardeningTests
     }
 
     [Fact]
-    public async Task AdminLogin_PasswordAloneNeverOpensTheConsole_AndSetupThenCodeDoes()
+    public async Task AdminLogin_ReturnsSessionDirectly_EvenWhenLegacyMfaIsEnabled()
     {
-        var (service, context, _) = AdminSetup();
-
-        var first = await service.LoginAsync(new LoginDto { Email = "boss@tbfmoment.com", Password = "AdminPass123" });
-        Assert.True(first.MfaRequired);
-        Assert.True(first.MfaSetupRequired);
-        Assert.Equal("", first.Token);
-        Assert.StartsWith("otpauth://totp/", first.OtpAuthUri);
-        Assert.DoesNotContain(first.MfaSecret!, context.AdminMfas.Single().SecretProtected); // chiffré en base
-
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            service.CompleteMfaLoginAsync(new AdminMfaLoginDto { MfaToken = first.MfaToken!, Code = "000000" == Totp.Code(first.MfaSecret!, Totp.CurrentStep(DateTimeOffset.UtcNow)) ? "111111" : "000000" }));
-
-        var session = await service.CompleteMfaLoginAsync(new AdminMfaLoginDto
+        var (service, context, admin) = AdminSetup();
+        context.AdminMfas.Add(new AdminMfa
         {
-            MfaToken = first.MfaToken!, Code = Totp.Code(first.MfaSecret!, Totp.CurrentStep(DateTimeOffset.UtcNow)),
+            AdminId = admin.Id,
+            SecretProtected = "legacy-secret",
+            EnabledAt = DateTimeOffset.UtcNow,
         });
-        Assert.False(string.IsNullOrWhiteSpace(session.Token));
-        Assert.NotNull(context.AdminMfas.Single().EnabledAt);
+        await context.SaveChangesAsync();
 
-        // Connexions suivantes : code demandé, plus de nouveau QR code.
-        var next = await service.LoginAsync(new LoginDto { Email = "boss@tbfmoment.com", Password = "AdminPass123" });
-        Assert.True(next.MfaRequired);
-        Assert.False(next.MfaSetupRequired);
-        Assert.Null(next.MfaSecret);
+        var session = await service.LoginAsync(new LoginDto { Email = "boss@tbfmoment.com", Password = "AdminPass123" });
+
+        Assert.False(string.IsNullOrWhiteSpace(session.Token));
+        Assert.True(session.Expiration > DateTimeOffset.UtcNow);
+        var claims = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler().ReadJwtToken(session.Token).Claims;
+        Assert.Contains(claims, claim => claim.Type == "type" && claim.Value == "admin");
+        Assert.Contains(claims, claim => claim.Type == ClaimTypes.Email && claim.Value == admin.Email);
     }
 
     [Fact]
-    public async Task AdminMfaToken_IsNotAValidSessionToken()
+    public async Task AdminLogin_RejectsInvalidPassword()
     {
         var (service, _, _) = AdminSetup();
-        var first = await service.LoginAsync(new LoginDto { Email = "boss@tbfmoment.com", Password = "AdminPass123" });
-        var jwt = new JwtService(Config());
-        // Le jeton intermédiaire n'est accepté que par l'étape « code ».
-        Assert.False(jwt.TryValidateEmailVerificationToken(first.MfaToken!, out _, out _));
-        Assert.True(jwt.TryValidateAdminMfaToken(first.MfaToken!, out _, out _));
+        await Assert.ThrowsAsync<InvalidCredentialsException>(() =>
+            service.LoginAsync(new LoginDto { Email = "boss@tbfmoment.com", Password = "WrongPassword123" }));
     }
 
     [Fact]
