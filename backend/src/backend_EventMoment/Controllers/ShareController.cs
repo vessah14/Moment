@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Security.Cryptography;
 using System.Text;
 using backend_EventMoment.Interfaces;
 using backend_EventMoment.Services;
@@ -47,7 +48,7 @@ namespace backend_EventMoment.Controllers
         {
             var site = (_config["Frontend:BaseUrl"] ?? "http://localhost:5173").TrimEnd('/');
             // Slug généré par la plateforme : lettres minuscules, chiffres et tirets.
-            var evt = slug.Length <= 200 && slug.All(c => char.IsAsciiLetterLower(c) || char.IsAsciiDigit(c) || c == '-')
+            var evt = IsValidSlug(slug)
                 ? await _events.GetPublicEventAsync(slug)
                 : null;
             if (evt == null)
@@ -57,7 +58,7 @@ namespace backend_EventMoment.Controllers
 
             var eventUrl = $"{site}/e/{Uri.EscapeDataString(evt.Slug)}";
             var shareUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}/share/e/{Uri.EscapeDataString(evt.Slug)}";
-            var image = CoverUrl(evt.CoverImageUrl) ?? $"{site}/og-image.png";
+            var image = CoverUrl(evt.CoverImageUrl) ?? PosterUrl(evt);
 
             var details = new List<string>();
             if (evt.EventDate is DateOnly date)
@@ -66,10 +67,32 @@ namespace backend_EventMoment.Controllers
             if (!string.IsNullOrWhiteSpace(where))
                 details.Add("à " + where);
             var description = Clean(evt.Description)
+                ?? Clean(evt.HeroSubtitle)
                 ?? Clean(string.Join(" · ", new[] { evt.Tagline }.Concat(details).Where(s => !string.IsNullOrWhiteSpace(s))))
                 ?? $"Retrouvez toutes les informations de « {evt.Name} » sur son site.";
 
-            return Html(200, RedirectPage(evt.Name, description, eventUrl, shareUrl, image, eventUrl));
+            var title = Clean(evt.HeroTitle) ?? evt.Name;
+            return Html(200, RedirectPage(title, description, eventUrl, shareUrl, image, eventUrl));
+        }
+
+        [HttpGet("share/e/{slug}/poster.png")]
+        public async Task<IActionResult> Poster(string slug)
+        {
+            var evt = IsValidSlug(slug) ? await _events.GetPublicEventAsync(slug) : null;
+            if (evt == null)
+                return NotFound();
+
+            Response.Headers.CacheControl = "public, max-age=300";
+            return File(EventSharePosterRenderer.Render(evt), "image/png");
+        }
+
+        private static bool IsValidSlug(string slug) =>
+            slug.Length <= 200 && slug.All(c => char.IsAsciiLetterLower(c) || char.IsAsciiDigit(c) || c == '-');
+
+        private string PosterUrl(Dtos.PublicEventDto evt)
+        {
+            var version = EventSharePosterRenderer.GetVersion(evt);
+            return $"{Request.Scheme}://{Request.Host}{Request.PathBase}/share/e/{Uri.EscapeDataString(evt.Slug)}/poster.png?v={version}";
         }
 
         private async Task CountSocialShareAsync(string slug)
