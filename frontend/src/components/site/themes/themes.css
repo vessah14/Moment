@@ -28,7 +28,7 @@
 .tbft :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px }
 .tbft h1, .tbft h2, .tbft h3 { font-family: var(--f-display) }
 .tbft .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap }
-.tbft-c { container: tbft / inline-size; position: relative; z-index: 2 }
+.tbft-c { container: tbft / inline-size; position: relative; z-index: 2; width: 100%; min-width: 0 }
 @media (max-width: 899px) { .tbft:not(.is-embedded) { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 72px) } }
 
 /* ---------- Fonds : motif + particules ---------- */
@@ -80,6 +80,7 @@
 .tbft .hero-pre { font-family: var(--f-display); font-size: clamp(1.2rem, 3vw, 1.6rem); margin: .6rem 0 0; color: var(--muted) }
 .tbft .hero-names { font-family: var(--f-script); font-weight: 400; line-height: 1; margin: .4rem 0 .3rem; font-size: clamp(3.4rem, 13cqi, 7.5rem); text-wrap: balance; overflow-wrap: break-word }
 .tbft .hero-names .amp { display: inline-block; color: var(--accent); font-size: .6em; margin: 0 .15em; transform: translateY(-.1em) }
+.tbft .hero-names, .tbft .hero-pre, .tbft .hero-sub, .tbft .card, .tbft .container { min-width: 0; overflow-wrap: anywhere }
 .tbft .hero-sub { max-width: 44ch; color: var(--muted); font-size: 1.08rem; margin: .6rem 0 0; text-wrap: pretty; white-space: pre-line }
 .tbft .chips { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1.4rem }
 .tbft-passmodal { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 16px; overflow-y: auto; background: rgba(5, 5, 12, .82); backdrop-filter: blur(6px) }
@@ -823,6 +824,11 @@
 /* Unité — 20 mai */
 .tbft[data-tbft="unite"] { --f-script: "Oswald", "Bebas Neue", Impact, sans-serif; --f-display: "Oswald", "Bebas Neue", Impact, sans-serif; --f-body: "Source Sans 3", "Segoe UI", Arial, sans-serif; --radius: 10px; --radius-sm: 8px }
 .tbft[data-tbft="unite"] .hero-big { font-weight: 700; letter-spacing: .01em; white-space: nowrap; font-size: clamp(5rem, 18cqi, 11rem) }
+@container tbft (max-width: 480px) {
+  .tbft[data-tbft="unite"] .hero-big { white-space: normal; font-size: clamp(3.25rem, 18cqi, 5rem) }
+  .tbft .section { padding-inline: 12px }
+  .tbft .card { padding: 1rem }
+}
 .tbft[data-tbft="unite"] .hero-big small { font-family: var(--f-body) }
 .tbft[data-tbft="unite"] .hero-names { font-weight: 700; text-transform: uppercase; letter-spacing: .02em; font-size: clamp(2.8rem, 8cqi, 5.4rem) }
 .tbft[data-tbft="unite"] .hero-pre { text-transform: uppercase; letter-spacing: .2em; font-family: var(--f-body); font-weight: 700; font-size: .9rem; color: var(--accent-2) }

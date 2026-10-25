@@ -26,6 +26,7 @@ export default function StylePanel({
   defaultTicketStyle = 'classique',
   onChangeTicket,
   ticketEvent,
+  className = 'w-72 shrink-0 overflow-y-auto border-l border-border-soft/60 p-5',
 }) {
   const [tab, setTab] = useState('Style')
 
@@ -36,7 +37,7 @@ export default function StylePanel({
   const premiumTheme = getSiteTheme(currentTemplate?.theme)
 
   return (
-    <aside className="w-72 shrink-0 overflow-y-auto border-l border-border-soft/60 p-5">
+    <aside className={className}>
       <div className="flex gap-1 rounded-lg bg-surface p-1 text-sm">
         {TABS.map((t) => (
           <button

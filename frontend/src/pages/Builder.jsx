@@ -1,4 +1,4 @@
-import { ArrowLeft, LayoutPanelLeft, Monitor, Smartphone, X } from 'lucide-react'
+import { ArrowLeft, Eye, LayoutPanelLeft, Monitor, Save, SlidersHorizontal, Smartphone, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import BlockLibrary from '../components/builder/BlockLibrary'
@@ -79,7 +79,11 @@ export default function Builder() {
 
   const [pageBlocks, setPageBlocks] = useState([])
   const [selectedBlock, setSelectedBlock] = useState('Hero')
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches,
+  )
   const [device, setDevice] = useState('desktop')
+  const [mobileView, setMobileView] = useState('preview')
   const [published, setPublished] = useState(false)
   const [publishing, setPublishing] = useState(false)
   const [justPublished, setJustPublished] = useState(false)
@@ -119,6 +123,13 @@ export default function Builder() {
   const [saveError, setSaveError] = useState('')
   const [savedJustNow, setSavedJustNow] = useState(false)
   useSeo({ title: event?.name ? `Builder · ${event.name}` : 'Builder', noindex: true })
+
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 1024px)')
+    const updateViewport = (event) => setIsDesktop(event.matches)
+    media.addEventListener('change', updateViewport)
+    return () => media.removeEventListener('change', updateViewport)
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -324,6 +335,7 @@ export default function Builder() {
       setPageBlocks((prev) => (prev.includes(block) ? prev : [...prev, block]))
     }
     setSelectedBlock(block)
+    setMobileView('settings')
   }
 
   const updateBlockContent = (block, patch) =>
@@ -518,8 +530,8 @@ export default function Builder() {
   }
 
   return (
-    <div className="flex h-svh flex-col">
-      <div className="flex items-center gap-4 border-b border-border-soft/60 px-4 py-3 sm:px-6">
+    <div className="flex h-dvh min-h-0 flex-col">
+      <div className="flex shrink-0 items-center gap-2 border-b border-border-soft/60 px-3 py-2.5 sm:gap-4 sm:px-6 sm:py-3">
         {previewMode ? (
           <>
             <span className="font-semibold text-ink">Aperçu invité</span>
@@ -553,7 +565,7 @@ export default function Builder() {
               )}
             </div>
 
-            <div className="ml-auto flex items-center gap-4">
+            <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-4">
               <div className="hidden gap-1.5 rounded-lg border border-border p-1 lg:flex">
                 <button
                   type="button"
@@ -581,12 +593,22 @@ export default function Builder() {
                 </Button>
               </div>
               <Button
+                variant="outline"
+                disabled={saving}
+                onClick={handleSave}
+                aria-label={saving ? 'Enregistrement en cours' : 'Enregistrer'}
+                className="h-10 w-10 p-0 disabled:opacity-70 lg:hidden"
+              >
+                <Save className="h-4 w-4" />
+              </Button>
+              <Button
                 variant="gradient"
                 disabled={publishing}
                 onClick={handlePublishClick}
-                className="disabled:opacity-70"
+                className="px-3 text-xs disabled:opacity-70 sm:px-4 sm:text-sm"
               >
-                {publishing ? 'Publication...' : published ? 'Publié ✓' : 'Publier'}
+                <span className="sm:hidden">{publishing ? '…' : published ? 'Publié ✓' : 'Publier'}</span>
+                <span className="hidden sm:inline">{publishing ? 'Publication...' : published ? 'Publié ✓' : 'Publier'}</span>
               </Button>
             </div>
           </>
@@ -614,7 +636,7 @@ export default function Builder() {
         </div>
       )}
 
-      <div className="hidden flex-1 overflow-hidden lg:flex">
+      {isDesktop && <div className="flex min-h-0 flex-1 overflow-hidden">
         {!previewMode && (
           <BlockLibrary
             pageBlocks={pageBlocks}
@@ -627,7 +649,7 @@ export default function Builder() {
           blocks={pageBlocks}
           blockContent={blockContent}
           selectedBlock={previewMode ? null : selectedBlock}
-          onSelectBlock={setSelectedBlock}
+          onSelectBlock={handleSelectBlock}
           onChangeBlockContent={updateBlockContent}
           onReorderBlock={handleReorderBlock}
           onRemoveBlock={handleRemoveBlock}
@@ -673,20 +695,131 @@ export default function Builder() {
             ticketEvent={event ? ticketEventInfo({ name: event.name, eventDate: event.eventDate, startTime: event.startTime, slug: event.slug }) : null}
           />
         )}
-      </div>
+      </div>}
 
-      <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center lg:hidden">
-        <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface-2">
-          <LayoutPanelLeft className="h-5 w-5 text-muted" />
-        </span>
-        <p className="font-semibold text-ink">
-          L'Event Builder nécessite un écran plus large
-        </p>
-        <p className="max-w-xs text-sm text-faint">
-          Utilisez une tablette ou un ordinateur pour composer les blocs de
-          votre site d'événement.
-        </p>
-      </div>
+      {!isDesktop && <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        {previewMode ? (
+          <BuilderCanvas
+            slug={slug}
+            blocks={pageBlocks}
+            blockContent={blockContent}
+            selectedBlock={null}
+            onSelectBlock={handleSelectBlock}
+            onChangeBlockContent={updateBlockContent}
+            onReorderBlock={handleReorderBlock}
+            onRemoveBlock={handleRemoveBlock}
+            device="mobile"
+            heroStyle={displayedHeroStyle}
+            template={template}
+            data={{
+              eventDateTime: event.eventDate
+                ? `${event.eventDate}T${event.startTime ?? '00:00:00'}`
+                : '',
+              coverPath: event.coverImageUrl,
+              description: eventDescription,
+              locationLabel: siteData.location?.label,
+              locationAddress: siteData.location?.address,
+              programItems: siteData.programItems,
+              galleryPhotos,
+              guestBookEntries: siteData.guestBookEntries,
+              ticketTypes: siteData.ticketTypes,
+              gifts: siteData.gifts,
+              seatingTables: siteData.seatingTables,
+            }}
+            uploading={uploading}
+            onUploadBlockImage={handleUploadBlockImage}
+            onUploadGalleryPhotos={handleUploadGalleryPhotos}
+            onAddGuestBookEntry={handleAddGuestBookEntry}
+            readOnly
+          />
+        ) : mobileView === 'blocks' ? (
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <BlockLibrary
+              pageBlocks={pageBlocks}
+              selected={selectedBlock}
+              onSelect={handleSelectBlock}
+              className="w-full border-0 p-4"
+            />
+          </div>
+        ) : mobileView === 'settings' ? (
+          <StylePanel
+            palette={palette}
+            heroStyle={displayedHeroStyle}
+            onChangeHeroStyle={handleChangeHeroStyle}
+            selectedBlock={selectedBlock}
+            blockContent={blockContent}
+            onChangeBlockContent={updateBlockContent}
+            templates={categoryTemplates}
+            currentTemplate={template}
+            categoryLabel={category?.label}
+            onApplyTemplate={handleApplyTemplate}
+            ticket={ticket}
+            defaultTicketStyle={defaultTicketStyle(template?.theme)}
+            onChangeTicket={handleChangeTicket}
+            ticketEvent={event ? ticketEventInfo({ name: event.name, eventDate: event.eventDate, startTime: event.startTime, slug: event.slug }) : null}
+            className="min-h-0 w-full flex-1 overflow-y-auto border-0 p-4 pb-8"
+          />
+        ) : (
+          <BuilderCanvas
+            slug={slug}
+            blocks={pageBlocks}
+            blockContent={blockContent}
+            selectedBlock={selectedBlock}
+            onSelectBlock={handleSelectBlock}
+            onChangeBlockContent={updateBlockContent}
+            onReorderBlock={handleReorderBlock}
+            onRemoveBlock={handleRemoveBlock}
+            device="mobile"
+            heroStyle={displayedHeroStyle}
+            template={template}
+            data={{
+              eventDateTime: event.eventDate
+                ? `${event.eventDate}T${event.startTime ?? '00:00:00'}`
+                : '',
+              coverPath: event.coverImageUrl,
+              description: eventDescription,
+              locationLabel: siteData.location?.label,
+              locationAddress: siteData.location?.address,
+              programItems: siteData.programItems,
+              galleryPhotos,
+              guestBookEntries: siteData.guestBookEntries,
+              ticketTypes: siteData.ticketTypes,
+              gifts: siteData.gifts,
+              seatingTables: siteData.seatingTables,
+            }}
+            uploading={uploading}
+            onUploadBlockImage={handleUploadBlockImage}
+            onUploadGalleryPhotos={handleUploadGalleryPhotos}
+            onAddGuestBookEntry={handleAddGuestBookEntry}
+          />
+        )}
+
+        {!previewMode && (
+          <nav
+            aria-label="Outils de personnalisation"
+            className="grid shrink-0 grid-cols-3 border-t border-border-soft/70 bg-panel pb-[env(safe-area-inset-bottom)]"
+          >
+            {[
+              { id: 'blocks', label: 'Blocs', Icon: LayoutPanelLeft },
+              { id: 'preview', label: 'Aperçu', Icon: Eye },
+              { id: 'settings', label: 'Modifier', Icon: SlidersHorizontal },
+            ].map(({ id, label, Icon }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setMobileView(id)}
+                aria-current={mobileView === id ? 'page' : undefined}
+                className={`flex min-h-14 flex-col items-center justify-center gap-1 text-[11px] font-medium ${
+                  mobileView === id ? 'text-brand-purple' : 'text-muted'
+                }`}
+              >
+                <Icon className="h-5 w-5" />
+                {label}
+              </button>
+            ))}
+          </nav>
+        )}
+      </div>}
     </div>
   )
 }

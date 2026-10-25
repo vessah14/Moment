@@ -30,8 +30,8 @@ export default function BuilderCanvas({
   }, [selectedBlock])
 
   return (
-    <div className="flex-1 overflow-y-auto bg-surface px-8 py-6">
-      <p className="text-center font-mono text-xs text-faint">
+    <div className="min-h-0 flex-1 overflow-y-auto bg-surface px-3 py-4 sm:px-8 sm:py-6">
+      <p className="truncate text-center font-mono text-xs text-faint">
         tbfmoment.com/{slug}
       </p>
 
@@ -41,7 +41,7 @@ export default function BuilderCanvas({
         blocks={blocks}
         blockContent={blockContent}
         data={{ ...data, slug }}
-        className={`mx-auto mt-4 rounded-xl shadow-xl transition-all ${
+        className={`mx-auto mt-3 w-full rounded-xl shadow-xl transition-all sm:mt-4 ${
           device === 'mobile' ? 'max-w-[390px]' : 'max-w-2xl'
         }`}
         editor={

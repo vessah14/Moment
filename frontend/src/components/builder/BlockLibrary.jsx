@@ -26,7 +26,12 @@ const BLOCKS = [
 const PREMIUM_BLOCKS = new Set(['Plan de table'])
 const ALWAYS_PRESENT = new Set(['Hero'])
 
-export default function BlockLibrary({ pageBlocks, selected, onSelect }) {
+export default function BlockLibrary({
+  pageBlocks,
+  selected,
+  onSelect,
+  className = 'w-56 shrink-0 border-r border-border-soft/60 p-4',
+}) {
   const [query, setQuery] = useState('')
 
   const visibleBlocks = BLOCKS.filter((block) =>
@@ -34,7 +39,7 @@ export default function BlockLibrary({ pageBlocks, selected, onSelect }) {
   )
 
   return (
-    <aside className="w-56 shrink-0 border-r border-border-soft/60 p-4">
+    <aside className={className}>
       <div className="relative">
         <Search className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-faint" />
         <input
