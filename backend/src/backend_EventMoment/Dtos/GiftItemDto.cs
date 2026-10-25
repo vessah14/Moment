@@ -45,6 +45,10 @@ namespace backend_EventMoment.Dtos
         public TimeOnly? StartTime { get; set; }
         public string? Tagline { get; set; }
         public string? Description { get; set; }
+        public string? HeroTitle { get; set; }
+        public string? HeroSubtitle { get; set; }
+        public string? HeroColor { get; set; }
+        public string? HeroKicker { get; set; }
         // Nom du modèle de site choisi dans l'assistant (Éclat, Signal...) : pilote les
         // couleurs et la typographie du mini-site public.
         public string? Template { get; set; }

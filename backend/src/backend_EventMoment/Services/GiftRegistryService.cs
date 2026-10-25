@@ -75,6 +75,10 @@ namespace backend_EventMoment.Services
             string? tagline = null;
             string? description = null;
             string? template = null;
+            string? heroTitle = null;
+            string? heroSubtitle = null;
+            string? heroColor = null;
+            string? heroKicker = null;
             var searchable = false;
             try
             {
@@ -90,6 +94,35 @@ namespace backend_EventMoment.Services
                 // CustomFields mal formé ou vide : on affiche simplement la page sans ces champs.
             }
 
+            var heroContent = await _context.EventBlocks.IgnoreQueryFilters().AsNoTracking()
+                .Where(block => block.EventId == entity.Id && block.IsVisible && block.BlockType == "Hero")
+                .OrderBy(block => block.Position)
+                .Select(block => block.Content)
+                .FirstOrDefaultAsync();
+            if (!string.IsNullOrWhiteSpace(heroContent))
+            {
+                try
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(heroContent);
+                    if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object)
+                    {
+                        string? Read(string name) =>
+                            doc.RootElement.TryGetProperty(name, out var value)
+                            && value.ValueKind == System.Text.Json.JsonValueKind.String
+                                ? value.GetString()
+                                : null;
+                        heroTitle = Read("title");
+                        heroSubtitle = Read("subtitle");
+                        heroColor = Read("color");
+                        heroKicker = Read("kicker");
+                    }
+                }
+                catch (System.Text.Json.JsonException)
+                {
+                    // Un contenu Hero invalide ne doit pas rendre le site public indisponible.
+                }
+            }
+
             return new PublicEventDto
             {
                 Name = entity.Name,
@@ -100,6 +133,10 @@ namespace backend_EventMoment.Services
                 StartTime = entity.StartTime,
                 Tagline = tagline,
                 Description = description,
+                HeroTitle = heroTitle,
+                HeroSubtitle = heroSubtitle,
+                HeroColor = heroColor,
+                HeroKicker = heroKicker,
                 Template = template,
                 ThemeFont = entity.ThemeFont,
                 LocationLabel = location?.Label,

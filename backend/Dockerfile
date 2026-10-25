@@ -7,6 +7,9 @@ RUN dotnet publish backend/src/backend_EventMoment/backend_EventMoment.csproj -c
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends fonts-dejavu-core \
+    && rm -rf /var/lib/apt/lists/*
 ENV ASPNETCORE_URLS=http://+:5146
 COPY --from=build /app/publish .
 EXPOSE 5146
