@@ -67,33 +67,37 @@ namespace backend_EventMoment.Services
             review.ModeratedAt = null;
             await _context.SaveChangesAsync();
 
-            var adminEmail = _config?["Notifications:AdminEmail"] ?? _config?["Brevo:SenderEmail"];
-            if (_email != null && !string.IsNullOrWhiteSpace(adminEmail))
+            var adminEmails = AdminNotificationRecipients.Get(_config);
+            if (_email != null && adminEmails.Count > 0)
             {
-                try
+                var adminUrl = _config?["Frontend:AdminUrl"];
+                var stars = new string('★', review.Rating) + new string('☆', 5 - review.Rating);
+                var subject = $"{(isNew ? "Nouvel avis" : "Avis modifié")} ({review.Rating}/5) · {review.DisplayName}";
+                var html = EmailLayout.Render(new EmailMessage
                 {
-                    var adminUrl = _config?["Frontend:AdminUrl"];
-                    var stars = new string('★', review.Rating) + new string('☆', 5 - review.Rating);
-                    await _email.SendAsync(adminEmail, $"{(isNew ? "Nouvel avis" : "Avis modifié")} ({review.Rating}/5) · {review.DisplayName}",
-                        EmailLayout.Render(new EmailMessage
-                        {
-                            Preheader = $"{review.DisplayName} a donné {review.Rating}/5 à TBF MOMENT.",
-                            Kicker = "Console admin",
-                            Title = isNew ? "Nouvel avis client" : "Avis modifié",
-                            Subtitle = $"{stars}  {review.Rating}/5",
-                            BodyHtml = EmailLayout.P("Un organisateur a laissé un avis sur TBF MOMENT. "
-                                + "Il n'apparaîtra sur la page d'accueil qu'une fois publié."),
-                            Callout = new EmailCallout($"⭐ {review.Rating}/5", review.DisplayName,
-                                $"« {EmailLayout.E(review.Comment)} »"),
-                            ButtonText = string.IsNullOrWhiteSpace(adminUrl) ? null : "Modérer l'avis",
-                            ButtonUrl = string.IsNullOrWhiteSpace(adminUrl) ? null : $"{adminUrl.TrimEnd('/')}/admin/moderation",
-                            SignatureHtml = "<b>TBF MOMENT</b> · notification automatique",
-                            FooterReason = "Vous recevez cet e-mail en tant qu'administrateur de TBF MOMENT.",
-                        }));
-                }
-                catch (Exception ex)
+                    Preheader = $"{review.DisplayName} a donné {review.Rating}/5 à TBF MOMENT.",
+                    Kicker = "Console admin",
+                    Title = isNew ? "Nouvel avis client" : "Avis modifié",
+                    Subtitle = $"{stars}  {review.Rating}/5",
+                    BodyHtml = EmailLayout.P("Un organisateur a laissé un avis sur TBF MOMENT. "
+                        + "Il n'apparaîtra sur la page d'accueil qu'une fois publié."),
+                    Callout = new EmailCallout($"⭐ {review.Rating}/5", review.DisplayName,
+                        $"« {EmailLayout.E(review.Comment)} »"),
+                    ButtonText = string.IsNullOrWhiteSpace(adminUrl) ? null : "Modérer l'avis",
+                    ButtonUrl = string.IsNullOrWhiteSpace(adminUrl) ? null : $"{adminUrl.TrimEnd('/')}/admin/moderation",
+                    SignatureHtml = "<b>TBF MOMENT</b> · notification automatique",
+                    FooterReason = "Vous recevez cet e-mail en tant qu'administrateur de TBF MOMENT.",
+                });
+                foreach (var adminEmail in adminEmails)
                 {
-                    _logger?.LogWarning(ex, "Notification d'avis non envoyée");
+                    try
+                    {
+                        await _email.SendAsync(adminEmail, subject, html);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.LogWarning(ex, "Notification d'avis non envoyée à {To}", adminEmail);
+                    }
                 }
             }
             return Fill(new ReviewDto(), review);
