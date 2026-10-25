@@ -2,6 +2,7 @@ using backend_EventMoment.Data;
 using backend_EventMoment.Dtos;
 using backend_EventMoment.Models;
 using backend_EventMoment.Services;
+using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 
 namespace backend_EventMoment.Tests;
@@ -152,5 +153,32 @@ public class PlanAndReviewTests
         await service.SaveMineAsync(organizer.Id, new SaveReviewDto { Rating = 4, Comment = "Toujours très bien, merci.", DisplayName = "Awa D." });
         Assert.Empty(await service.GetPublishedAsync(6));
         Assert.Single(context.PlatformReviews);
+    }
+
+    [Fact]
+    public async Task ReviewNotification_IsSentSeparatelyToPrimaryAndAdditionalAdminEmails()
+    {
+        var context = TestDbContextFactory.CreateAdminContext();
+        var organizer = AddOrganizer(context);
+        var email = new FakeEmailSender();
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Notifications:AdminEmail"] = "admin@example.com",
+                ["Notifications:AdditionalAdminEmails:0"] = "tbfdesign259@gmail.com",
+            })
+            .Build();
+        var service = new ReviewService(context, email, config);
+
+        await service.SaveMineAsync(organizer.Id, new SaveReviewDto
+        {
+            Rating = 5,
+            Comment = "Très bien.",
+            DisplayName = "Awa D.",
+        });
+
+        Assert.Equal(
+            new[] { "admin@example.com", "tbfdesign259@gmail.com" },
+            email.Sent.Select(message => message.To));
     }
 }

@@ -266,11 +266,12 @@ namespace backend_EventMoment.Services
             request.Plan = plan;
 
             var organizer = await _context.Organizers.AsNoTracking().IgnoreQueryFilters().FirstOrDefaultAsync(o => o.Id == organizerId);
-            var adminEmail = _config?["Notifications:AdminEmail"] ?? _config?["Brevo:SenderEmail"];
-            if (organizer != null && !string.IsNullOrWhiteSpace(adminEmail))
+            var adminEmails = AdminNotificationRecipients.Get(_config);
+            if (organizer != null && adminEmails.Count > 0)
             {
                 var adminUrl = _config?["Frontend:AdminUrl"];
-                await TrySendAsync(adminEmail, $"Demande d'offre {plan.Label} · {organizer.FullName}", EmailLayout.Render(new EmailMessage
+                var subject = $"Demande d'offre {plan.Label} · {organizer.FullName}";
+                var html = EmailLayout.Render(new EmailMessage
                 {
                     Preheader = $"{organizer.FullName} demande l'offre {plan.Label}.",
                     Kicker = "Console admin",
@@ -285,7 +286,9 @@ namespace backend_EventMoment.Services
                     ButtonUrl = string.IsNullOrWhiteSpace(adminUrl) ? null : $"{adminUrl.TrimEnd('/')}/admin/facturation",
                     SignatureHtml = "<b>TBF MOMENT</b> · notification automatique",
                     FooterReason = "Vous recevez cet e-mail en tant qu'administrateur de TBF MOMENT.",
-                }));
+                });
+                foreach (var adminEmail in adminEmails)
+                    await TrySendAsync(adminEmail, subject, html);
             }
             return Map(request);
         }
