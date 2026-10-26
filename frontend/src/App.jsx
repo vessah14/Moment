@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { Route, Routes, useLocation } from 'react-router-dom'
+import { Route, Routes } from 'react-router-dom'
 import CookieConsent from './components/layout/CookieConsent'
 import Footer from './components/layout/Footer'
 import Header from './components/layout/Header'
@@ -64,12 +64,7 @@ function SiteLayout ({ children }) {
 }
 
 function RouteLoader ({ children }) {
-  const location = useLocation()
-  const fallbackText = location.pathname === '/'
-    ? 'Chargement de la page d’accueil…'
-    : 'Chargement de l’application…'
-
-  return <Suspense fallback={<BrandLoader text={fallbackText} />}>{children}</Suspense>
+  return <Suspense fallback={<BrandLoader />}>{children}</Suspense>
 }
 
 function App () {

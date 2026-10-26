@@ -29,67 +29,105 @@ const OCCASIONS = [
   'Culte et veillée',
 ]
 
-const RIBBON_MARKS = ['triangle', 'diamond', 'circle', 'dots', 'lines']
+const RIBBON_OCCASIONS = [
+  'Mariage',
+  'Dot',
+  'Anniversaire',
+  'Remise des diplômes',
+  'Conférence',
+  'Concert',
+  'Baptême',
+  'Noël',
+  'Journée culturelle',
+  'Retrait de deuil',
+  '20 mai',
+  'Saint-Valentin',
+]
 
-function DecorativeMarks () {
+const PATTERN_TYPES = ['toghu', 'ndop', 'wax', 'kente']
+
+function Pattern({ type }) {
   return (
-    <div className='home-event-ribbon-track' aria-hidden='true'>
-      {[0, 1].map((copy) => (
-        <div className='home-event-ribbon-set' key={copy}>
-          {RIBBON_MARKS.map((mark) => (
-            <svg
-              className={`home-event-ribbon-mark home-event-ribbon-mark-${mark}`}
-              key={`${copy}-${mark}`}
-              viewBox='0 0 40 40'
-              focusable='false'
-            >
-              {mark === 'triangle' && <path d='M4 35 20 5l16 30Z' />}
-              {mark === 'diamond' && <path d='m20 3 17 17-17 17L3 20Z' />}
-              {mark === 'circle' && <circle cx='20' cy='20' r='14' />}
-              {mark === 'dots' && (
-                <>
-                  <circle cx='8' cy='20' r='3' />
-                  <circle cx='20' cy='20' r='3' />
-                  <circle cx='32' cy='20' r='3' />
-                </>
-              )}
-              {mark === 'lines' && (
-                <>
-                  <path d='M8 7v26M20 7v26M32 7v26' />
-                  <path d='M5 10h30M5 30h30' />
-                </>
-              )}
-            </svg>
-          ))}
-        </div>
+    <svg viewBox='0 0 92 46' aria-hidden='true'>
+      {type === 'toghu' && (
+        <>
+          <path d='M0 46 23 6 46 46M46 46 69 6 92 46' />
+          <path className='home-event-pattern-fill' d='M15 46 23 32 31 46M61 46 69 32 77 46' />
+        </>
+      )}
+      {type === 'ndop' && (
+        <>
+          <path d='M23 6 40 23 23 40 6 23zM69 6 86 23 69 40 52 23z' />
+          <path d='M19 23h8M23 19v8M65 23h8M69 19v8' />
+        </>
+      )}
+      {type === 'wax' && (
+        <>
+          <circle cx='23' cy='23' r='15' />
+          <circle className='home-event-pattern-fill' cx='23' cy='23' r='7' />
+          <circle className='home-event-pattern-dash' cx='69' cy='23' r='15' />
+          <circle className='home-event-pattern-fill' cx='69' cy='23' r='3' />
+        </>
+      )}
+      {type === 'kente' && (
+        <>
+          <path d='M8 8h24v30H8zM60 8h24v30H60z' />
+          <path d='M8 18h24M8 28h24M68 8v30M76 8v30' />
+          <path className='home-event-pattern-accent' d='m46 12 4 11-4 11-4-11z' />
+        </>
+      )}
+    </svg>
+  )
+}
+
+function PatternRibbon() {
+  return (
+    <div className='home-event-ribbon-track home-event-pattern-ribbon'>
+      {Array.from({ length: 24 }, (_, index) => (
+        <Pattern
+          key={index}
+          type={PATTERN_TYPES[index % PATTERN_TYPES.length]}
+        />
       ))}
     </div>
   )
 }
 
-export default function HomeEventBanner () {
+function OccasionRibbon() {
   return (
-    <section className='home-event-banner' aria-label="Types d'événements">
-      <p className='home-event-banner-label'>Un modèle pour chaque occasion</p>
-      <div className='home-event-ticker'>
-        <div className='home-event-ticker-track'>
-          {[...OCCASIONS, ...OCCASIONS].map((occasion, index) => (
-            <span
-              className='home-event-ticker-item'
-              key={`${occasion}-${index}`}
-              aria-hidden={index >= OCCASIONS.length || undefined}
-            >
-              {occasion}
-              <span className='home-event-ticker-separator' aria-hidden='true'>
-                +
+    <div className='home-event-ribbon-track home-event-occasion-ribbon'>
+      {[...RIBBON_OCCASIONS, ...RIBBON_OCCASIONS].map((occasion, index) => (
+        <span key={`${occasion}-${index}`}>
+          {occasion}
+          <i aria-hidden='true'>✦</i>
+        </span>
+      ))}
+    </div>
+  )
+}
+
+export default function HomeEventBanner() {
+  return (
+    <>
+      <section className='home-event-strip' aria-label="Types d'événements">
+        <p>Un modèle pour chaque occasion</p>
+        <div className='home-event-marquee'>
+          <div className='home-event-marquee-track'>
+            {[...OCCASIONS, ...OCCASIONS].map((occasion, index) => (
+              <span
+                key={`${occasion}-${index}`}
+                aria-hidden={index >= OCCASIONS.length || undefined}
+              >
+                {occasion}
               </span>
-            </span>
-          ))}
+            ))}
+          </div>
         </div>
+      </section>
+      <div className='home-event-ribbons' aria-hidden='true'>
+        <PatternRibbon />
+        <OccasionRibbon />
       </div>
-      <div className='home-event-ribbon' aria-hidden='true'>
-        <DecorativeMarks />
-      </div>
-    </section>
+    </>
   )
 }

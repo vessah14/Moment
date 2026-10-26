@@ -26,8 +26,8 @@ export default function Home() {
 
   return (
     <>
-      <HomeEventBanner />
       <Hero />
+      <HomeEventBanner />
       <Universes />
       <HowItWorks />
       <PopularTemplates />
