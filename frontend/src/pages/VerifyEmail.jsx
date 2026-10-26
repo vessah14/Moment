@@ -1,34 +1,37 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { verifyEmail } from '../api/users'
-import { getCurrentUser, isAuthenticated, setCurrentUser } from '../api/client'
+import { setCurrentUser, setToken } from '../api/client'
 import logoMark from '../assets/logo-mark.png'
 import AuthLayout from '../components/layout/AuthLayout'
 import Button from '../components/ui/Button'
 
 export default function VerifyEmail() {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const token = searchParams.get('token') ?? ''
   const [state, setState] = useState(token ? 'checking' : 'invalid')
   const [error, setError] = useState('')
   const started = useRef(false)
-  const loggedIn = isAuthenticated()
-
   useEffect(() => {
     // StrictMode monte deux fois les effets en développement : un seul appel suffit.
     if (!token || started.current) return
     started.current = true
     verifyEmail(token)
-      .then(() => {
-        const user = getCurrentUser()
-        if (user) setCurrentUser({ ...user, emailVerified: true })
+      .then((session) => {
+        if (!session?.token || !session?.utilisateur) {
+          throw new Error("L'adresse est confirmée, mais la connexion automatique a échoué. Connectez-vous.")
+        }
+        setToken(session.token)
+        setCurrentUser(session.utilisateur)
         setState('done')
+        navigate('/dashboard', { replace: true })
       })
       .catch((err) => {
-        setError(err.message || 'Lien de vérification invalide ou expiré.')
+        setError(err.message || 'La vérification a échoué.')
         setState('invalid')
       })
-  }, [token])
+  }, [token, navigate])
 
   return (
     <AuthLayout>
@@ -40,7 +43,7 @@ export default function VerifyEmail() {
 
         {state === 'done' && (
           <p className="mt-6 rounded-lg border border-success/30 bg-success/10 p-4 text-sm text-success">
-            Votre adresse e-mail est confirmée. Merci !{loggedIn ? '' : ' Vous pouvez maintenant vous connecter.'}
+            Votre adresse e-mail est confirmée. Redirection vers votre tableau de bord…
           </p>
         )}
 
@@ -52,20 +55,14 @@ export default function VerifyEmail() {
           </p>
         )}
 
-        {loggedIn ? (
-          <Link to="/dashboard" className="mt-6 inline-block text-sm font-medium text-brand-purple hover:underline">
-            Aller au tableau de bord
-          </Link>
-        ) : (
-          // Première connexion après confirmation : accueil des nouveaux inscrits.
+        {state === 'invalid' && (
           <Button
             as={Link}
             to="/connexion"
-            state={state === 'done' ? { from: { pathname: '/bienvenue' } } : undefined}
             variant="gradient"
             className="mt-6 w-full"
           >
-            Se connecter
+            Aller à la connexion
           </Button>
         )}
       </div>

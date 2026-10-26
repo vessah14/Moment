@@ -402,10 +402,10 @@ namespace backend_EventMoment.Services
         private Task<bool> IsEmailVerifiedAsync(Guid organizerId) =>
             _adminContext.OrganizerEmailVerifications.AnyAsync(v => v.OrganizerId == organizerId);
 
-        private async Task MarkEmailVerifiedAsync(Guid organizerId)
+        private async Task<bool> MarkEmailVerifiedAsync(Guid organizerId)
         {
             if (await IsEmailVerifiedAsync(organizerId))
-                return;
+                return false;
 
             _adminContext.OrganizerEmailVerifications.Add(new OrganizerEmailVerification
             {
@@ -416,10 +416,12 @@ namespace backend_EventMoment.Services
             try
             {
                 await _adminContext.SaveChangesAsync();
+                return true;
             }
             catch (DbUpdateException ex) when (IsUniqueViolation(ex))
             {
                 // Deux requêtes simultanées : l'autre a déjà enregistré la vérification.
+                return false;
             }
         }
 
@@ -456,7 +458,7 @@ namespace backend_EventMoment.Services
             }
         }
 
-        public async Task VerifyEmailAsync(VerifyEmailDto dto)
+        public async Task<LoginResponseDto> VerifyEmailAsync(VerifyEmailDto dto)
         {
             if (!_jwtService.TryValidateEmailVerificationToken(dto.Token, out var organizerId, out var email))
                 throw new InvalidOperationException("Lien de vérification invalide ou expiré.");
@@ -466,7 +468,15 @@ namespace backend_EventMoment.Services
             if (organizer == null || !string.Equals(organizer.Email, email, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("Lien de vérification invalide ou expiré.");
 
-            await MarkEmailVerifiedAsync(organizerId);
+            if (!await MarkEmailVerifiedAsync(organizerId))
+                throw new InvalidOperationException("Ce lien de vérification a déjà été utilisé.");
+            var (sessionToken, expiration) = _jwtService.GenerateOrganizerToken(organizer);
+            return new LoginResponseDto
+            {
+                Token = sessionToken,
+                Expiration = expiration,
+                Utilisateur = ToDto(organizer, emailVerified: true)
+            };
         }
 
         // Renouvelle le jeton d'une session encore valide (le middleware a déjà vérifié la

@@ -34,8 +34,7 @@ export default function CheckEmail() {
         <h1 className="mt-6 text-2xl font-bold text-ink">Vérifiez votre boîte e-mail</h1>
         <p className="mt-3 text-sm text-muted">
           Nous avons envoyé un lien de confirmation à{' '}
-          {email ? <b className="text-ink">{email}</b> : 'votre adresse'}. Cliquez dessus pour activer votre compte,
-          puis connectez-vous.
+          {email ? <b className="text-ink">{email}</b> : 'votre adresse'}.           Cliquez dessus pour activer votre compte. Vous serez ensuite redirigé automatiquement vers votre tableau de bord.
         </p>
         <p className="mt-3 text-xs text-faint">
           Rien reçu ? Regardez dans les courriers indésirables (spam). Le lien reste valable 48 heures.

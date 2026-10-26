@@ -16,7 +16,7 @@ namespace backend_EventMoment.Interfaces
         Task<LoginResponseDto> LoginWithFacebookAsync(FacebookAuthDto dto);
         Task RequestPasswordResetAsync(DemanderResetPasswordDto dto);
         Task ResetPasswordAsync(ResetPasswordDto dto);
-        Task VerifyEmailAsync(VerifyEmailDto dto);
+        Task<LoginResponseDto> VerifyEmailAsync(VerifyEmailDto dto);
         Task ResendVerificationEmailAsync(Guid organizerId);
         // null si la durée maximale de session est dépassée (reconnexion nécessaire).
         Task<LoginResponseDto?> RefreshTokenAsync(Guid organizerId, DateTimeOffset? authTime);

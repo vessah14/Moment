@@ -65,7 +65,7 @@ export default function SignupForm() {
         password,
         confirmPassword,
       })
-      // Le compte ne sert qu'après confirmation de l'adresse : pas de connexion directe.
+      // La confirmation de l'adresse ouvre la session et redirige vers le tableau de bord.
       navigate(`/inscription/verifiez-vos-emails?email=${encodeURIComponent(email)}`)
     } catch (err) {
       setError(err.message || 'Inscription impossible.')

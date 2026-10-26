@@ -1,10 +1,10 @@
 import { Download } from 'lucide-react'
-import QRCode from 'qrcode'
 import { useEffect, useRef, useState } from 'react'
 import { motifStyle } from '../site/themes/motifs'
 import { getSiteTheme, themeMotif, themePalette } from '../site/themes/themeDefs'
 import { loadThemeFonts } from '../site/themes/themeFonts'
 import { ticketCode, ticketFormat } from '../../utils/ticketStyles'
+import { createGuestTicketQr, normalizeGuestTicketId } from '../../utils/ticketQr'
 import { EntryStamp, LiveStrip, QrZoom, TicketEnvelope, useTicketLive } from './TicketLive'
 import '../site/themes/themes.css'
 import './tickets.css'
@@ -12,7 +12,7 @@ import './tickets.css'
 // Billet de l'invité. Le haut reprend l'habillage du site (couleurs, motif, ornement et polices
 // du modèle), le talon clair porte le nom, le QR code et la référence. Le style de billet choisi
 // par l'organisateur ajoute ses décorations (bords en dents de scie, double cadre, bougie…).
-// Le QR code contient l'identifiant de l'invité : c'est ce que lit le scanner d'entrée.
+// Le QR code contient l'identifiant UUID unique de l'invité : c'est ce que lit le scanner d'entrée.
 // live = { start, end, checkedInAt } : billet vivant (compte à rebours, jour J, tampon « Entré »).
 // reveal : à la première ouverture sur ce téléphone, le billet sort d'une enveloppe.
 
@@ -161,22 +161,40 @@ function Ornament({ html, mark, small }) {
 export default function TicketCard({ style, note, event, guest, look: lookIn, themeId, paletteId, motif: motifId, accent, downloads = true, live, reveal = false }) {
   const root = useRef(null)
   const card = useRef(null)
-  const [qr, setQr] = useState(null)
+  const [qrState, setQrState] = useState({ guestId: '', dataUrl: '', error: '' })
   const [zoom, setZoom] = useState(false)
   const liveState = useTicketLive(live)
   const [busy, setBusy] = useState('')
   const [msg, setMsg] = useState('')
   const { theme, palette, motif } = ticketLook({ themeId, paletteId, motif: motifId, accent, ...lookIn })
 
+  const qrGuestId = (() => {
+    try {
+      return normalizeGuestTicketId(guest?.id)
+    } catch {
+      return ''
+    }
+  })()
+  const qr = qrState.guestId === qrGuestId ? qrState.dataUrl : ''
+  const qrError = !qrGuestId
+    ? 'QR indisponible : identifiant de billet invalide.'
+    : qrState.guestId === qrGuestId ? qrState.error : ''
+
   useEffect(() => {
     let cancelled = false
-    QRCode.toDataURL(guest.id, { margin: 1, width: 360, errorCorrectionLevel: 'M' })
-      .then((url) => !cancelled && setQr(url))
-      .catch(() => {})
+    if (!qrGuestId) return () => { cancelled = true }
+
+    createGuestTicketQr(qrGuestId)
+      .then((dataUrl) => !cancelled && setQrState({ guestId: qrGuestId, dataUrl, error: '' }))
+      .catch(() => !cancelled && setQrState({
+        guestId: qrGuestId,
+        dataUrl: '',
+        error: 'QR indisponible. Actualisez la page pour réessayer.',
+      }))
     return () => {
       cancelled = true
     }
-  }, [guest.id])
+  }, [qrGuestId])
 
   useEffect(() => loadThemeFonts(theme), [theme])
 
@@ -236,8 +254,10 @@ export default function TicketCard({ style, note, event, guest, look: lookIn, th
     <div className="tkc-qr">
       <button type="button" className="qr" onClick={() => qr && setZoom(true)} aria-label={`Agrandir le QR code de ${guest.name}`} disabled={!qr}>
         {qr && <img src={qr} alt="" />}
+        {!qr && !qrError && <span className="qr-status">Génération…</span>}
       </button>
       <small>{t.qrLabel}</small>
+      {qrError && <span className="qr-error" role="alert">{qrError}</span>}
     </div>
   )
   const extras = (

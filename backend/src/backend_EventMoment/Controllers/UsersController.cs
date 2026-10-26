@@ -94,8 +94,8 @@ namespace backend_EventMoment.Controllers
         [EnableRateLimiting("login")]
         public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailDto dto)
         {
-            await _service.VerifyEmailAsync(dto);
-            return NoContent();
+            var result = await _service.VerifyEmailAsync(dto);
+            return Ok(result);
         }
 
         [HttpPost("refresh-token")]

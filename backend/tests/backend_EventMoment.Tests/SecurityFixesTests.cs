@@ -288,10 +288,15 @@ public class SecurityFixesTests
         var mail = Assert.Single(email.Sent);
         var token = Uri.UnescapeDataString(System.Text.RegularExpressions.Regex.Match(mail.Body, "token=([^\"]+)").Groups[1].Value);
 
-        await service.VerifyEmailAsync(new VerifyEmailDto { Token = token });
+        var verifiedSession = await service.VerifyEmailAsync(new VerifyEmailDto { Token = token });
 
         var reloaded = await service.GetByIdAsync(created.Id);
         Assert.True(reloaded!.EmailVerified);
+        Assert.False(string.IsNullOrWhiteSpace(verifiedSession.Token));
+        Assert.Equal(created.Id, ((UtilisateurDtos)verifiedSession.Utilisateur).Id);
+        Assert.True(((UtilisateurDtos)verifiedSession.Utilisateur).EmailVerified);
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.VerifyEmailAsync(new VerifyEmailDto { Token = token }));
     }
 
     [Fact]
