@@ -97,14 +97,53 @@ async function composeTicket(cardEl, { palette, deco, prefix }) {
 // Nom du fichier : « carte-… », « billet-… » ou « badge-… » selon le format.
 const fileBase = ({ title, guestName, prefix }) => `${prefix || 'billet'}-${fname(title || 'evenement')}-${fname(guestName || 'invite')}`
 
-export async function ticketImage(cardEl, options) {
-  const canvas = await composeTicket(cardEl, options)
+export async function deliverTicketImage(blob, options) {
+  const filename = `${fileBase(options)}.png`
+  const file = typeof File === 'undefined'
+    ? null
+    : new File([blob], filename, { type: 'image/png' })
+  const shareData = file
+    ? {
+        files: [file],
+        title: options.title || 'Billet événement',
+        text: 'Conservez ce billet sur votre téléphone pour le présenter à l’accueil.',
+      }
+    : null
+
+  if (shareData && typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+    try {
+      const supportsFileSharing =
+        typeof navigator.canShare !== 'function' || navigator.canShare(shareData)
+      if (supportsFileSharing) {
+        await navigator.share(shareData)
+        return 'shared'
+      }
+    } catch (error) {
+      if (error?.name === 'AbortError') return 'cancelled'
+    }
+  }
+
+  const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
-  a.download = `${fileBase(options)}.png`
-  a.href = canvas.toDataURL('image/png')
+  a.download = filename
+  a.href = url
+  a.style.display = 'none'
   document.body.appendChild(a)
   a.click()
   a.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
+  return 'downloaded'
+}
+
+export async function ticketImage(cardEl, options) {
+  const canvas = await composeTicket(cardEl, options)
+  const blob = await new Promise((resolve, reject) => {
+    canvas.toBlob((result) => {
+      if (result) resolve(result)
+      else reject(new Error('Impossible de créer l’image du billet.'))
+    }, 'image/png')
+  })
+  return deliverTicketImage(blob, options)
 }
 
 export async function buildTicketPdf(cardEl, options) {

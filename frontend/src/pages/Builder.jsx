@@ -39,7 +39,7 @@ import {
   templateBlockDefaults,
   templateBlocks,
   templateFromCustomFields,
-  templatesForCategory,
+  templatesForEventType,
 } from '../utils/templateTheme'
 import { useSeo } from '../utils/seo'
 import { defaultTicketStyle, ticketFromCustomFields } from '../utils/ticketStyles'
@@ -265,8 +265,12 @@ export default function Builder() {
   const displayedHeroStyle = template?.categoryCode === 'anniversaire' && birthdayAge && !heroStyle.customTitle
     ? { ...heroStyle, title: birthdayTitle }
     : heroStyle
-  // Seuls les modèles de la catégorie de l'événement sont proposés.
-  const categoryTemplates = templatesForCategory(category?.code, category?.label)
+  // Les modèles suivent le type exact choisi à la création (anniversaire, noces, concert…).
+  const categoryTemplates = templatesForEventType(
+    customFieldOf(event, 'eventType'),
+    category?.code,
+    category?.label,
+  )
 
   // Billet choisi pour l'événement, rangé dans customFields.ticket (enregistré avec l'événement).
   const ticket = ticketFromCustomFields(event?.customFields)

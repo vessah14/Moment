@@ -42,6 +42,8 @@ Le parcours KPay sert au paiement des abonnements. Il ouvre la page hébergée K
 3. Copie `.env.docker.example` vers `.env` (non suivi par Git), puis renseigne `KPAY_ENABLED=true`, `KPAY_API_KEY`, `KPAY_SECRET_KEY` et `KPAY_WEBHOOK_SECRET`. Les clés API doivent commencer par `kpay_test_`. Laisse `KPAY_ALLOW_LIVE=false`.
 4. Redémarre Compose avec `docker compose up --build`. Pour Vite lancé directement sur l'hôte, active aussi KPay dans `frontend/.env.local` avec `VITE_KPAY_ENABLED=true`, puis redémarre Vite.
 
+En production, active également le bouton KPay dans `frontend/.env.production` avec `VITE_KPAY_ENABLED=true`, puis reconstruis et redéploie le frontend. Cette variable ne contient aucun secret ; les clés API KPay et le secret webhook restent uniquement dans la configuration protégée du backend.
+
 Pour un lancement sans Docker, exécute ces commandes depuis `backend/src/backend_EventMoment` en remplaçant les valeurs d'exemple par les clés **test** de ton application :
 
 ```powershell

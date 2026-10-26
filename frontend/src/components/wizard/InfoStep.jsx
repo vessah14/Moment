@@ -20,6 +20,11 @@ export function infoErrors(form, type) {
   const errors = {}
   if (!form.name.trim()) errors.name = "Donnez un nom à l'événement."
   if (!form.display.trim()) errors.display = 'Indiquez le texte à afficher en grand.'
+  if (type.id === 'anniversaire') {
+    const age = Number(form.birthdayAge)
+    if (!form.birthdayAge || !Number.isInteger(age) || age < 1 || age > 120)
+      errors.birthdayAge = 'Indiquez un âge entier compris entre 1 et 120 ans.'
+  }
   if (type.logo === 'required' && !form.organizer.trim()) errors.organizer = "Indiquez le nom de l'organisation."
   if (type.logo === 'required' && !form.logo) errors.logo = "Ajoutez le logo de votre organisation : il sera affiché sur la page et le pass d'entrée."
   if (!form.date) errors.date = 'Choisissez la date.'
@@ -204,13 +209,31 @@ export default function InfoStep({ form, type, onChange, errors = {} }) {
         </Field>
         <Field
           id="f-display"
-          label="Texte affiché en grand"
+          label={type.id === 'anniversaire' ? 'Nom de la personne fêtée' : 'Texte affiché en grand'}
           must
-          hint="Pour un couple, séparez les prénoms par « & »."
+          hint={type.id === 'anniversaire' ? 'Son âge et son prénom composeront le titre du modèle.' : 'Pour un couple, séparez les prénoms par « & ».'}
           error={errors.display}
         >
-          <input type="text" placeholder="Ex. Awa & Ibrahim, ou le nom de l'école" maxLength={120} {...text('display')} />
+          <input
+            type="text"
+            placeholder={type.id === 'anniversaire' ? 'Ex. Awa' : 'Ex. Awa & Ibrahim, ou le nom de l’école'}
+            maxLength={120}
+            {...text('display')}
+          />
         </Field>
+        {type.id === 'anniversaire' && (
+          <Field id="f-birthdayAge" label="Âge célébré" must error={errors.birthdayAge}>
+            <input
+              type="number"
+              min="1"
+              max="120"
+              step="1"
+              inputMode="numeric"
+              placeholder="Ex. 30"
+              {...text('birthdayAge')}
+            />
+          </Field>
+        )}
 
         <SectionTitle>Organisateur</SectionTitle>
         <Field id="f-organizer" label="Nom de l'organisateur" must={orgRequired} optional={!orgRequired} error={errors.organizer}>

@@ -204,9 +204,17 @@ export default function TicketCard({ style, note, event, guest, look: lookIn, th
     try {
       const lib = await import('../../utils/ticketPrint')
       const options = { palette, deco: c.deco, title: event.title, guestName: guest.name, prefix: format }
-      if (kind === 'pdf') await lib.ticketPdf(card.current, options)
-      else await lib.ticketImage(card.current, options)
-    } catch {
+      if (kind === 'pdf') {
+        await lib.ticketPdf(card.current, options)
+      } else {
+        const result = await lib.ticketImage(card.current, options)
+        if (result === 'shared')
+          setMsg('Choisissez « Enregistrer l’image » ou « Enregistrer dans Fichiers » pour garder le billet.')
+        else if (result === 'downloaded')
+          setMsg('Image du billet téléchargée. Ouvrez-la depuis les téléchargements pour la présenter.')
+      }
+    } catch (error) {
+      if (error?.name === 'AbortError') return
       setMsg('Le téléchargement a échoué. Vérifiez la connexion et réessayez.')
     } finally {
       root.current?.removeAttribute('data-printing')
@@ -239,19 +247,19 @@ export default function TicketCard({ style, note, event, guest, look: lookIn, th
     </>
   )
   const downloadButton = downloads && (
-    <button type="button" className="tkc-bar tkc-dl" onClick={() => download('pdf')} disabled={!!busy} data-print-hide>
+    <button type="button" className="tkc-bar tkc-dl" onClick={() => download('img')} disabled={!!busy} data-print-hide>
       <Download aria-hidden="true" style={{ width: 18, height: 18 }} />
-      {busy === 'pdf' ? 'Préparation…' : t.download}
+      {busy === 'img' ? 'Préparation…' : 'Garder le billet sur mon téléphone'}
     </button>
   )
   const hint = (
     <p className="tkc-hint" role="status">
-      {msg || note || "À présenter à l'accueil le jour J"}
+      {msg || note || "Après l’enregistrement, retrouvez le billet dans Photos ou Fichiers."}
       {downloads && !msg && (
         <span data-print-hide>
           {' · '}
-          <button type="button" onClick={() => download('img')} disabled={!!busy}>
-            {busy === 'img' ? 'préparation…' : 'image pour WhatsApp'}
+          <button type="button" onClick={() => download('pdf')} disabled={!!busy}>
+            {busy === 'pdf' ? 'préparation…' : 'PDF pour impression'}
           </button>
         </span>
       )}

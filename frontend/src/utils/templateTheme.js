@@ -1,4 +1,5 @@
 import { BLOCK_CONTENT_DEFAULTS } from "../data/blockDefaults";
+import { EVENT_TYPES } from "../data/eventTypes";
 import { TEMPLATES } from "../data/templates";
 
 export function findTemplate(name) {
@@ -37,6 +38,19 @@ export function templatesForCategory(categoryCode, categoryLabel) {
   return TEMPLATES.filter((template) =>
     templateMatchesCategory(template, categoryCode, categoryLabel),
   );
+}
+
+export function templatesForEventType(typeId, categoryCode, categoryLabel) {
+  const type = EVENT_TYPES.find((candidate) => candidate.id === typeId);
+  if (!type) return templatesForCategory(categoryCode, categoryLabel);
+
+  const designed = type.templates
+    .map((theme) => TEMPLATES.find((template) => template.theme === theme))
+    .filter(Boolean);
+  const free = templatesForCategory(type.categoryCode).filter(
+    (template) => !template.premium && !designed.includes(template),
+  );
+  return [...designed, ...free];
 }
 
 function parseHex(hex) {

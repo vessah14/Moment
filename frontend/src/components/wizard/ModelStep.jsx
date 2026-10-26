@@ -1,7 +1,6 @@
 import { Check, Lock } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { TEMPLATES } from '../../data/templates'
-import { templatesForCategory } from '../../utils/templateTheme'
+import { templatesForEventType } from '../../utils/templateTheme'
 import TemplatePreview, { TemplateBadge } from '../templates/TemplatePreview'
 import { StepTitle } from './EventKindSteps'
 
@@ -9,9 +8,7 @@ import { StepTitle } from './EventKindSteps'
 // gratuits de sa catégorie, utilisables avec l'offre Free.
 export function modelsForType(type) {
   if (!type) return []
-  const premium = type.templates.map((theme) => TEMPLATES.find((t) => t.theme === theme)).filter(Boolean)
-  const free = templatesForCategory(type.categoryCode).filter((t) => !t.premium && !premium.includes(t))
-  return [...premium, ...free]
+  return templatesForEventType(type.id, type.categoryCode)
 }
 
 export default function ModelStep({

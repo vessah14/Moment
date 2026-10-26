@@ -47,6 +47,7 @@ const EMPTY_FORM = {
   display: '',
   organizer: '',
   logo: null,
+  birthdayAge: '',
   date: '',
   timeStart: '',
   timeEnd: '',
@@ -73,6 +74,12 @@ const dayMonthYear = (iso) =>
 // Surtitre de la page : le type d'événement, puis la date.
 const kickerFor = (type, date) => (type ? [type.label, dayMonthYear(date)].filter(Boolean).join(' · ') : '')
 const isGeneratedKicker = (kicker) => !kicker?.trim() || EVENT_TYPES.some((t) => kicker.startsWith(t.label))
+const displayTitleFor = (form, type) => {
+  const display = form.display.trim()
+  if (type?.id === 'anniversaire' && form.birthdayAge && display)
+    return `Les ${form.birthdayAge} ans de ${display}`
+  return display || form.name.trim()
+}
 
 // Formulaire de départ : « Utiliser ce modèle » (?modele=) ou l'accueil du tableau de bord.
 function initialForm(presetTemplate, onboarding) {
@@ -150,9 +157,13 @@ export default function CreateEvent() {
           type: t.id,
           template: custom.template ?? null,
           name: ev.name ?? '',
-          display: hero.title ?? ev.name ?? '',
+          display: t.id === 'anniversaire'
+            ? (hero.title ?? '').replace(/^Les\s+\d+\s+ans\s+de\s+/i, '').trim() ||
+              (ev.name ?? '').replace(/^anniversaire(?:\s+de)?\s*/i, '').trim()
+            : hero.title ?? ev.name ?? '',
           organizer: custom.organizer?.name ?? '',
           logo: logoUrl ? { url: logoUrl, preview: mediaUrl(logoUrl), label: 'Logo actuel' } : null,
+          birthdayAge: custom.birthdayAge ? String(custom.birthdayAge) : '',
           date: ev.eventDate ?? '',
           timeStart: ev.startTime ? ev.startTime.slice(0, 5) : '',
           timeEnd: custom.timeEnd ?? '',
@@ -176,7 +187,7 @@ export default function CreateEvent() {
 
   const draft = useMemo(
     () => ({
-      title: form.display || form.name,
+      title: displayTitleFor(form, type),
       kicker: kickerFor(type, form.date),
       description: form.description,
       eventDateTime: form.date && form.timeStart ? `${form.date}T${form.timeStart}:00` : '',
@@ -212,6 +223,7 @@ export default function CreateEvent() {
       ...prev,
       type: id,
       template: chosenTemplate?.name ?? null,
+      birthdayAge: id === 'anniversaire' && prev.type === 'anniversaire' ? prev.birthdayAge : '',
       // Fête à date fixe (Noël, 20 mai…) : la prochaine date est proposée.
       date: prev.date || nextFixedDate(t.date),
     }))
@@ -265,6 +277,7 @@ export default function CreateEvent() {
           ...existing.custom,
           eventType: type.id,
           template: template?.name ?? null,
+          birthdayAge: type.id === 'anniversaire' && form.birthdayAge ? Number(form.birthdayAge) : null,
           description: form.description.trim(),
           timeEnd: form.timeEnd,
           timezone: existing.custom.timezone ?? DEFAULT_TIMEZONE,
@@ -314,7 +327,7 @@ export default function CreateEvent() {
       }
 
       try {
-        await composePage({ targetId, blocks: existing.blocks, template, hero, title: form.display.trim() || form.name.trim(), kicker: kickerFor(type, form.date), pageContent })
+        await composePage({ targetId, blocks: existing.blocks, template, hero, title: displayTitleFor(form, type), kicker: kickerFor(type, form.date), pageContent })
       } catch {
         warnings.push("Les sections de la page n'ont pas pu être toutes mises à jour.")
       }

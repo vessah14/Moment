@@ -414,10 +414,10 @@ export function RsvpModule({ invitation, onInvitationChange, body, themed, edita
     }
   }
 
-  // Les aperçus éditeur gardent leur texte d'aide ; le site public affiche le formulaire ouvert.
+  // L'aperçu éditeur montre le formulaire réel sans envoyer de réponse.
   if (!invitation) {
-    if (!editable && !invitationLoading && submitOpenRsvp) {
-      if (deadlinePassed(rules.deadline)) {
+    if (!invitationLoading && (editable || submitOpenRsvp)) {
+      if (!editable && deadlinePassed(rules.deadline)) {
         return (
           <div className={c.card} style={{ textAlign: 'center' }}>
             <p className={c.title}>Les réponses sont closes</p>
@@ -426,12 +426,20 @@ export function RsvpModule({ invitation, onInvitationChange, body, themed, edita
         )
       }
       return (
-        <form className={c.card} onSubmit={submitOpen} onClick={stop} style={{ display: 'grid', gap: '1.1rem' }}>
+        <form
+          className={c.card}
+          onSubmit={editable ? (e) => { e.preventDefault(); e.stopPropagation() } : submitOpen}
+          onClick={stop}
+          style={{ display: 'grid', gap: '1.1rem' }}
+        >
           <p className={c.title} style={{ margin: 0 }}>Confirmez votre présence</p>
           <p className={c.muted} style={{ margin: '-.7rem 0 0' }}>
-            Indiquez votre nom et un moyen de vous contacter pour envoyer votre réponse.
+            {editable
+              ? 'Aperçu du formulaire affiché aux invités sur votre site.'
+              : 'Indiquez votre nom et un moyen de vous contacter pour envoyer votre réponse.'}
             {deadlineNote && <> {deadlineNote}</>}
           </p>
+          {editable && <p className={c.note} style={{ margin: 0 }}>Les réponses ne peuvent pas être envoyées depuis l’aperçu.</p>}
           {invitationError && <p className={themed ? 'err' : 'text-sm text-danger'}>{invitationError}</p>}
           <label className={themed ? 'field' : 'block text-xs font-semibold tracking-wider text-muted uppercase'}>
             <span>Votre nom</span>
@@ -482,7 +490,7 @@ export function RsvpModule({ invitation, onInvitationChange, body, themed, edita
             <textarea className={c.input} rows={3} maxLength={1000} value={message} onChange={(e) => setMessage(e.target.value)} />
           </label>
           {error && <p className={themed ? 'err' : 'text-sm text-danger'}>{error}</p>}
-          <button className={c.btn} type="submit" disabled={sending}>
+          <button className={c.btn} type="submit" disabled={sending || editable}>
             <Check style={{ width: 18, height: 18 }} />
             {sending ? 'Envoi…' : 'Envoyer ma réponse'}
           </button>

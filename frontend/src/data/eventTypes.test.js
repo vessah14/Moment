@@ -3,6 +3,7 @@ import { infoErrors } from '../components/wizard/InfoStep'
 import { modelsForType } from '../components/wizard/ModelStep'
 import { EVENT_TYPES, EVENT_UNIVERSES, eventTypeFor, nextFixedDate } from './eventTypes'
 import { TEMPLATES } from './templates'
+import { templatesForEventType } from '../utils/templateTheme'
 
 // Catégories de la table event_categories (migrations comprises).
 const SERVER_CATEGORIES = [
@@ -27,6 +28,15 @@ describe("types d'événement de l'assistant", () => {
       expect(models[0]?.theme, t.id).toBe(t.templates[0])
       for (const theme of t.templates) expect(TEMPLATES.some((tpl) => tpl.theme === theme), `${t.id} → ${theme}`).toBe(true)
     }
+  })
+
+  it('limite les modèles premium proposés au type exact de l’événement', () => {
+    const birthdayModels = templatesForEventType('anniversaire', 'anniversaire')
+    const anniversaryModels = templatesForEventType('noces', 'anniversaire')
+
+    expect(birthdayModels.map((model) => model.theme).slice(0, 2)).toEqual(['fiesta', 'prestige'])
+    expect(anniversaryModels.map((model) => model.theme).slice(0, 2)).toEqual(['prestige', 'bloom'])
+    expect(anniversaryModels.some((model) => model.theme === 'fiesta')).toBe(false)
   })
 
   it('utilisent les 27 modèles premium', () => {
@@ -59,5 +69,12 @@ describe('informations obligatoires', () => {
   it('signalent les champs vides dans leur ordre', () => {
     const errors = infoErrors({ ...base, name: ' ', date: '', venueAddr: '' }, type('mariage'))
     expect(Object.keys(errors)).toEqual(['name', 'date', 'venueAddr'])
+  })
+
+  it('requires a valid age for a birthday but not for other event types', () => {
+    expect(infoErrors(base, type('anniversaire')).birthdayAge).toBeTruthy()
+    expect(infoErrors({ ...base, birthdayAge: '30' }, type('anniversaire'))).toEqual({})
+    expect(infoErrors({ ...base, birthdayAge: '30.5' }, type('anniversaire')).birthdayAge).toBeTruthy()
+    expect(infoErrors(base, type('noces'))).toEqual({})
   })
 })
