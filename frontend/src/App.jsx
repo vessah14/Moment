@@ -112,11 +112,11 @@ function App () {
           <Route path='/politique-cookies' element={<CookiesPolicy />} />
           <Route
             path='/loading'
-            element={<LoadingPage text='Chargement de votre espace…' />}
+            element={<LoadingPage />}
           />
           <Route
             path='/chargement'
-            element={<LoadingPage text='Chargement de votre espace…' />}
+            element={<LoadingPage />}
           />
           <Route path='/invitation/:code' element={<GuestInvitation />} />
           <Route path='/cadeaux/:code' element={<GiftRegistryPublic />} />

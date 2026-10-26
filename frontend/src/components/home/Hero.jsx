@@ -21,21 +21,20 @@ const SHOTS = [
 ]
 const TRUST = ['Gratuit pour commencer', 'Aucune application à installer', 'Orange Money et MTN MoMo']
 
-// Les quatre captures sont empilées et déjà chargées dans chaque téléphone : seule leur
-// opacité change, d'où un fondu enchaîné sans écran vide pendant le chargement.
+// Chaque téléphone ne rend que sa capture active : pas de décodage des images invisibles.
 function Phone({ active, className }) {
+  const shot = SHOTS[active]
   return (
     <div className={`hero-phone ${className}`}>
       <div className="hero-phone-screen">
-        {SHOTS.map((s, i) => (
-          <img
-            key={s.src}
-            src={s.src}
-            alt={i === active ? s.alt : ''}
-            decoding="async"
-            className={`hero-phone-img ${i === active ? 'is-active' : ''}`}
-          />
-        ))}
+        <img
+          key={shot.src}
+          src={shot.src}
+          alt={shot.alt}
+          decoding="async"
+          fetchPriority={className === 'hero-phone-main' ? 'high' : 'auto'}
+          className="hero-phone-img"
+        />
       </div>
     </div>
   )

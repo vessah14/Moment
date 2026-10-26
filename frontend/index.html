@@ -55,12 +55,143 @@
         document.documentElement.setAttribute('data-theme', resolved);
       })();
     </script>
+    <style>
+      #startup-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(ellipse at 50% 42%, #6c4bf426, transparent 48%),
+          #0b1020;
+        color: #f8f9fc;
+        opacity: 1;
+        transition: opacity 250ms ease;
+      }
+      #startup-splash.is-hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .startup-splash-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        padding: 2rem;
+        text-align: center;
+      }
+      .startup-splash-mark {
+        width: 104px;
+        height: 104px;
+        overflow: visible;
+      }
+      .startup-splash-mark path {
+        fill: none;
+        stroke: url(#startup-splash-gradient);
+        stroke-width: 3.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-dasharray: 1;
+        stroke-dashoffset: 1;
+        animation: startup-splash-draw 900ms cubic-bezier(0.6, 0.1, 0.2, 1) 100ms forwards;
+      }
+      .startup-splash-mark circle {
+        fill: #f5c451;
+        transform-box: fill-box;
+        transform-origin: center;
+        transform: scale(0);
+        animation: startup-splash-star 500ms cubic-bezier(0.3, 1.6, 0.5, 1) 850ms forwards;
+      }
+      .startup-splash-greeting {
+        margin: 0;
+        font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+        font-size: clamp(1.2rem, 5vw, 1.6rem);
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        opacity: 0;
+        transform: translateY(6px);
+        animation: startup-splash-welcome 500ms ease 1s forwards;
+      }
+      .startup-splash-caption {
+        margin: 0;
+        color: #9ba3c2;
+        font-size: 0.9rem;
+      }
+      @keyframes startup-splash-draw {
+        to { stroke-dashoffset: 0; }
+      }
+      @keyframes startup-splash-star {
+        to { transform: scale(1); }
+      }
+      @keyframes startup-splash-welcome {
+        to { opacity: 1; transform: none; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #startup-splash { transition: none; }
+        .startup-splash-mark path,
+        .startup-splash-mark circle,
+        .startup-splash-greeting {
+          animation: none;
+          opacity: 1;
+          transform: none;
+          stroke-dashoffset: 0;
+        }
+      }
+    </style>
   </head>
   <body>
     <noscript>
       TBF Moment : créez le site de votre événement. Activez JavaScript pour utiliser
       l'application.
     </noscript>
+    <div id="startup-splash" role="status" aria-live="polite">
+      <div class="startup-splash-content">
+        <svg class="startup-splash-mark" viewBox="0 0 32 32" aria-hidden="true">
+          <defs>
+            <linearGradient id="startup-splash-gradient" x1="0" x2="1" y1="1" y2="0">
+              <stop offset="0" stop-color="#FF7A3D" />
+              <stop offset=".5" stop-color="#E2337E" />
+              <stop offset="1" stop-color="#6C4BF4" />
+            </linearGradient>
+          </defs>
+          <path pathLength="1" d="M4 27V6l12 12L28 6v21" />
+          <circle cx="27" cy="4" r="2.4" />
+        </svg>
+        <p id="startup-splash-greeting" class="startup-splash-greeting">Bienvenue sur TBF Moment</p>
+        <p class="startup-splash-caption">Vos beaux moments commencent ici.</p>
+      </div>
+    </div>
+    <script>
+      (function () {
+        var splash = document.getElementById('startup-splash');
+        var greeting = document.getElementById('startup-splash-greeting');
+        try {
+          var token = localStorage.getItem('tbf_auth_token');
+          var user = JSON.parse(localStorage.getItem('tbf_auth_user') || 'null');
+          if (token && user) {
+            var encoded = token.split('.')[1];
+            if (encoded) {
+              var base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+              var payload = JSON.parse(atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')));
+              var name = String(user.fullName || user.name || '').trim().split(/\s+/)[0];
+              if (name && (!payload.exp || payload.exp * 1000 > Date.now())) {
+                greeting.textContent = 'Bon retour, ' + name + ' !';
+              }
+            }
+          }
+        } catch (_) {
+          // Un cache de session illisible ne doit pas empêcher l'accueil.
+        }
+        window.setTimeout(function () {
+          splash.classList.add('is-hidden');
+          splash.setAttribute('aria-hidden', 'true');
+        }, 1750);
+        window.setTimeout(function () {
+          splash.remove();
+        }, 2000);
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
