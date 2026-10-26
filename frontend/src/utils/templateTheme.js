@@ -164,6 +164,37 @@ export function newEventPageBlocks(template) {
   return blocks;
 }
 
+export function reconcileTemplateLayout(
+  template,
+  { previousTemplate, content = {} } = {},
+) {
+  const blocks = newEventPageBlocks(template);
+  const defaults = { ...BLOCK_CONTENT_DEFAULTS, ...templateBlockDefaults(template) };
+  const nextContent = Object.fromEntries(
+    blocks.map((type) => {
+      const existing = content[type] ?? {};
+      const defaultHeading = templateBlockHeading(template, type);
+      const previousHeading = templateBlockHeading(previousTemplate, type);
+      const existingHeading = existing.heading;
+      const headingIsDefault =
+        !existingHeading ||
+        existingHeading === previousHeading ||
+        existingHeading === BLOCK_CONTENT_DEFAULTS[type]?.heading;
+
+      return [
+        type,
+        {
+          ...defaults[type],
+          ...existing,
+          heading: headingIsDefault ? defaultHeading : existingHeading,
+        },
+      ];
+    }),
+  );
+
+  return { blocks, content: nextContent };
+}
+
 export function missingEventPageBlocks(template, existingBlocks = []) {
   const existing = new Set(
     existingBlocks.map((block) =>

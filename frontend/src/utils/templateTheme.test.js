@@ -7,7 +7,9 @@ import {
   ensureRsvpBlock,
   missingEventPageBlocks,
   newEventPageBlocks,
+  reconcileTemplateLayout,
   resolveSiteStyle,
+  templateBlockHeading,
   templateBlocks,
   templateFromCustomFields,
   templatesForCategory,
@@ -139,6 +141,48 @@ describe("TEMPLATES", () => {
       expect(new Set(blocks).size, template.name).toBe(blocks.length);
       if (blocks.includes("Pied de page")) expect(blocks.at(-1), template.name).toBe("Pied de page");
     }
+  });
+
+  it("updates Builder sections and default headings when changing models", () => {
+    const previousTemplate = findTemplate("Éclat");
+    const nextTemplate = findTemplate("Live");
+    const layout = reconcileTemplateLayout(nextTemplate, {
+      previousTemplate,
+      content: {
+        Invitation: {
+          heading: templateBlockHeading(previousTemplate, "Invitation"),
+          body: "Texte personnalisé conservé.",
+        },
+        Programme: {
+          heading: templateBlockHeading(previousTemplate, "Programme"),
+        },
+        Histoire: { heading: "Notre histoire", body: "À retirer avec ce modèle." },
+      },
+    });
+
+    expect(layout.blocks).toEqual(newEventPageBlocks(nextTemplate));
+    expect(layout.blocks).toContain("Intervenants");
+    expect(layout.blocks).not.toContain("Histoire");
+    expect(layout.content.Invitation).toMatchObject({
+      heading: templateBlockHeading(nextTemplate, "Invitation"),
+      body: "Texte personnalisé conservé.",
+    });
+    expect(layout.content.Programme.heading).toBe(
+      templateBlockHeading(nextTemplate, "Programme"),
+    );
+    expect(layout.content.Intervenants.heading).toBe("Line-up");
+  });
+
+  it("keeps a section heading explicitly customized in the Builder", () => {
+    const template = findTemplate("Live");
+    const layout = reconcileTemplateLayout(template, {
+      previousTemplate: findTemplate("Éclat"),
+      content: {
+        Programme: { heading: "Nos temps forts" },
+      },
+    });
+
+    expect(layout.content.Programme.heading).toBe("Nos temps forts");
   });
 
   it("fills missing model sections even when a site already has blocks", () => {

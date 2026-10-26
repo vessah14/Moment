@@ -35,9 +35,10 @@ import { formatEventDate } from '../utils/eventStatus'
 import {
   defaultFontForTemplate,
   normalizeBlockType,
+  newEventPageBlocks,
+  reconcileTemplateLayout,
   resolveSiteStyle,
   templateBlockDefaults,
-  templateBlocks,
   templateFromCustomFields,
   templatesForEventType,
 } from '../utils/templateTheme'
@@ -225,7 +226,7 @@ export default function Builder() {
         setPageBlocks(
           others.length > 0
             ? others.map((b) => normalizeBlockType(b.blockType))
-            : [...templateBlocks(template)],
+            : newEventPageBlocks(template),
         )
 
         const loadedContent = {}
@@ -307,8 +308,12 @@ export default function Builder() {
       palette: null,
       motif: null,
     }))
-    if (pageBlocks.length === 0) setBlockContent((prev) => ({ ...prev, ...templateBlockDefaults(next) }))
-    setPageBlocks((prev) => (prev.length > 0 ? prev : [...templateBlocks(next)]))
+    const layout = reconcileTemplateLayout(next, {
+      previousTemplate: template,
+      content: blockContent,
+    })
+    setBlockContent((prev) => ({ ...prev, ...layout.content }))
+    setPageBlocks(layout.blocks)
   }
 
   const eventDto = (status) => ({
