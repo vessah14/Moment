@@ -8,7 +8,6 @@ import {
   InvitationEditor,
   PartnersEditor,
   PeopleEditor,
-  RsvpSidesEditor,
 } from '../builder/ModuleEditors'
 
 const inputClass = 'w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-faint outline-none focus:border-brand-purple focus:ring-3 focus:ring-brand-purple/30'
@@ -44,11 +43,10 @@ export default function ContentStep({ template, content, onChange }) {
       {blocks.has('Cadeaux') && <Panel title="Contributions"><Field label="Message affiché aux invités" multiline value={value('Cadeaux').body} onChange={(body) => edit('Cadeaux', { body })} placeholder="Expliquez comment participer, si les invités le souhaitent." /><GiftAccountsEditor content={value('Cadeaux')} onChange={(patch) => edit('Cadeaux', patch)} /><p className="text-xs text-muted">Les coordonnées sont affichées pour permettre un transfert direct. Aucun paiement n’est déclenché depuis cette page.</p></Panel>}
       {blocks.has('Intervenants') && <Panel title="Intervenants, artistes ou témoins"><PeopleEditor content={value('Intervenants')} onChange={(patch) => edit('Intervenants', patch)} /></Panel>}
       {blocks.has('Partenaires') && <Panel title="Partenaires"><PartnersEditor content={value('Partenaires')} onChange={(patch) => edit('Partenaires', patch)} /></Panel>}
-      {blocks.has('RSVP') && <Panel title="Confirmation de présence"><Field label="Consigne affichée au formulaire" multiline value={value('RSVP').body} onChange={(body) => edit('RSVP', { body })} placeholder="Merci de confirmer votre présence." /><RsvpSidesEditor content={value('RSVP')} onChange={(patch) => edit('RSVP', patch)} /><p className="text-xs text-muted">Le lien d’invitation personnel permet à chaque invité de répondre. Les réponses seront visibles dans votre liste d’invités.</p></Panel>}
       {blocks.has('Programme') && <Panel title="Programme"><Field label="Introduction du programme" multiline value={value('Programme').body} onChange={(body) => edit('Programme', { body })} placeholder="Présentez brièvement les temps forts. Les horaires se complètent ensuite dans l’onglet Programme." /></Panel>}
       {blocks.has('FAQ') && <Panel title="Questions fréquentes"><Field label="Introduction" multiline value={value('FAQ').body} onChange={(body) => edit('FAQ', { body })} placeholder="Ajoutez les questions et réponses dans le Builder." /></Panel>}
 
-      <p className="text-xs leading-relaxed text-muted">Les photos, billets, plan de table, cadeaux à réserver et horaires détaillés se gèrent après publication dans le Builder ou le tableau de bord.</p>
+      <p className="text-xs leading-relaxed text-muted">Les invitations, confirmations de présence, photos, billets, plan de table, cadeaux à réserver et horaires détaillés se gèrent après publication dans le Builder ou le tableau de bord.</p>
     </div>
   )
 }
