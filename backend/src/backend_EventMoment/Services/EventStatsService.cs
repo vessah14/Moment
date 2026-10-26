@@ -20,23 +20,38 @@ namespace backend_EventMoment.Services
             if (!await _context.Events.AnyAsync(e => e.Id == eventId && e.OrganizerId == organizerId))
                 throw new KeyNotFoundException("Événement introuvable.");
 
-            var guests = await _context.Guests
+            var guestCounts = await _context.Guests
                 .Where(g => g.EventId == eventId)
-                .Select(g => g.Status)
+                .GroupBy(g => g.Status)
+                .Select(group => new { Status = group.Key, Count = group.Count() })
                 .ToListAsync();
 
             // Accompagnants : dernière réponse de chaque invité, seulement s'il vient
             // (un invité qui a confirmé puis refusé, ou passé « Absent » par l'organisateur,
             // ne compte plus ses accompagnants).
-            var responses = await _context.RsvpResponses
-                .Where(r => r.EventId == eventId)
-                .Select(r => new { r.GuestId, r.Confirmed, r.AccompanyingCount, r.CreatedAt, GuestStatus = r.Guest.Status })
-                .ToListAsync();
-            var totalAccompanying = responses
-                .GroupBy(r => r.GuestId)
-                .Select(g => g.OrderByDescending(r => r.CreatedAt).First())
-                .Where(r => r.Confirmed == true && r.GuestStatus == GuestStatus.Present)
-                .Sum(r => (int)r.AccompanyingCount);
+            int totalAccompanying;
+            if (_context.Database.IsNpgsql())
+            {
+                var latestResponses = _context.RsvpResponses
+                    .Where(r => r.EventId == eventId)
+                    .GroupBy(r => r.GuestId)
+                    .Select(group => group.OrderByDescending(r => r.CreatedAt).First());
+                totalAccompanying = await latestResponses
+                    .Where(r => r.Confirmed == true && r.Guest.Status == GuestStatus.Present)
+                    .SumAsync(r => (int?)r.AccompanyingCount) ?? 0;
+            }
+            else
+            {
+                var responses = await _context.RsvpResponses
+                    .Where(r => r.EventId == eventId)
+                    .Select(r => new { r.GuestId, r.Confirmed, r.AccompanyingCount, r.CreatedAt, GuestStatus = r.Guest.Status })
+                    .ToListAsync();
+                totalAccompanying = responses
+                    .GroupBy(r => r.GuestId)
+                    .Select(group => group.OrderByDescending(r => r.CreatedAt).First())
+                    .Where(r => r.Confirmed == true && r.GuestStatus == GuestStatus.Present)
+                    .Sum(r => (int)r.AccompanyingCount);
+            }
 
             var daily = await _context.EventStatsDailies
                 .Where(s => s.EventId == eventId)
@@ -46,10 +61,10 @@ namespace backend_EventMoment.Services
 
             return new EventStatsSummaryDto
             {
-                TotalGuests = guests.Count,
-                ConfirmedGuests = guests.Count(s => s == GuestStatus.Present),
-                PendingGuests = guests.Count(s => s == GuestStatus.EnAttente),
-                RefusedGuests = guests.Count(s => s == GuestStatus.Absent),
+                TotalGuests = guestCounts.Sum(g => g.Count),
+                ConfirmedGuests = guestCounts.FirstOrDefault(g => g.Status == GuestStatus.Present)?.Count ?? 0,
+                PendingGuests = guestCounts.FirstOrDefault(g => g.Status == GuestStatus.EnAttente)?.Count ?? 0,
+                RefusedGuests = guestCounts.FirstOrDefault(g => g.Status == GuestStatus.Absent)?.Count ?? 0,
                 TotalAccompanying = totalAccompanying,
                 TotalVisits = daily.Sum(d => d.Visits),
                 TotalShares = daily.Sum(d => d.Shares),

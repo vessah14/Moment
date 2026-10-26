@@ -72,77 +72,13 @@ namespace backend_EventMoment.Services
                 .OrderBy(l => l.Position)
                 .FirstOrDefaultAsync();
 
-            string? tagline = null;
-            string? description = null;
-            string? template = null;
-            string? heroTitle = null;
-            string? heroSubtitle = null;
-            string? heroColor = null;
-            string? heroKicker = null;
-            var searchable = false;
-            try
-            {
-                using var doc = System.Text.Json.JsonDocument.Parse(entity.CustomFields);
-                if (doc.RootElement.TryGetProperty("tagline", out var t)) tagline = t.GetString();
-                if (doc.RootElement.TryGetProperty("description", out var d)) description = d.GetString();
-                if (doc.RootElement.TryGetProperty("template", out var tpl) && tpl.ValueKind == System.Text.Json.JsonValueKind.String)
-                    template = tpl.GetString();
-                searchable = EventSearchability.IsSearchable(doc.RootElement);
-            }
-            catch
-            {
-                // CustomFields mal formé ou vide : on affiche simplement la page sans ces champs.
-            }
-
             var heroContent = await _context.EventBlocks.IgnoreQueryFilters().AsNoTracking()
                 .Where(block => block.EventId == entity.Id && block.IsVisible && block.BlockType == "Hero")
                 .OrderBy(block => block.Position)
                 .Select(block => block.Content)
                 .FirstOrDefaultAsync();
-            if (!string.IsNullOrWhiteSpace(heroContent))
-            {
-                try
-                {
-                    using var doc = System.Text.Json.JsonDocument.Parse(heroContent);
-                    if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object)
-                    {
-                        string? Read(string name) =>
-                            doc.RootElement.TryGetProperty(name, out var value)
-                            && value.ValueKind == System.Text.Json.JsonValueKind.String
-                                ? value.GetString()
-                                : null;
-                        heroTitle = Read("title");
-                        heroSubtitle = Read("subtitle");
-                        heroColor = Read("color");
-                        heroKicker = Read("kicker");
-                    }
-                }
-                catch (System.Text.Json.JsonException)
-                {
-                    // Un contenu Hero invalide ne doit pas rendre le site public indisponible.
-                }
-            }
 
-            return new PublicEventDto
-            {
-                Name = entity.Name,
-                Slug = entity.Slug,
-                ThemeColor = entity.ThemeColor,
-                CoverImageUrl = entity.CoverImageUrl,
-                EventDate = entity.EventDate,
-                StartTime = entity.StartTime,
-                Tagline = tagline,
-                Description = description,
-                HeroTitle = heroTitle,
-                HeroSubtitle = heroSubtitle,
-                HeroColor = heroColor,
-                HeroKicker = heroKicker,
-                Template = template,
-                ThemeFont = entity.ThemeFont,
-                LocationLabel = location?.Label,
-                LocationAddress = location?.Address,
-                Searchable = searchable,
-            };
+            return PublicEventMapper.Map(entity, location, heroContent);
         }
 
         public async Task<List<GiftItemDto>> GetPublicGiftsAsync(string slug)

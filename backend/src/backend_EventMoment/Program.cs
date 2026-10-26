@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.OpenApi.Models;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.RateLimiting;
@@ -54,6 +55,10 @@ builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+});
 builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"]);
 builder.Services.AddHttpContextAccessor();
@@ -356,6 +361,12 @@ foreach (var proxy in app.Configuration.GetSection("Proxy:KnownProxies").Get<str
     if (System.Net.IPAddress.TryParse(proxy, out var proxyIp))
         forwarded.KnownProxies.Add(proxyIp);
 app.UseForwardedHeaders(forwarded);
+app.UseWhen(context =>
+    HttpMethods.IsGet(context.Request.Method)
+    && (context.Request.Path == "/sitemap-events.xml"
+        || (context.Request.Path.StartsWithSegments("/api/public/events")
+            && context.Request.Path.Value?.EndsWith("/site", StringComparison.OrdinalIgnoreCase) == true)),
+    branch => branch.UseResponseCompression());
 
 app.UseExceptionHandler(errorApp =>
 {
