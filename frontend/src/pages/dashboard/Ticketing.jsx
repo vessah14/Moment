@@ -1,5 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from 'react'
-import TicketSalesChart from '../../components/billing/TicketSalesChart'
+import { Fragment, lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { useToast } from '../../utils/useToast'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import StatCard from '../../components/dashboard/StatCard'
@@ -13,6 +12,8 @@ import {
   listTicketTypes,
   recordTicketSale,
 } from '../../api/ticketing'
+
+const TicketSalesChart = lazy(() => import('../../components/billing/TicketSalesChart'))
 
 function statusFor(type) {
   if (type.soldCount >= type.quota) return 'Épuisé'
@@ -319,7 +320,9 @@ export default function Ticketing() {
           <div className="rounded-2xl border border-border-soft bg-panel p-5">
             <h2 className="font-semibold text-ink">Ventes par jour</h2>
             <div className="mt-3">
-              <TicketSalesChart data={salesChartData} />
+              <Suspense fallback={<p role="status" className="text-sm text-faint">Chargement du graphique…</p>}>
+                <TicketSalesChart data={salesChartData} />
+              </Suspense>
             </div>
           </div>
         </div>

@@ -66,9 +66,9 @@ describe('informations obligatoires', () => {
     expect(Object.keys(infoErrors(base, type('conference')))).toEqual(['organizer', 'logo'])
   })
 
-  it('signalent les champs vides dans leur ordre', () => {
+  it('signale le nom vide, mais permet de compléter les détails pratiques plus tard', () => {
     const errors = infoErrors({ ...base, name: ' ', date: '', venueAddr: '' }, type('mariage'))
-    expect(Object.keys(errors)).toEqual(['name', 'date', 'venueAddr'])
+    expect(Object.keys(errors)).toEqual(['name'])
   })
 
   it('requires a valid age for birthdays and wedding anniversaries only', () => {

@@ -38,14 +38,14 @@ const NAV_ITEMS = [
     icon: Plus,
   },
   { label: 'Mes événements', to: '/dashboard/evenements', icon: Calendar, end: true },
-  { label: 'Invitations', to: '/dashboard/invitations', icon: Mail },
+  { label: 'Envoyer des invitations', to: '/dashboard/invitations', icon: Mail },
   {
     label: 'Communication',
     to: '/dashboard/communication',
     icon: MessageSquare,
   },
   {
-    label: 'Participants',
+    label: 'Invités & RSVP',
     to: '/dashboard/participants',
     icon: Users,
     badgeKey: 'guests',

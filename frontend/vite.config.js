@@ -27,6 +27,10 @@ export default defineConfig(({ mode }) => {
     strictPort: true,
   },
   build: {
+    modulePreload: {
+      resolveDependencies: (_filename, dependencies) =>
+        dependencies.filter((dependency) => !dependency.includes("charts-")),
+    },
     rollupOptions: {
       output: {
         manualChunks(id) {

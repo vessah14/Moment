@@ -28,9 +28,6 @@ export function infoErrors(form, type) {
   }
   if (type.logo === 'required' && !form.organizer.trim()) errors.organizer = "Indiquez le nom de l'organisation."
   if (type.logo === 'required' && !form.logo) errors.logo = "Ajoutez le logo de votre organisation : il sera affiché sur la page et le pass d'entrée."
-  if (!form.date) errors.date = 'Choisissez la date.'
-  if (!form.timeStart) errors.timeStart = "Indiquez l'heure de début."
-  if (!form.venueAddr.trim()) errors.venueAddr = 'Indiquez le quartier et la ville.'
   return errors
 }
 
@@ -267,10 +264,10 @@ export default function InfoStep({ form, type, onChange, errors = {} }) {
 
         <SectionTitle>Date et lieu</SectionTitle>
         <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,180px),1fr))] gap-4">
-          <Field id="f-date" label="Date" must error={errors.date}>
+          <Field id="f-date" label="Date" optional>
             <input type="date" {...text('date')} />
           </Field>
-          <Field id="f-timeStart" label="Début" must error={errors.timeStart}>
+          <Field id="f-timeStart" label="Début" optional>
             <input type="time" {...text('timeStart')} />
           </Field>
           <Field id="f-timeEnd" label="Fin">
@@ -281,7 +278,7 @@ export default function InfoStep({ form, type, onChange, errors = {} }) {
           <Field id="f-venueName" label="Lieu">
             <input type="text" placeholder="Ex. Amphithéâtre 600" maxLength={120} {...text('venueName')} />
           </Field>
-          <Field id="f-venueAddr" label="Quartier et ville" must error={errors.venueAddr}>
+          <Field id="f-venueAddr" label="Quartier et ville" optional>
             <input type="text" placeholder="Ex. Bonabéri · Douala" maxLength={200} {...text('venueAddr')} />
           </Field>
         </div>

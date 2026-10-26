@@ -279,15 +279,17 @@ export default function Guests() {
     const phone = form.get('phone')?.toString().trim()
     const email = form.get('email')?.toString().trim()
     const groupId = form.get('group')?.toString() || undefined
-    const sendInvitation = form.get('sendInvitation') === 'on'
-    if (!fullName || !phone || !email) return
+    const sendInvitation = form.get('sendInvitation') === 'on' && Boolean(email)
+    if (!fullName) return
 
     setError('')
     try {
       await createGuest({ fullName, phone, email, sendInvitation }, { eventId: selectedEventId, groupId })
       await reloadGuests()
       toast(
-        !sendInvitation
+        !email
+          ? `${fullName} ajouté(e) à la liste. Ajoutez un e-mail pour envoyer son invitation.`
+          : !sendInvitation
           ? `${fullName} ajouté(e) à la liste`
           : eventPublished
             ? `${fullName} ajouté(e) : son lien d'invitation part par e-mail`
@@ -428,20 +430,19 @@ export default function Guests() {
             />
           </label>
           <label className="block">
-            <span className="text-xs font-medium text-ink">Téléphone</span>
+            <span className="text-xs font-medium text-ink">Téléphone (facultatif)</span>
             <input
               name="phone"
-              required
-              placeholder="+221 77 000 00 00"
+              type="tel"
+              placeholder="+237 6 90 00 00 00"
               className="mt-1.5 w-40 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-brand-purple"
             />
           </label>
           <label className="block">
-            <span className="text-xs font-medium text-ink">Email</span>
+            <span className="text-xs font-medium text-ink">E-mail (facultatif)</span>
             <input
               name="email"
               type="email"
-              required
               className="mt-1.5 w-48 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-brand-purple"
             />
           </label>
@@ -462,15 +463,15 @@ export default function Guests() {
           </label>
           <label className="flex items-center gap-2 self-center text-xs font-medium text-ink">
             <input type="checkbox" name="sendInvitation" defaultChecked className="h-4 w-4 rounded border-border accent-brand-purple" />
-            Envoyer l'invitation par e-mail
+            Envoyer le lien par e-mail
           </label>
           <Button type="submit" variant="gradient">
             Ajouter
           </Button>
           <p className="w-full text-xs text-faint">
-            {eventPublished
-              ? "L'invité reçoit aussitôt un e-mail avec son lien personnel pour confirmer sa présence."
-              : "L'événement n'est pas encore publié : l'e-mail avec le lien de confirmation partira dès sa publication."}
+            {!eventPublished
+              ? "L'e-mail d'invitation partira dès la publication de l'événement."
+              : "L'invité reçoit son lien personnel par e-mail. Sans e-mail, vous pouvez ajouter son nom puis partager son lien depuis sa fiche."}
           </p>
 
           <div className="flex w-full items-center gap-2 border-t border-border-soft pt-3">
@@ -522,7 +523,75 @@ export default function Guests() {
       </div>
 
       <div className="mt-6 overflow-hidden rounded-2xl border border-border-soft bg-surface">
-        <div className="overflow-x-auto">
+        <div className="divide-y divide-border-soft md:hidden">
+          {loading && <p className="px-4 py-8 text-center text-sm text-faint">Chargement…</p>}
+          {!loading && visible.length === 0 && (
+            <p className="px-4 py-8 text-center text-sm text-faint">Aucun invité dans cette sélection.</p>
+          )}
+          {!loading && pagination.items.map((guest) => (
+            <article key={guest.id} className="space-y-3 p-4">
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={selected.has(guest.id)}
+                  onChange={() => toggleSelected(guest.id)}
+                  aria-label={`Sélectionner ${guest.fullName}`}
+                  className="mt-1 h-4 w-4 rounded border-border accent-brand-purple"
+                />
+                <Avatar name={guest.fullName} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium text-ink">{guest.fullName}</p>
+                  <p className="break-all text-xs text-muted">{guest.email || 'Aucun e-mail'}</p>
+                  <p className="text-xs text-faint">{guest.phone || 'Aucun téléphone'}</p>
+                </div>
+                <StatusBadge status={guestStatusLabel(guest.status)} />
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-2 pl-7 text-xs text-muted">
+                <span>{groupNameById(guest.groupId)}</span>
+                <InvitationStatus guest={guest} published={eventPublished} />
+                <span>{accompanyingByGuest[guest.id] ?? '–'} accompagnant(s)</span>
+              </div>
+              <div className="flex justify-end gap-1 pl-7">
+                {guest.email && !guest.invitationPending && (
+                  <button
+                    type="button"
+                    onClick={() => handleSendInvitation(guest)}
+                    aria-label={`Envoyer l'invitation à ${guest.fullName}`}
+                    className="rounded-lg p-2 text-faint hover:bg-surface-2 hover:text-brand-purple"
+                  >
+                    <Send className="h-4 w-4" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleCopyLink(guest)}
+                  aria-label={`Copier le lien d'invitation de ${guest.fullName}`}
+                  className="rounded-lg p-2 text-faint hover:bg-surface-2 hover:text-brand-purple"
+                >
+                  <Link2 className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingGuest(guest)}
+                  aria-label={`Modifier ${guest.fullName}`}
+                  className="rounded-lg p-2 text-faint hover:bg-surface-2 hover:text-brand-purple"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeletingGuest(guest)}
+                  aria-label={`Supprimer ${guest.fullName}`}
+                  className="rounded-lg p-2 text-faint hover:bg-danger/10 hover:text-danger"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead>
               <tr className="border-b border-border-soft text-xs tracking-wider text-faint uppercase">

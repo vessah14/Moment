@@ -4,7 +4,7 @@ import { useLocation, useNavigate, useParams, useSearchParams } from 'react-rout
 import { createEvent, getEvent, updateEvent as updateEventApi, uploadEventBlockImage } from '../api/events'
 import { mediaUrl } from '../api/client'
 import { listEventCategories } from '../api/eventCategories'
-import { createEventLocation, listEventLocations, updateEventLocation } from '../api/eventLocations'
+import { createEventLocation, deleteEventLocation, listEventLocations, updateEventLocation } from '../api/eventLocations'
 import { createEventBlock, listEventBlocks, updateEventBlock } from '../api/eventBlocks'
 import DashboardLayout from '../components/layout/DashboardLayout'
 import UpgradeDialog from '../components/plan/UpgradeDialog'
@@ -260,6 +260,11 @@ export default function CreateEvent() {
 
   const publish = async (status) => {
     setPublishError('')
+    if (status === 'publish' && !form.date) {
+      setPublishError('Ajoutez la date de votre événement avant de le publier. Vous pouvez enregistrer le brouillon sans date.')
+      document.getElementById('f-date')?.focus()
+      return
+    }
     if (!form.consent) return setErrors({ consent: 'Cochez la case pour publier votre événement.' })
     if (template?.premium && !canUsePremium)
       return setPublishError('Ce modèle demande l’offre Premium. Activez-la ou choisissez un modèle gratuit.')
@@ -317,9 +322,11 @@ export default function CreateEvent() {
 
       try {
         const label = form.venueName.trim() || 'Lieu principal'
-        if (existing.location) {
+        if (existing.location && !form.venueName.trim() && !form.venueAddr.trim()) {
+          await deleteEventLocation(existing.location.id)
+        } else if (existing.location) {
           await updateEventLocation(existing.location.id, { label, address: form.venueAddr.trim(), position: existing.location.position })
-        } else {
+        } else if (form.venueName.trim() || form.venueAddr.trim()) {
           await createEventLocation({ label, address: form.venueAddr.trim(), position: 0 }, targetId)
         }
       } catch {

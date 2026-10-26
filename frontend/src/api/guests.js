@@ -5,6 +5,10 @@ export function listGuests(eventId) {
   return apiFetch(`/guests${query}`)
 }
 
+export function listGuestStats() {
+  return apiFetch('/guests/stats')
+}
+
 export function getGuest(id) {
   return apiFetch(`/guests/${id}`)
 }
@@ -12,11 +16,17 @@ export function getGuest(id) {
 export function createGuest(dto, { eventId, groupId }) {
   const params = new URLSearchParams({ eventId })
   if (groupId) params.set('groupId', groupId)
-  return apiFetch(`/guests?${params.toString()}`, { method: 'POST', body: dto })
+  return apiFetch(`/guests?${params.toString()}`, {
+    method: 'POST',
+    body: { ...dto, phone: dto.phone || null, email: dto.email || null },
+  })
 }
 
 export function updateGuest(id, dto) {
-  return apiFetch(`/guests/${id}`, { method: 'PUT', body: dto })
+  return apiFetch(`/guests/${id}`, {
+    method: 'PUT',
+    body: { ...dto, phone: dto.phone || null, email: dto.email || null },
+  })
 }
 
 export function deleteGuest(id) {

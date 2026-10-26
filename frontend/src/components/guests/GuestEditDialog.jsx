@@ -40,12 +40,12 @@ export default function GuestEditDialog({ guest, groups, onClose, onSave }) {
         </label>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block">
-            <span className="text-xs font-medium text-ink">Téléphone</span>
-            <input value={phone} onChange={(e) => setPhone(e.target.value)} required inputMode="tel" className={fieldClass} />
+            <span className="text-xs font-medium text-ink">Téléphone (facultatif)</span>
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" className={fieldClass} />
           </label>
           <label className="block">
-            <span className="text-xs font-medium text-ink">E-mail</span>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className={fieldClass} />
+            <span className="text-xs font-medium text-ink">E-mail (facultatif)</span>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={fieldClass} />
           </label>
         </div>
         {emailChanged && guest.invitationSentAt && (

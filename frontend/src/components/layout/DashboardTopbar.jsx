@@ -46,6 +46,7 @@ export default function DashboardTopbar({ onMenuClick }) {
       <button
         type="button"
         onClick={onMenuClick}
+        aria-label="Ouvrir le menu du tableau de bord"
         className="rounded-lg p-2 text-muted hover:bg-surface-2 hover:text-ink lg:hidden"
       >
         <Menu className="h-5 w-5" />
@@ -64,6 +65,8 @@ export default function DashboardTopbar({ onMenuClick }) {
           <button
             type="button"
             onClick={() => setNotifOpen((v) => !v)}
+            aria-label="Notifications"
+            aria-expanded={notifOpen}
             className="relative text-muted hover:text-ink"
           >
             <Bell className="h-5 w-5" />
@@ -103,6 +106,8 @@ export default function DashboardTopbar({ onMenuClick }) {
           <button
             type="button"
             onClick={() => setProfileOpen((v) => !v)}
+            aria-label={`Menu du compte${user?.fullName ? ` de ${user.fullName}` : ''}`}
+            aria-expanded={profileOpen}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-purple/20 text-sm font-semibold text-brand-purple"
           >
             {initials(user?.fullName)}

@@ -68,6 +68,16 @@ namespace backend_EventMoment.Controllers
             return Ok(result);
         }
 
+        [HttpGet("stats")]
+        public async Task<IActionResult> GetStats([FromQuery] Guid? eventId = null)
+        {
+            if (!TryGetOrganizerId(out var organizerId))
+                return Unauthorized();
+
+            var result = await _service.GetEventStatsAsync(organizerId, eventId);
+            return Ok(result);
+        }
+
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateGuestDto dto)
         {

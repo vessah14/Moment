@@ -1,4 +1,5 @@
 using backend_EventMoment.Data;
+using backend_EventMoment.Dtos;
 using backend_EventMoment.Interfaces;
 using backend_EventMoment.Models;
 using Microsoft.EntityFrameworkCore;
@@ -141,6 +142,26 @@ namespace backend_EventMoment.Services
             var entities = await query.OrderBy(g => g.FullName).ToListAsync();
             var checkins = await CheckinsForAsync(entities.Select(g => g.Id));
             return await WithInvitationsAsync(entities.Select(g => Map(g, checkins.TryGetValue(g.Id, out var at) ? at : null)).ToList());
+        }
+
+        public async Task<List<GuestEventStatsDto>> GetEventStatsAsync(Guid organizerId, Guid? eventId = null)
+        {
+            var query = _context.Guests.AsNoTracking()
+                .Where(g => g.Event.OrganizerId == organizerId);
+            if (eventId.HasValue)
+                query = query.Where(g => g.EventId == eventId.Value);
+
+            return await query
+                .GroupBy(g => g.EventId)
+                .Select(group => new GuestEventStatsDto
+                {
+                    EventId = group.Key,
+                    TotalCount = group.Count(),
+                    ConfirmedCount = group.Count(g => g.Status == GuestStatus.Present),
+                    PendingCount = group.Count(g => g.Status == GuestStatus.EnAttente),
+                    DeclinedCount = group.Count(g => g.Status == GuestStatus.Absent)
+                })
+                .ToListAsync();
         }
 
         public async Task<GuestDTO> UpdateAsync(Guid id, UpdateGuestDto dto, Guid organizerId)

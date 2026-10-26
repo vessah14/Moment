@@ -1,18 +1,29 @@
 using backend_EventMoment;
 using backend_EventMoment.Models;
 using backend_EventMoment.Services;
+using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
 
 namespace backend_EventMoment.Tests;
 
 public class GuestServiceTests
 {
+    [Fact]
+    public void GuestDtos_AllowMissingOptionalContactInformation()
+    {
+        var create = new CreateGuestDto { FullName = "Awa Fall" };
+        var update = new UpdateGuestDto { FullName = "Awa Fall" };
+
+        Assert.True(Validator.TryValidateObject(create, new ValidationContext(create), new List<ValidationResult>(), validateAllProperties: true));
+        Assert.True(Validator.TryValidateObject(update, new ValidationContext(update), new List<ValidationResult>(), validateAllProperties: true));
+    }
+
     private static (Utilisateur organizer, Event_categorie category, Event evt) SeedEvent(
-        Data.AdminDbContext context, EventStatus status = EventStatus.Publie)
+        Data.AdminDbContext context, EventStatus status = EventStatus.Publie, Guid? organizerId = null)
     {
         var organizer = new Utilisateur
         {
-            Id = Guid.NewGuid(),
+            Id = organizerId ?? Guid.NewGuid(),
             Email = "organizer@example.com",
             PasswordHash = "hash",
             FullName = "Organizer",
@@ -51,6 +62,34 @@ public class GuestServiceTests
         context.SaveChanges();
 
         return (organizer, category, evt);
+    }
+
+    [Fact]
+    public async Task GetEventStatsAsync_ReturnsOnlyAggregatedGuestCounts()
+    {
+        var organizerId = Guid.NewGuid();
+        var databaseName = Guid.NewGuid().ToString();
+        var context = TestDbContextFactory.CreateAdminContext(organizerId, databaseName);
+        var (_, _, evt) = SeedEvent(context, organizerId: organizerId);
+        context.Guests.AddRange(
+            new Guest { Id = Guid.NewGuid(), EventId = evt.Id, FullName = "Confirmé", Status = GuestStatus.Present },
+            new Guest { Id = Guid.NewGuid(), EventId = evt.Id, FullName = "En attente", Status = GuestStatus.EnAttente },
+            new Guest { Id = Guid.NewGuid(), EventId = evt.Id, FullName = "Refus", Status = GuestStatus.Absent });
+        await context.SaveChangesAsync();
+
+        var service = new GuestService(context);
+        var allStats = await service.GetEventStatsAsync(organizerId);
+        var eventStats = await service.GetEventStatsAsync(organizerId, evt.Id);
+
+        var stats = Assert.Single(allStats);
+        Assert.Equal(evt.Id, stats.EventId);
+        Assert.Equal(3, stats.TotalCount);
+        Assert.Equal(1, stats.ConfirmedCount);
+        Assert.Equal(1, stats.PendingCount);
+        Assert.Equal(1, stats.DeclinedCount);
+        var filteredStats = Assert.Single(eventStats);
+        Assert.Equal(stats.EventId, filteredStats.EventId);
+        Assert.Equal(stats.TotalCount, filteredStats.TotalCount);
     }
 
     private static Guest SeedGuest(Data.AdminDbContext context, Guid eventId)

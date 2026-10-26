@@ -1,7 +1,5 @@
 import { FileDown } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
-import RsvpDonut from '../../components/analytics/RsvpDonut'
-import VisitsChart from '../../components/analytics/VisitsChart'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import StatCard from '../../components/dashboard/StatCard'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import { listEvents } from '../../api/events'
@@ -9,6 +7,9 @@ import { listGuests } from '../../api/guests'
 import { getEventStats } from '../../api/eventStats'
 import { downloadCsv } from '../../utils/csv'
 import { GUEST_STATUS_LABELS } from '../../utils/guestStatus'
+
+const RsvpDonut = lazy(() => import('../../components/analytics/RsvpDonut'))
+const VisitsChart = lazy(() => import('../../components/analytics/VisitsChart'))
 
 export default function Analytics() {
   const [events, setEvents] = useState([])
@@ -129,12 +130,16 @@ export default function Analytics() {
           <div className="mt-6 grid gap-6 lg:grid-cols-2">
             <div className="rounded-2xl border border-border-soft bg-panel p-5">
               <h2 className="font-semibold text-ink">Visites et partages</h2>
-              <VisitsChart data={visitsData} />
+              <Suspense fallback={<p role="status" className="mt-4 text-sm text-faint">Chargement du graphique…</p>}>
+                <VisitsChart data={visitsData} />
+              </Suspense>
             </div>
 
             <div className="rounded-2xl border border-border-soft bg-panel p-5">
               <h2 className="font-semibold text-ink">Répartition RSVP</h2>
-              <RsvpDonut data={rsvpData} />
+              <Suspense fallback={<p role="status" className="mt-4 text-sm text-faint">Chargement du graphique…</p>}>
+                <RsvpDonut data={rsvpData} />
+              </Suspense>
               <div className="mt-2 space-y-2">
                 {rsvpData.map((item) => (
                   <div key={item.name} className="flex items-center justify-between text-sm">

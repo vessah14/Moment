@@ -94,6 +94,8 @@ export default function Header() {
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
+            aria-label={menuOpen ? 'Fermer le menu principal' : 'Ouvrir le menu principal'}
+            aria-expanded={menuOpen}
             className="rounded-lg p-1.5 text-ink lg:hidden"
           >
             {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}

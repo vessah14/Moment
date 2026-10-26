@@ -1,13 +1,5 @@
-import {
-  Building2,
-  Camera,
-  Eye,
-  EyeOff,
-  GraduationCap,
-  User,
-  Users,
-} from 'lucide-react'
-import { useRef, useState } from 'react'
+import { Eye, EyeOff } from 'lucide-react'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { register } from '../../api/auth'
 import logoMark from '../../assets/logo-mark.png'
@@ -19,13 +11,6 @@ import PasswordStrengthBar from './PasswordStrengthBar'
 const GOOGLE_ENABLED = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID)
 const FACEBOOK_ENABLED = Boolean(import.meta.env.VITE_FACEBOOK_APP_ID)
 
-const ACCOUNT_TYPES = [
-  { label: 'Particulier', icon: User },
-  { label: 'Entreprise', icon: Building2 },
-  { label: 'École', icon: GraduationCap },
-  { label: 'Association', icon: Users },
-]
-
 export default function SignupForm() {
   const navigate = useNavigate()
   const [firstName, setFirstName] = useState('')
@@ -33,22 +18,11 @@ export default function SignupForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [accountType, setAccountType] = useState('Particulier')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
-  const [avatarUrl, setAvatarUrl] = useState(null)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
-  const avatarInputRef = useRef(null)
-
-  const handleAvatarChange = (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (avatarUrl) URL.revokeObjectURL(avatarUrl)
-    setAvatarUrl(URL.createObjectURL(file))
-  }
-
   const emailIncomplete = email.length > 0 && !/^\S+@\S+\.\S+$/.test(email)
   const passwordMismatch =
     confirmPassword.length > 0 && password !== confirmPassword
@@ -85,34 +59,6 @@ export default function SignupForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-        <div className="flex items-center gap-4">
-          <button
-            type="button"
-            onClick={() => avatarInputRef.current?.click()}
-            className="group relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-dashed border-border bg-surface-2 text-faint transition hover:border-brand-purple"
-          >
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <Camera className="h-5 w-5" />
-            )}
-            <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-white opacity-0 transition group-hover:opacity-100">
-              <Camera className="h-4 w-4" />
-            </span>
-          </button>
-          <div>
-            <p className="text-sm font-medium text-ink">Photo de profil</p>
-            <p className="text-xs text-faint">Optionnel · PNG ou JPG</p>
-          </div>
-          <input
-            ref={avatarInputRef}
-            type="file"
-            accept="image/png,image/jpeg"
-            className="hidden"
-            onChange={handleAvatarChange}
-          />
-        </div>
-
         <div className="grid grid-cols-2 gap-4">
           <label className="block">
             <span className="text-sm font-medium text-ink">Prénom</span>
@@ -230,27 +176,6 @@ export default function SignupForm() {
             </span>
           )}
         </label>
-
-        <div>
-          <span className="text-sm font-medium text-ink">Type de compte</span>
-          <div className="mt-2 grid grid-cols-2 gap-3">
-            {ACCOUNT_TYPES.map((type) => (
-              <button
-                key={type.label}
-                type="button"
-                onClick={() => setAccountType(type.label)}
-                className={`flex items-center gap-2.5 rounded-lg border px-4 py-3 text-left text-sm font-medium transition ${
-                  accountType === type.label
-                    ? 'border-brand-purple bg-brand-purple/10 text-ink'
-                    : 'border-border text-muted hover:border-faint'
-                }`}
-              >
-                <type.icon className="h-4 w-4 shrink-0" />
-                {type.label}
-              </button>
-            ))}
-          </div>
-        </div>
 
         {error && (
           <p className="rounded-lg border border-danger/30 bg-danger/10 px-4 py-2.5 text-sm text-danger">

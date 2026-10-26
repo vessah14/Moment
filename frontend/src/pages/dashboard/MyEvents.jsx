@@ -10,6 +10,7 @@ import {
 import { eventShareUrl } from '../../api/client'
 import { trackPublicEvent } from '../../api/publicEvents'
 import { listEventCategories } from '../../api/eventCategories'
+import { listGuestStats } from '../../api/guests'
 import { useToast } from '../../utils/useToast'
 import EventCard from '../../components/events/EventCard'
 import DashboardLayout from '../../components/layout/DashboardLayout'
@@ -23,6 +24,7 @@ export default function MyEvents () {
   const toast = useToast()
   const [events, setEvents] = useState([])
   const [categories, setCategories] = useState([])
+  const [guestStats, setGuestStats] = useState(null)
   const [filter, setFilter] = useState('Tous')
   const [query, setQuery] = useState('')
   const [showArchived, setShowArchived] = useState(false)
@@ -34,16 +36,19 @@ export default function MyEvents () {
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    Promise.all([listEvents(), listEventCategories()])
-      .then(([eventsData, categoriesData]) => {
+    Promise.allSettled([listEvents(), listEventCategories(), listGuestStats()])
+      .then(([eventsResult, categoriesResult, guestStatsResult]) => {
         if (cancelled) return
-        setEvents(eventsData ?? [])
-        setCategories(categoriesData ?? [])
-        setError('')
-      })
-      .catch(err => {
-        if (cancelled) return
-        setError(err.message || 'Impossible de charger vos événements.')
+        if (eventsResult.status === 'rejected' || categoriesResult.status === 'rejected') {
+          setError('Impossible de charger vos événements.')
+          return
+        }
+        setEvents(eventsResult.value ?? [])
+        setCategories(categoriesResult.value ?? [])
+        setGuestStats(guestStatsResult.status === 'fulfilled' ? guestStatsResult.value ?? [] : null)
+        setError(guestStatsResult.status === 'rejected'
+          ? 'Les données RSVP ne sont pas disponibles pour le moment.'
+          : '')
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -57,6 +62,10 @@ export default function MyEvents () {
     const map = new Map(categories.map(c => [c.id, c.label]))
     return categoryId => map.get(categoryId) ?? '—'
   }, [categories])
+  const guestStatsByEvent = useMemo(
+    () => new Map((guestStats ?? []).map(stats => [stats.eventId, stats])),
+    [guestStats]
+  )
 
   const activeEvents = events.filter(e => e.status !== 'Archive')
   const archivedEvents = events.filter(e => e.status === 'Archive')
@@ -153,17 +162,19 @@ export default function MyEvents () {
       })
     )
 
-  const toCardProps = event => ({
-    name: event.name,
-    status: event.isSuspended ? 'Suspendu' : statusLabel(event.status),
-    category: categoryLabel(event.categoryId),
-    date: formatEventDate(event.eventDate),
-    location: '—',
-    progressLabel: 'RSVP',
-    confirmed: 0,
-    total: 0,
-    barColor: 'bg-success'
-  })
+  const toCardProps = event => {
+    const eventGuestStats = guestStatsByEvent.get(event.id)
+    return {
+      name: event.name,
+      status: event.isSuspended ? 'Suspendu' : statusLabel(event.status),
+      category: categoryLabel(event.categoryId),
+      date: formatEventDate(event.eventDate),
+      progressLabel: guestStats === null ? null : 'Réponses RSVP',
+      confirmed: eventGuestStats?.confirmedCount ?? 0,
+      total: eventGuestStats?.totalCount ?? 0,
+      barColor: 'bg-success'
+    }
+  }
 
   return (
     <DashboardLayout>

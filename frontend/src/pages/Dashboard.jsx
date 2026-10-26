@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { listEvents } from '../api/events'
 import { listEventCategories } from '../api/eventCategories'
-import { listGuests } from '../api/guests'
+import { listGuestStats } from '../api/guests'
 import { getCurrentUser } from '../api/client'
 import QuickActions from '../components/dashboard/QuickActions'
 import RecentEventsTable from '../components/dashboard/RecentEventsTable'
@@ -12,16 +12,16 @@ export default function Dashboard() {
   const user = getCurrentUser()
   const [events, setEvents] = useState([])
   const [categories, setCategories] = useState([])
-  const [guests, setGuests] = useState([])
+  const [guestStats, setGuestStats] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    Promise.all([listEvents(), listEventCategories(), listGuests()])
-      .then(([eventsData, categoriesData, guestsData]) => {
+    Promise.all([listEvents(), listEventCategories(), listGuestStats()])
+      .then(([eventsData, categoriesData, guestStatsData]) => {
         setEvents(eventsData ?? [])
         setCategories(categoriesData ?? [])
-        setGuests(guestsData ?? [])
+        setGuestStats(guestStatsData ?? [])
       })
       .catch((err) => setError(err.message || 'Impossible de charger le tableau de bord.'))
       .finally(() => setLoading(false))
@@ -32,20 +32,17 @@ export default function Dashboard() {
     return (categoryId) => map.get(categoryId) ?? '—'
   }, [categories])
 
-  const guestsByEvent = useMemo(() => {
-    const map = new Map()
-    for (const g of guests) {
-      if (!map.has(g.eventId)) map.set(g.eventId, [])
-      map.get(g.eventId).push(g)
-    }
-    return map
-  }, [guests])
+  const guestStatsByEvent = useMemo(
+    () => new Map(guestStats.map((stats) => [stats.eventId, stats])),
+    [guestStats],
+  )
 
   const activeEvents = events.filter((e) => e.status !== 'Archive')
   const publishedCount = activeEvents.filter((e) => e.status === 'Publie').length
   const draftCount = activeEvents.filter((e) => e.status === 'Brouillon').length
-  const confirmedGuests = guests.filter((g) => g.status === 'Present').length
-  const pendingGuests = guests.filter((g) => g.status === 'EnAttente').length
+  const totalGuests = guestStats.reduce((total, stats) => total + stats.totalCount, 0)
+  const confirmedGuests = guestStats.reduce((total, stats) => total + stats.confirmedCount, 0)
+  const pendingGuests = guestStats.reduce((total, stats) => total + stats.pendingCount, 0)
 
   const nextEvent = useMemo(() => {
     const today = new Date()
@@ -63,26 +60,26 @@ export default function Dashboard() {
       .sort((a, b) => new Date(b.eventDate ?? 0) - new Date(a.eventDate ?? 0))
       .slice(0, 5)
       .map((event) => {
-        const eventGuests = guestsByEvent.get(event.id) ?? []
+        const eventGuests = guestStatsByEvent.get(event.id)
         return {
           id: event.id,
           name: event.name,
           category: categoryLabel(event.categoryId),
           date: event.eventDate,
           status: event.status,
-          confirmed: eventGuests.filter((g) => g.status === 'Present').length,
-          total: eventGuests.length,
+          confirmed: eventGuests?.confirmedCount ?? 0,
+          total: eventGuests?.totalCount ?? 0,
         }
       })
-  }, [activeEvents, guestsByEvent, categoryLabel])
+  }, [activeEvents, guestStatsByEvent, categoryLabel])
 
   const STATS = [
     { label: 'Événements', value: String(activeEvents.length), hint: `${publishedCount} publiés · ${draftCount} brouillon(s)` },
-    { label: 'Invités', value: String(guests.length) },
+    { label: 'Invités', value: String(totalGuests) },
     {
       label: 'Confirmés',
       value: String(confirmedGuests),
-      hint: guests.length ? `${Math.round((confirmedGuests / guests.length) * 100)}% de réponses` : undefined,
+      hint: totalGuests ? `${Math.round((confirmedGuests / totalGuests) * 100)}% de réponses` : undefined,
       valueStyle: 'brand',
     },
     { label: 'En attente', value: String(pendingGuests), valueStyle: 'brand' },

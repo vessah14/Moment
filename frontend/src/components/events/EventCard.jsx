@@ -24,23 +24,25 @@ export default function EventCard ({
       <div className='p-5'>
         <h3 className='font-semibold text-ink'>{name}</h3>
         <p className='mt-1 text-sm text-faint'>
-          {category} · {date} · {location}
+          {[category, date, location].filter(Boolean).join(' · ')}
         </p>
 
-        <div className='mt-4'>
-          <div className='flex items-center justify-between text-xs text-faint'>
-            <span>{progressLabel}</span>
-            <span className='font-mono text-ink'>
-              {total ? `${confirmed}/${total}` : '—'}
-            </span>
+        {progressLabel && (
+          <div className='mt-4'>
+            <div className='flex items-center justify-between text-xs text-faint'>
+              <span>{progressLabel}</span>
+              <span className='font-mono text-ink'>
+                {total > 0 ? `${confirmed}/${total}` : 'Aucun invité'}
+              </span>
+            </div>
+            <div className='mt-1.5 h-1 rounded-full bg-border-soft'>
+              <div
+                className={`h-full rounded-full ${barColor}`}
+                style={{ width: `${total ? (confirmed / total) * 100 : 0}%` }}
+              />
+            </div>
           </div>
-          <div className='mt-1.5 h-1 rounded-full bg-border-soft'>
-            <div
-              className={`h-full rounded-full ${barColor}`}
-              style={{ width: `${total ? (confirmed / total) * 100 : 0}%` }}
-            />
-          </div>
-        </div>
+        )}
 
         <div
           className={`mt-5 gap-2 ${

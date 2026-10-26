@@ -9,11 +9,11 @@ namespace backend_EventMoment.Models
         [Required, MaxLength(255)]
         public string FullName { get; set; } = string.Empty;
 
-        [Required, Phone]
-        public string Phone { get; set; } = string.Empty;
+        [Phone]
+        public string? Phone { get; set; }
 
-        [Required, EmailAddress]
-        public string Email { get; set; } = string.Empty;
+        [EmailAddress]
+        public string? Email { get; set; }
 
         public GuestStatus Status { get; set; } = GuestStatus.EnAttente;
 
