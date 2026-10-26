@@ -33,3 +33,11 @@ export function consumeReturnPath() {
     return null
   }
 }
+
+export function peekReturnPath() {
+  try {
+    return sanitize(sessionStorage.getItem(STORAGE_KEY))
+  } catch {
+    return null
+  }
+}

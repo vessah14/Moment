@@ -123,7 +123,7 @@
   stroke-linecap: round;
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
-  animation: brand-loader-draw 0.9s cubic-bezier(0.6, 0.1, 0.2, 1) 0.1s forwards;
+  animation: brand-loader-draw 0.4s cubic-bezier(0.6, 0.1, 0.2, 1) 0.05s forwards;
 }
 
 .brand-loader-dot {
@@ -131,7 +131,7 @@
   transform-box: fill-box;
   transform-origin: center;
   transform: scale(0);
-  animation: brand-loader-dot 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) 0.85s forwards;
+  animation: brand-loader-dot 0.25s cubic-bezier(0.3, 1.6, 0.5, 1) 0.3s forwards;
 }
 
 .brand-loader-wordmark {
@@ -142,7 +142,7 @@
   letter-spacing: 0.32em;
   opacity: 0;
   transform: translateY(6px);
-  animation: brand-loader-wordmark 0.5s ease 1s forwards;
+  animation: brand-loader-wordmark 0.25s ease 0.35s forwards;
 }
 
 .invitation-loader {

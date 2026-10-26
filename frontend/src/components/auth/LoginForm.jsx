@@ -1,7 +1,7 @@
 import { Eye, EyeOff } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { consumeReturnPath, returnPathFrom } from '../../utils/returnPath'
+import { consumeReturnPath, peekReturnPath, returnPathFrom } from '../../utils/returnPath'
 import { login } from '../../api/auth'
 import logoMark from '../../assets/logo-mark.png'
 import Button from '../ui/Button'
@@ -19,6 +19,10 @@ export default function LoginForm() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const returnPath = returnPathFrom(location) ?? peekReturnPath()
+  const selectedTemplate = returnPath?.startsWith('/dashboard/evenements/nouveau')
+    ? new URLSearchParams(returnPath.split('?')[1] ?? '').get('modele')
+    : null
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -47,6 +51,13 @@ export default function LoginForm() {
         <p className="mt-2 text-sm text-muted">
           Retrouvez vos événements et vos invités.
         </p>
+        {returnPath && (
+          <p className="mt-4 rounded-lg border border-brand-purple/20 bg-brand-purple/5 px-4 py-3 text-left text-sm text-ink">
+            {selectedTemplate
+              ? `Après connexion, le modèle « ${selectedTemplate} » sera repris pour créer votre événement.`
+              : 'Après connexion, vous retrouverez la page que vous souhaitiez consulter.'}
+          </p>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-5">
@@ -155,6 +166,7 @@ export default function LoginForm() {
         Pas encore de compte ?{' '}
         <Link
           to="/inscription"
+          state={location.state}
           className="font-medium text-brand-purple hover:underline"
         >
           Créer un compte

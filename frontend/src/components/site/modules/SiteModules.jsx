@@ -275,9 +275,15 @@ export function SeatingModule({ tables = [], slug, themed, editable, findSeat })
               autoComplete="name"
               placeholder="Prénom et nom, comme sur votre invitation"
               disabled={editable}
+              aria-describedby={editable ? undefined : 'seating-search-help'}
             />
           </span>
         </label>
+        {!editable && (
+          <p id="seating-search-help" className={c.muted} style={{ margin: '.5rem 0 0' }}>
+            Saisissez au moins 3 caractères, comme indiqué sur votre invitation.
+          </p>
+        )}
         <button className={c.btn} type="submit" disabled={editable || state.status === 'loading' || name.trim().length < 3} style={{ marginTop: '1rem', width: '100%' }}>
           <MapPin style={{ width: 16, height: 16 }} />
           {state.status === 'loading' ? 'Recherche…' : 'Trouver ma place'}

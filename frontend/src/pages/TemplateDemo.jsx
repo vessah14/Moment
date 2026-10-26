@@ -177,6 +177,12 @@ function Demo({ theme }) {
           <ArrowLeft className="h-4 w-4" />
           Tous les modèles
         </Link>
+        <span
+          aria-label="Aperçu interactif avec données de démonstration"
+          className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-semibold text-white/90"
+        >
+          Aperçu interactif · données de démonstration
+        </span>
         <span className="hidden text-[#A8A1D1] 2xl:inline">
           Démo du modèle <b className="text-white">{template.name}</b> · contenu d'exemple.
           {blocks.includes('RSVP') && ` Essayez la réponse (${demo.guest})`}

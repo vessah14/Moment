@@ -1,6 +1,6 @@
 import { Eye, EyeOff } from 'lucide-react'
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { register } from '../../api/auth'
 import logoMark from '../../assets/logo-mark.png'
 import Button from '../ui/Button'
@@ -13,6 +13,7 @@ const FACEBOOK_ENABLED = Boolean(import.meta.env.VITE_FACEBOOK_APP_ID)
 
 export default function SignupForm() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
@@ -246,6 +247,7 @@ export default function SignupForm() {
         Déjà un compte ?{' '}
         <Link
           to="/connexion"
+          state={location.state}
           className="font-medium text-brand-purple hover:underline"
         >
           Se connecter
