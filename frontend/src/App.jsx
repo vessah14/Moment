@@ -3,9 +3,9 @@ import { Route, Routes, useLocation } from 'react-router-dom'
 import CookieConsent from './components/layout/CookieConsent'
 import Footer from './components/layout/Footer'
 import Header from './components/layout/Header'
-import Hero from './components/home/Hero'
 import RequireAuth from './components/auth/RequireAuth'
 import ErrorBoundary from './components/ErrorBoundary'
+import BrandLoader from './components/ui/BrandLoader'
 import PageAnimations from './components/PageAnimations'
 import ScrollToTop from './components/ScrollToTop'
 import BackToTop from './components/layout/BackToTop'
@@ -65,24 +65,11 @@ function SiteLayout ({ children }) {
 
 function RouteLoader ({ children }) {
   const location = useLocation()
+  const fallbackText = location.pathname === '/'
+    ? 'Chargement de la page d’accueil…'
+    : 'Chargement de l’application…'
 
-  const fallback =
-    location.pathname === '/' ? (
-      <div className='relative overflow-hidden bg-bg'>
-        <Hero />
-        <div className='pointer-events-none absolute inset-0 bg-white/10' />
-        <div className='absolute inset-0 flex items-center justify-center'>
-          <div className='flex items-center gap-3 rounded-full border border-white/20 bg-surface/80 px-5 py-3 text-sm font-medium text-ink shadow-[0_18px_40px_rgba(15,23,42,0.12)] backdrop-blur-sm'>
-            <div className='h-5 w-5 animate-spin rounded-full border-2 border-brand-purple/25 border-t-brand-purple' />
-            Chargement de la page d’accueil…
-          </div>
-        </div>
-      </div>
-    ) : (
-      <LoadingPage text='Chargement de l’application…' />
-    )
-
-  return <Suspense fallback={fallback}>{children}</Suspense>
+  return <Suspense fallback={<BrandLoader text={fallbackText} />}>{children}</Suspense>
 }
 
 function App () {

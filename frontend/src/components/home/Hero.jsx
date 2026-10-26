@@ -9,9 +9,8 @@ import { TEMPLATES } from '../../data/templates'
 import Button from '../ui/Button'
 import FestiveBackground from './FestiveBackground'
 
-// En-tête de l'accueil (repris du prototype) : titre, trois téléphones qui montrent de
-// vrais modèles (captures des démos) et changent toutes les 4,5 s, bulles de notifications
-// qui flottent, puis bande défilante des types d'événements.
+// En-tête de l'accueil : titre, trois téléphones montrant de vrais modèles et bulles
+// de notifications flottantes.
 
 const PREMIUM_COUNT = TEMPLATES.filter((t) => t.theme).length
 const SHOTS = [
@@ -19,13 +18,6 @@ const SHOTS = [
   { src: ndopShot, alt: 'Modèle Ndop pour une dot' },
   { src: campusShot, alt: 'Modèle Campus pour une journée culturelle' },
   { src: fiestaShot, alt: 'Modèle Fiesta pour un anniversaire' },
-]
-const OCCASIONS = [
-  'Mariage', 'Dot', 'Anniversaire', 'Baptême', 'Baby shower', 'Obsèques', 'Retrait de deuil',
-  'Remise des diplômes', 'Journée culturelle', 'Portes ouvertes', 'Kermesse', 'Conférence',
-  'Séminaire', 'Lancement de produit', "Soirée d'entreprise", 'Concert', 'Tournoi',
-  'Journée citoyenne', 'Noël', 'Nouvel An', 'Saint-Valentin', 'Pâques', 'Aïd', '20 mai',
-  'Fête des mères', 'Réunion familiale', 'Crémaillère', 'Culte et veillée',
 ]
 const TRUST = ['Gratuit pour commencer', 'Aucune application à installer', 'Orange Money et MTN MoMo']
 
@@ -140,20 +132,6 @@ export default function Hero() {
         </div>
       </div>
 
-      <div className="relative pt-4 pb-10" aria-label="Types d'événements">
-        <p className="mb-4 text-center font-mono text-[0.72rem] tracking-[0.12em] text-faint uppercase">
-          Un modèle pour chaque occasion
-        </p>
-        <div className="hero-marquee">
-          <div>
-            {[...OCCASIONS, ...OCCASIONS].map((t, i) => (
-              <span key={i} aria-hidden={i >= OCCASIONS.length || undefined}>
-                {t}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
     </section>
   )
 }

@@ -91,6 +91,108 @@
   }
 }
 
+.brand-loader {
+  display: grid;
+  min-height: 100svh;
+  place-items: center;
+  overflow: hidden;
+  background: #0b1020;
+  color: #f8f9fc;
+}
+
+.brand-loader-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+  text-align: center;
+}
+
+.brand-loader-mark {
+  width: clamp(5rem, 18vw, 7rem);
+  overflow: visible;
+}
+
+.brand-loader-mark-base,
+.brand-loader-mark-draw {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 10;
+}
+
+.brand-loader-mark-base {
+  stroke: url(#brand-loader-gradient);
+}
+
+.brand-loader-mark-draw {
+  stroke: #fff;
+  stroke-dasharray: 36 220;
+  stroke-dashoffset: 256;
+  opacity: 0.8;
+  animation: brand-loader-draw 2s linear infinite;
+}
+
+.brand-loader-dot {
+  fill: #f4bd4b;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: brand-loader-dot 2s ease-in-out infinite;
+}
+
+.brand-loader-wordmark {
+  margin-top: 1.25rem;
+  color: #f0efff;
+  font-family: var(--font-heading);
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+}
+
+.brand-loader-message {
+  margin-top: 1.25rem;
+  color: #9ba3c2;
+  font-size: 0.875rem;
+}
+
+@keyframes brand-loader-draw {
+  0% {
+    stroke-dashoffset: 256;
+    opacity: 0;
+  }
+  10%,
+  80% {
+    opacity: 0.85;
+  }
+  100% {
+    stroke-dashoffset: -256;
+    opacity: 0;
+  }
+}
+
+@keyframes brand-loader-dot {
+  0%,
+  100% {
+    opacity: 0.65;
+    transform: scale(0.85);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-loader-mark-draw {
+    stroke-dashoffset: 0;
+    animation: none;
+  }
+
+  .brand-loader-dot {
+    animation: none;
+  }
+}
+
 body {
   margin: 0;
   background: var(--color-bg);
@@ -382,29 +484,101 @@ h3 {
   }
 }
 
-.hero-marquee {
+.home-event-banner {
   overflow: hidden;
-  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  padding: 1.15rem 0 1.4rem;
 }
 
-.hero-marquee > div {
+.home-event-banner-label {
+  margin: 0 0 0.85rem;
+  color: var(--color-faint);
+  font-family: var(--font-montserrat);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.home-event-ticker,
+.home-event-ribbon {
+  overflow: hidden;
+}
+
+.home-event-ticker-track {
   display: flex;
-  gap: 0.6rem;
   width: max-content;
-  animation: hero-slide 60s linear infinite;
+  animation: home-event-ticker-scroll 55s linear infinite;
 }
 
-.hero-marquee span {
+.home-event-ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.4rem;
   white-space: nowrap;
-  padding: 0.5rem 1rem;
-  border-radius: 999px;
-  border: 1px solid var(--color-border-soft);
-  color: var(--color-muted);
-  font-size: 0.88rem;
-  background: color-mix(in srgb, var(--color-surface) 60%, transparent);
+  padding: 0.72rem 0.45rem 0.72rem 1.25rem;
+  background: #f2c94c;
+  color: #171326;
+  font-family: var(--font-montserrat);
+  font-size: clamp(0.76rem, 2vw, 0.9rem);
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
-@keyframes hero-slide {
+.home-event-ticker-separator {
+  color: #9c481f;
+  font-size: 0.8rem;
+}
+
+.home-event-ribbon {
+  margin-top: 0.38rem;
+  background: linear-gradient(100deg, #fb7656, #f04a67 52%, #ef5c55);
+  color: #fff4ec;
+}
+
+.home-event-ribbon-track,
+.home-event-ribbon-set {
+  display: flex;
+  width: max-content;
+  align-items: center;
+}
+
+.home-event-ribbon-track {
+  animation: home-event-ribbon-scroll 24s linear infinite;
+}
+
+.home-event-ribbon-set {
+  min-width: 100vw;
+  justify-content: space-around;
+  gap: clamp(1.25rem, 5vw, 4rem);
+  padding: 0.22rem 1rem;
+}
+
+.home-event-ribbon-mark {
+  width: clamp(1.55rem, 4vw, 2rem);
+  height: clamp(1.55rem, 4vw, 2rem);
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.home-event-ribbon-mark-dots circle {
+  fill: currentColor;
+  stroke: none;
+}
+
+.home-event-ribbon-mark-lines {
+  stroke-width: 1.5;
+}
+
+@keyframes home-event-ticker-scroll {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes home-event-ribbon-scroll {
   to {
     transform: translateX(-50%);
   }
@@ -412,7 +586,8 @@ h3 {
 
 @media (prefers-reduced-motion: reduce) {
   .hero-float,
-  .hero-marquee > div {
+  .home-event-ticker-track,
+  .home-event-ribbon-track {
     animation: none;
   }
 }

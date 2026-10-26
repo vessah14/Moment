@@ -4,6 +4,7 @@ import AllIncluded from '../components/home/AllIncluded'
 import Faq from '../components/home/Faq'
 import FinalCta from '../components/home/FinalCta'
 import Hero from '../components/home/Hero'
+import HomeEventBanner from '../components/home/HomeEventBanner'
 import HowItWorks from '../components/home/HowItWorks'
 import PopularTemplates from '../components/home/PopularTemplates'
 import PricingTeaser from '../components/home/PricingTeaser'
@@ -25,6 +26,7 @@ export default function Home() {
 
   return (
     <>
+      <HomeEventBanner />
       <Hero />
       <Universes />
       <HowItWorks />
