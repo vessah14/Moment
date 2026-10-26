@@ -145,6 +145,106 @@
   animation: brand-loader-wordmark 0.5s ease 1s forwards;
 }
 
+.invitation-loader {
+  display: grid;
+  min-height: 100svh;
+  place-items: center;
+  padding: 2rem 1.25rem;
+  text-align: center;
+}
+
+.invitation-loader-card {
+  width: min(100%, 28rem);
+}
+
+.invitation-loader-seal {
+  display: grid;
+  width: 5rem;
+  height: 5rem;
+  margin: 0 auto 1.75rem;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--color-brand-purple) 45%, transparent);
+  border-radius: 50%;
+  color: var(--color-brand-purple);
+  animation: invitation-seal-breathe 1.8s ease-in-out infinite;
+}
+
+.invitation-loader-seal svg {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.invitation-loader-eyebrow {
+  margin: 0 0 0.6rem;
+  color: var(--color-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.invitation-loader-title {
+  margin: 0;
+  font-family: var(--site-heading-font, var(--font-heading));
+  font-size: clamp(1.8rem, 7vw, 2.7rem);
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.invitation-loader-event {
+  margin: 0.8rem 0 0;
+  color: var(--color-muted);
+  font-size: 1rem;
+}
+
+.invitation-loader-recipient {
+  margin: 0.65rem 0 0;
+  color: var(--color-ink);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.invitation-loader-progress {
+  display: block;
+  width: min(10rem, 45vw);
+  height: 2px;
+  margin: 2rem auto 0;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--color-brand-purple) 18%, transparent);
+}
+
+.invitation-loader-progress::after {
+  display: block;
+  width: 40%;
+  height: 100%;
+  background: var(--color-brand-purple);
+  content: '';
+  animation: invitation-progress 1.2s ease-in-out infinite;
+}
+
+.invitation-loader-caption {
+  margin: 0.8rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+
+@keyframes invitation-seal-breathe {
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 0 2rem color-mix(in srgb, var(--color-brand-purple) 16%, transparent);
+  }
+}
+
+@keyframes invitation-progress {
+  from {
+    transform: translateX(-110%);
+  }
+
+  to {
+    transform: translateX(260%);
+  }
+}
+
 @keyframes brand-loader-draw {
   to {
     stroke-dashoffset: 0;
@@ -165,6 +265,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .invitation-loader-seal,
+  .invitation-loader-progress::after {
+    animation: none;
+  }
+
   .brand-loader-mark-draw {
     stroke-dashoffset: 0;
     animation: none;

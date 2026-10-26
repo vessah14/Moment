@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { mediaUrl } from '../api/client'
 import { getPublicGifts } from '../api/giftRegistry'
 import { getPublicInvitation } from '../api/guests'
 import { getPublicSeating, getPublicSite, submitPublicEventRsvp, trackPublicEvent } from '../api/publicEvents'
 import logoMark from '../assets/logo-mark.png'
 import SitePage from '../components/site/SitePage'
+import InvitationLoader from '../components/site/InvitationLoader'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
 import { formatEventDate } from '../utils/eventStatus'
 import { isInviteCode } from '../utils/mobileMoney'
@@ -105,16 +106,23 @@ function eventSeo (site, slug) {
 // du Builder : la page publiée est identique à ce que l'organisateur a composé.
 export default function MiniSite () {
   const { slug } = useParams()
+  const location = useLocation()
+  const [searchParams] = useSearchParams()
+  const inviteParam = searchParams.get('invite')
+  const invitationPreview = location.state?.invitationPreview
+  const matchingPreview =
+    invitationPreview?.eventSlug === slug &&
+    invitationPreview?.guestId === inviteParam
+      ? invitationPreview
+      : null
   const [site, setSite] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   // Données des modules (liste de cadeaux, tables) et invité arrivé par son lien personnel.
   const [extras, setExtras] = useState({ gifts: [], seatingTables: [] })
-  const [invitation, setInvitation] = useState(null)
+  const [invitation, setInvitation] = useState(matchingPreview)
   const [invitationLoading, setInvitationLoading] = useState(false)
   const [invitationError, setInvitationError] = useState('')
-  const [searchParams] = useSearchParams()
-  const inviteParam = searchParams.get('invite')
   useSeo(eventSeo(error ? null : site, slug))
 
   // Lien personnel : /e/slug?invite=<code>. Le code est retenu sur cet appareil pour que
@@ -131,7 +139,7 @@ export default function MiniSite () {
     }
     if (!isInviteCode(code)) return
     let cancelled = false
-    setInvitation(null)
+    setInvitation(matchingPreview)
     setInvitationLoading(true)
     setInvitationError('')
     getPublicInvitation(code)
@@ -169,7 +177,7 @@ export default function MiniSite () {
     return () => {
       cancelled = true
     }
-  }, [slug, inviteParam])
+  }, [slug, inviteParam, matchingPreview])
 
   useEffect(() => {
     setLoading(true)
@@ -194,11 +202,36 @@ export default function MiniSite () {
       .finally(() => setLoading(false))
   }, [slug])
 
+  const loaderHero = site?.blocks?.find(block => block.blockType === 'Hero')
+  const loaderDisplayTitle = loaderHero
+    ? parseContent(loaderHero.content).title
+    : ''
+  const loaderEventName = invitation?.eventName || site?.event?.name
+
   if (loading) {
+    if (invitationLoading || isInviteCode(inviteParam)) {
+      return (
+        <InvitationLoader
+          invitation={invitation}
+          eventName={loaderEventName}
+          displayTitle={loaderDisplayTitle}
+        />
+      )
+    }
     return (
       <div className='flex min-h-svh items-center justify-center text-sm text-faint'>
         Chargement…
       </div>
+    )
+  }
+
+  if (invitationLoading) {
+    return (
+      <InvitationLoader
+        invitation={invitation}
+        eventName={loaderEventName || slug}
+        displayTitle={loaderDisplayTitle}
+      />
     )
   }
 

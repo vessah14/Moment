@@ -1,5 +1,6 @@
 import { Link2, Mail, Pencil, Plus, Printer, Search, Send, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import Avatar from '../../components/ui/Avatar'
 import Button from '../../components/ui/Button'
 import Pagination from '../../components/ui/Pagination'
@@ -22,6 +23,7 @@ const FILTERS = ['Tous', 'Confirmés', 'En attente', 'Refus']
 
 export default function Guests() {
   const toast = useToast()
+  const [searchParams] = useSearchParams()
   const [events, setEvents] = useState([])
   const [selectedEventId, setSelectedEventId] = useState('')
   const [groups, setGroups] = useState([])
@@ -36,7 +38,7 @@ export default function Guests() {
   const [filter, setFilter] = useState('Tous')
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState(() => new Set())
-  const [addFormOpen, setAddFormOpen] = useState(false)
+  const [addFormOpen, setAddFormOpen] = useState(() => searchParams.get('add') === '1')
   const [newGroupName, setNewGroupName] = useState('')
   const [bulkGroupTarget, setBulkGroupTarget] = useState('')
   const [editingGuest, setEditingGuest] = useState(null)

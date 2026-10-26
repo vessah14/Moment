@@ -1,7 +1,12 @@
-import { FileSpreadsheet, QrCode, ScanLine, Send } from 'lucide-react'
+import { FileSpreadsheet, QrCode, ScanLine, Send, UserPlus } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 const ACTIONS = [
+  {
+    label: 'Ajouter des invités',
+    icon: UserPlus,
+    to: '/dashboard/participants?add=1',
+  },
   { label: 'Envoyer des invitations', icon: Send, to: '/dashboard/invitations' },
   {
     label: 'Importer une liste Excel',

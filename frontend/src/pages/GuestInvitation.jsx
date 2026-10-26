@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { getPublicInvitation, submitPublicRsvp } from '../api/guests'
 import { trackPublicEvent } from '../api/publicEvents'
 import logoMark from '../assets/logo-mark.png'
+import InvitationLoader from '../components/site/InvitationLoader'
 import TicketCard, { ticketEventInfo } from '../components/tickets/TicketCard'
 import Button from '../components/ui/Button'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
@@ -67,7 +68,10 @@ export default function GuestInvitation() {
           setLoading(false)
           return
         }
-        navigate(`/e/${encodeURIComponent(data.eventSlug)}?invite=${encodeURIComponent(guestId)}`, { replace: true })
+        navigate(`/e/${encodeURIComponent(data.eventSlug)}?invite=${encodeURIComponent(guestId)}`, {
+          replace: true,
+          state: { invitationPreview: data },
+        })
       })
       .catch((err) => setError(err.message || 'Invitation introuvable.'))
       .finally(() => setLoading(false))
@@ -133,9 +137,10 @@ export default function GuestInvitation() {
 
   if (loading) {
     return (
-      <div className="flex min-h-svh items-center justify-center bg-bg px-6 py-12">
-        <p className="text-sm text-faint">Chargement de l'invitation…</p>
-      </div>
+      <InvitationLoader
+        invitation={invitation}
+        displayTitle={invitation?.eventName}
+      />
     )
   }
 
