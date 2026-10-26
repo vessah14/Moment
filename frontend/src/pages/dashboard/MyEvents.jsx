@@ -281,6 +281,10 @@ export default function MyEvents () {
                   event.status === 'Brouillon'
                     ? [
                         {
+                          label: 'Ajouter des invités',
+                          to: `/dashboard/participants?eventId=${encodeURIComponent(event.id)}&add=1`
+                        },
+                        {
                           label: 'Modifier',
                           to: `/dashboard/evenements/${event.id}/modifier`
                         },
@@ -300,6 +304,10 @@ export default function MyEvents () {
                         }
                       ]
                     : [
+                        {
+                          label: 'Ajouter des invités',
+                          to: `/dashboard/participants?eventId=${encodeURIComponent(event.id)}&add=1`
+                        },
                         {
                           label: 'Modifier',
                           to: `/dashboard/evenements/${event.id}/modifier`

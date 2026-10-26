@@ -24,8 +24,9 @@ const FILTERS = ['Tous', 'Confirmés', 'En attente', 'Refus']
 export default function Guests() {
   const toast = useToast()
   const [searchParams] = useSearchParams()
+  const requestedEventId = searchParams.get('eventId')
   const [events, setEvents] = useState([])
-  const [selectedEventId, setSelectedEventId] = useState('')
+  const [selectedEventId, setSelectedEventId] = useState(requestedEventId || '')
   const [groups, setGroups] = useState([])
   const [guests, setGuests] = useState([])
   const [accompanyingByGuest, setAccompanyingByGuest] = useState({})
@@ -50,14 +51,17 @@ export default function Guests() {
     listEvents()
       .then((data) => {
         setEvents(data ?? [])
-        if (data?.length) setSelectedEventId(data[0].id)
+        if (data?.length) {
+          const matchingEvent = data.find((event) => event.id === requestedEventId)
+          setSelectedEventId(matchingEvent?.id ?? data[0].id)
+        }
         else setLoading(false)
       })
       .catch((err) => {
         setError(err.message || 'Impossible de charger vos événements.')
         setLoading(false)
       })
-  }, [])
+  }, [requestedEventId])
 
   useEffect(() => {
     if (!selectedEventId) return
