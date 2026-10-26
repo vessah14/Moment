@@ -9,7 +9,10 @@ export default function InvitationLoader({ invitation, eventName, displayTitle }
   const guestFirstName = invitation?.guestFullName?.trim().split(/\s+/)[0]
   const name = invitation?.eventName || eventName
   const heroTitle = displayTitle?.trim()
-  const showEventName = name && heroTitle?.toLocaleLowerCase() !== name.toLocaleLowerCase()
+  const showEventName =
+    name &&
+    heroTitle &&
+    heroTitle.toLocaleLowerCase() !== name.toLocaleLowerCase()
 
   return (
     <main
@@ -41,7 +44,7 @@ export default function InvitationLoader({ invitation, eventName, displayTitle }
         </div>
         <p className='invitation-loader-eyebrow'>Une invitation personnelle</p>
         <h1 className='invitation-loader-title'>
-          {heroTitle || 'Votre invitation arrive'}
+          {heroTitle || name || 'Votre invitation arrive'}
         </h1>
         {showEventName && <p className='invitation-loader-event'>{name}</p>}
         {guestFirstName && (

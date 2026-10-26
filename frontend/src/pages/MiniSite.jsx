@@ -12,6 +12,7 @@ import { formatEventDate } from '../utils/eventStatus'
 import { isInviteCode } from '../utils/mobileMoney'
 import { absoluteUrl, useSeo } from '../utils/seo'
 import { safeCoverPath } from '../utils/sitePage'
+import { displayNameFromTitle, eventRequiresAge, formatEventDisplayTitle } from '../utils/eventTitle'
 import {
   findTemplate,
   ensureRsvpBlock,
@@ -250,16 +251,14 @@ export default function MiniSite () {
   const heroBlock = blocks.find(b => b.blockType === 'Hero')
   const heroContent = heroBlock ? parseContent(heroBlock.content) : {}
   const template = findTemplate(event.template)
-  let birthdayAge = null
-  try {
-    birthdayAge = JSON.parse(event.customFields || '{}')?.birthdayAge ?? null
-  } catch {
-    birthdayAge = null
-  }
-  const birthdayTitle = birthdayAge && template?.categoryCode === 'anniversaire'
-    ? `Les ${birthdayAge} ans de ${event.name.replace(/^Les\s+\d+\s+ans\s+de\s*/i, '').trim()}`
+  const eventFields = parseContent(event.customFields)
+  const birthdayAge = eventFields.birthdayAge ?? null
+  const eventTypeId = eventFields.eventType
+  const displayText = eventFields.display || displayNameFromTitle(heroContent.title)
+  const birthdayTitle = birthdayAge && eventRequiresAge(eventTypeId)
+    ? formatEventDisplayTitle(eventTypeId, birthdayAge, displayText, event.name)
     : event.name
-  const heroTitle = heroContent.title || (template?.categoryCode === 'anniversaire' ? birthdayTitle : event.name)
+  const heroTitle = heroContent.title || birthdayTitle
   const siteStyle = resolveSiteStyle({
     template,
     heroContent,

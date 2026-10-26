@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { LOGO_POLICY } from '../../data/eventTypes'
 import { LOGO_TYPES, prepareLogo } from '../../utils/logoFile'
+import { eventRequiresAge } from '../../utils/eventTitle'
 import { StepTitle } from './EventKindSteps'
 
 const inputClass =
@@ -20,10 +21,10 @@ export function infoErrors(form, type) {
   const errors = {}
   if (!form.name.trim()) errors.name = "Donnez un nom à l'événement."
   if (!form.display.trim()) errors.display = 'Indiquez le texte à afficher en grand.'
-  if (type.id === 'anniversaire') {
+  if (eventRequiresAge(type.id)) {
     const age = Number(form.birthdayAge)
     if (!form.birthdayAge || !Number.isInteger(age) || age < 1 || age > 120)
-      errors.birthdayAge = 'Indiquez un âge entier compris entre 1 et 120 ans.'
+      errors.birthdayAge = 'Indiquez un nombre entier compris entre 1 et 120.'
   }
   if (type.logo === 'required' && !form.organizer.trim()) errors.organizer = "Indiquez le nom de l'organisation."
   if (type.logo === 'required' && !form.logo) errors.logo = "Ajoutez le logo de votre organisation : il sera affiché sur la page et le pass d'entrée."
@@ -187,6 +188,8 @@ function LogoField({ form, type, onChange, error }) {
 
 export default function InfoStep({ form, type, onChange, errors = {} }) {
   const orgRequired = type.logo === 'required'
+  const needsAge = eventRequiresAge(type.id)
+  const isWeddingAnniversary = type.id === 'noces'
   const text = (key, extra = {}) => ({
     id: `f-${key}`,
     value: form[key],
@@ -204,25 +207,38 @@ export default function InfoStep({ form, type, onChange, errors = {} }) {
         lead={`${type.label} · ces informations apparaissent sur la page, l'invitation, le pass d'entrée et l'aperçu WhatsApp.`}
       />
       <form onSubmit={(e) => e.preventDefault()} className="grid gap-4" noValidate>
-        <Field id="f-name" label="Nom de l'événement" must error={errors.name}>
+        <Field
+          id="f-name"
+          label="Nom de l'événement"
+          must
+          hint="Le titre affiché en grand est réglé séparément juste en dessous."
+          error={errors.name}
+        >
           <input type="text" autoComplete="off" placeholder="Ex. Journée culturelle 2027" maxLength={150} {...text('name')} />
         </Field>
         <Field
           id="f-display"
-          label={type.id === 'anniversaire' ? 'Nom de la personne fêtée' : 'Texte affiché en grand'}
+          label={needsAge ? (isWeddingAnniversary ? 'Noms du couple' : 'Nom de la personne fêtée') : 'Texte affiché en grand'}
           must
-          hint={type.id === 'anniversaire' ? 'Son âge et son prénom composeront le titre du modèle.' : 'Pour un couple, séparez les prénoms par « & ».'}
+          hint={needsAge
+            ? (isWeddingAnniversary ? 'Les années de mariage et les prénoms composeront le titre.' : 'Son âge et son prénom composeront le titre.')
+            : 'Pour un couple, séparez les prénoms par « & ».'}
           error={errors.display}
         >
           <input
             type="text"
-            placeholder={type.id === 'anniversaire' ? 'Ex. Awa' : 'Ex. Awa & Ibrahim, ou le nom de l’école'}
+            placeholder={needsAge ? (isWeddingAnniversary ? 'Ex. Awa & Ibrahim' : 'Ex. Awa') : 'Ex. Awa & Ibrahim, ou le nom de l’école'}
             maxLength={120}
             {...text('display')}
           />
         </Field>
-        {type.id === 'anniversaire' && (
-          <Field id="f-birthdayAge" label="Âge célébré" must error={errors.birthdayAge}>
+        {needsAge && (
+          <Field
+            id="f-birthdayAge"
+            label={isWeddingAnniversary ? 'Années de mariage célébrées' : 'Âge célébré'}
+            must
+            error={errors.birthdayAge}
+          >
             <input
               type="number"
               min="1"

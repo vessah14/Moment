@@ -19,6 +19,7 @@ import { BLOCK_CONTENT_DEFAULTS } from '../data/blockDefaults'
 import { EVENT_TYPES, eventType, eventTypeFor, nextFixedDate } from '../data/eventTypes'
 import { invitationStarter } from '../data/invitations'
 import { rsvpSidesStarter } from '../data/rsvpSides'
+import { displayNameFromTitle, eventRequiresAge, formatEventDisplayTitle } from '../utils/eventTitle'
 import { isEventLimitReached, notifyPlanChanged, usePlan } from '../utils/usePlan'
 import {
   findTemplate,
@@ -75,10 +76,7 @@ const dayMonthYear = (iso) =>
 const kickerFor = (type, date) => (type ? [type.label, dayMonthYear(date)].filter(Boolean).join(' · ') : '')
 const isGeneratedKicker = (kicker) => !kicker?.trim() || EVENT_TYPES.some((t) => kicker.startsWith(t.label))
 const displayTitleFor = (form, type) => {
-  const display = form.display.trim()
-  if (type?.id === 'anniversaire' && form.birthdayAge && display)
-    return `Les ${form.birthdayAge} ans de ${display}`
-  return display || form.name.trim()
+  return formatEventDisplayTitle(type?.id, form.birthdayAge, form.display, form.name)
 }
 
 // Formulaire de départ : « Utiliser ce modèle » (?modele=) ou l'accueil du tableau de bord.
@@ -157,10 +155,11 @@ export default function CreateEvent() {
           type: t.id,
           template: custom.template ?? null,
           name: ev.name ?? '',
-          display: t.id === 'anniversaire'
-            ? (hero.title ?? '').replace(/^Les\s+\d+\s+ans\s+de\s+/i, '').trim() ||
-              (ev.name ?? '').replace(/^anniversaire(?:\s+de)?\s*/i, '').trim()
-            : hero.title ?? ev.name ?? '',
+          display: custom.display ?? (
+            eventRequiresAge(t.id)
+              ? displayNameFromTitle(hero.title) || (ev.name ?? '').replace(/^anniversaire(?:\s+de)?\s*/i, '').trim()
+              : hero.title ?? ev.name ?? ''
+          ),
           organizer: custom.organizer?.name ?? '',
           logo: logoUrl ? { url: logoUrl, preview: mediaUrl(logoUrl), label: 'Logo actuel' } : null,
           birthdayAge: custom.birthdayAge ? String(custom.birthdayAge) : '',
@@ -223,7 +222,7 @@ export default function CreateEvent() {
       ...prev,
       type: id,
       template: chosenTemplate?.name ?? null,
-      birthdayAge: id === 'anniversaire' && prev.type === 'anniversaire' ? prev.birthdayAge : '',
+      birthdayAge: eventRequiresAge(id) && eventRequiresAge(prev.type) ? prev.birthdayAge : '',
       // Fête à date fixe (Noël, 20 mai…) : la prochaine date est proposée.
       date: prev.date || nextFixedDate(t.date),
     }))
@@ -277,7 +276,8 @@ export default function CreateEvent() {
           ...existing.custom,
           eventType: type.id,
           template: template?.name ?? null,
-          birthdayAge: type.id === 'anniversaire' && form.birthdayAge ? Number(form.birthdayAge) : null,
+          display: form.display.trim(),
+          birthdayAge: eventRequiresAge(type.id) && form.birthdayAge ? Number(form.birthdayAge) : null,
           description: form.description.trim(),
           timeEnd: form.timeEnd,
           timezone: existing.custom.timezone ?? DEFAULT_TIMEZONE,

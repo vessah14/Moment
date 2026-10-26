@@ -86,6 +86,30 @@ public class GuestServiceTests
     }
 
     [Fact]
+    public async Task GetPublicInvitationAsync_ReturnsHeroTitle_ForPersonalizedDisplay()
+    {
+        var context = TestDbContextFactory.CreateAdminContext();
+        var (_, _, evt) = SeedEvent(context);
+        var guest = SeedGuest(context, evt.Id);
+        context.EventBlocks.Add(new EventBlock
+        {
+            Id = Guid.NewGuid(),
+            EventId = evt.Id,
+            BlockType = "Hero",
+            Position = 0,
+            IsVisible = true,
+            Content = """{"title":"Les 30 ans de Awa"}""",
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow,
+        });
+        await context.SaveChangesAsync();
+
+        var result = await new GuestService(context).GetPublicInvitationAsync(guest.Id);
+
+        Assert.Equal("Les 30 ans de Awa", result?.DisplayTitle);
+    }
+
+    [Fact]
     public async Task GetPublicInvitationAsync_ReturnsNull_ForUnpublishedEvent()
     {
         var context = TestDbContextFactory.CreateAdminContext();

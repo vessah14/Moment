@@ -299,7 +299,35 @@ namespace backend_EventMoment.Services
                 .FirstOrDefaultAsync();
 
             var rules = RsvpRules.Read(await RsvpBlockContentAsync(guest.EventId));
-            return MapInvitation(guest, eventEntity, location, rsvp, rules, checkedInAt);
+            var invitation = MapInvitation(guest, eventEntity, location, rsvp, rules, checkedInAt);
+            invitation.DisplayTitle = await HeroTitleAsync(guest.EventId);
+            return invitation;
+        }
+
+        private Task<string?> HeroBlockContentAsync(Guid eventId) =>
+            _context.EventBlocks.IgnoreQueryFilters().AsNoTracking()
+                .Where(b => b.EventId == eventId && b.BlockType == "Hero")
+                .Select(b => b.Content)
+                .FirstOrDefaultAsync();
+
+        private async Task<string?> HeroTitleAsync(Guid eventId)
+        {
+            var content = await HeroBlockContentAsync(eventId);
+            if (string.IsNullOrWhiteSpace(content)) return null;
+
+            try
+            {
+                using var document = System.Text.Json.JsonDocument.Parse(content);
+                return document.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object
+                    && document.RootElement.TryGetProperty("title", out var title)
+                    && title.ValueKind == System.Text.Json.JsonValueKind.String
+                    ? title.GetString()
+                    : null;
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                return null;
+            }
         }
 
         // Contenu du bloc RSVP : choix « côté », date limite, accompagnants, « Peut-être ».

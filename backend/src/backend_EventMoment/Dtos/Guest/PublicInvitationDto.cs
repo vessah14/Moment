@@ -8,6 +8,7 @@ namespace backend_EventMoment.Models
         public string GuestFullName { get; set; } = string.Empty;
 
         public string EventName { get; set; } = string.Empty;
+        public string? DisplayTitle { get; set; }
         // Adresse du site public (/e/{slug}) : l'invitation y renvoie, avec ?invite=.
         public string EventSlug { get; set; } = string.Empty;
         public DateOnly? EventDate { get; set; }

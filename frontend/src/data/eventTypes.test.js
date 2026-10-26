@@ -71,10 +71,12 @@ describe('informations obligatoires', () => {
     expect(Object.keys(errors)).toEqual(['name', 'date', 'venueAddr'])
   })
 
-  it('requires a valid age for a birthday but not for other event types', () => {
+  it('requires a valid age for birthdays and wedding anniversaries only', () => {
     expect(infoErrors(base, type('anniversaire')).birthdayAge).toBeTruthy()
     expect(infoErrors({ ...base, birthdayAge: '30' }, type('anniversaire'))).toEqual({})
     expect(infoErrors({ ...base, birthdayAge: '30.5' }, type('anniversaire')).birthdayAge).toBeTruthy()
-    expect(infoErrors(base, type('noces'))).toEqual({})
+    expect(infoErrors(base, type('noces')).birthdayAge).toBeTruthy()
+    expect(infoErrors({ ...base, birthdayAge: '10' }, type('noces'))).toEqual({})
+    expect(infoErrors(base, type('mariage'))).toEqual({})
   })
 })

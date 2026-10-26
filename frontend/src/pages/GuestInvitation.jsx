@@ -139,7 +139,7 @@ export default function GuestInvitation() {
     return (
       <InvitationLoader
         invitation={invitation}
-        displayTitle={invitation?.eventName}
+        displayTitle={invitation?.displayTitle}
       />
     )
   }

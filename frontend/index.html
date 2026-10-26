@@ -106,12 +106,9 @@
       .startup-splash-greeting {
         margin: 0;
         font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
-        font-size: clamp(1.2rem, 5vw, 1.6rem);
+        font-size: clamp(1.45rem, 5vw, 2rem);
         font-weight: 700;
         letter-spacing: -0.02em;
-        opacity: 0;
-        transform: translateY(6px);
-        animation: startup-splash-welcome 500ms ease 1s forwards;
       }
       .startup-splash-caption {
         margin: 0;
@@ -123,9 +120,6 @@
       }
       @keyframes startup-splash-star {
         to { transform: scale(1); }
-      }
-      @keyframes startup-splash-welcome {
-        to { opacity: 1; transform: none; }
       }
       @media (prefers-reduced-motion: reduce) {
         #startup-splash { transition: none; }
@@ -166,6 +160,15 @@
       (function () {
         var splash = document.getElementById('startup-splash');
         var greeting = document.getElementById('startup-splash-greeting');
+        var path = window.location.pathname;
+        var isInvitation =
+          path.indexOf('/invitation/') === 0 ||
+          (path.indexOf('/e/') === 0 &&
+            new URLSearchParams(window.location.search).has('invite'));
+        if (isInvitation) {
+          splash.remove();
+          return;
+        }
         try {
           var token = localStorage.getItem('tbf_auth_token');
           var user = JSON.parse(localStorage.getItem('tbf_auth_user') || 'null');

@@ -32,6 +32,7 @@ import {
   updateEventBlock,
 } from '../api/eventBlocks'
 import { formatEventDate } from '../utils/eventStatus'
+import { displayNameFromTitle, eventRequiresAge, formatEventDisplayTitle } from '../utils/eventTitle'
 import {
   defaultFontForTemplate,
   normalizeBlockType,
@@ -208,8 +209,10 @@ export default function Builder() {
           entryAnimation: heroContent.entryAnimation ?? false,
           title: heroContent.title || (() => {
             const age = Number(customFieldOf(eventData, 'birthdayAge')) || null
-            return age && template?.categoryCode === 'anniversaire'
-              ? `Les ${age} ans de ${eventData.name.replace(/^Les\s+\d+\s+ans\s+de\s*/i, '').trim()}`
+            const eventTypeId = customFieldOf(eventData, 'eventType')
+            const display = customFieldOf(eventData, 'display') || displayNameFromTitle(heroContent.title)
+            return age && eventRequiresAge(eventTypeId)
+              ? formatEventDisplayTitle(eventTypeId, age, display, eventData.name)
               : heroTitleFromName(eventData.name)
           })(),
           subtitle:
@@ -260,11 +263,14 @@ export default function Builder() {
   const template = templateFromCustomFields(event?.customFields)
   const category = categories.find((c) => c.id === event?.categoryId) ?? null
   const birthdayAge = Number(customFieldOf(event, 'birthdayAge')) || null
-  const birthdayTitle = birthdayAge && template?.categoryCode === 'anniversaire'
-    ? `Les ${birthdayAge} ans de ${(event?.name ?? '').replace(/^Les\s+\d+\s+ans\s+de\s*/i, '').trim()}`
+  const eventTypeId = customFieldOf(event, 'eventType')
+  const celebrationDisplay =
+    customFieldOf(event, 'display') || displayNameFromTitle(heroStyle.title)
+  const celebrationTitle = birthdayAge && eventRequiresAge(eventTypeId)
+    ? formatEventDisplayTitle(eventTypeId, birthdayAge, celebrationDisplay, event?.name)
     : heroTitleFromName(event?.name)
-  const displayedHeroStyle = template?.categoryCode === 'anniversaire' && birthdayAge && !heroStyle.customTitle
-    ? { ...heroStyle, title: birthdayTitle }
+  const displayedHeroStyle = eventRequiresAge(eventTypeId) && birthdayAge && !heroStyle.customTitle
+    ? { ...heroStyle, title: celebrationTitle }
     : heroStyle
   // Les modèles suivent le type exact choisi à la création (anniversaire, noces, concert…).
   const categoryTemplates = templatesForEventType(
