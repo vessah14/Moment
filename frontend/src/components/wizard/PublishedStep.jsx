@@ -28,6 +28,7 @@ export default function PublishedStep({
   onBuilder,
   onRestart,
   onEvents,
+  onGuests,
 }) {
   const [copied, setCopied] = useState('')
   const me = getCurrentUser()
@@ -117,9 +118,23 @@ export default function PublishedStep({
           </div>
         )}
 
+        {!isEditMode && onGuests && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-purple/30 bg-brand-purple/10 px-4 py-3.5">
+            <div>
+              <b className="block text-[0.95rem] text-ink">Prochaine étape : vos invités</b>
+              <span className="text-[0.84rem] text-muted">
+                Ajoutez-les (ou importez votre liste Excel), puis envoyez à chacun son invitation sur WhatsApp.
+              </span>
+            </div>
+            <Button variant="gradient" onClick={onGuests}>
+              Ajouter mes invités
+            </Button>
+          </div>
+        )}
+
         {published && slug && (
           <div className="rounded-2xl border border-border-soft bg-bg p-4">
-            <h3 className="mb-3 text-[0.95rem] font-bold text-ink">Partager sur WhatsApp</h3>
+            <h3 className="mb-3 text-[0.95rem] font-bold text-ink">Ou partagez le lien à tout le monde sur WhatsApp</h3>
             <ShareKit
               slug={slug}
               title={formatEventDisplayTitle(type.id, form.birthdayAge, form.display, form.name)}
@@ -132,12 +147,12 @@ export default function PublishedStep({
 
         <div className="flex flex-wrap gap-2.5">
           {published && url && (
-            <Button as="a" href={`/e/${slug}`} target="_blank" rel="noopener noreferrer" variant="gradient">
+            <Button as="a" href={`/e/${slug}`} target="_blank" rel="noopener noreferrer" variant="outline">
               <ExternalLink className="h-4 w-4" aria-hidden="true" />
               Ouvrir ma page
             </Button>
           )}
-          <Button variant={published && url ? 'outline' : 'gradient'} onClick={onBuilder}>
+          <Button variant="outline" onClick={onBuilder}>
             Personnaliser
           </Button>
           {isEditMode ? (

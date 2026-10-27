@@ -119,6 +119,10 @@ export default function CreateEvent() {
   const [upgrade, setUpgrade] = useState(null)
   const limitReached = !isEditMode && isEventLimitReached(plan)
   const canUsePremium = plan?.features?.premiumTemplates !== false
+  // Premier événement : l'assistant s'affiche sans le menu du tableau de bord. Décidé une
+  // fois au chargement de l'offre, pour ne pas changer de mise en page en cours de route.
+  const [firstEvent, setFirstEvent] = useState(null)
+  if (firstEvent === null && plan) setFirstEvent(!isEditMode && plan.eventsUsed === 0)
   const stepRef = useRef(null)
 
   const type = eventType(form.type)
@@ -424,11 +428,12 @@ export default function CreateEvent() {
         onBuilder={() => navigate(`/builder/${result.id}`)}
         onRestart={restart}
         onEvents={() => navigate('/dashboard/evenements')}
+        onGuests={() => navigate(`/dashboard/participants?eventId=${encodeURIComponent(result.id)}&add=1`)}
       />
     ) : null
 
   return (
-    <DashboardLayout>
+    <DashboardLayout focus={Boolean(firstEvent)}>
       {limitReached && !result && (
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-orange/30 bg-brand-orange/10 px-4 py-3">
           <p className="text-sm text-ink">

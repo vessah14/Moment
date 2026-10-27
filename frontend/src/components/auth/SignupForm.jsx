@@ -7,6 +7,7 @@ import Button from '../ui/Button'
 import GoogleSignInButton from './GoogleSignInButton'
 import PasswordStrengthBar from './PasswordStrengthBar'
 import { consumeSignupReturnPath, loginPathForReturnPath, rememberSignupReturnPath, requestedReturnPath } from '../../utils/returnPath'
+import { CREATE_EVENT_PATH } from '../../utils/firstEvent'
 import { PRICING_PLANS } from '../../data/pricingPlans'
 
 const GOOGLE_ENABLED = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID)
@@ -54,7 +55,8 @@ export default function SignupForm() {
       // page « vérifiez vos e-mails » qu'avant, rien n'est révélé.
       try {
         await login({ email, password })
-        navigate(consumeSignupReturnPath() ?? '/dashboard', { replace: true })
+        // Nouveau compte : droit à la création du premier événement, pas au tableau de bord.
+        navigate(consumeSignupReturnPath() ?? CREATE_EVENT_PATH, { replace: true })
         return
       } catch {
         // Adresse déjà inscrite avec un autre mot de passe.

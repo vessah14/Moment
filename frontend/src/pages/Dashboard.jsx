@@ -1,4 +1,6 @@
+import { ArrowRight, CalendarPlus, Send, Share2, UserPlus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { listEvents } from '../api/events'
 import { listEventCategories } from '../api/eventCategories'
 import { listGuestStats } from '../api/guests'
@@ -7,9 +9,25 @@ import QuickActions from '../components/dashboard/QuickActions'
 import RecentEventsTable from '../components/dashboard/RecentEventsTable'
 import StatCard from '../components/dashboard/StatCard'
 import DashboardLayout from '../components/layout/DashboardLayout'
+import Button from '../components/ui/Button'
+import { CREATE_EVENT_PATH, markFirstEventPrompted, wasFirstEventPrompted } from '../utils/firstEvent'
+
+// Ce que l'organisateur doit faire maintenant pour son prochain événement : une seule
+// action à la fois, pour qu'un nouveau client sache toujours où cliquer.
+function nextStepFor(event, stats) {
+  const name = `« ${event.name} »`
+  if (event.status !== 'Publie')
+    return { icon: Share2, title: `Publiez la page de ${name}`, text: 'Vérifiez-la, puis publiez-la pour pouvoir la partager.', cta: 'Terminer ma page', to: `/builder/${event.id}` }
+  if (!stats?.totalCount)
+    return { icon: UserPlus, title: `Ajoutez vos invités à ${name}`, text: 'Un par un ou en important votre liste Excel. Chacun aura son lien personnel et son pass.', cta: 'Ajouter mes invités', to: `/dashboard/participants?eventId=${encodeURIComponent(event.id)}&add=1` }
+  if (stats.pendingCount > 0)
+    return { icon: Send, title: `${stats.pendingCount} invité${stats.pendingCount > 1 ? 's n’ont' : ' n’a'} pas encore répondu`, text: 'Envoyez à chacun son invitation sur WhatsApp, en un geste par invité.', cta: 'Envoyer les invitations', to: '/dashboard/invitations' }
+  return { icon: CalendarPlus, title: `Tout est prêt pour ${name}`, text: 'Le jour J, scannez les pass à l’entrée depuis votre téléphone.', cta: 'Préparer l’accueil', to: '/dashboard/checkin' }
+}
 
 export default function Dashboard() {
   const user = getCurrentUser()
+  const navigate = useNavigate()
   const [events, setEvents] = useState([])
   const [categories, setCategories] = useState([])
   const [guestStats, setGuestStats] = useState([])
@@ -87,6 +105,47 @@ export default function Dashboard() {
 
   const firstName = user?.fullName?.split(' ')[0] ?? ''
 
+  // Aucun événement : un nouveau client part directement créer le sien (une fois par visite ;
+  // s'il revient avec « Plus tard », il voit l'écran d'accueil ci-dessous).
+  const noEvents = !loading && !error && activeEvents.length === 0
+  useEffect(() => {
+    if (!noEvents || wasFirstEventPrompted()) return
+    markFirstEventPrompted()
+    navigate(CREATE_EVENT_PATH, { replace: true })
+  }, [noEvents, navigate])
+
+  const focusEvent = nextEvent ?? recentEvents[0] ?? null
+  const step = focusEvent ? nextStepFor(activeEvents.find((e) => e.id === focusEvent.id) ?? focusEvent, guestStatsByEvent.get(focusEvent.id)) : null
+
+  if (noEvents) {
+    return (
+      <DashboardLayout>
+        <div className="mx-auto max-w-2xl py-6 text-center">
+          <h1 className="text-3xl font-bold text-ink">{firstName ? `Bienvenue ${firstName} !` : 'Bienvenue !'}</h1>
+          <p className="mt-3 text-muted">Votre événement en ligne en trois étapes, depuis votre téléphone.</p>
+          <ol className="mx-auto mt-8 grid max-w-xl gap-3 text-left">
+            {[
+              ['Créez votre page', 'Type d’événement, date, lieu, modèle : 5 minutes.'],
+              ['Ajoutez vos invités', 'Un par un ou en important votre liste Excel.'],
+              ['Envoyez les invitations sur WhatsApp', 'Chacun répond en un clic et reçoit son pass.'],
+            ].map(([title, text], i) => (
+              <li key={title} className="flex gap-4 rounded-2xl border border-border-soft bg-surface p-4">
+                <span className="grid h-9 w-9 flex-none place-items-center rounded-full bg-brand-gradient text-sm font-bold text-white">{i + 1}</span>
+                <span>
+                  <b className="block text-ink">{title}</b>
+                  <span className="text-sm text-muted">{text}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+          <Button as={Link} to={CREATE_EVENT_PATH} variant="gradient" className="mt-8 px-8 py-3.5 text-base">
+            Créer mon événement
+          </Button>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
   return (
     <DashboardLayout>
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -107,6 +166,23 @@ export default function Dashboard() {
         <p className="mt-6 rounded-lg border border-danger/30 bg-danger/10 px-4 py-2.5 text-sm text-danger">
           {error}
         </p>
+      )}
+
+      {!loading && step && (
+        <div className="mt-6 flex flex-wrap items-center gap-4 rounded-2xl border border-brand-purple/30 bg-brand-purple/10 p-5">
+          <span className="grid h-11 w-11 flex-none place-items-center rounded-xl bg-brand-gradient text-white">
+            <step.icon className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold tracking-wider text-brand-purple uppercase">Prochaine étape</p>
+            <p className="mt-0.5 font-semibold text-ink">{step.title}</p>
+            <p className="text-sm text-muted">{step.text}</p>
+          </div>
+          <Button as={Link} to={step.to} variant="gradient">
+            {step.cta}
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </Button>
+        </div>
       )}
 
       {!loading && (

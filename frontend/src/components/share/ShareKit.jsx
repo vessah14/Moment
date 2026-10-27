@@ -11,8 +11,7 @@ const POSTERS = [
 ]
 
 // Kit de partage WhatsApp d'un événement publié : message prêt (modifiable), envoi direct,
-// et deux images générées par l'API. Sur téléphone, « Partager » ouvre WhatsApp avec
-// l'image ; ailleurs l'image est téléchargée.
+// et deux images générées par l'API. Le partage natif transmet l'affiche et le message.
 export default function ShareKit({ slug, title, date, time, location }) {
   const toast = useToast()
   const url = eventShareUrl(slug)
@@ -53,10 +52,10 @@ export default function ShareKit({ slug, title, date, time, location }) {
       window.open(imageUrl, '_blank', 'noopener')
       return
     }
-    // Image seule : WhatsApp sur iPhone ignore l'image quand un texte l'accompagne.
-    if (navigator.canShare?.({ files: [file] })) {
+    // Transmettre aussi le texte prérempli pour les applications qui acceptent image et message.
+    if (navigator.canShare?.({ files: [file], text: message })) {
       navigator
-        .share({ files: [file] })
+        .share({ files: [file], text: message })
         .then(() => trackPublicEvent(slug, 'share'))
         .catch((err) => {
           // Partage annulé par l'utilisateur : rien à signaler.
