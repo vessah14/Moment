@@ -7,17 +7,6 @@ namespace backend_EventMoment.Dtos
         public string Content { get; set; } = "{}";
     }
 
-    // Mur du jour J (/e/{slug}/mur), projeté dans la salle : dernières photos et derniers
-    // messages publiés, relu toutes les quelques secondes.
-    public class PublicWallDto
-    {
-        public string Slug { get; set; } = string.Empty;
-        public string Title { get; set; } = string.Empty;
-        public string? ThemeColor { get; set; }
-        public List<GalleryPhotoDto> Photos { get; set; } = new();
-        public List<PublicGuestBookEntryDto> Messages { get; set; } = new();
-    }
-
     public class PublicGuestBookEntryDto
     {
         public string AuthorName { get; set; } = string.Empty;

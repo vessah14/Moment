@@ -867,9 +867,3 @@ body {
   background: none !important;
   box-shadow: none !important;
 }
-
-/* Mur du jour J : apparition douce des photos et messages. */
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.98); }
-  to { opacity: 1; transform: none; }
-}

@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 using backend_EventMoment.Dtos;
 using backend_EventMoment.Interfaces;
@@ -67,48 +66,6 @@ namespace backend_EventMoment.Controllers
             {
                 var result = await _service.CreateAsync(url, null, eventId, organizerId);
                 return Ok(result);
-            }
-            catch
-            {
-                await _uploads.DeleteFileAsync(url);
-                throw;
-            }
-        }
-
-        // Album des invités : photo envoyée depuis la page de l'événement, sans compte. Mêmes
-        // contrôles que l'envoi de l'organisateur, limite de photos de son offre comprise ;
-        // la photo attend sa validation (Galerie du tableau de bord).
-        [HttpPost("~/api/public/events/{slug}/photos")]
-        [AllowAnonymous]
-        [EnableRateLimiting("public-upload")]
-        [RequestSizeLimit(MaxFileSizeBytes + 64 * 1024)]
-        public async Task<IActionResult> UploadGuestPhoto(string slug, [FromForm] IFormFile file, [FromForm] string? name)
-        {
-            if (slug.Length > 200) return NotFound();
-            var target = await _service.FindGuestUploadEventAsync(slug);
-            if (target == null)
-                return NotFound(new { error = "L'envoi de photos n'est pas ouvert pour cet événement." });
-
-            if (file == null || file.Length == 0)
-                return BadRequest(new { error = "Aucun fichier fourni." });
-            if (file.Length > MaxFileSizeBytes)
-                return BadRequest(new { error = "Photo trop lourde (10 Mo au plus)." });
-            var extension = Path.GetExtension(file.FileName);
-            if (!AllowedExtensions.Contains(extension))
-                return BadRequest(new { error = "Format non supporté (JPG, PNG, WebP, GIF uniquement)." });
-            if (!await ImageFileValidator.HasValidSignatureAsync(file, extension))
-                return BadRequest(new { error = "Le contenu du fichier ne correspond pas à une image valide." });
-
-            var (eventId, organizerId) = target.Value;
-            if (_plans != null)
-                await _plans.EnsureCanAddPhotoAsync(organizerId, eventId);
-
-            file = await ImageMetadataStripper.StripAsync(file, extension);
-            var url = await _uploads.SaveImageAsync(file, UploadFolder.Gallery, eventId, extension);
-            try
-            {
-                await _service.CreateGuestPhotoAsync(eventId, url, name);
-                return Ok(new { pending = true });
             }
             catch
             {

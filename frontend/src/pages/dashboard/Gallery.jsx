@@ -2,9 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import Button from '../../components/ui/Button'
 import { listEvents } from '../../api/events'
-import { eventShareUrl, mediaUrl } from '../../api/client'
-import { deleteGalleryPhoto, listGalleryPhotos, updateGalleryPhotoStatus, uploadGalleryPhoto } from '../../api/gallery'
-import { tbfDigitalOrderUrl } from '../../data/tbfDigital'
+import { mediaUrl } from '../../api/client'
+import { deleteGalleryPhoto, listGalleryPhotos, uploadGalleryPhoto } from '../../api/gallery'
 
 export default function Gallery() {
   const [events, setEvents] = useState([])
@@ -44,20 +43,8 @@ export default function Gallery() {
     reload(selectedEventId)
   }, [selectedEventId])
 
-  // Photos de l'organisateur : publiées directement. Photos des invités (album) : en
-  // attente jusqu'à validation ici.
+  // Les photos sont ajoutées par l'organisateur et publiées directement.
   const visible = media.filter((m) => m.status === 'Publie')
-  const pending = media.filter((m) => m.status === 'EnAttente')
-
-  const handleModerate = async (id, status) => {
-    setError('')
-    try {
-      await updateGalleryPhotoStatus(id, status)
-      setMedia((prev) => prev.map((m) => (m.id === id ? { ...m, status } : m)))
-    } catch (err) {
-      setError(err.message || 'La validation a échoué.')
-    }
-  }
 
   const handleDelete = async (id) => {
     setError('')
@@ -136,61 +123,6 @@ export default function Gallery() {
         <p className="mt-6 rounded-lg border border-danger/30 bg-danger/10 px-4 py-2.5 text-sm text-danger">
           {error}
         </p>
-      )}
-
-      {pending.length > 0 && (
-        <div className="mt-6 rounded-2xl border border-brand-orange/30 bg-brand-orange/5 p-5">
-          <h2 className="font-semibold text-ink">
-            {pending.length} photo{pending.length > 1 ? 's' : ''} d’invités à valider
-          </h2>
-          <p className="mt-1 text-sm text-muted">Rien n’apparaît sur la page ni sur le mur sans votre accord.</p>
-          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-            {pending.map((item) => (
-              <div key={item.id}>
-                <div className="aspect-square overflow-hidden rounded-xl bg-surface-2">
-                  <img src={mediaUrl(item.url)} alt="" className="h-full w-full object-cover" />
-                </div>
-                {item.uploadedBy && <p className="mt-1 truncate text-xs text-faint">par {item.uploadedBy}</p>}
-                <div className="mt-2 flex gap-2">
-                  <button type="button" onClick={() => handleModerate(item.id, 'Publie')} className="flex-1 rounded-lg bg-success/15 py-1.5 text-xs font-semibold text-success">
-                    Publier
-                  </button>
-                  <button type="button" onClick={() => handleModerate(item.id, 'Refuse')} className="flex-1 rounded-lg bg-danger/10 py-1.5 text-xs font-semibold text-danger">
-                    Refuser
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {selectedEvent?.status === 'Publie' && selectedEvent.slug && (
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
-          <div className="rounded-2xl border border-border-soft bg-surface p-5">
-            <h2 className="font-semibold text-ink">Mur du jour J</h2>
-            <p className="mt-1 text-sm text-muted">
-              À projeter dans la salle : les photos et messages validés défilent en grand, avec un QR code pour en envoyer d’autres.
-            </p>
-            <a href={`/e/${encodeURIComponent(selectedEvent.slug)}/mur`} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm font-semibold text-brand-purple hover:underline">
-              Ouvrir le mur →
-            </a>
-          </div>
-          <div className="rounded-2xl border border-border-soft bg-surface p-5">
-            <h2 className="font-semibold text-ink">Gardez un souvenir imprimé</h2>
-            <p className="mt-1 text-sm text-muted">
-              TBF DIGITAL imprime l’album de votre événement, ou un cadre NFC qui ouvre votre page d’un simple contact du téléphone.
-            </p>
-            <div className="mt-3 flex flex-wrap gap-3 text-sm font-semibold">
-              <a href={tbfDigitalOrderUrl('un album photo de mon événement', eventShareUrl(selectedEvent.slug))} target="_blank" rel="noopener noreferrer" className="text-brand-purple hover:underline">
-                Commander l’album →
-              </a>
-              <a href={tbfDigitalOrderUrl('un cadre NFC souvenir', eventShareUrl(selectedEvent.slug))} target="_blank" rel="noopener noreferrer" className="text-brand-purple hover:underline">
-                Commander le cadre NFC →
-              </a>
-            </div>
-          </div>
-        </div>
       )}
 
       <div className="mt-6 rounded-2xl border border-border-soft bg-surface p-5">
