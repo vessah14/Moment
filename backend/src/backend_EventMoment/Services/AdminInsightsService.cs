@@ -29,7 +29,7 @@ public sealed class AdminInsightsService
         days = Math.Clamp(days, MinDays, MaxDays);
         var today = LocalDate(DateTimeOffset.UtcNow);
         var firstDay = today.AddDays(1 - days);
-        var since = new DateTimeOffset(firstDay.ToDateTime(TimeOnly.MinValue), Douala);
+        var since = new DateTimeOffset(firstDay.ToDateTime(TimeOnly.MinValue), Douala).ToUniversalTime();
 
         // Petits volumes : les horodatages sont relus puis regroupés ici, ce qui reste exact
         // quelle que soit la base (et le fuseau du serveur).
