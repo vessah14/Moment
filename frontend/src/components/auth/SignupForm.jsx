@@ -7,6 +7,7 @@ import Button from '../ui/Button'
 import FacebookSignInButton from './FacebookSignInButton'
 import GoogleSignInButton from './GoogleSignInButton'
 import PasswordStrengthBar from './PasswordStrengthBar'
+import { loginPathForReturnPath, requestedReturnPath } from '../../utils/returnPath'
 
 const GOOGLE_ENABLED = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID)
 const FACEBOOK_ENABLED = Boolean(import.meta.env.VITE_FACEBOOK_APP_ID)
@@ -24,6 +25,10 @@ export default function SignupForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
+  const returnPath = requestedReturnPath(location)
+  const selectedTemplate = returnPath
+    ? new URLSearchParams(returnPath.split('?')[1] ?? '').get('modele')
+    : null
   const emailIncomplete = email.length > 0 && !/^\S+@\S+\.\S+$/.test(email)
   const passwordMismatch =
     confirmPassword.length > 0 && password !== confirmPassword
@@ -40,8 +45,9 @@ export default function SignupForm() {
         password,
         confirmPassword,
       })
-      // La confirmation de l'adresse ouvre la session et redirige vers le tableau de bord.
-      navigate(`/inscription/verifiez-vos-emails?email=${encodeURIComponent(email)}`)
+      const params = new URLSearchParams({ email })
+      if (returnPath) params.set('retour', returnPath)
+      navigate(`/inscription/verifiez-vos-emails?${params}`)
     } catch (err) {
       setError(err.message || 'Inscription impossible.')
     } finally {
@@ -57,6 +63,13 @@ export default function SignupForm() {
         </span>
         <img src={logoMark} alt="" className="mx-auto mt-6 h-10 w-10" />
         <h1 className="mt-6 text-3xl font-bold text-ink">Créer un compte</h1>
+        {returnPath && (
+          <p className="mt-4 rounded-lg border border-brand-purple/20 bg-brand-purple/5 px-4 py-3 text-left text-sm text-ink" role="status">
+            {selectedTemplate
+              ? `Après confirmation de votre adresse e-mail, vous reprendrez la création avec le modèle « ${selectedTemplate} ».`
+              : 'Après confirmation de votre adresse e-mail, vous retrouverez la page demandée.'}
+          </p>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-5">
@@ -246,7 +259,7 @@ export default function SignupForm() {
       <p className="mt-6 text-center text-sm text-muted">
         Déjà un compte ?{' '}
         <Link
-          to="/connexion"
+          to={returnPath ? loginPathForReturnPath(returnPath) : '/connexion'}
           state={location.state}
           className="font-medium text-brand-purple hover:underline"
         >

@@ -26,7 +26,7 @@ export default function PageAnimations() {
         { opacity: 0, transform: 'translateY(10px)' },
         { opacity: 1, transform: 'none' },
       ],
-      { duration: 380, easing: 'cubic-bezier(.2,.7,.2,1)' },
+      { duration: 180, easing: 'cubic-bezier(.2,.7,.2,1)' },
     )
 
     const io = new IntersectionObserver(

@@ -178,10 +178,11 @@ function Demo({ theme }) {
           Tous les modèles
         </Link>
         <span
-          aria-label="Aperçu interactif avec données de démonstration"
+          aria-label="Aperçu interactif avec données fictives. Aucune réponse n'est envoyée."
+          title="Les invités, réponses et informations affichés sont fictifs. Rien n'est envoyé à l'organisateur."
           className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-semibold text-white/90"
         >
-          Aperçu interactif · données de démonstration
+          Aperçu interactif · données fictives
         </span>
         <span className="hidden text-[#A8A1D1] 2xl:inline">
           Démo du modèle <b className="text-white">{template.name}</b> · contenu d'exemple.

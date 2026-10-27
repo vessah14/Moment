@@ -1,13 +1,14 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { isAuthenticated } from '../../api/client'
-import { rememberReturnPath } from '../../utils/returnPath'
+import { loginPathForReturnPath, rememberReturnPath } from '../../utils/returnPath'
 
 export default function RequireAuth({ children }) {
   const location = useLocation()
 
   if (!isAuthenticated()) {
-    rememberReturnPath(`${location.pathname}${location.search}`)
-    return <Navigate to="/connexion" replace state={{ from: location }} />
+    const returnPath = `${location.pathname}${location.search}`
+    rememberReturnPath(returnPath)
+    return <Navigate to={loginPathForReturnPath(returnPath)} replace state={{ from: location }} />
   }
 
   return children

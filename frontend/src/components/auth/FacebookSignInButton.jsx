@@ -1,7 +1,7 @@
 import { useLocation } from 'react-router-dom'
 import Button from '../ui/Button'
 import { createOAuthState } from '../../utils/oauthState'
-import { rememberReturnPath, returnPathFrom } from '../../utils/returnPath'
+import { rememberReturnPath, requestedReturnPath } from '../../utils/returnPath'
 
 const APP_ID = import.meta.env.VITE_FACEBOOK_APP_ID
 const REDIRECT_URI = `${window.location.origin}/auth/facebook/callback`
@@ -36,7 +36,7 @@ export default function FacebookSignInButton() {
   const handleClick = () => {
     // La page quitte le site : la destination est conservée pour FacebookCallback.
     // (sans destination explicite, on garde celle mémorisée à l'expiration de session)
-    const target = returnPathFrom(location)
+    const target = requestedReturnPath(location)
     if (target) rememberReturnPath(target)
     const authUrl =
       'https://www.facebook.com/v23.0/dialog/oauth' +

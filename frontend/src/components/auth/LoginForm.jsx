@@ -1,7 +1,7 @@
 import { Eye, EyeOff } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { consumeReturnPath, peekReturnPath, returnPathFrom } from '../../utils/returnPath'
+import { consumeReturnPath, loginPathForReturnPath, requestedReturnPath } from '../../utils/returnPath'
 import { login } from '../../api/auth'
 import logoMark from '../../assets/logo-mark.png'
 import Button from '../ui/Button'
@@ -19,7 +19,7 @@ export default function LoginForm() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const returnPath = returnPathFrom(location) ?? peekReturnPath()
+  const returnPath = requestedReturnPath(location)
   const selectedTemplate = returnPath?.startsWith('/dashboard/evenements/nouveau')
     ? new URLSearchParams(returnPath.split('?')[1] ?? '').get('modele')
     : null
@@ -32,7 +32,8 @@ export default function LoginForm() {
       await login({ email, password })
       // Retour à la page demandée avant la connexion ("Utiliser ce modèle") ou à celle
       // où la session a expiré.
-      navigate(returnPathFrom(location) ?? consumeReturnPath() ?? '/dashboard', { replace: true })
+      const storedReturnPath = consumeReturnPath()
+      navigate(returnPath ?? storedReturnPath ?? '/dashboard', { replace: true })
     } catch (err) {
       setError(err.message || 'Connexion impossible.')
     } finally {
@@ -52,9 +53,9 @@ export default function LoginForm() {
           Retrouvez vos événements et vos invités.
         </p>
         {returnPath && (
-          <p className="mt-4 rounded-lg border border-brand-purple/20 bg-brand-purple/5 px-4 py-3 text-left text-sm text-ink">
+          <p className="mt-4 rounded-lg border border-brand-purple/20 bg-brand-purple/5 px-4 py-3 text-left text-sm text-ink" role="status">
             {selectedTemplate
-              ? `Après connexion, le modèle « ${selectedTemplate} » sera repris pour créer votre événement.`
+              ? `Après connexion, vous reprendrez la création de votre événement avec le modèle « ${selectedTemplate} ».`
               : 'Après connexion, vous retrouverez la page que vous souhaitiez consulter.'}
           </p>
         )}
@@ -165,7 +166,7 @@ export default function LoginForm() {
       <p className="mt-8 text-center text-sm text-muted">
         Pas encore de compte ?{' '}
         <Link
-          to="/inscription"
+          to={returnPath ? loginPathForReturnPath(returnPath).replace('/connexion?', '/inscription?') : '/inscription'}
           state={location.state}
           className="font-medium text-brand-purple hover:underline"
         >

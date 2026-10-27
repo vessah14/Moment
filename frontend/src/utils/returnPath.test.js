@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { peekReturnPath, rememberReturnPath, returnPathFrom } from './returnPath'
+import {
+  loginPathForReturnPath,
+  peekReturnPath,
+  rememberReturnPath,
+  requestedReturnPath,
+  returnPathFrom,
+  returnPathFromSearch,
+} from './returnPath'
 
 describe('returnPath', () => {
   afterEach(() => {
@@ -19,6 +26,20 @@ describe('returnPath', () => {
 
   it('does not accept an external return URL', () => {
     expect(returnPathFrom({ state: { from: { pathname: '//example.com' } } })).toBeNull()
+  })
+
+  it('restores a return path from the login URL after a reload', () => {
+    const path = '/dashboard/evenements/nouveau?modele=Noor'
+    const loginUrl = loginPathForReturnPath(path)
+    const search = loginUrl.split('?')[1]
+
+    expect(returnPathFromSearch(search)).toBe(path)
+    expect(requestedReturnPath({ search })).toBe(path)
+    expect(loginUrl).toContain('modele=Noor')
+  })
+
+  it('rejects external return paths from the login URL', () => {
+    expect(returnPathFromSearch('?retour=%2F%2Fexample.com')).toBeNull()
   })
 
   it('remembers and reads back only internal paths', () => {

@@ -4,12 +4,17 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { resendVerificationByEmail } from '../api/auth'
 import AuthLayout from '../components/layout/AuthLayout'
 import Button from '../components/ui/Button'
+import { loginPathForReturnPath, returnPathFromSearch } from '../utils/returnPath'
 
 // Après l'inscription : le compte ne sert qu'une fois l'adresse confirmée. Le message est
 // le même que l'adresse soit nouvelle ou déjà inscrite (rien n'est révélé ici).
 export default function CheckEmail() {
   const [searchParams] = useSearchParams()
   const email = searchParams.get('email') ?? ''
+  const returnPath = returnPathFromSearch(window.location.search)
+  const selectedTemplate = returnPath
+    ? new URLSearchParams(returnPath.split('?')[1] ?? '').get('modele')
+    : null
   const [state, setState] = useState('idle')
   const [error, setError] = useState('')
 
@@ -34,7 +39,10 @@ export default function CheckEmail() {
         <h1 className="mt-6 text-2xl font-bold text-ink">Vérifiez votre boîte e-mail</h1>
         <p className="mt-3 text-sm text-muted">
           Nous avons envoyé un lien de confirmation à{' '}
-          {email ? <b className="text-ink">{email}</b> : 'votre adresse'}.           Cliquez dessus pour activer votre compte. Vous serez ensuite redirigé automatiquement vers votre tableau de bord.
+          {email ? <b className="text-ink">{email}</b> : 'votre adresse'}. Cliquez dessus pour activer votre compte.
+          {selectedTemplate
+            ? ` Vous retrouverez ensuite la création de votre événement avec le modèle « ${selectedTemplate} ».`
+            : ' Vous retrouverez ensuite la page demandée.'}
         </p>
         <p className="mt-3 text-xs text-faint">
           Rien reçu ? Regardez dans les courriers indésirables (spam). Le lien reste valable 48 heures.
@@ -61,7 +69,7 @@ export default function CheckEmail() {
           </Button>
         )}
 
-        <Link to="/connexion" className="mt-6 inline-block text-sm font-medium text-brand-purple hover:underline">
+        <Link to={returnPath ? loginPathForReturnPath(returnPath) : '/connexion'} className="mt-6 inline-block text-sm font-medium text-brand-purple hover:underline">
           Aller à la connexion
         </Link>
       </div>

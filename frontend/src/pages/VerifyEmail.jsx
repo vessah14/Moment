@@ -5,6 +5,7 @@ import { setCurrentUser, setToken } from '../api/client'
 import logoMark from '../assets/logo-mark.png'
 import AuthLayout from '../components/layout/AuthLayout'
 import Button from '../components/ui/Button'
+import { consumeReturnPath, returnPathFromSearch } from '../utils/returnPath'
 
 export default function VerifyEmail() {
   const [searchParams] = useSearchParams()
@@ -25,7 +26,8 @@ export default function VerifyEmail() {
         setToken(session.token)
         setCurrentUser(session.utilisateur)
         setState('done')
-        navigate('/dashboard', { replace: true })
+        const storedReturnPath = consumeReturnPath()
+        navigate(returnPathFromSearch(window.location.search) ?? storedReturnPath ?? '/dashboard', { replace: true })
       })
       .catch((err) => {
         setError(err.message || 'La vérification a échoué.')

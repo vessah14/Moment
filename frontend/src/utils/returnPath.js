@@ -12,6 +12,31 @@ export function returnPathFrom(location) {
   return from ? sanitize(`${from.pathname ?? ''}${from.search ?? ''}`) : null
 }
 
+export function returnPathFromSearch(search) {
+  const params = new URLSearchParams(search ?? '')
+  const returnPath = sanitize(params.get('retour'))
+  if (returnPath) return returnPath
+
+  const template = params.get('modele')
+  return template
+    ? `/dashboard/evenements/nouveau?modele=${encodeURIComponent(template)}`
+    : null
+}
+
+export function requestedReturnPath(location) {
+  return returnPathFrom(location) ?? returnPathFromSearch(location?.search) ?? peekReturnPath()
+}
+
+export function loginPathForReturnPath(path) {
+  const safe = sanitize(path)
+  if (!safe) return '/connexion'
+
+  const params = new URLSearchParams({ retour: safe })
+  const template = new URLSearchParams(safe.split('?')[1] ?? '').get('modele')
+  if (template) params.set('modele', template)
+  return `/connexion?${params}`
+}
+
 // Connexion Facebook : l'utilisateur quitte le site puis revient sur /auth/facebook/callback,
 // l'état du routeur est perdu — on garde la destination dans sessionStorage.
 export function rememberReturnPath(path) {

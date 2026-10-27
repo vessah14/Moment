@@ -281,7 +281,7 @@ export function SeatingModule({ tables = [], slug, themed, editable, findSeat })
         </label>
         {!editable && (
           <p id="seating-search-help" className={c.muted} style={{ margin: '.5rem 0 0' }}>
-            Saisissez au moins 3 caractères, comme indiqué sur votre invitation.
+            Saisissez au moins 3 caractères (prénom et nom comme sur l’invitation) pour activer la recherche.
           </p>
         )}
         <button className={c.btn} type="submit" disabled={editable || state.status === 'loading' || name.trim().length < 3} style={{ marginTop: '1rem', width: '100%' }}>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { consumeReturnPath, returnPathFrom } from '../../utils/returnPath'
+import { consumeReturnPath, requestedReturnPath } from '../../utils/returnPath'
 import { loginWithGoogle } from '../../api/auth'
 import Button from '../ui/Button'
 
@@ -75,7 +75,9 @@ export default function GoogleSignInButton({ onError }) {
         }
         try {
           await loginWithGoogle(response.access_token)
-          navigate(returnPathFrom(location) ?? consumeReturnPath() ?? '/dashboard', { replace: true })
+          const target = requestedReturnPath(location)
+          const storedReturnPath = consumeReturnPath()
+          navigate(target ?? storedReturnPath ?? '/dashboard', { replace: true })
         } catch (err) {
           onError?.(err.message || 'Connexion Google impossible.')
         } finally {
