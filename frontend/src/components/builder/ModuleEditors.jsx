@@ -1,6 +1,7 @@
 import { Plus, Trash2 } from 'lucide-react'
 import { MOBILE_MONEY_OPERATORS } from '../../utils/mobileMoney'
 import { MAX_COMPANIONS, rsvpRules } from '../../utils/rsvpRules'
+import { parseVideoUrl } from '../../utils/videoEmbed'
 
 // Éditeurs des blocs « Familles », « Dress code », « Cadeaux », « Intervenants » et
 // « Partenaires » (onglet Contenu du Builder). Tout est rangé dans le contenu JSON du
@@ -165,6 +166,33 @@ export function DressCodeEditor({ content, onChange }) {
         <Plus className="h-4 w-4" />
         Ajouter une couleur
       </button>
+    </div>
+  )
+}
+
+// Bloc « Vidéo » : lien YouTube (affiché dans la page) ou autre lien de direct (bouton).
+export function VideoEditor({ content, onChange }) {
+  const filled = Boolean(content.url?.trim())
+  const valid = !filled || parseVideoUrl(content.url)
+  return (
+    <div className="space-y-3">
+      <label className={labelClass}>
+        <span className="text-sm font-medium text-ink">Lien de la vidéo ou du direct</span>
+        <input
+          className={`${inputClass} mt-2`}
+          type="url"
+          inputMode="url"
+          maxLength={500}
+          placeholder="https://youtube.com/live/… ou https://facebook.com/…"
+          value={content.url ?? ''}
+          onChange={(e) => onChange({ url: e.target.value })}
+        />
+      </label>
+      {!valid && <p className="text-xs text-danger">Collez un lien complet qui commence par https://</p>}
+      <label className="flex items-center gap-2 text-sm text-ink">
+        <input type="checkbox" checked={Boolean(content.live)} onChange={(e) => onChange({ live: e.target.checked })} />
+        C’est un direct (pour les proches qui ne peuvent pas venir)
+      </label>
     </div>
   )
 }

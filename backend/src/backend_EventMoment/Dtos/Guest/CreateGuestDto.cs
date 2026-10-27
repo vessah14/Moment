@@ -13,6 +13,10 @@ namespace backend_EventMoment.Models
         [EmailAddress]
         public string? Email { get; set; }
 
+        // Places pour cette invitation, invité compris ; vide = règle de l'événement.
+        [Range(1, 50)]
+        public short? Seats { get; set; }
+
         // Envoyer automatiquement le lien d'invitation (confirmation de présence) par e-mail,
         // dès que l'événement est publié.
         public bool SendInvitation { get; set; } = true;

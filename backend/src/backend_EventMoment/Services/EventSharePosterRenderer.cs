@@ -6,6 +6,16 @@ using SkiaSharp;
 
 namespace backend_EventMoment.Services;
 
+// Images de partage d'un événement : Link pour l'aperçu des liens (og:image), Square pour
+// les discussions WhatsApp, Story pour le Statut WhatsApp. Une image ne se clique pas :
+// les formats carré et vertical écrivent donc l'adresse de la page en clair.
+public enum SharePosterFormat
+{
+    Link,
+    Square,
+    Story,
+}
+
 public static class EventSharePosterRenderer
 {
     private const int Width = 1200;
@@ -32,39 +42,52 @@ public static class EventSharePosterRenderer
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(versionData)))[..16].ToLowerInvariant();
     }
 
-    public static byte[] Render(PublicEventDto evt)
+    public static (int Width, int Height) SizeOf(SharePosterFormat format) => format switch
     {
-        using var surface = SKSurface.Create(new SKImageInfo(Width, Height));
+        SharePosterFormat.Square => (1080, 1080),
+        SharePosterFormat.Story => (1080, 1920),
+        _ => (Width, Height),
+    };
+
+    // displayUrl : adresse écrite sur les formats carré et vertical (ex. tbfmoment.com/e/slug).
+    public static byte[] Render(PublicEventDto evt, SharePosterFormat format = SharePosterFormat.Link, string? displayUrl = null)
+    {
+        var (width, height) = SizeOf(format);
+        using var surface = SKSurface.Create(new SKImageInfo(width, height));
         var canvas = surface.Canvas;
         canvas.Clear(Background);
-        DrawBackground(canvas, ParseAccent(evt.HeroColor ?? evt.ThemeColor));
-        DrawContent(canvas, evt);
+        DrawBackground(canvas, ParseAccent(evt.HeroColor ?? evt.ThemeColor), width, height);
+        if (format == SharePosterFormat.Link)
+            DrawContent(canvas, evt);
+        else
+            DrawPortraitContent(canvas, evt, width, height, format == SharePosterFormat.Story, displayUrl);
 
         using var image = surface.Snapshot();
         using var encoded = image.Encode(SKEncodedImageFormat.Png, 95);
         return encoded.ToArray();
     }
 
-    private static void DrawBackground(SKCanvas canvas, SKColor accent)
+    private static void DrawBackground(SKCanvas canvas, SKColor accent, int width, int height)
     {
+        var glow = Math.Max(width, height) / (float)Width;
         using var backgroundPaint = new SKPaint
         {
             Shader = SKShader.CreateLinearGradient(
                 new SKPoint(0, 0),
-                new SKPoint(Width, Height),
+                new SKPoint(width, height),
                 new[] { Background, Blend(Background, accent, 0.42f), Background },
                 new[] { 0f, 0.58f, 1f },
                 SKShaderTileMode.Clamp),
         };
-        canvas.DrawRect(new SKRect(0, 0, Width, Height), backgroundPaint);
+        canvas.DrawRect(new SKRect(0, 0, width, height), backgroundPaint);
 
         using var glowPaint = new SKPaint
         {
             IsAntialias = true,
             Color = new SKColor(accent.Red, accent.Green, accent.Blue, 34),
         };
-        canvas.DrawCircle(1040, 90, 230, glowPaint);
-        canvas.DrawCircle(105, 620, 205, glowPaint);
+        canvas.DrawCircle(width - 160, 90, 230 * glow, glowPaint);
+        canvas.DrawCircle(105, height - 10, 205 * glow, glowPaint);
 
         using var linePaint = new SKPaint
         {
@@ -73,7 +96,112 @@ public static class EventSharePosterRenderer
             StrokeWidth = 2,
             Color = new SKColor(accent.Red, accent.Green, accent.Blue, 125),
         };
-        canvas.DrawRoundRect(new SKRect(34, 34, Width - 34, Height - 34), 30, 30, linePaint);
+        canvas.DrawRoundRect(new SKRect(34, 34, width - 34, height - 34), 30, 30, linePaint);
+    }
+
+    // Carré et vertical : marque en haut, bloc de texte centré, adresse de la page en bas.
+    // Le vertical laisse le bas libre (barre de réponse du Statut).
+    private static void DrawPortraitContent(SKCanvas canvas, PublicEventDto evt, int width, int height, bool story, string? displayUrl)
+    {
+        var accent = ParseAccent(evt.HeroColor ?? evt.ThemeColor);
+        var fr = CultureInfo.GetCultureInfo("fr-FR");
+        var centerX = width / 2f;
+        var maxWidth = width - 170f;
+        using var boldTypeface = SKTypeface.FromFamilyName("DejaVu Sans", SKFontStyle.Bold);
+        using var regularTypeface = SKTypeface.FromFamilyName("DejaVu Sans", SKFontStyle.Normal);
+        using var accentPaint = new SKPaint { IsAntialias = true, Color = accent };
+        using var brandPaint = TextPaint(new SKColor(232, 222, 251));
+        using var titlePaint = TextPaint(SKColors.White);
+        using var detailPaint = TextPaint(new SKColor(220, 215, 238));
+        using var taglinePaint = TextPaint(new SKColor(207, 192, 230));
+        using var accentTextPaint = TextPaint(accent);
+
+        var brandY = story ? 230f : 130f;
+        using var brandFont = new SKFont(boldTypeface, 32);
+        var brandWidth = brandFont.MeasureText("TBF MOMENT", brandPaint);
+        canvas.DrawCircle(centerX - brandWidth / 2 - 22, brandY - 11, 9, accentPaint);
+        DrawCentered(canvas, "TBF MOMENT", centerX, brandY, brandFont, brandPaint);
+        using (var dividerPaint = new SKPaint { IsAntialias = true, Color = accent.WithAlpha(190), StrokeWidth = 4, StrokeCap = SKStrokeCap.Round })
+            canvas.DrawLine(centerX - 60, brandY + 50, centerX + 60, brandY + 50, dividerPaint);
+
+        // Bloc central : (texte, police, peinture, espace après la ligne).
+        var lines = new List<(string Text, SKFont Font, SKPaint Paint, float After)>();
+        using var kickerFont = new SKFont(boldTypeface, 30);
+        var kicker = Clean(evt.HeroKicker, 48);
+        if (kicker != null)
+            lines.Add((kicker.ToUpper(fr), kickerFont, accentTextPaint, 30));
+
+        var title = Clean(evt.HeroTitle, 180) ?? Clean(evt.Name, 180) ?? "Événement";
+        using var titleFont = new SKFont(boldTypeface, 108);
+        var titleLines = new List<string>();
+        foreach (var size in new[] { 108f, 94f, 82f, 72f })
+        {
+            titleFont.Size = size;
+            titleLines = Wrap(title, titleFont, titlePaint, maxWidth).ToList();
+            if (titleLines.Count <= 3)
+                break;
+        }
+        titleLines = titleLines.Take(story ? 5 : 4).ToList();
+        for (var i = 0; i < titleLines.Count; i++)
+            lines.Add((titleLines[i], titleFont, titlePaint, i == titleLines.Count - 1 ? 40 : titleFont.Size * 0.18f));
+
+        using var taglineFont = new SKFont(regularTypeface, 40);
+        var tagline = Clean(evt.HeroSubtitle, 120) ?? Clean(evt.Tagline, 120);
+        if (tagline != null)
+        {
+            var taglineLines = Wrap(tagline, taglineFont, taglinePaint, maxWidth).Take(2).ToList();
+            for (var i = 0; i < taglineLines.Count; i++)
+                lines.Add((taglineLines[i], taglineFont, taglinePaint, i == taglineLines.Count - 1 ? 44 : 12));
+        }
+
+        using var dateFont = new SKFont(boldTypeface, 42);
+        using var detailFont = new SKFont(regularTypeface, 38);
+        if (evt.EventDate is DateOnly date)
+        {
+            var dateText = date.ToDateTime(TimeOnly.MinValue).ToString("dddd d MMMM yyyy", fr);
+            dateText = char.ToUpper(dateText[0], fr) + dateText[1..];
+            var timeText = evt.StartTime is TimeOnly time ? time.ToString("HH'h'mm", CultureInfo.InvariantCulture) : null;
+            // Carré : date et heure sur une ligne, pour garder la place du lieu.
+            if (!story && timeText != null)
+                lines.Add(($"{dateText} · {timeText}", dateFont, titlePaint, 14));
+            else
+            {
+                lines.Add((dateText, dateFont, titlePaint, 14));
+                if (timeText != null)
+                    lines.Add(("à " + timeText, detailFont, detailPaint, 14));
+            }
+        }
+        var location = Clean(
+            !string.IsNullOrWhiteSpace(evt.LocationLabel) && evt.LocationLabel != "Lieu principal" ? evt.LocationLabel : evt.LocationAddress,
+            90);
+        if (location != null)
+            foreach (var line in Wrap(location, detailFont, detailPaint, maxWidth).Take(2))
+                lines.Add((line, detailFont, detailPaint, 10));
+
+        var footerTop = story ? height - 420f : height - 190f;
+        var regionTop = brandY + 110;
+        // Trop long : le sous-titre cède sa place à la date et au lieu, plus utiles.
+        if (lines.Sum(l => l.Font.Size + l.After) > footerTop - 40 - regionTop)
+            lines.RemoveAll(l => l.Font == taglineFont);
+        var blockHeight = lines.Sum(l => l.Font.Size + l.After);
+        var y = regionTop + Math.Max(0, (footerTop - 40 - regionTop - blockHeight) / 2);
+        foreach (var (text, font, paint, after) in lines)
+        {
+            y += font.Size;
+            if (y > footerTop - 30)
+                break;
+            DrawCentered(canvas, text, centerX, y, font, paint);
+            y += after;
+        }
+
+        if (!string.IsNullOrWhiteSpace(displayUrl))
+        {
+            using var callFont = new SKFont(boldTypeface, 30);
+            using var urlFont = new SKFont(boldTypeface, 40);
+            urlFont.Size = Math.Min(40, 40 * maxWidth / Math.Max(1, urlFont.MeasureText(displayUrl, titlePaint)));
+            DrawCentered(canvas, "Toutes les infos et votre réponse :", centerX, footerTop + 40, callFont, accentTextPaint);
+            DrawCentered(canvas, displayUrl, centerX, footerTop + 100, urlFont, titlePaint);
+        }
     }
 
     private static void DrawContent(SKCanvas canvas, PublicEventDto evt)

@@ -57,7 +57,9 @@ namespace backend_EventMoment.Controllers
             await CountSocialShareAsync(evt.Slug);
 
             var eventUrl = $"{site}/e/{Uri.EscapeDataString(evt.Slug)}";
-            var shareUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}/share/e/{Uri.EscapeDataString(evt.Slug)}";
+            // Le site renvoie les robots d'aperçu ici (frontend/vercel.json) : l'adresse lisible
+            // de l'événement sert donc aussi d'og:url.
+            var shareUrl = eventUrl;
             var image = CoverUrl(evt.CoverImageUrl) ?? PosterUrl(evt);
 
             var details = new List<string>();
@@ -84,6 +86,27 @@ namespace backend_EventMoment.Controllers
 
             Response.Headers.CacheControl = "public, max-age=300";
             return File(EventSharePosterRenderer.Render(evt), "image/png");
+        }
+
+        // Kit de partage : image carrée (discussions WhatsApp) ou verticale (Statut), avec
+        // l'adresse de la page écrite en clair.
+        [HttpGet("share/e/{slug}/poster-{format}.png")]
+        public async Task<IActionResult> SharePoster(string slug, string format)
+        {
+            var kind = format switch
+            {
+                "square" => SharePosterFormat.Square,
+                "story" => SharePosterFormat.Story,
+                _ => (SharePosterFormat?)null,
+            };
+            var evt = kind != null && IsValidSlug(slug) ? await _events.GetPublicEventAsync(slug) : null;
+            if (evt == null)
+                return NotFound();
+
+            var site = (_config["Frontend:BaseUrl"] ?? "http://localhost:5173").TrimEnd('/');
+            var displayUrl = $"{new Uri(site).Host}/e/{evt.Slug}";
+            Response.Headers.CacheControl = "public, max-age=300";
+            return File(EventSharePosterRenderer.Render(evt, kind!.Value, displayUrl), "image/png", $"{evt.Slug}-{format}.png");
         }
 
         private static bool IsValidSlug(string slug) =>
@@ -149,7 +172,7 @@ namespace backend_EventMoment.Controllers
             html.Append($"<link rel=\"canonical\" href=\"{E(canonical)}\">");
             html.Append("<meta property=\"og:site_name\" content=\"TBF Moment\"><meta property=\"og:locale\" content=\"fr_FR\"><meta property=\"og:type\" content=\"website\">");
             html.Append($"<meta property=\"og:title\" content=\"{E(title)}\"><meta property=\"og:description\" content=\"{E(description)}\">");
-            // og:url = ce lien : Facebook relirait sinon l'URL du site, qui n'a que l'aperçu générique.
+            // og:url : l'adresse de l'événement ; le site renvoie les robots d'aperçu vers cette page.
             if (shareUrl != null) html.Append($"<meta property=\"og:url\" content=\"{E(shareUrl)}\">");
             if (image != null)
             {

@@ -13,6 +13,7 @@ export default function GuestEditDialog({ guest, groups, onClose, onSave }) {
   const [email, setEmail] = useState(guest.email ?? '')
   const [groupId, setGroupId] = useState(guest.groupId ?? '')
   const [status, setStatus] = useState(guest.status)
+  const [seats, setSeats] = useState(guest.seats ? String(guest.seats) : '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const emailChanged = email.trim().toLowerCase() !== (guest.email ?? '').trim().toLowerCase()
@@ -22,7 +23,7 @@ export default function GuestEditDialog({ guest, groups, onClose, onSave }) {
     setError('')
     setSaving(true)
     try {
-      await onSave({ fullName: fullName.trim(), phone: phone.trim(), email: email.trim(), groupId: groupId || null, status })
+      await onSave({ fullName: fullName.trim(), phone: phone.trim(), email: email.trim(), groupId: groupId || null, status, seats: seats ? Number(seats) : null })
       onClose()
     } catch (err) {
       setError(err.message || "L'invité n'a pas pu être modifié.")
@@ -48,6 +49,19 @@ export default function GuestEditDialog({ guest, groups, onClose, onSave }) {
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={fieldClass} />
           </label>
         </div>
+        <label className="block">
+          <span className="text-xs font-medium text-ink">Places pour cette invitation (facultatif)</span>
+          <input
+            type="number"
+            min={1}
+            max={50}
+            value={seats}
+            onChange={(e) => setSeats(e.target.value)}
+            placeholder="Invité compris, ex. 2 pour un couple"
+            className={fieldClass}
+          />
+          <span className="mt-1 block text-xs text-faint">Vide : la règle du formulaire de réponse s’applique.</span>
+        </label>
         {emailChanged && guest.invitationSentAt && (
           <p className="text-xs text-brand-orange">L’invitation sera renvoyée automatiquement à la nouvelle adresse.</p>
         )}

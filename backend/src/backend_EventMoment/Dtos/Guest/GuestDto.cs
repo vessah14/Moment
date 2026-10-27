@@ -12,6 +12,9 @@ namespace backend_EventMoment.Models
 
         public Guid? GroupId { get; set; }
 
+        // Places réservées, invité compris (null : règle de l'événement).
+        public short? Seats { get; set; }
+
         // Réponse RSVP de l'invité.
         public GuestStatus Status { get; set; }
 

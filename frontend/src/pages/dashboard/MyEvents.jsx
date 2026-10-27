@@ -15,7 +15,8 @@ import { useToast } from '../../utils/useToast'
 import EventCard from '../../components/events/EventCard'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import Button from '../../components/ui/Button'
-import { ConfirmDialog } from '../../components/ui/Dialog'
+import ShareKit from '../../components/share/ShareKit'
+import Dialog, { ConfirmDialog } from '../../components/ui/Dialog'
 import { formatEventDate, statusLabel } from '../../utils/eventStatus'
 
 const FILTERS = ['Tous', 'Publiés', 'Brouillons', 'Passés']
@@ -32,6 +33,7 @@ export default function MyEvents () {
   const [error, setError] = useState('')
   const [deletingEvent, setDeletingEvent] = useState(null)
   const [deleteBusy, setDeleteBusy] = useState(false)
+  const [sharingEvent, setSharingEvent] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -331,6 +333,9 @@ export default function MyEvents () {
                                 external: true,
                                 highlight: true
                               },
+                              ...(event.status === 'Publie'
+                                ? [{ label: 'Partager sur WhatsApp', onClick: () => setSharingEvent(event), highlight: true }]
+                                : []),
                               {
                                 // Lien avec le vrai aperçu (titre, couverture) sur WhatsApp, Facebook…
                                 label: 'Copier le lien de partage',
@@ -380,6 +385,20 @@ export default function MyEvents () {
           </div>
         </>
       )}
+      <Dialog
+        open={Boolean(sharingEvent)}
+        title="Partager sur WhatsApp"
+        onClose={() => setSharingEvent(null)}
+      >
+        {sharingEvent && (
+          <ShareKit
+            slug={sharingEvent.slug}
+            title={sharingEvent.name}
+            date={sharingEvent.eventDate}
+            time={sharingEvent.startTime}
+          />
+        )}
+      </Dialog>
       <ConfirmDialog
         open={Boolean(deletingEvent)}
         title="Supprimer cet événement ?"

@@ -25,6 +25,29 @@ public class EventSharePosterRendererTests
         Assert.NotEqual(first, second);
     }
 
+    [Theory]
+    [InlineData(SharePosterFormat.Link, 1200, 630)]
+    [InlineData(SharePosterFormat.Square, 1080, 1080)]
+    [InlineData(SharePosterFormat.Story, 1080, 1920)]
+    public void Render_UsesTheSizeOfEachShareFormat(SharePosterFormat format, int width, int height)
+    {
+        var png = EventSharePosterRenderer.Render(new PublicEventDto
+        {
+            Name = "Dot de Brenda et Paul, une très longue journée de fête en famille à Bafoussam",
+            HeroKicker = "Dot",
+            HeroSubtitle = "Toute la famille est invitée",
+            EventDate = new DateOnly(2026, 12, 19),
+            StartTime = new TimeOnly(14, 30),
+            LocationLabel = "Salle des fêtes de Bafoussam",
+        }, format, "tbfmoment.com/e/dot-brenda-et-paul");
+
+        using var bitmap = SkiaSharp.SKBitmap.Decode(png);
+        Assert.Equal((width, height), (bitmap.Width, bitmap.Height));
+        var outDir = Environment.GetEnvironmentVariable("POSTER_PREVIEW_DIR");
+        if (!string.IsNullOrEmpty(outDir))
+            File.WriteAllBytes(Path.Combine(outDir, $"{format}.png"), png);
+    }
+
     [Fact]
     public void GetVersion_ChangesWhenEventAppearanceChanges()
     {

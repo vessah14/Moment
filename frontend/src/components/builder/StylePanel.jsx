@@ -3,7 +3,7 @@ import { Check } from 'lucide-react'
 import TemplatePreview from '../templates/TemplatePreview'
 import { getSiteTheme } from '../site/themes/themeDefs'
 import FaqEditor from './FaqEditor'
-import { AdditionalVenuesEditor, DressCodeEditor, FamiliesEditor, GiftAccountsEditor, InvitationEditor, PartnersEditor, PeopleEditor, RsvpSidesEditor } from './ModuleEditors'
+import { AdditionalVenuesEditor, DressCodeEditor, FamiliesEditor, GiftAccountsEditor, InvitationEditor, PartnersEditor, PeopleEditor, RsvpSidesEditor, VideoEditor } from './ModuleEditors'
 import PremiumThemeFields from './PremiumThemeFields'
 import Toggle from './Toggle'
 import TicketCard from '../tickets/TicketCard'
@@ -202,6 +202,9 @@ export default function StylePanel({
               )}
               {selectedBlock === 'Dress code' && (
                 <DressCodeEditor content={content} onChange={(patch) => onChangeBlockContent(selectedBlock, patch)} />
+              )}
+              {selectedBlock === 'Vidéo' && (
+                <VideoEditor content={content} onChange={(patch) => onChangeBlockContent(selectedBlock, patch)} />
               )}
               {selectedBlock === 'Intervenants' && (
                 <PeopleEditor content={content} onChange={(patch) => onChangeBlockContent(selectedBlock, patch)} />

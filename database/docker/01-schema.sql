@@ -507,6 +507,7 @@ CREATE TABLE public.guests (
     phone text,
     email public.citext,
     status public.guest_status DEFAULT 'en_attente'::public.guest_status NOT NULL,
+    seats smallint,
     import_batch_id uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
@@ -1036,6 +1037,9 @@ ALTER TABLE ONLY public.guest_invitations
 
 ALTER TABLE ONLY public.guests
     ADD CONSTRAINT guests_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.guests
+    ADD CONSTRAINT guests_seats_range CHECK (seats IS NULL OR seats BETWEEN 1 AND 50);
 
 
 --

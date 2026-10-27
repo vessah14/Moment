@@ -1,6 +1,8 @@
 import { ExternalLink } from 'lucide-react'
 import { useState } from 'react'
 import { getCurrentUser } from '../../api/client'
+import { formatEventDisplayTitle } from '../../utils/eventTitle'
+import ShareKit from '../share/ShareKit'
 import Button from '../ui/Button'
 import { StepTitle } from './EventKindSteps'
 
@@ -111,6 +113,19 @@ export default function PublishedStep({
             >
               {copied || 'Copier le lien'}
             </button>
+          </div>
+        )}
+
+        {published && slug && (
+          <div className="rounded-2xl border border-border-soft bg-bg p-4">
+            <h3 className="mb-3 text-[0.95rem] font-bold text-ink">Partager sur WhatsApp</h3>
+            <ShareKit
+              slug={slug}
+              title={formatEventDisplayTitle(type.id, form.birthdayAge, form.display, form.name)}
+              date={form.date}
+              time={form.timeStart}
+              location={[form.venueName, form.venueAddr].filter(Boolean).join(', ')}
+            />
           </div>
         )}
 

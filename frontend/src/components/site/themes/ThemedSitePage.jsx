@@ -31,7 +31,8 @@ import { eventShareUrl, mediaUrl } from '../../../api/client'
 import { signPublicGuestBook } from '../../../api/publicEvents'
 import { safeBlockImagePath, safeCoverPath, siteBlockDomId } from '../../../utils/sitePage'
 import BlockToolbar from '../BlockToolbar'
-import { DressCodeModule, FamiliesModule, GiftModule, GuestPass, PartnersModule, RsvpModule, SeatingModule, SpeakersModule } from '../modules/SiteModules'
+import { DressCodeModule, FamiliesModule, GiftModule, GuestPass, PartnersModule, RsvpModule, SeatingModule, SpeakersModule, VideoModule } from '../modules/SiteModules'
+import { parseVideoUrl } from '../../../utils/videoEmbed'
 import { usableColors } from '../../../utils/mobileMoney'
 import { usablePartners, usablePeople, usableVenues } from '../../../utils/blockLists'
 import { burst, createMusic, createParticles } from './effects'
@@ -42,6 +43,7 @@ import { monogramOf, parseTitle } from './titleParts'
 import { invitationGreeting, invitationParagraphs, invitationWords } from '../../../utils/invitationText'
 import { ILLUS } from '../../../utils/illus'
 import { invitationFor } from '../../../data/invitations'
+import { googleCalendarUrl, handleAddToCalendar } from '../../../utils/calendar'
 import './themes.css'
 
 // Rendu « premium » du site d'un événement (Noor, Bloom, Toghu, Ndop, Fiesta,
@@ -854,6 +856,19 @@ export default function ThemedSitePage({
         )
       }
 
+      case 'Vidéo': {
+        const filled = Boolean(parseVideoUrl(content.url))
+        if (!filled && !editable) return null
+        return sectionShell(
+          block,
+          index,
+          <>
+            {headFor(block, content)}
+            {filled ? <VideoModule themed content={content} /> : placeholder('Collez le lien YouTube ou Facebook de la vidéo ou du direct dans l’onglet Contenu, à droite.')}
+          </>,
+        )
+      }
+
       case 'Cadeaux': {
         const gifts = data.gifts ?? []
         return sectionShell(
@@ -1045,13 +1060,10 @@ export default function ThemedSitePage({
   const navBlocks = blocks.filter((b) => NAV_LABELS[b] && sections[blocks.indexOf(b)] !== null)
   const rsvpVisible = has('RSVP')
   const ticketsVisible = navBlocks.includes('Billetterie')
-  const calendarUrl = validStart
-    ? (() => {
-        const end = new Date(validStart.getTime() + 4 * 3600 * 1000)
-        const g = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
-        return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(heroStyle.title)}&dates=${g(validStart)}/${g(end)}${data.locationAddress ? `&location=${encodeURIComponent(data.locationAddress)}` : ''}`
-      })()
+  const calendarDetails = validStart
+    ? { title: heroStyle.title, start: validStart, location: data.locationAddress, url: data.slug ? eventShareUrl(data.slug) : undefined, uid: data.slug }
     : null
+  const calendarUrl = calendarDetails ? googleCalendarUrl(calendarDetails) : null
 
   const motifCss = motifStyle(motif, palette)
   const rootStyle = {
@@ -1207,7 +1219,7 @@ export default function ThemedSitePage({
                     href={calendarUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    onClick={(e) => editable && e.preventDefault()}
+                    onClick={(e) => (editable ? e.preventDefault() : handleAddToCalendar(e, calendarDetails))}
                   >
                     <Calendar />
                     Ajouter à mon agenda

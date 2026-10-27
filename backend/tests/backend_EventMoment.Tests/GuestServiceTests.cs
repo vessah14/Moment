@@ -198,6 +198,25 @@ public class GuestServiceTests
     }
 
     [Fact]
+    public async Task SubmitPublicRsvpAsync_RespectsSeatsReservedForTheGuest()
+    {
+        var context = TestDbContextFactory.CreateAdminContext();
+        var (_, _, evt) = SeedEvent(context);
+        var guest = SeedGuest(context, evt.Id);
+        guest.Seats = 2; // « Famille Ngo — 2 places » : l'invité et un accompagnant.
+        context.SaveChanges();
+        var service = new GuestService(context);
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.SubmitPublicRsvpAsync(guest.Id, new SubmitPublicRsvpDto { Confirmed = true, AccompanyingCount = 2 }));
+        Assert.Contains("1 accompagnant", error.Message);
+
+        var result = await service.SubmitPublicRsvpAsync(guest.Id, new SubmitPublicRsvpDto { Confirmed = true, AccompanyingCount = 1 });
+        Assert.Equal(1, result!.RsvpMaxCompanions);
+        Assert.Equal(1, result.RsvpAccompanyingCount);
+    }
+
+    [Fact]
     public async Task SubmitPublicRsvpAsync_CanChangeAnswer_ReusingSameRsvpRow()
     {
         var context = TestDbContextFactory.CreateAdminContext();

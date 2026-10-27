@@ -38,6 +38,10 @@ namespace backend_EventMoment.Services
             }
         }
 
+        // Places fixées pour un invité (lui compris) : remplacent le maximum de l'événement.
+        public RsvpRules ForSeats(short? seats) =>
+            seats is > 0 ? this with { MaxCompanions = Math.Min(seats.Value - 1, Limit) } : this;
+
         // On peut répondre jusqu'au jour de l'événement inclus, et jusqu'à la date limite incluse.
         public bool IsClosed(Event eventEntity, DateOnly today) =>
             (eventEntity.EventDate.HasValue && eventEntity.EventDate.Value < today)

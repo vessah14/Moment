@@ -41,6 +41,11 @@ namespace backend_EventMoment.Models
         [Column("status")]
         public GuestStatus Status { get; set; } = GuestStatus.EnAttente;
 
+        // Places réservées pour cette invitation, invité compris (« Famille Ngo — 2 places »).
+        // Null : la règle du formulaire de réponse de l'événement s'applique.
+        [Column("seats")]
+        public short? Seats { get; set; }
+
         [Column("import_batch_id")]
         public Guid? ImportBatchId { get; set; }
 

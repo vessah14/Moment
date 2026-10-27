@@ -8,6 +8,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout'
 import { listEvents } from '../../api/events'
 import { checkInGuest, listGuests, undoCheckInGuest } from '../../api/guests'
 import { guestStatusLabel } from '../../utils/guestStatus'
+import { dequeueCheckin, enqueueCheckin, flushQueue, isNetworkError, readQueue, withQueued } from '../../utils/offlineCheckins'
 
 function formatTime(value) {
   if (!value) return '—'
@@ -52,7 +53,7 @@ export default function CheckIn() {
     setLoading(true)
     listGuests(eventId)
       .then((data) => {
-        setGuests(data ?? [])
+        setGuests(withQueued(data ?? [], readQueue(eventId)))
         setError('')
       })
       .catch((err) => setError(err.message || 'Impossible de charger les invités.'))
@@ -67,6 +68,30 @@ export default function CheckIn() {
   useEffect(() => {
     guestsRef.current = guests
   }, [guests])
+
+  // Entrées gardées sur ce téléphone pendant une coupure : envoyées au retour du réseau,
+  // puis toutes les 15 s tant qu'il en reste.
+  const queuedCount = guests.filter((g) => g.pendingSync).length
+  useEffect(() => {
+    if (!selectedEventId || !queuedCount) return undefined
+    let running = false
+    const flush = async () => {
+      if (running) return
+      running = true
+      const sent = await flushQueue(selectedEventId, checkInGuest)
+      running = false
+      if (!sent.length) return
+      const done = new Map(sent.map((s) => [s.guestId, s.guest]))
+      setGuests((prev) => prev.map((g) => (done.has(g.id) ? done.get(g.id) ?? { ...g, pendingSync: false } : g)))
+    }
+    flush()
+    window.addEventListener('online', flush)
+    const timer = setInterval(flush, 15000)
+    return () => {
+      window.removeEventListener('online', flush)
+      clearInterval(timer)
+    }
+  }, [selectedEventId, queuedCount])
 
   // Arrivée = pointage du jour J (checkedInAt), pas la réponse RSVP : un invité qui a
   // confirmé sa venue n'est pas encore arrivé.
@@ -98,13 +123,30 @@ export default function CheckIn() {
       setLastChecked(updated)
       setQuery('')
     } catch (err) {
-      setError(err.message || "L'enregistrement a échoué.")
+      if (!isNetworkError(err)) {
+        setError(err.message || "L'enregistrement a échoué.")
+        return
+      }
+      // Pas de réseau : le QR a déjà été reconnu sur ce téléphone, l'invité peut entrer.
+      const at = new Date().toISOString()
+      enqueueCheckin(selectedEventId, guest.id, at)
+      const local = { ...guest, checkedInAt: at, pendingSync: true }
+      setGuests((prev) => prev.map((g) => (g.id === guest.id ? local : g)))
+      setLastChecked(local)
+      setQuery('')
     } finally {
       setCheckingId('')
     }
   }
 
   const handleUndo = async (guest) => {
+    // Entrée pas encore envoyée : on la retire simplement de la file du téléphone.
+    if (guest.pendingSync) {
+      dequeueCheckin(selectedEventId, guest.id)
+      setGuests((prev) => prev.map((g) => (g.id === guest.id ? { ...g, checkedInAt: null, pendingSync: false } : g)))
+      if (lastChecked?.id === guest.id) setLastChecked(null)
+      return
+    }
     setCheckingId(guest.id)
     setError('')
     try {
@@ -231,6 +273,12 @@ export default function CheckIn() {
           {error}
         </p>
       )}
+      {queuedCount > 0 && (
+        <p role="status" className="mt-6 rounded-lg border border-brand-orange/30 bg-brand-orange/10 px-4 py-2.5 text-sm text-ink">
+          Pas de réseau : {queuedCount} entrée{queuedCount > 1 ? 's' : ''} gardée{queuedCount > 1 ? 's' : ''} sur ce téléphone.
+          Continuez à scanner ; l’envoi se fera dès le retour du réseau. Ne fermez pas cette page.
+        </p>
+      )}
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[380px_1fr]">
         <div className="rounded-2xl border border-border-soft bg-panel p-5">
@@ -260,7 +308,7 @@ export default function CheckIn() {
                 >
                   <Avatar name={guest.fullName} />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-ink">{guest.fullName}</p>
+                    <p className="truncate text-sm font-medium text-ink">{guest.fullName}{guest.seats > 1 && ` · ${guest.seats} places`}</p>
                     <p className="truncate text-xs text-faint">{guest.email}</p>
                   </div>
                   <span className="shrink-0 text-xs font-medium text-brand-purple">
@@ -310,7 +358,7 @@ export default function CheckIn() {
           {lastChecked && (
             <div className="mt-4 rounded-lg border border-success/30 bg-success/10 p-3">
               <p className="text-sm font-semibold text-success">Entrée validée</p>
-              <p className="mt-1 text-sm text-ink">{lastChecked.fullName}</p>
+              <p className="mt-1 text-sm text-ink">{lastChecked.fullName}{lastChecked.seats > 1 && ` · ${lastChecked.seats} places`}</p>
               {lastChecked.status === 'Absent' && (
                 <p className="mt-1 text-xs text-brand-orange">
                   Attention : cet invité avait décliné l'invitation.

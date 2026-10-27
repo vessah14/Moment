@@ -44,7 +44,7 @@ export default function cspPlugin(env) {
           "img-src 'self' data: blob: https:",
           // fonts.* : la capture des billets (PDF, image) intègre les polices des modèles.
           `connect-src 'self' ${apiOrigin} https://fonts.googleapis.com https://fonts.gstatic.com ${google.join(" ")} ${translate.join(" ")}`,
-          `frame-src 'self' https://www.google.com https://maps.google.com ${google.join(" ")} https://translate.google.com`,
+          `frame-src 'self' https://www.youtube-nocookie.com https://www.google.com https://maps.google.com ${google.join(" ")} https://translate.google.com`,
           "object-src 'none'",
           "base-uri 'self'",
         ].join("; ");

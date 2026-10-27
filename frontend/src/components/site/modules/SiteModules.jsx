@@ -12,6 +12,7 @@ import TicketCard, { ticketEventInfo } from '../../tickets/TicketCard'
 import { eventStartIso } from '../../../utils/ticketLive'
 import { useCheckInWatch } from '../../../utils/useCheckInWatch'
 import { operatorStyle, usableAccounts, usableColors } from '../../../utils/mobileMoney'
+import { parseVideoUrl } from '../../../utils/videoEmbed'
 
 // Modules du site d'événement partagés par le rendu classique (Tailwind) et les modèles
 // premium (classes .tbft) : familles, code vestimentaire, intervenants, partenaires,
@@ -95,6 +96,41 @@ export function DressCodeModule({ content, themed }) {
             </span>
           ))}
         </div>
+      )}
+    </div>
+  )
+}
+
+// ---------- Vidéo ou direct (proches à l'étranger) ----------
+export function VideoModule({ content, themed }) {
+  const c = cls(themed)
+  const video = parseVideoUrl(content.url)
+  const label = content.live ? 'Suivre le direct' : 'Voir la vidéo'
+  return (
+    <div className={themed ? 'card rv narrow' : `${c.card} mx-auto max-w-3xl`} style={{ textAlign: 'center' }}>
+      {content.body?.trim() && <p className={c.muted} style={{ margin: '0 0 1rem', whiteSpace: 'pre-line' }}>{content.body}</p>}
+      {video?.kind === 'youtube' && (
+        <div style={{ position: 'relative', paddingTop: '56.25%', borderRadius: 12, overflow: 'hidden', background: '#000' }}>
+          <iframe
+            src={video.embedUrl}
+            title={content.live ? 'Direct de l’événement' : 'Vidéo de l’événement'}
+            loading="lazy"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }}
+          />
+        </div>
+      )}
+      {video && (
+        <a
+          href={video.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={themed ? 'btn' : 'mt-4 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white'}
+          style={themed ? { marginTop: '1rem' } : { backgroundColor: 'var(--color-brand-purple)' }}
+        >
+          {video.kind === 'youtube' ? `${label} sur YouTube` : label}
+        </a>
       )}
     </div>
   )

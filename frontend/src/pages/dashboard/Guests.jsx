@@ -259,6 +259,7 @@ export default function Guests() {
             phone: g.phone,
             email: g.email,
             status: g.status,
+            seats: g.seats ?? null,
           }),
         ),
       )
@@ -279,12 +280,13 @@ export default function Guests() {
     const phone = form.get('phone')?.toString().trim()
     const email = form.get('email')?.toString().trim()
     const groupId = form.get('group')?.toString() || undefined
+    const seats = Number(form.get('seats')) || null
     const sendInvitation = form.get('sendInvitation') === 'on' && Boolean(email)
     if (!fullName) return
 
     setError('')
     try {
-      await createGuest({ fullName, phone, email, sendInvitation }, { eventId: selectedEventId, groupId })
+      await createGuest({ fullName, phone, email, seats, sendInvitation }, { eventId: selectedEventId, groupId })
       await reloadGuests()
       toast(
         !email
@@ -447,6 +449,18 @@ export default function Guests() {
             />
           </label>
           <label className="block">
+            <span className="text-xs font-medium text-ink">Places</span>
+            <input
+              name="seats"
+              type="number"
+              min={1}
+              max={50}
+              placeholder="Auto"
+              title="Places pour cette invitation, invité compris (ex. 2 pour un couple). Vide : règle du formulaire de réponse."
+              className="mt-1.5 w-20 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-brand-purple"
+            />
+          </label>
+          <label className="block">
             <span className="text-xs font-medium text-ink">Groupe</span>
             <select
               name="group"
@@ -540,7 +554,7 @@ export default function Guests() {
                 />
                 <Avatar name={guest.fullName} />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-ink">{guest.fullName}</p>
+                  <p className="truncate font-medium text-ink">{guest.fullName}{guest.seats > 1 && <span className="ml-1.5 text-xs font-normal text-faint">· {guest.seats} places</span>}</p>
                   <p className="break-all text-xs text-muted">{guest.email || 'Aucun e-mail'}</p>
                   <p className="text-xs text-faint">{guest.phone || 'Aucun téléphone'}</p>
                 </div>
@@ -653,7 +667,7 @@ export default function Guests() {
                       <div className="flex items-center gap-3">
                         <Avatar name={guest.fullName} />
                         <div>
-                          <p className="font-medium text-ink">{guest.fullName}</p>
+                          <p className="font-medium text-ink">{guest.fullName}{guest.seats > 1 && <span className="ml-1.5 text-xs font-normal text-faint">· {guest.seats} places</span>}</p>
                           {sideByGuest[guest.id] && <p className="text-xs text-faint">{sideByGuest[guest.id]}</p>}
                           {maybeGuests.has(guest.id) && <p className="text-xs text-brand-orange">A répondu « Peut-être »</p>}
                         </div>

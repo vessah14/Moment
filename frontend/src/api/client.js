@@ -22,11 +22,18 @@ export const API_ORIGIN = API_URL.replace(/\/api\/?$/, '')
 // URL d'affichage d'une image téléversée : les chemins « /uploads/… » sont servis par le
 // backend ; les images Cloudinary (URL https complètes) sont servies par leur CDN, en
 // format et qualité automatiques (WebP/AVIF selon le navigateur, poids réduit).
-// Lien de partage d'un site d'événement (WhatsApp, Facebook…) : servi par l'API avec le
-// vrai titre, la description et la couverture, puis redirige vers le site. Le lien direct
-// /e/... n'afficherait que l'aperçu générique (le site est une application monopage).
+const SITE_ORIGIN = (import.meta.env.VITE_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/+$/, '')
+
+// Lien de partage d'un site d'événement (WhatsApp, Facebook…) : l'adresse lisible
+// tbfmoment.com/e/... ; le site renvoie les robots d'aperçu vers l'API, qui leur sert le
+// vrai titre et l'affiche (frontend/vercel.json).
 export function eventShareUrl(slug) {
-  return `${API_ORIGIN}/share/e/${encodeURIComponent(slug)}`
+  return `${SITE_ORIGIN}/e/${encodeURIComponent(slug)}`
+}
+
+// Images du kit de partage : 'square' (discussions WhatsApp) ou 'story' (Statut).
+export function eventPosterUrl(slug, format) {
+  return `${API_ORIGIN}/share/e/${encodeURIComponent(slug)}/poster-${format}.png`
 }
 
 export function mediaUrl(path) {

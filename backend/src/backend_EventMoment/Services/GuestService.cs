@@ -43,6 +43,7 @@ namespace backend_EventMoment.Services
                 FullName = dto.FullName,
                 Phone = dto.Phone,
                 Email = dto.Email ?? string.Empty,
+                Seats = dto.Seats,
                 Status = GuestStatus.EnAttente,
                 CreatedAt = DateTimeOffset.UtcNow,
                 UpdatedAt = DateTimeOffset.UtcNow
@@ -193,6 +194,7 @@ namespace backend_EventMoment.Services
             entity.FullName = dto.FullName;
             entity.Phone = dto.Phone;
             entity.Email = dto.Email ?? string.Empty;
+            entity.Seats = dto.Seats;
             entity.Status = dto.Status;
             entity.UpdatedAt = DateTimeOffset.UtcNow;
 
@@ -321,7 +323,7 @@ namespace backend_EventMoment.Services
                 .Select(c => (DateTimeOffset?)c.CheckedInAt)
                 .FirstOrDefaultAsync();
 
-            var rules = RsvpRules.Read(await RsvpBlockContentAsync(guest.EventId));
+            var rules = RsvpRules.Read(await RsvpBlockContentAsync(guest.EventId)).ForSeats(guest.Seats);
             var invitation = MapInvitation(guest, eventEntity, location, rsvp, rules, checkedInAt);
             invitation.DisplayTitle = await HeroTitleAsync(guest.EventId);
             return invitation;
@@ -374,7 +376,7 @@ namespace backend_EventMoment.Services
             if (eventEntity == null) return null;
 
             var rsvpBlock = await RsvpBlockContentAsync(guest.EventId);
-            var rules = RsvpRules.Read(rsvpBlock);
+            var rules = RsvpRules.Read(rsvpBlock).ForSeats(guest.Seats);
             EnsureOpen(rules, eventEntity);
             // « Peut-être » : réponse enregistrée, présence ni confirmée ni déclinée.
             var confirmed = dto.Confirmed && !dto.Maybe;
@@ -552,6 +554,7 @@ namespace backend_EventMoment.Services
             Phone = entity.Phone ?? string.Empty,
             Email = entity.Email ?? string.Empty,
             GroupId = entity.GroupId,
+            Seats = entity.Seats,
             Status = entity.Status
         };
     }

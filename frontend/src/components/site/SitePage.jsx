@@ -1,4 +1,5 @@
 import {
+  CalendarPlus,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -15,7 +16,8 @@ import {
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
-import { mediaUrl } from '../../api/client'
+import { eventShareUrl, mediaUrl } from '../../api/client'
+import { googleCalendarUrl, handleAddToCalendar } from '../../utils/calendar'
 import logoMark from '../../assets/logo-mark.png'
 import {
   safeBlockImagePath,
@@ -25,7 +27,8 @@ import {
 import { HEADING_FONT_STACKS, siteRootStyle } from '../../utils/templateTheme'
 import GuestBookForm from '../minisite/GuestBookForm'
 import BlockToolbar from './BlockToolbar'
-import { DressCodeModule, FamiliesModule, GiftModule, PartnersModule, RsvpModule, SeatingModule, SpeakersModule } from './modules/SiteModules'
+import { DressCodeModule, FamiliesModule, GiftModule, PartnersModule, RsvpModule, SeatingModule, SpeakersModule, VideoModule } from './modules/SiteModules'
+import { parseVideoUrl } from '../../utils/videoEmbed'
 import { usablePartners, usablePeople, usableVenues } from '../../utils/blockLists'
 import { usableColors } from '../../utils/mobileMoney'
 import ThemedSitePage from './themes/ThemedSitePage'
@@ -468,13 +471,27 @@ function renderBlockBody({ block, content, data, editable, editor, fullPage, ani
           </Placeholder>
         ) : null
       }
+      const start = new Date(data.eventDateTime)
+      const calendar = { title: data.title || 'Événement', start, location: data.locationAddress, url: data.slug ? eventShareUrl(data.slug) : undefined, uid: data.slug }
       return (
-        <Countdown
-          target={new Date(data.eventDateTime).getTime()}
-          editable={editable}
-          fullPage={fullPage}
-          animate={animate}
-        />
+        <div className="flex flex-col items-center gap-5">
+          <Countdown
+            target={start.getTime()}
+            editable={editable}
+            fullPage={fullPage}
+            animate={animate}
+          />
+          <a
+            href={googleCalendarUrl(calendar)}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => (editable ? e.preventDefault() : handleAddToCalendar(e, calendar))}
+            className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-semibold text-ink transition hover:border-faint"
+          >
+            <CalendarPlus className="h-4 w-4" aria-hidden="true" />
+            Ajouter à mon agenda
+          </a>
+        </div>
       )
     }
 
@@ -780,6 +797,11 @@ function renderBlockBody({ block, content, data, editable, editor, fullPage, ani
       const filled = content.title?.trim() || body || usableColors(content.colors).length
       if (!filled) return editable ? <Placeholder>Décrivez la tenue et ses couleurs dans l'onglet Contenu, à droite.</Placeholder> : null
       return <DressCodeModule content={content} />
+    }
+
+    case 'Vidéo': {
+      if (!parseVideoUrl(content.url)) return editable ? <Placeholder>Collez le lien YouTube ou Facebook de la vidéo ou du direct dans l'onglet Contenu, à droite.</Placeholder> : null
+      return <VideoModule content={content} />
     }
 
     case 'Cadeaux': {
