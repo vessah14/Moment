@@ -8,5 +8,7 @@ namespace backend_EventMoment.Interfaces
         Task<List<GalleryPhotoDto>> GetAllAsync(Guid eventId, Guid organizerId);
         Task<GalleryPhotoDto> UpdateStatusAsync(Guid id, UpdateGalleryPhotoStatusDto dto, Guid organizerId);
         Task<string?> DeleteAsync(Guid id, Guid organizerId);
+        Task<(Guid EventId, Guid OrganizerId)?> FindGuestUploadEventAsync(string slug);
+        Task<GalleryPhotoDto> CreateGuestPhotoAsync(Guid eventId, string url, string? uploadedBy);
     }
 }

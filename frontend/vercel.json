@@ -37,6 +37,10 @@
       "dest": "/index.html"
     },
     {
+      "src": "/e/[^/]+/mur/?",
+      "dest": "/index.html"
+    },
+    {
       "src": "/dashboard(?:/.*)?",
       "dest": "/index.html"
     },

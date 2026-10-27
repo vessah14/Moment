@@ -35,6 +35,59 @@ namespace backend_EventMoment.Services
             return Map(entity);
         }
 
+        public const int MaxGuestNameLength = 80;
+
+        // Album des invités : seulement pour un événement publié, non suspendu, dont la page
+        // montre la Galerie, et si l'organisateur n'a pas fermé les envois
+        // (bloc Galerie : {"guestUploads": false}).
+        public async Task<(Guid EventId, Guid OrganizerId)?> FindGuestUploadEventAsync(string slug)
+        {
+            var eventEntity = await _context.Events.IgnoreQueryFilters().AsNoTracking()
+                .FirstOrDefaultAsync(e => e.Slug == slug && e.Status == EventStatus.Publie
+                    && !_context.EventModerations.Any(m => m.EventId == e.Id));
+            if (eventEntity == null) return null;
+
+            var gallery = await _context.EventBlocks.IgnoreQueryFilters().AsNoTracking()
+                .Where(b => b.EventId == eventEntity.Id && b.IsVisible && b.BlockType == "Galerie")
+                .Select(b => b.Content)
+                .FirstOrDefaultAsync();
+            if (gallery == null || !GuestUploadsOpen(gallery)) return null;
+            return (eventEntity.Id, eventEntity.OrganizerId);
+        }
+
+        private static bool GuestUploadsOpen(string content)
+        {
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(content);
+                return !(doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object
+                    && doc.RootElement.TryGetProperty("guestUploads", out var open)
+                    && open.ValueKind == System.Text.Json.JsonValueKind.False);
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                return true;
+            }
+        }
+
+        // Photo d'invité : toujours en attente, rien n'est publié sans validation de l'organisateur.
+        public async Task<GalleryPhotoDto> CreateGuestPhotoAsync(Guid eventId, string url, string? uploadedBy)
+        {
+            var name = uploadedBy?.Trim();
+            var entity = new GalleryPhoto
+            {
+                Id = Guid.NewGuid(),
+                EventId = eventId,
+                Url = url,
+                UploadedBy = string.IsNullOrEmpty(name) ? null : name.Length > MaxGuestNameLength ? name[..MaxGuestNameLength] : name,
+                Status = GalleryPhotoStatus.EnAttente,
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+            _context.GalleryPhotos.Add(entity);
+            await _context.SaveChangesAsync();
+            return Map(entity);
+        }
+
         public async Task<List<GalleryPhotoDto>> GetAllAsync(Guid eventId, Guid organizerId)
         {
             if (!await _context.Events.AnyAsync(e => e.Id == eventId && e.OrganizerId == organizerId))

@@ -50,6 +50,60 @@ namespace backend_EventMoment.Services
                 .ToList();
         }
 
+        public const int WallItems = 60;
+
+        // Mur du jour J : ne dépend pas des sections affichées sur la page (Galerie, Livre
+        // d'or) ; seuls les photos et messages publiés (validés par l'organisateur) y passent.
+        public async Task<PublicWallDto?> GetWallAsync(string slug)
+        {
+            var eventEntity = await _context.Events.IgnoreQueryFilters().AsNoTracking()
+                .FirstOrDefaultAsync(e => e.Slug == slug && e.Status == EventStatus.Publie
+                    && !_context.EventModerations.Any(m => m.EventId == e.Id));
+            if (eventEntity == null) return null;
+
+            var heroContent = await _context.EventBlocks.IgnoreQueryFilters().AsNoTracking()
+                .Where(b => b.EventId == eventEntity.Id && b.BlockType == "Hero")
+                .Select(b => b.Content)
+                .FirstOrDefaultAsync();
+            var eventDto = PublicEventMapper.Map(eventEntity, null, heroContent);
+
+            var photos = await _context.GalleryPhotos.IgnoreQueryFilters().AsNoTracking()
+                .Where(p => p.EventId == eventEntity.Id && p.Status == GalleryPhotoStatus.Publie)
+                .OrderByDescending(p => p.CreatedAt)
+                .Take(WallItems)
+                .Select(p => new GalleryPhotoDto
+                {
+                    Id = p.Id,
+                    Url = p.Url,
+                    Caption = p.Caption,
+                    UploadedBy = p.UploadedBy,
+                    Status = p.Status,
+                    CreatedAt = p.CreatedAt,
+                })
+                .ToListAsync();
+            var messages = await _context.GuestBookEntries.IgnoreQueryFilters().AsNoTracking()
+                .Where(g => g.EventId == eventEntity.Id && g.Status == GuestBookStatus.Publie)
+                .OrderByDescending(g => g.CreatedAt)
+                .Take(WallItems)
+                .Select(g => new PublicGuestBookEntryDto
+                {
+                    AuthorName = g.AuthorName,
+                    Message = g.Message,
+                    Reply = g.Reply,
+                    CreatedAt = g.CreatedAt,
+                })
+                .ToListAsync();
+
+            return new PublicWallDto
+            {
+                Slug = eventEntity.Slug,
+                Title = string.IsNullOrWhiteSpace(eventDto.HeroTitle) ? eventEntity.Name : eventDto.HeroTitle!,
+                ThemeColor = eventDto.HeroColor ?? eventEntity.ThemeColor,
+                Photos = photos,
+                Messages = messages,
+            };
+        }
+
         public async Task<PublicSiteDto?> GetPublicSiteAsync(string slug)
         {
             var eventEntity = await _context.Events.IgnoreQueryFilters().AsNoTracking()

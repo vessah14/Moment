@@ -31,7 +31,7 @@ import { eventShareUrl, mediaUrl } from '../../../api/client'
 import { signPublicGuestBook } from '../../../api/publicEvents'
 import { safeBlockImagePath, safeCoverPath, siteBlockDomId } from '../../../utils/sitePage'
 import BlockToolbar from '../BlockToolbar'
-import { DressCodeModule, FamiliesModule, GiftModule, GuestPass, PartnersModule, RsvpModule, SeatingModule, SpeakersModule, VideoModule } from '../modules/SiteModules'
+import { DressCodeModule, FamiliesModule, GiftModule, GuestPass, GuestPhotoUpload, PartnersModule, RsvpModule, SeatingModule, SpeakersModule, VideoModule } from '../modules/SiteModules'
 import { parseVideoUrl } from '../../../utils/videoEmbed'
 import { usableColors } from '../../../utils/mobileMoney'
 import { usablePartners, usablePeople, usableVenues } from '../../../utils/blockLists'
@@ -719,7 +719,9 @@ export default function ThemedSitePage({
         const photos = data.galleryPhotos ?? []
         // Sans photo : vignettes illustrées du modèle (légendes de la démo, s'il y en a).
         const tiles = photos.length ? [] : artTiles
-        if (!photos.length && !editable && !tiles.length) return null
+        // Album des invités : ouvert sauf si l'organisateur l'a fermé (guestUploads: false).
+        const guestUploads = !editable && Boolean(data.slug) && content.guestUploads !== false
+        if (!photos.length && !editable && !tiles.length && !guestUploads) return null
         return sectionShell(
           block,
           index,
@@ -773,6 +775,7 @@ export default function ThemedSitePage({
                   : 'Les photos de l’événement apparaîtront ici.'}
               </p>
             )}
+            {guestUploads && <GuestPhotoUpload themed slug={data.slug} />}
           </>,
         )
       }

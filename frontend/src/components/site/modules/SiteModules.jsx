@@ -2,7 +2,7 @@ import { Check, Copy, Gift, MapPin, Search, Ticket } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { submitPublicRsvp } from '../../../api/guests'
-import { findPublicSeat } from '../../../api/publicEvents'
+import { findPublicSeat, uploadGuestPhoto } from '../../../api/publicEvents'
 import { DEFAULT_SIDE_LABEL, usableSides } from '../../../data/rsvpSides'
 import { initialsOf } from '../../../utils/blockLists'
 import { deadlineLabel, deadlinePassed, rsvpRules } from '../../../utils/rsvpRules'
@@ -13,6 +13,7 @@ import { eventStartIso } from '../../../utils/ticketLive'
 import { useCheckInWatch } from '../../../utils/useCheckInWatch'
 import { operatorStyle, usableAccounts, usableColors } from '../../../utils/mobileMoney'
 import { parseVideoUrl } from '../../../utils/videoEmbed'
+import { compressImage } from '../../../utils/imageCompress'
 
 // Modules du site d'événement partagés par le rendu classique (Tailwind) et les modèles
 // premium (classes .tbft) : familles, code vestimentaire, intervenants, partenaires,
@@ -97,6 +98,57 @@ export function DressCodeModule({ content, themed }) {
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+// ---------- Album des invités : envoi de photos depuis la page ----------
+// Chaque photo est réduite sur le téléphone puis attend la validation de l'organisateur.
+export function GuestPhotoUpload({ slug, themed }) {
+  const c = cls(themed)
+  const [name, setName] = useState('')
+  const [progress, setProgress] = useState(null)
+  const [done, setDone] = useState(0)
+  const [error, setError] = useState('')
+
+  const send = async (e) => {
+    const files = Array.from(e.target.files ?? []).slice(0, 10)
+    e.target.value = ''
+    if (!files.length) return
+    setError('')
+    let sent = 0
+    for (let i = 0; i < files.length; i++) {
+      setProgress({ current: i + 1, total: files.length })
+      try {
+        await uploadGuestPhoto(slug, await compressImage(files[i]), name)
+        sent++
+      } catch (err) {
+        setError(err.message || 'Une photo n’a pas pu être envoyée.')
+        break
+      }
+    }
+    setProgress(null)
+    setDone((n) => n + sent)
+  }
+
+  return (
+    <div className={themed ? 'card rv narrow' : `${c.card} mx-auto mt-6 max-w-xl`} style={{ textAlign: 'center', display: 'grid', gap: '.8rem' }} onClick={stop}>
+      <p className={c.title} style={{ margin: 0 }}>Partagez vos photos</p>
+      <p className={c.muted} style={{ margin: 0 }}>Elles rejoindront l’album après validation par les organisateurs.</p>
+      <label className={themed ? 'field' : 'block text-left text-xs font-semibold tracking-wider text-muted uppercase'}>
+        <span>Votre prénom (facultatif)</span>
+        <input className={c.input} maxLength={80} value={name} onChange={(e) => setName(e.target.value)} />
+      </label>
+      <label className={c.btn} style={{ cursor: progress ? 'wait' : 'pointer', justifySelf: 'center' }}>
+        {progress ? `Envoi ${progress.current} / ${progress.total}…` : 'Ajouter mes photos'}
+        <input type="file" accept="image/*" multiple hidden disabled={Boolean(progress)} onChange={send} />
+      </label>
+      {done > 0 && !progress && (
+        <p className={c.muted} role="status" style={{ margin: 0 }}>
+          Merci ! {done} photo{done > 1 ? 's envoyées' : ' envoyée'}, visible{done > 1 ? 's' : ''} après validation.
+        </p>
+      )}
+      {error && <p className={themed ? 'err' : 'text-sm text-danger'} role="alert" style={{ margin: 0 }}>{error}</p>}
     </div>
   )
 }

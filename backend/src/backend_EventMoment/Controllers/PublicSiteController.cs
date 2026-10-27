@@ -39,6 +39,16 @@ namespace backend_EventMoment.Controllers
             public string? Type { get; set; }
         }
 
+        // Mur du jour J, projeté dans la salle (relu toutes les 15 s par la page /e/{slug}/mur).
+        [HttpGet("api/public/events/{slug}/wall")]
+        [AllowAnonymous]
+        [EnableRateLimiting("public-browse")]
+        public async Task<IActionResult> GetWall(string slug)
+        {
+            var result = await _service.GetWallAsync(slug);
+            return result == null ? NotFound() : Ok(result);
+        }
+
         [HttpGet("api/public/events/{slug}/site")]
         [AllowAnonymous]
         [EnableRateLimiting("public-browse")]

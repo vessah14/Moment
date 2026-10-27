@@ -27,7 +27,7 @@ import {
 import { HEADING_FONT_STACKS, siteRootStyle } from '../../utils/templateTheme'
 import GuestBookForm from '../minisite/GuestBookForm'
 import BlockToolbar from './BlockToolbar'
-import { DressCodeModule, FamiliesModule, GiftModule, PartnersModule, RsvpModule, SeatingModule, SpeakersModule, VideoModule } from './modules/SiteModules'
+import { DressCodeModule, FamiliesModule, GiftModule, GuestPhotoUpload, PartnersModule, RsvpModule, SeatingModule, SpeakersModule, VideoModule } from './modules/SiteModules'
 import { parseVideoUrl } from '../../utils/videoEmbed'
 import { usablePartners, usablePeople, usableVenues } from '../../utils/blockLists'
 import { usableColors } from '../../utils/mobileMoney'
@@ -628,15 +628,22 @@ function renderBlockBody({ block, content, data, editable, editor, fullPage, ani
 
     case 'Galerie': {
       const photos = data.galleryPhotos ?? []
-      if (photos.length === 0 && !editable) return null
+      // Album des invités : ouvert sauf si l'organisateur l'a fermé (guestUploads: false).
+      const guestUploads = !editable && Boolean(data.slug) && content.guestUploads !== false
+      if (photos.length === 0 && !editable && !guestUploads) return null
       return (
-        <GalleryGrid
-          photos={photos}
-          editable={editable}
-          editor={editor}
-          fullPage={fullPage}
-          animate={animate}
-        />
+        <>
+          {(photos.length > 0 || editable) && (
+            <GalleryGrid
+              photos={photos}
+              editable={editable}
+              editor={editor}
+              fullPage={fullPage}
+              animate={animate}
+            />
+          )}
+          {guestUploads && <GuestPhotoUpload slug={data.slug} />}
+        </>
       )
     }
 

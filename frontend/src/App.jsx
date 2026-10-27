@@ -38,6 +38,7 @@ const Home = lazy(() => import('./pages/Home'))
 const LegalNotice = lazy(() => import('./pages/LegalNotice'))
 const Login = lazy(() => import('./pages/Login'))
 const MiniSite = lazy(() => import('./pages/MiniSite'))
+const EventWall = lazy(() => import('./pages/EventWall'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 const Pricing = lazy(() => import('./pages/Pricing'))
 const TicketModels = lazy(() => import('./pages/TicketModels'))
@@ -114,6 +115,7 @@ function App () {
           <Route path='/invitation/:code' element={<GuestInvitation />} />
           <Route path='/cadeaux/:code' element={<GiftRegistryPublic />} />
           <Route path='/e/:slug' element={<MiniSite />} />
+          <Route path='/e/:slug/mur' element={<EventWall />} />
 
           <Route
             path='/dashboard'
