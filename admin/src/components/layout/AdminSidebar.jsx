@@ -1,10 +1,13 @@
 import {
   Banknote,
+  Activity,
+  BookOpen,
   Building2,
   Calendar,
   ChevronsLeft,
   ChevronsRight,
   Home,
+  HeartPulse,
   LayoutDashboard,
   LogOut,
   MessageSquareText,
@@ -28,7 +31,10 @@ const NAV_ITEMS = [
   { label: 'Facturation', to: '/admin/facturation', icon: Banknote },
   { label: 'Avis clients', to: '/admin/avis', icon: MessageSquareText },
   { label: 'Modération', to: '/admin/moderation', icon: ShieldAlert },
-  { label: 'Paramètres système', to: '/admin/parametres', icon: Sliders }
+  { label: 'Paramètres système', to: '/admin/parametres', icon: Sliders },
+  { label: 'Santé technique', to: '/admin/sante', icon: HeartPulse },
+  { label: 'Catalogue', to: '/admin/catalogue', icon: BookOpen },
+  { label: "Journal d'activité", to: '/admin/activite', icon: Activity }
 ]
 
 export default function AdminSidebar ({ open, onClose }) {

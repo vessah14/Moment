@@ -16,15 +16,33 @@ namespace backend_EventMoment.Controllers
     public class AdminPlatformController : ControllerBase
     {
         private readonly IAdminPlatformService _service;
+        private readonly IAdminTelemetryService _telemetry;
         private readonly IPlanService _plans;
         private readonly IReviewService _reviews;
 
-        public AdminPlatformController(IAdminPlatformService service, IPlanService plans, IReviewService reviews)
+        public AdminPlatformController(
+            IAdminPlatformService service,
+            IAdminTelemetryService telemetry,
+            IPlanService plans,
+            IReviewService reviews)
         {
             _service = service;
+            _telemetry = telemetry;
             _plans = plans;
             _reviews = reviews;
         }
+
+        [HttpGet("dashboard")]
+        public async Task<IActionResult> GetDashboard(CancellationToken cancellationToken) =>
+            Ok(await _telemetry.GetDashboardAsync(cancellationToken));
+
+        [HttpGet("health")]
+        public async Task<IActionResult> GetSystemHealth(CancellationToken cancellationToken) =>
+            Ok(await _telemetry.GetSystemHealthAsync(cancellationToken));
+
+        [HttpGet("activity")]
+        public async Task<IActionResult> GetActivity([FromQuery] int limit = 100, CancellationToken cancellationToken = default) =>
+            Ok(await _telemetry.GetActivityAsync(limit, cancellationToken));
 
         [HttpGet("organizations")]
         public async Task<IActionResult> GetOrganizations()

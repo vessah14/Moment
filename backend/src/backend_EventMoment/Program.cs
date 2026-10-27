@@ -243,6 +243,8 @@ builder.Services.AddSingleton<LoginThrottle>();
 builder.Services.AddSingleton<SessionRevocations>();
 builder.Services.AddScoped<IAdminAccountService, AdminAccountService>();
 builder.Services.AddScoped<IAdminPlatformService, AdminPlatformService>();
+builder.Services.AddScoped<IAdminTelemetryService, AdminTelemetryService>();
+builder.Services.AddHostedService<AdminTelemetryRetentionService>();
 builder.Services.AddScoped<IPublicSiteService, PublicSiteService>();
 builder.Services.AddScoped<IPublicSeatingService, PublicSeatingService>();
 builder.Services.AddScoped<IEventService, EventService>();
@@ -453,6 +455,76 @@ app.UseCors("Frontend");
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
+app.Use(async (context, next) =>
+{
+    var isAdminApi = context.Request.Path.StartsWithSegments("/api/admin");
+    var isMutation = !HttpMethods.IsGet(context.Request.Method)
+        && !HttpMethods.IsHead(context.Request.Method)
+        && !HttpMethods.IsOptions(context.Request.Method);
+    var isSuperadmin = context.User.Identity?.IsAuthenticated == true
+        && context.User.IsInRole(AdminRole.Superadmin.ToString());
+    var route = context.Request.Path.Value ?? "/";
+    if (route.Length > 300)
+        route = route[..300];
+
+    try
+    {
+        await next();
+    }
+    catch (Exception exception)
+    {
+        if (context.Response.StatusCode >= 500 || exception is DbUpdateException)
+        {
+            var statusCode = exception is DbUpdateException ? StatusCodes.Status409Conflict : StatusCodes.Status500InternalServerError;
+            var category = exception is DbUpdateException ? "Conflit de données" : "Erreur interne";
+            try
+            {
+                await context.RequestServices.GetRequiredService<IAdminTelemetryService>()
+                    .RecordTechnicalErrorAsync(category, route, statusCode, CancellationToken.None);
+            }
+            catch (Exception loggingException)
+            {
+                context.RequestServices.GetRequiredService<ILogger<Program>>()
+                    .LogError(loggingException, "Impossible d'enregistrer l'erreur technique pour {Path}", route);
+            }
+        }
+
+        throw;
+    }
+
+    if (isAdminApi && isMutation && isSuperadmin && context.Response.StatusCode is >= 200 and < 400)
+    {
+        var adminId = Guid.TryParse(context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var id) ? id : (Guid?)null;
+        var email = context.User.FindFirst(ClaimTypes.Email)?.Value
+            ?? context.User.Identity?.Name
+            ?? "administrateur";
+        try
+        {
+            await context.RequestServices.GetRequiredService<IAdminTelemetryService>()
+                .RecordActivityAsync(adminId, email, context.Request.Method, route, CancellationToken.None);
+        }
+        catch (Exception loggingException)
+        {
+            context.RequestServices.GetRequiredService<ILogger<Program>>()
+                .LogError(loggingException, "Impossible d'enregistrer l'activité admin pour {Path}", route);
+        }
+    }
+
+    if (isAdminApi && context.Response.StatusCode is 409 or >= 500)
+    {
+        var category = context.Response.StatusCode == 409 ? "Conflit de données" : "Erreur interne";
+        try
+        {
+            await context.RequestServices.GetRequiredService<IAdminTelemetryService>()
+                .RecordTechnicalErrorAsync(category, route, context.Response.StatusCode, CancellationToken.None);
+        }
+        catch (Exception loggingException)
+        {
+            context.RequestServices.GetRequiredService<ILogger<Program>>()
+                .LogError(loggingException, "Impossible d'enregistrer l'erreur technique pour {Path}", route);
+        }
+    }
+});
 app.MapControllers();
 // Métriques Prometheus (routes appelées, volumes, connexions à la base, mémoire) : jamais
 // publiques. En développement (Docker local), Prometheus les lit directement ; ailleurs,

@@ -1,5 +1,17 @@
 import { apiFetch } from './client'
 
+export function getDashboardSummary() {
+  return apiFetch('/admin/platform/dashboard')
+}
+
+export function getSystemHealth() {
+  return apiFetch('/admin/platform/health')
+}
+
+export function listAdminActivity(limit = 100) {
+  return apiFetch(`/admin/platform/activity?limit=${limit}`)
+}
+
 export function listOrganizations() {
   return apiFetch('/admin/platform/organizations')
 }

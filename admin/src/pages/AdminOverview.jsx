@@ -3,55 +3,68 @@ import { Link } from 'react-router-dom'
 import AdminLayout from '../components/layout/AdminLayout'
 import StatCard from '../components/dashboard/StatCard'
 import StatusBadge from '../components/ui/StatusBadge'
-import { listModerationQueue, listOrganizations, listPlatformEvents, listTransactions } from '../api/platform'
-import { formatCents } from '../utils/formatCurrency'
+import {
+  getDashboardSummary,
+  listModerationQueue,
+  listOrganizations,
+} from '../api/platform'
+
+const dateLabel = (value) => {
+  const [year, month, day] = value.split('-').map(Number)
+  return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' })
+    .format(new Date(year, month - 1, day))
+}
 
 export default function AdminOverview() {
+  const [dashboard, setDashboard] = useState(null)
   const [organizations, setOrganizations] = useState([])
-  const [events, setEvents] = useState([])
   const [moderationQueue, setModerationQueue] = useState([])
-  const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    Promise.all([listOrganizations(), listPlatformEvents(), listModerationQueue(), listTransactions()])
-      .then(([orgs, evts, queue, txs]) => {
+    Promise.all([getDashboardSummary(), listOrganizations(), listModerationQueue()])
+      .then(([summary, orgs, queue]) => {
+        setDashboard(summary)
         setOrganizations(orgs ?? [])
-        setEvents(evts ?? [])
         setModerationQueue(queue ?? [])
-        setTransactions(txs ?? [])
         setError('')
       })
       .catch((err) => setError(err.message || "Impossible de charger la vue d'ensemble."))
       .finally(() => setLoading(false))
   }, [])
 
-  const publishedCount = events.filter((e) => e.status === 'Publié').length
-  const draftCount = events.filter((e) => e.status === 'Brouillon').length
-  const mrr = transactions.reduce((sum, t) => sum + t.amountCents, 0)
-  const totalGuests = events.reduce((sum, e) => sum + e.guests, 0)
-
-  const stats = [
-    {
-      label: 'Organisations actives',
-      value: String(organizations.filter((o) => o.isActive).length),
-    },
-    {
-      label: 'Événements créés',
-      value: String(events.length),
-      hint: `${publishedCount} publiés · ${draftCount} brouillon(s)`,
-    },
-    { label: 'MRR', value: formatCents(mrr) },
-    { label: 'Invités cumulés', value: String(totalGuests), hint: 'tous événements confondus' },
-  ]
+  const stats = dashboard
+    ? [
+        {
+          label: 'Organisations actives',
+          value: String(dashboard.activeOrganizations),
+          hint: `+${dashboard.trends.organizations} cette semaine`,
+        },
+        {
+          label: 'Événements',
+          value: String(dashboard.totalEvents),
+          hint: `+${dashboard.trends.events} cette semaine`,
+        },
+        {
+          label: 'Invités cumulés',
+          value: String(dashboard.totalGuests),
+          hint: `+${dashboard.trends.guests} cette semaine`,
+        },
+        {
+          label: 'Alertes à traiter',
+          value: String(dashboard.moderationAlerts + dashboard.failedPayments + dashboard.errorsLast24Hours),
+          hint: `${dashboard.moderationAlerts} modération · ${dashboard.kPayEnabled ? `${dashboard.failedPayments} paiement(s) échoué(s)` : 'KPay désactivé'} · ${dashboard.errorsLast24Hours} erreur(s) / 24 h`,
+        },
+      ]
+    : []
 
   return (
     <AdminLayout>
       <div>
         <h1 className="text-2xl font-bold text-ink">Vue globale</h1>
         <p className="mt-1.5 text-sm text-muted">
-          État de la plateforme TBF Moment, tous comptes confondus.
+          Indicateurs réels de la plateforme et évolution sur les 7 derniers jours.
         </p>
       </div>
 
@@ -61,20 +74,132 @@ export default function AdminOverview() {
         </p>
       )}
 
+      {dashboard && (
+        <section
+          aria-label="Alertes de la plateforme"
+          className={`mt-5 rounded-xl border px-4 py-3 ${
+            dashboard.moderationAlerts + dashboard.failedPayments + dashboard.errorsLast24Hours > 0
+              ? 'border-danger/30 bg-danger/10'
+              : 'border-success/30 bg-success/10'
+          }`}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm font-semibold text-ink">
+              {dashboard.moderationAlerts + dashboard.failedPayments + dashboard.errorsLast24Hours > 0
+                ? 'Alertes à traiter'
+                : 'Aucune alerte à traiter'}
+            </p>
+            <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+              {dashboard.moderationAlerts > 0 && (
+                <Link to="/admin/moderation" className="text-danger hover:underline">
+                  {dashboard.moderationAlerts} signalement(s)
+                </Link>
+              )}
+              {dashboard.kPayEnabled && dashboard.failedPayments > 0 && (
+                <Link to="/admin/facturation" className="text-danger hover:underline">
+                  {dashboard.failedPayments} paiement(s) échoué(s)
+                </Link>
+              )}
+              {dashboard.errorsLast24Hours > 0 && (
+                <Link to="/admin/sante" className="text-danger hover:underline">
+                  {dashboard.errorsLast24Hours} erreur(s) technique(s) · 24 h
+                </Link>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
       <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
         {loading
-          ? stats.map((s) => <StatCard key={s.label} label={s.label} value="…" />)
+          ? ['Organisations actives', 'Événements', 'Invités cumulés', 'Alertes à traiter'].map((label) => (
+              <StatCard key={label} label={label} value="…" />
+            ))
           : stats.map((stat) => <StatCard key={stat.label} {...stat} />)}
       </div>
+
+      {dashboard && (
+        <>
+          <div className="mt-8 grid gap-6 lg:grid-cols-2">
+            <section className="rounded-2xl border border-border-soft bg-surface p-5">
+              <h2 className="font-semibold text-ink">Parcours des organisations</h2>
+              <p className="mt-1 text-xs text-faint">Étapes cumulées depuis l’inscription.</p>
+              <div className="mt-5 space-y-4">
+                {dashboard.funnel.map((step, index) => {
+                  const total = dashboard.funnel[0]?.organizations ?? 0
+                  const percent = total ? Math.round((step.organizations / total) * 100) : 0
+                  return (
+                    <div key={step.label}>
+                      <div className="mb-1.5 flex justify-between text-sm">
+                        <span className="text-muted">{index + 1}. {step.label}</span>
+                        <span className="font-mono text-ink">{step.organizations} <span className="text-faint">({percent} %)</span></span>
+                      </div>
+                      <div className="h-2 overflow-hidden rounded-full bg-surface-2">
+                        <div className="h-full rounded-full bg-brand-purple" style={{ width: `${percent}%` }} />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-border-soft bg-surface p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="font-semibold text-ink">Événements des 7 prochains jours</h2>
+                  <p className="mt-1 text-xs text-faint">Événements datés à venir.</p>
+                </div>
+                <Link to="/admin/evenements" className="text-sm text-brand-purple hover:underline">
+                  Tout voir
+                </Link>
+              </div>
+              <div className="mt-4 space-y-3">
+                {dashboard.upcomingEvents.length === 0 && (
+                  <p className="text-sm text-faint">Aucun événement prévu cette semaine.</p>
+                )}
+                {dashboard.upcomingEvents.map((event) => (
+                  <div key={event.id} className="flex items-center justify-between gap-3 rounded-lg border border-border-soft px-4 py-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-ink">{event.name}</p>
+                      <p className="mt-1 truncate text-xs text-faint">{event.organization} · {event.guests} invité(s)</p>
+                    </div>
+                    <span className="shrink-0 text-xs text-muted">{dateLabel(event.eventDate)}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+
+          <section className="mt-6 rounded-2xl border border-border-soft bg-surface p-5">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-ink">Activité des 7 derniers jours</h2>
+              <Link to="/admin/activite" className="text-sm text-brand-purple hover:underline">
+                Journal d’activité
+              </Link>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+              {[
+                ['Inscriptions', dashboard.trends.organizations],
+                ['Événements créés', dashboard.trends.events],
+                ['Événements publiés', dashboard.trends.publishedEvents],
+                ['Invités ajoutés', dashboard.trends.guests],
+                ['Réponses RSVP', dashboard.trends.rsvps],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-lg border border-border-soft px-3 py-3">
+                  <p className="text-xs text-faint">{label}</p>
+                  <p className="mt-1 font-mono text-xl font-semibold text-ink">{value}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        </>
+      )}
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[2fr_1fr]">
         <div className="rounded-2xl border border-border-soft bg-surface">
           <div className="flex items-center justify-between px-6 py-5">
             <h2 className="font-semibold text-ink">Dernières organisations</h2>
-            <Link
-              to="/admin/organisations"
-              className="text-sm text-brand-purple hover:underline"
-            >
+            <Link to="/admin/organisations" className="text-sm text-brand-purple hover:underline">
               Tout voir
             </Link>
           </div>
@@ -90,11 +215,7 @@ export default function AdminOverview() {
               </thead>
               <tbody>
                 {!loading && organizations.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="px-6 py-8 text-center text-sm text-faint">
-                      Aucune organisation.
-                    </td>
-                  </tr>
+                  <tr><td colSpan={4} className="px-6 py-8 text-center text-sm text-faint">Aucune organisation.</td></tr>
                 )}
                 {organizations.slice(0, 5).map((org) => (
                   <tr key={org.id} className="border-b border-border-soft last:border-b-0">
@@ -104,9 +225,7 @@ export default function AdminOverview() {
                     </td>
                     <td className="px-3 py-4 text-muted">{org.plan}</td>
                     <td className="px-3 py-4 font-mono text-muted">{org.events}</td>
-                    <td className="px-3 py-4">
-                      <StatusBadge status={org.isActive ? 'Actif' : 'Suspendu'} />
-                    </td>
+                    <td className="px-3 py-4"><StatusBadge status={org.isActive ? 'Actif' : 'Suspendu'} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -114,55 +233,25 @@ export default function AdminOverview() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-danger/30 bg-surface p-5">
+        <section className="rounded-2xl border border-danger/30 bg-surface p-5">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-ink">Alertes modération</h2>
-            <Link
-              to="/admin/moderation"
-              className="text-sm text-brand-purple hover:underline"
-            >
-              Tout voir
-            </Link>
+            <h2 className="font-semibold text-ink">Alertes de modération</h2>
+            <Link to="/admin/moderation" className="text-sm text-brand-purple hover:underline">Tout voir</Link>
           </div>
+          <p className="mt-2 text-sm text-muted">{moderationQueue.length} élément(s) en attente.</p>
           <div className="mt-4 space-y-3">
-            {!loading && moderationQueue.length === 0 && (
-              <p className="text-sm text-faint">Rien à signaler.</p>
+            {moderationQueue.length === 0 && (
+              <p className="text-sm text-faint">Aucun signalement en attente.</p>
             )}
             {moderationQueue.slice(0, 4).map((item) => (
-              <div
-                key={item.id}
-                className="rounded-lg border border-border-soft px-4 py-3"
-              >
-                <p className="text-xs font-semibold text-danger uppercase">
-                  {item.type}
-                </p>
+              <div key={`${item.type}-${item.id}`} className="rounded-lg border border-border-soft px-4 py-3">
+                <p className="text-xs font-semibold text-danger uppercase">{item.type}</p>
                 <p className="mt-1 text-sm text-ink">{item.content}</p>
                 <p className="mt-1 text-xs text-faint">{item.organization}</p>
               </div>
             ))}
           </div>
-        </div>
-      </div>
-
-      <div className="mt-6 rounded-2xl border border-border-soft bg-surface p-5">
-        <h2 className="font-semibold text-ink">Derniers événements créés</h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {!loading && events.length === 0 && (
-            <p className="text-sm text-faint">Aucun événement.</p>
-          )}
-          {events.slice(0, 4).map((event) => (
-            <div
-              key={event.id}
-              className="rounded-lg border border-border-soft px-4 py-3"
-            >
-              <p className="font-medium text-ink">{event.name}</p>
-              <p className="mt-1 text-xs text-faint">{event.organization}</p>
-              <div className="mt-2">
-                <StatusBadge status={event.status} />
-              </div>
-            </div>
-          ))}
-        </div>
+        </section>
       </div>
     </AdminLayout>
   )

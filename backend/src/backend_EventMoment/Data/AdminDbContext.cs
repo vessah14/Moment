@@ -24,6 +24,8 @@ namespace backend_EventMoment.Data
         public DbSet<Utilisateur> Organizers { get; set; }
         public DbSet<AdminAccount> AdminAccounts { get; set; }
         public DbSet<AdminMfa> AdminMfas { get; set; }
+        public DbSet<AdminActivityLog> AdminActivityLogs { get; set; }
+        public DbSet<TechnicalErrorLog> TechnicalErrorLogs { get; set; }
 
         // Catalogue / configuration
         public DbSet<Event_categorie> EventCategories { get; set; }
@@ -131,6 +133,12 @@ namespace backend_EventMoment.Data
                 .WithMany()
                 .HasForeignKey(a => a.CreatedBy)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<AdminActivityLog>()
+                .HasIndex(log => log.CreatedAt);
+
+            modelBuilder.Entity<TechnicalErrorLog>()
+                .HasIndex(log => log.CreatedAt);
 
             // -----------------------------------------------------------
             // EventCategory

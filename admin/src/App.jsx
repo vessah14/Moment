@@ -8,6 +8,9 @@ import AdminOrganizations from './pages/AdminOrganizations'
 import AdminOverview from './pages/AdminOverview'
 import AdminReviews from './pages/AdminReviews'
 import AdminSettings from './pages/AdminSettings'
+import AdminHealth from './pages/AdminHealth'
+import AdminCatalog from './pages/AdminCatalog'
+import AdminActivity from './pages/AdminActivity'
 import AdminNotFound from './pages/AdminNotFound'
 import ErrorBoundary from './components/ErrorBoundary'
 import ScrollToTop from './components/ScrollToTop'
@@ -72,6 +75,30 @@ function App () {
         element={
           <RequireAdmin>
             <AdminSettings />
+          </RequireAdmin>
+        }
+      />
+      <Route
+        path='/admin/sante'
+        element={
+          <RequireAdmin>
+            <AdminHealth />
+          </RequireAdmin>
+        }
+      />
+      <Route
+        path='/admin/catalogue'
+        element={
+          <RequireAdmin>
+            <AdminCatalog />
+          </RequireAdmin>
+        }
+      />
+      <Route
+        path='/admin/activite'
+        element={
+          <RequireAdmin>
+            <AdminActivity />
           </RequireAdmin>
         }
       />
