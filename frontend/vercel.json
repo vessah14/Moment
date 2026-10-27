@@ -41,7 +41,7 @@
       "dest": "/index.html"
     },
     {
-      "src": "/(?:auth/facebook/callback|bienvenue|chargement|connexion|cookies|inscription/verifiez-vos-emails|loading|mot-de-passe-oublie|politique-cookies|reinitialiser-mot-de-passe|verifier-email)/?",
+      "src": "/(?:auth/facebook/callback|chargement|connexion|cookies|inscription/verifiez-vos-emails|loading|mot-de-passe-oublie|politique-cookies|reinitialiser-mot-de-passe|verifier-email)/?",
       "dest": "/index.html"
     },
     {
