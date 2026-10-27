@@ -1,5 +1,5 @@
 import { Copy, Download, MessageCircle, Share2 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { eventPosterUrl, eventShareUrl } from '../../api/client'
 import { trackPublicEvent } from '../../api/publicEvents'
 import { buildShareMessage, whatsappShareUrl } from '../../utils/shareMessage'
@@ -17,7 +17,6 @@ export default function ShareKit({ slug, title, date, time, location }) {
   const toast = useToast()
   const url = eventShareUrl(slug)
   const [message, setMessage] = useState(() => buildShareMessage({ title, date, time, location, url }))
-  const [busy, setBusy] = useState('')
 
   const copy = async () => {
     try {
@@ -28,29 +27,49 @@ export default function ShareKit({ slug, title, date, time, location }) {
     }
   }
 
-  const sharePoster = async (format) => {
-    setBusy(format)
-    try {
-      const response = await fetch(eventPosterUrl(slug, format))
-      if (!response.ok) throw new Error()
-      const blob = await response.blob()
-      const file = new File([blob], `${slug}-${format}.png`, { type: 'image/png' })
-      if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], text: format === 'square' ? message : undefined })
-        trackPublicEvent(slug, 'share')
-        return
-      }
-      const link = document.createElement('a')
-      link.href = URL.createObjectURL(blob)
-      link.download = file.name
-      link.click()
-      setTimeout(() => URL.revokeObjectURL(link.href), 1000)
-    } catch (err) {
-      // Partage annulé par l'utilisateur : rien à signaler.
-      if (err?.name !== 'AbortError') toast('Image indisponible pour le moment. Réessayez.', { variant: 'error' })
-    } finally {
-      setBusy('')
+  // Images chargées dès l'ouverture du kit : Safari (iPhone) n'ouvre le menu de partage
+  // que si l'appel suit immédiatement le toucher, sans téléchargement entre les deux.
+  const [files, setFiles] = useState({})
+  useEffect(() => {
+    let cancelled = false
+    for (const { format } of POSTERS) {
+      fetch(eventPosterUrl(slug, format))
+        .then((response) => (response.ok ? response.blob() : Promise.reject(new Error(String(response.status)))))
+        .then((blob) => {
+          if (!cancelled) setFiles((prev) => ({ ...prev, [format]: new File([blob], `${slug}-${format}.png`, { type: 'image/png' }) }))
+        })
+        .catch(() => {})
     }
+    return () => {
+      cancelled = true
+    }
+  }, [slug])
+
+  const sharePoster = (format) => {
+    const file = files[format]
+    const imageUrl = eventPosterUrl(slug, format)
+    if (!file) {
+      // Image pas encore prête : on l'ouvre, l'appui long permet de l'enregistrer.
+      window.open(imageUrl, '_blank', 'noopener')
+      return
+    }
+    // Image seule : WhatsApp sur iPhone ignore l'image quand un texte l'accompagne.
+    if (navigator.canShare?.({ files: [file] })) {
+      navigator
+        .share({ files: [file] })
+        .then(() => trackPublicEvent(slug, 'share'))
+        .catch((err) => {
+          // Partage annulé par l'utilisateur : rien à signaler.
+          if (err?.name !== 'AbortError') toast('Partage impossible ici : l’image s’ouvre, enregistrez-la par un appui long.', { variant: 'error' })
+          if (err?.name !== 'AbortError') window.open(imageUrl, '_blank', 'noopener')
+        })
+      return
+    }
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(file)
+    link.download = file.name
+    link.click()
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000)
   }
 
   return (
@@ -99,11 +118,10 @@ export default function ShareKit({ slug, title, date, time, location }) {
             <button
               type="button"
               onClick={() => sharePoster(poster.format)}
-              disabled={Boolean(busy)}
               className="inline-flex items-center justify-center gap-1.5 rounded-full border border-border px-3 py-2 text-xs font-semibold text-ink hover:border-faint disabled:opacity-50"
             >
               {navigator.canShare ? <Share2 className="h-3.5 w-3.5" aria-hidden="true" /> : <Download className="h-3.5 w-3.5" aria-hidden="true" />}
-              {busy === poster.format ? 'Préparation…' : navigator.canShare ? 'Partager' : 'Télécharger'}
+              {!files[poster.format] ? 'Préparation…' : navigator.canShare ? 'Partager' : 'Télécharger'}
             </button>
           </div>
         ))}
