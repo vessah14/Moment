@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { listAdminActivity } from '../api/platform'
+import { Link } from 'react-router-dom'
 import AdminLayout from '../components/layout/AdminLayout'
+import { describeActivity } from '../utils/activityLabels'
 
 const formatDate = (value) =>
   new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', timeStyle: 'medium' }).format(new Date(value))
@@ -44,7 +46,7 @@ export default function AdminActivity() {
                 <th className="px-5 py-3 font-medium">Date</th>
                 <th className="px-3 py-3 font-medium">Administrateur</th>
                 <th className="px-3 py-3 font-medium">Action</th>
-                <th className="px-3 py-3 font-medium">Route</th>
+                <th className="px-3 py-3 font-medium">Détail technique</th>
               </tr>
             </thead>
             <tbody>
@@ -55,10 +57,13 @@ export default function AdminActivity() {
                 <tr key={`${item.createdAt}-${index}`} className="border-b border-border-soft last:border-b-0">
                   <td className="whitespace-nowrap px-5 py-3 text-muted">{formatDate(item.createdAt)}</td>
                   <td className="px-3 py-3 text-ink">{item.adminEmail}</td>
-                  <td className="px-3 py-3">
-                    <span className="rounded-md bg-surface-2 px-2 py-1 font-mono text-xs text-ink">{item.httpMethod}</span>
+                  <td className="px-3 py-3 text-ink">
+                    {(() => {
+                      const { label, link } = describeActivity(item.httpMethod, item.route)
+                      return link ? <Link to={link} className="hover:text-brand-purple hover:underline">{label}</Link> : label
+                    })()}
                   </td>
-                  <td className="px-3 py-3 font-mono text-xs text-muted">{item.route}</td>
+                  <td className="px-3 py-3 font-mono text-xs text-faint">{item.httpMethod} {item.route}</td>
                 </tr>
               ))}
             </tbody>

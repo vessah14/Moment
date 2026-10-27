@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import AdminLayout from '../components/layout/AdminLayout'
 import StatCard from '../components/dashboard/StatCard'
+import ActivityCharts from '../components/charts/ActivityCharts'
 import StatusBadge from '../components/ui/StatusBadge'
 import {
   getDashboardSummary,
@@ -117,6 +118,8 @@ export default function AdminOverview() {
             ))
           : stats.map((stat) => <StatCard key={stat.label} {...stat} />)}
       </div>
+
+      <ActivityCharts kPayEnabled={dashboard?.kPayEnabled} />
 
       {dashboard && (
         <>

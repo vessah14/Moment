@@ -5,6 +5,7 @@ const STYLES = {
   Envoyée: 'bg-success/15 text-success',
   Disponible: 'bg-success/15 text-success',
   Actif: 'bg-success/15 text-success',
+  'E-mail confirmé': 'bg-success/15 text-success',
   Prêt: 'bg-success/15 text-success',
   Payée: 'bg-success/15 text-success',
   Épuisé: 'bg-surface-2 text-muted',
@@ -13,6 +14,7 @@ const STYLES = {
 
   Brouillon: 'bg-brand-orange/15 text-brand-orange',
   'En attente': 'bg-brand-orange/15 text-brand-orange',
+  'E-mail non confirmé': 'bg-brand-orange/15 text-brand-orange',
   Limité: 'bg-brand-orange/15 text-brand-orange',
   'À valider': 'bg-brand-orange/15 text-brand-orange',
   Réservé: 'bg-brand-orange/15 text-brand-orange',

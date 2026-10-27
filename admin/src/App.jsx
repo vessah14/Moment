@@ -5,6 +5,7 @@ import AdminEvents from './pages/AdminEvents'
 import AdminLogin from './pages/AdminLogin'
 import AdminModeration from './pages/AdminModeration'
 import AdminOrganizations from './pages/AdminOrganizations'
+import AdminOrganizationDetail from './pages/AdminOrganizationDetail'
 import AdminOverview from './pages/AdminOverview'
 import AdminReviews from './pages/AdminReviews'
 import AdminSettings from './pages/AdminSettings'
@@ -35,6 +36,14 @@ function App () {
         element={
           <RequireAdmin>
             <AdminOrganizations />
+          </RequireAdmin>
+        }
+      />
+      <Route
+        path='/admin/organisations/:id'
+        element={
+          <RequireAdmin>
+            <AdminOrganizationDetail />
           </RequireAdmin>
         }
       />

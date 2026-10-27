@@ -244,6 +244,7 @@ builder.Services.AddSingleton<SessionRevocations>();
 builder.Services.AddScoped<IAdminAccountService, AdminAccountService>();
 builder.Services.AddScoped<IAdminPlatformService, AdminPlatformService>();
 builder.Services.AddScoped<IAdminTelemetryService, AdminTelemetryService>();
+builder.Services.AddScoped<AdminInsightsService>();
 builder.Services.AddHostedService<AdminTelemetryRetentionService>();
 builder.Services.AddScoped<IPublicSiteService, PublicSiteService>();
 builder.Services.AddScoped<IPublicSeatingService, PublicSeatingService>();

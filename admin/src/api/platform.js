@@ -75,3 +75,21 @@ export function listReviews() {
 export function updateReviewStatus(id, status) {
   return apiFetch(`/admin/platform/reviews/${id}/status`, { method: 'PATCH', body: { status } })
 }
+
+// Graphiques : une ligne par jour sur la période (7 à 365 jours).
+export function getTimeSeries(days = 30) {
+  return apiFetch(`/admin/platform/timeseries?days=${days}`)
+}
+
+// Fiche d'une organisation, et gestion manuelle de son offre.
+export function getOrganization(id) {
+  return apiFetch(`/admin/platform/organizations/${id}`)
+}
+
+export function grantOrganizationPlan(id, planId, days) {
+  return apiFetch(`/admin/platform/organizations/${id}/plan`, { method: 'POST', body: { planId, days } })
+}
+
+export function revokeOrganizationPlan(id) {
+  return apiFetch(`/admin/platform/organizations/${id}/plan/revoke`, { method: 'POST' })
+}
