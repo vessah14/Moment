@@ -54,8 +54,8 @@ export default function AdminOverview() {
         },
         {
           label: 'Alertes à traiter',
-          value: String(dashboard.moderationAlerts + dashboard.failedPayments + dashboard.errorsLast24Hours),
-          hint: `${dashboard.moderationAlerts} modération · ${dashboard.kPayEnabled ? `${dashboard.failedPayments} paiement(s) échoué(s)` : 'KPay désactivé'} · ${dashboard.errorsLast24Hours} erreur(s) / 24 h`,
+          value: String(dashboard.moderationAlerts + dashboard.failedPayments),
+          hint: `${dashboard.moderationAlerts} modération · ${dashboard.kPayEnabled ? `${dashboard.failedPayments} paiement(s) échoué(s)` : 'KPay désactivé'}`,
         },
       ]
     : []
@@ -79,14 +79,14 @@ export default function AdminOverview() {
         <section
           aria-label="Alertes de la plateforme"
           className={`mt-5 rounded-xl border px-4 py-3 ${
-            dashboard.moderationAlerts + dashboard.failedPayments + dashboard.errorsLast24Hours > 0
+            dashboard.moderationAlerts + dashboard.failedPayments > 0
               ? 'border-danger/30 bg-danger/10'
               : 'border-success/30 bg-success/10'
           }`}
         >
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm font-semibold text-ink">
-              {dashboard.moderationAlerts + dashboard.failedPayments + dashboard.errorsLast24Hours > 0
+              {dashboard.moderationAlerts + dashboard.failedPayments > 0
                 ? 'Alertes à traiter'
                 : 'Aucune alerte à traiter'}
             </p>
@@ -99,11 +99,6 @@ export default function AdminOverview() {
               {dashboard.kPayEnabled && dashboard.failedPayments > 0 && (
                 <Link to="/admin/facturation" className="text-danger hover:underline">
                   {dashboard.failedPayments} paiement(s) échoué(s)
-                </Link>
-              )}
-              {dashboard.errorsLast24Hours > 0 && (
-                <Link to="/admin/sante" className="text-danger hover:underline">
-                  {dashboard.errorsLast24Hours} erreur(s) technique(s) · 24 h
                 </Link>
               )}
             </div>
