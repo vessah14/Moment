@@ -174,7 +174,9 @@ export default function MyEvents () {
       progressLabel: guestStats === null ? null : 'Réponses RSVP',
       confirmed: eventGuestStats?.confirmedCount ?? 0,
       total: eventGuestStats?.totalCount ?? 0,
-      barColor: 'bg-success'
+      barColor: 'bg-success',
+      coverImageUrl: event.coverImageUrl,
+      customFields: event.customFields
     }
   }
 

@@ -1,4 +1,7 @@
 import { Link } from 'react-router-dom'
+import { mediaUrl } from '../../api/client'
+import { templateFromCustomFields } from '../../utils/templateTheme'
+import TemplatePreview from '../templates/TemplatePreview'
 import StatusBadge from '../ui/StatusBadge'
 
 export default function EventCard ({
@@ -11,12 +14,47 @@ export default function EventCard ({
   confirmed,
   total,
   barColor,
+  coverImageUrl,
+  customFields,
   actions
 }) {
+  const template = templateFromCustomFields(customFields)
+  const coverUrl = mediaUrl(coverImageUrl)
+
   return (
     <div className='overflow-hidden rounded-2xl border border-border-soft bg-surface'>
-      <div className='relative aspect-video bg-[linear-gradient(160deg,_var(--color-surface-2),_var(--color-panel))]'>
-        <span className='absolute top-3 left-3'>
+      <div
+        className='relative aspect-video overflow-hidden bg-[linear-gradient(160deg,_var(--color-surface-2),_var(--color-panel))]'
+        aria-label={template ? `Aperçu du modèle ${template.name}` : `Aperçu de ${name}`}
+        role='img'
+      >
+        {coverUrl ? (
+          <img
+            src={coverUrl}
+            alt=''
+            className='absolute inset-0 h-full w-full object-cover'
+            loading='lazy'
+          />
+        ) : template ? (
+          <TemplatePreview template={template} preview={template.preview} />
+        ) : (
+          <div
+            className='absolute inset-0'
+            style={template?.preview?.bg ? { backgroundColor: template.preview.bg } : undefined}
+          />
+        )}
+        {template && coverUrl && (
+          <span
+            className='absolute right-3 bottom-3 rounded-full px-2.5 py-1 text-[10px] font-semibold shadow-sm'
+            style={{
+              backgroundColor: template.preview?.bg ?? '#12172a',
+              color: template.preview?.ink ?? '#f8f9fc'
+            }}
+          >
+            Modèle {template.name}
+          </span>
+        )}
+        <span className='absolute top-3 left-3 z-10'>
           <StatusBadge status={status} />
         </span>
       </div>
