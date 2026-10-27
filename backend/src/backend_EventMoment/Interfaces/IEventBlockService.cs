@@ -9,5 +9,6 @@ namespace backend_EventMoment.Interfaces
         Task<List<EventBlockDto>> GetAllAsync(Guid eventId, Guid organizerId);
         Task<EventBlockDto> UpdateAsync(Guid id, UpdateEventBlockDto dto, Guid organizerId);
         Task<bool> DeleteAsync(Guid id, Guid organizerId);
+        Task<List<EventBlockDto>> ReplaceAllAsync(Guid eventId, List<CreateEventBlockDto> blocks, Guid organizerId);
     }
 }

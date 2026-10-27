@@ -48,6 +48,16 @@ namespace backend_EventMoment.Controllers
             return Ok(result);
         }
 
+        // Toute la page du Builder en un seul appel (voir EventBlockService.ReplaceAllAsync).
+        [HttpPut("event/{eventId:guid}")]
+        public async Task<IActionResult> ReplaceAll(Guid eventId, [FromBody] List<CreateEventBlockDto> blocks)
+        {
+            if (!TryGetOrganizerId(out var organizerId))
+                return Unauthorized();
+
+            return Ok(await _service.ReplaceAllAsync(eventId, blocks, organizerId));
+        }
+
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateEventBlockDto dto)
         {
