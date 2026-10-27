@@ -19,9 +19,9 @@ const AUDIENCES = [
   { id: 'hommage', label: 'Obsèques ou retrait de deuil', plan: 'Premium', badge: 'Le plus choisi pour les familles',
     why: 'Premium permet de partager le programme, les lieux et les contributions avec la famille élargie, jusqu’à 500 personnes.' },
   { id: 'ecole', label: 'École ou université', plan: 'Business', badge: 'Écoles et entreprises',
-    why: 'Business ajoute le logo de l’établissement, retire la mention TBF Moment et ouvre la billetterie pour la journée culturelle.' },
+    why: 'Business retire la mention TBF Moment, ouvre la billetterie pour la journée culturelle et donne une facture au nom de l’établissement.' },
   { id: 'entreprise', label: 'Entreprise ou association', plan: 'Business', badge: 'Écoles et entreprises',
-    why: 'Business : votre logo, 5 postes d’accueil, la billetterie et une facture au nom de la structure.' },
+    why: 'Business : page sans la mention TBF Moment, 5 postes d’accueil, la billetterie et une facture au nom de la structure.' },
   { id: 'concert', label: 'Concert ou soirée payante', plan: 'Business', badge: 'Billetterie Mobile Money',
     why: 'Business ouvre la billetterie Mobile Money (5 % de commission). Si vous organisez souvent, Event Pro baisse la commission à 3 %.' },
   { id: 'agence', label: 'Agence ou salle de fêtes', plan: 'Event Pro', badge: 'Pour les organisateurs',
@@ -76,7 +76,7 @@ const COMPARISON_SECTIONS = [
   {
     name: 'Image',
     rows: [
-      { name: 'Logo de l’organisateur', values: ['—', '—', true, true, true] },
+      { name: 'Logo de l’organisateur', values: [true, true, true, true, true] },
       { name: 'Sans la mention « Créé avec TBF MOMENT »', values: ['—', '—', true, true, true] },
       { name: 'Modèle créé sur mesure à vos couleurs', values: ['—', '—', '—', '—', true] },
     ],

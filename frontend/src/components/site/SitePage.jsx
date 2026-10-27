@@ -1256,6 +1256,8 @@ function ClassicSitePage({
   const coverPath = safeCoverPath(data.coverPath)
   const heroAlign = template?.presentation?.heroAlign ?? 'center'
   const onImage = Boolean(coverPath)
+  // Logo de l'organisateur (aperçu de l'assistant : logoSrc ; site publié : logoUrl).
+  const organizerLogo = data.organizer?.logoSrc || mediaUrl(data.organizer?.logoUrl)
 
   const selectableProps = (block) =>
     editable
@@ -1407,9 +1409,22 @@ function ClassicSitePage({
               )}
             </div>
           )}
-          {data.organizer?.name && (
-            <p className={`${enter(2).className} text-sm ${onImage ? 'text-white/80' : 'text-muted'}`} style={enter(2).style}>
-              Organisé par <b className={onImage ? 'text-white' : 'text-ink'}>{data.organizer.name}</b>
+          {(data.organizer?.name || organizerLogo) && (
+            <p
+              className={`${enter(2).className} inline-flex flex-wrap items-center gap-2.5 text-sm ${onImage ? 'text-white/80' : 'text-muted'}`}
+              style={{ justifyContent: heroAlign, ...enter(2).style }}
+            >
+              {/* Logo sur fond blanc : lisible sur une photo comme sur un fond sombre. */}
+              {organizerLogo && (
+                <span className="inline-grid h-11 min-w-11 place-items-center rounded-lg bg-white px-2 shadow-sm">
+                  <img src={organizerLogo} alt={data.organizer?.name ? `Logo ${data.organizer.name}` : 'Logo de l’organisateur'} className="max-h-8 max-w-28 object-contain" />
+                </span>
+              )}
+              {data.organizer?.name && (
+                <span>
+                  Organisé par <b className={onImage ? 'text-white' : 'text-ink'}>{data.organizer.name}</b>
+                </span>
+              )}
             </p>
           )}
           {(cta || firstSection) && (

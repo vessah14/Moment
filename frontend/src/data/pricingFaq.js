@@ -18,7 +18,7 @@ export const PRICING_FAQ = [
     a: 'Non. Ils ouvrent le lien reçu sur WhatsApp, répondent en quelques secondes et reçoivent leur pass. Aucune application à installer, et ils ne paient jamais rien pour répondre.',
   },
   {
-    q: "Pourquoi le logo est-il dans l'offre Business ?",
-    a: "Une école, une entreprise ou une association qui publie sous son nom a besoin d'une page à son image, sans notre mention. Business est pensé pour ces structures, avec une facture à leur nom.",
+    q: 'Puis-je mettre mon logo sur la page ?',
+    a: "Oui, sur toutes les offres, même gratuite. L'offre Business retire en plus la mention « Créé avec TBF MOMENT » et vous donne une facture au nom de votre école, entreprise ou association.",
   },
 ]

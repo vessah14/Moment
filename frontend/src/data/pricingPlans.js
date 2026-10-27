@@ -45,7 +45,7 @@ export const PRICING_PLANS = [
       '2 000 invités par événement',
       '1 000 photos, 5 postes d’accueil',
       'Billetterie Mobile Money (5 % de commission)',
-      'Votre logo, sans la mention TBF Moment',
+      'Page sans la mention TBF Moment',
     ],
     cta: 'Choisir Business',
   },

@@ -27,7 +27,7 @@ export function infoErrors(form, type) {
       errors.birthdayAge = 'Indiquez un nombre entier compris entre 1 et 120.'
   }
   if (type.logo === 'required' && !form.organizer.trim()) errors.organizer = "Indiquez le nom de l'organisation."
-  if (type.logo === 'required' && !form.logo) errors.logo = "Ajoutez le logo de votre organisation : il sera affiché sur la page et le pass d'entrée."
+  if (type.logo === 'required' && !form.logo) errors.logo = "Ajoutez le logo de votre organisation : il sera affiché sur la page de l'événement."
   return errors
 }
 
@@ -109,7 +109,7 @@ function LogoField({ form, type, onChange, error }) {
       </span>
       <p className="text-[0.8rem] text-muted" id="h-logo">
         {policy === 'required'
-          ? "Il apparaîtra sur la page, l'ouverture, le pass d'entrée et l'aperçu WhatsApp."
+          ? "Il apparaîtra en haut de la page de l'événement, sur toutes les offres."
           : policy === 'suggested'
             ? 'Recommandé pour que les invités reconnaissent votre organisation.'
             : "Pour un événement privé, vos initiales seront utilisées si vous n'en mettez pas."}

@@ -56,6 +56,33 @@ public class PublicSiteServiceTests
     }
 
     [Fact]
+    public async Task GetPublicSiteAsync_ShowsOrganizerLogo_OnTheFreePlan()
+    {
+        var context = TestDbContextFactory.CreateAdminContext();
+        var evt = new Event
+        {
+            Id = Guid.NewGuid(),
+            OrganizerId = Guid.NewGuid(),
+            CategoryId = Guid.NewGuid(),
+            Name = "Conférence de presse",
+            Slug = "conference-de-presse",
+            Status = EventStatus.Publie,
+            CustomFields = """{"organizer":{"name":"Elim","logoUrl":"/uploads/blocks/x/logo.png"}}""",
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow,
+        };
+        context.Events.Add(evt);
+        await context.SaveChangesAsync();
+
+        // Sans abonnement : offre Free, la mention TBF MOMENT reste, le logo aussi.
+        var result = await new PublicSiteService(context, new PlanService(context)).GetPublicSiteAsync(evt.Slug);
+
+        Assert.True(result!.ShowBranding);
+        Assert.Equal("Elim", result.OrganizerName);
+        Assert.Equal("/uploads/blocks/x/logo.png", result.OrganizerLogoUrl);
+    }
+
+    [Fact]
     public async Task GetSearchableSitesAsync_FiltersBeforeApplyingLimit()
     {
         var context = TestDbContextFactory.CreateAdminContext();

@@ -152,8 +152,10 @@ namespace backend_EventMoment.Services
                 TicketStyle = ticketSettings.Style,
                 TicketNote = ticketSettings.Note,
                 ShowBranding = !branding,
+                // Le logo de l'organisateur s'affiche sur toutes les offres (décision du
+                // 2026-10-27) ; Business retire seulement la mention TBF MOMENT.
                 OrganizerName = organizer.Name,
-                OrganizerLogoUrl = branding ? organizer.LogoUrl : null,
+                OrganizerLogoUrl = organizer.LogoUrl,
             };
         }
     }

@@ -14,7 +14,7 @@ const longDate = (iso) =>
     : ''
 
 // Dernière étape : récapitulatif de la page publiée (ou du brouillon), lien à partager,
-// et offre conseillée quand le logo ou l'univers demandent Business.
+// et offre conseillée aux écoles et entreprises (page sans la mention TBF MOMENT).
 export default function PublishedStep({
   form,
   type,
@@ -34,8 +34,9 @@ export default function PublishedStep({
   const url = slug ? `${window.location.origin}/e/${slug}` : ''
   const shownUrl = url.replace(/^https?:\/\//, '')
   const hasFeature = (key) => plan?.features?.[key] !== false
-  // Logo (ou école, entreprise) sans l'offre qui l'affiche : on conseille Business.
-  const needsBusiness = (Boolean(form.logo) || ['ecoles', 'entreprises'].includes(type.univers)) && plan && !hasFeature('branding')
+  // École ou entreprise sans Business : la page garde la mention TBF MOMENT (le logo, lui,
+  // s'affiche sur toutes les offres).
+  const needsBusiness = ['ecoles', 'entreprises'].includes(type.univers) && plan && !hasFeature('branding')
 
   const copy = async () => {
     try {
@@ -93,7 +94,7 @@ export default function PublishedStep({
           <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-gold/50 bg-gold/10 px-4 py-3.5">
             <div>
               <b className="block text-[0.92rem] text-ink">
-                Votre logo et la page sans mention TBF MOMENT demandent l'offre Business.
+                Votre page porte encore la mention « Créé avec TBF MOMENT ». L’offre Business la retire.
               </b>
               <span className="text-[0.84rem] text-muted">Business · 15 000 FCFA pour un mois, sans engagement.</span>
             </div>
