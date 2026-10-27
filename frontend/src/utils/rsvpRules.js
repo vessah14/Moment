@@ -1,6 +1,6 @@
 // Règles du formulaire de réponse, réglées dans le contenu du bloc RSVP (mêmes clés que
 // RsvpRules côté serveur, qui les vérifie) : date limite, accompagnants par invitation,
-// réponse « Peut-être », messages après un oui ou un non.
+// réponse « Peut-être », réponses réservées à la liste, messages après un oui ou un non.
 export const MAX_COMPANIONS = 20
 export const DEFAULT_COMPANIONS = 10
 
@@ -14,6 +14,7 @@ export function rsvpRules(content = {}) {
     deadline: isIsoDate(content.deadline) ? content.deadline : '',
     maxCompanions: max,
     allowMaybe: content.allowMaybe === true,
+    guestListOnly: content.guestListOnly === true,
     yesMessage: typeof content.yesMessage === 'string' ? content.yesMessage.trim() : '',
     noMessage: typeof content.noMessage === 'string' ? content.noMessage.trim() : '',
   }

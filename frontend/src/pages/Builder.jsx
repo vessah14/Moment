@@ -1,5 +1,5 @@
 import { ArrowLeft, Eye, LayoutPanelLeft, Monitor, Save, SlidersHorizontal, Smartphone, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import BlockLibrary from '../components/builder/BlockLibrary'
 import BuilderCanvas from '../components/builder/BuilderCanvas'
@@ -31,6 +31,7 @@ import {
   listEventBlocks,
   updateEventBlock,
 } from '../api/eventBlocks'
+import { builderSnapshot, clearBuilderDraft, readBuilderDraft, writeBuilderDraft } from '../utils/builderDraft'
 import { formatEventDate } from '../utils/eventStatus'
 import { displayNameFromTitle, eventRequiresAge, formatEventDisplayTitle } from '../utils/eventTitle'
 import {
@@ -124,6 +125,9 @@ export default function Builder() {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [savedJustNow, setSavedJustNow] = useState(false)
+  // Brouillon local : état enregistré de référence et brouillon retrouvé à l'ouverture.
+  const [savedSnapshot, setSavedSnapshot] = useState('')
+  const [pendingDraft, setPendingDraft] = useState(null)
   useSeo({ title: event?.name ? `Builder · ${event.name}` : 'Builder', noindex: true })
 
   useEffect(() => {
@@ -196,7 +200,7 @@ export default function Builder() {
           heroContent,
           themeColor: eventData.themeColor,
         })
-        setHeroStyle({
+        const loadedHero = {
           color: siteStyle.accent,
           font: siteStyle.fontKey,
           customStyle: Boolean(heroContent.customStyle),
@@ -219,18 +223,19 @@ export default function Builder() {
             heroContent.subtitle ||
             customFieldOf(eventData, 'tagline') ||
             heroSubtitleFromEvent(eventData),
-        })
+        }
+        setHeroStyle(loadedHero)
 
         const others = (blocks ?? [])
           .filter((b) => b.blockType !== 'Hero')
           .sort((a, b) => a.position - b.position)
         // Page encore vide : on part de la composition du modèle (enregistrée au
         // premier clic sur Enregistrer / Publier).
-        setPageBlocks(
+        const loadedBlocks =
           others.length > 0
             ? others.map((b) => normalizeBlockType(b.blockType))
-            : newEventPageBlocks(template),
-        )
+            : newEventPageBlocks(template)
+        setPageBlocks(loadedBlocks)
 
         const loadedContent = {}
         for (const b of others) {
@@ -241,11 +246,24 @@ export default function Builder() {
             loadedContent[type] = {}
           }
         }
-        setBlockContent({
+        const loadedBlockContent = {
           ...BLOCK_CONTENT_DEFAULTS,
           ...(others.length > 0 ? {} : templateBlockDefaults(template)),
           ...loadedContent,
+        }
+        setBlockContent(loadedBlockContent)
+
+        // État enregistré de référence, et brouillon resté sur l'appareil s'il diffère.
+        const baseline = builderSnapshot({
+          heroStyle: loadedHero,
+          pageBlocks: loadedBlocks,
+          blockContent: loadedBlockContent,
+          customFields: eventData.customFields,
         })
+        setSavedSnapshot(baseline)
+        const draft = readBuilderDraft(eventId)
+        if (draft && draft.snapshot !== baseline) setPendingDraft(draft)
+        else clearBuilderDraft(eventId)
       })
       .catch((err) => {
         if (!cancelled) setLoadError(err.message || "Impossible de charger l'événement.")
@@ -257,6 +275,55 @@ export default function Builder() {
       cancelled = true
     }
   }, [eventId])
+
+  // Modifications pas encore enregistrées : gardées sur l'appareil, alerte en quittant.
+  const snapshot = useMemo(
+    () => (event ? builderSnapshot({ heroStyle, pageBlocks, blockContent, customFields: event.customFields }) : ''),
+    [event, heroStyle, pageBlocks, blockContent],
+  )
+  const dirty = Boolean(savedSnapshot) && snapshot !== savedSnapshot
+
+  useEffect(() => {
+    // Tant qu'un brouillon retrouvé attend la décision de l'organisateur, on ne l'écrase pas.
+    if (!eventId || !savedSnapshot || pendingDraft) return undefined
+    if (!dirty) {
+      clearBuilderDraft(eventId)
+      return undefined
+    }
+    const timer = setTimeout(() => writeBuilderDraft(eventId, snapshot), 600)
+    return () => clearTimeout(timer)
+  }, [eventId, snapshot, savedSnapshot, dirty, pendingDraft])
+
+  useEffect(() => {
+    if (!dirty) return undefined
+    const warn = (e) => {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [dirty])
+
+  const restoreDraft = () => {
+    try {
+      const data = JSON.parse(pendingDraft.snapshot)
+      setHeroStyle(data.heroStyle)
+      setPageBlocks(data.pageBlocks)
+      setBlockContent(data.blockContent)
+      if (data.customFields !== event.customFields) {
+        setEvent((prev) => ({ ...prev, customFields: data.customFields }))
+        setTemplateDirty(true)
+      }
+    } catch {
+      clearBuilderDraft(eventId)
+    }
+    setPendingDraft(null)
+  }
+
+  const discardDraft = () => {
+    clearBuilderDraft(eventId)
+    setPendingDraft(null)
+  }
 
   const eventTitle = event?.name ?? ''
   const slug = event?.slug ?? ''
@@ -422,6 +489,8 @@ export default function Builder() {
 
   const handleSave = async () => {
     if (!eventId) return
+    // Ce qui part au serveur : une modification faite pendant l'envoi reste « non enregistrée ».
+    const savingSnapshot = snapshot
     setSaving(true)
     setSaveError('')
     try {
@@ -492,6 +561,7 @@ export default function Builder() {
 
       const fresh = await listEventBlocks(eventId)
       setExistingBlocks(fresh ?? [])
+      setSavedSnapshot(savingSnapshot)
       setSavedJustNow(true)
       setTimeout(() => setSavedJustNow(false), 2500)
     } catch (err) {
@@ -563,8 +633,11 @@ export default function Builder() {
           <>
             <Link
               to="/dashboard/evenements"
+              onClick={(e) => {
+                if (dirty && !window.confirm('Des modifications ne sont pas enregistrées sur votre page. Quitter quand même ? Elles restent gardées sur cet appareil et vous seront proposées à votre retour.')) e.preventDefault()
+              }}
               className="flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted transition hover:border-faint hover:text-ink"
-              title="Retour au tableau de bord (pensez à enregistrer avant)"
+              title="Retour au tableau de bord"
             >
               <ArrowLeft className="h-4 w-4" />
               <span className="hidden sm:inline">Tableau de bord</span>
@@ -573,9 +646,14 @@ export default function Builder() {
               <span className="truncate font-semibold text-ink">
                 {eventTitle}
               </span>
-              {savedJustNow && (
+              {savedJustNow && !dirty && (
                 <span className="ml-2 hidden text-xs text-success sm:inline">
                   Enregistré
+                </span>
+              )}
+              {dirty && !saving && (
+                <span className="ml-2 text-xs text-brand-orange" title="Gardé sur cet appareil ; cliquez sur Enregistrer pour mettre la page en ligne.">
+                  Non enregistré
                 </span>
               )}
             </div>
@@ -633,6 +711,22 @@ export default function Builder() {
       {saveError && (
         <div className="border-b border-danger/30 bg-danger/10 px-4 py-2 text-sm text-danger sm:px-6">
           {saveError}
+        </div>
+      )}
+
+      {pendingDraft && !previewMode && (
+        <div role="status" className="flex flex-wrap items-center gap-3 border-b border-brand-orange/30 bg-brand-orange/10 px-4 py-2.5 text-sm text-ink sm:px-6">
+          <span className="flex-1">
+            Des modifications non enregistrées du{' '}
+            {new Date(pendingDraft.savedAt).toLocaleString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}{' '}
+            ont été retrouvées sur cet appareil.
+          </span>
+          <Button variant="gradient" className="px-4 py-1.5 text-xs" onClick={restoreDraft}>
+            Reprendre mes modifications
+          </Button>
+          <button type="button" onClick={discardDraft} className="text-xs font-medium text-muted hover:text-ink">
+            Ignorer
+          </button>
         </div>
       )}
 

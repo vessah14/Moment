@@ -3,6 +3,8 @@ import { AUDIENCES, CHANNELS } from '../../data/communicationChannels'
 import Button from '../ui/Button'
 
 const TAGS = ['prénom', 'nom', 'date', 'lieu', 'lien']
+// Seul l'e-mail est réellement envoyé par l'API : on ne propose pas un canal qui ne part pas.
+const SENDABLE_CHANNELS = CHANNELS.filter((c) => c.value === 'E-mail')
 
 export default function CampaignComposer({ defaultChannel = 'E-mail', onCreate }) {
   const [name, setName] = useState('')
@@ -78,10 +80,11 @@ export default function CampaignComposer({ defaultChannel = 'E-mail', onCreate }
         </label>
       </div>
 
+      {SENDABLE_CHANNELS.length > 1 && (
       <div className="mt-4">
         <span className="text-xs font-medium text-ink">Canal</span>
         <div className="mt-1.5 grid grid-cols-4 gap-2">
-          {CHANNELS.map((c) => (
+          {SENDABLE_CHANNELS.map((c) => (
             <button
               key={c.value}
               type="button"
@@ -98,6 +101,7 @@ export default function CampaignComposer({ defaultChannel = 'E-mail', onCreate }
           ))}
         </div>
       </div>
+      )}
 
       <label className="mt-4 block">
         <span className="text-xs font-medium text-ink">Message</span>

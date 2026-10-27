@@ -447,6 +447,31 @@ namespace backend_EventMoment.Services
 
             var side = confirmed ? RsvpSides.Validate(rsvpBlock, dto.Side) : null;
 
+            // Déjà sur la liste (même téléphone ou même e-mail) : la réponse va à cet invité,
+            // sans doublon. Son identifiant (QR du pass) et son nom ne sont jamais renvoyés :
+            // connaître un numéro ne doit pas suffire pour obtenir le pass de quelqu'un.
+            var listed = await FindListedGuestAsync(eventEntity.Id, phone, email);
+            if (listed != null)
+            {
+                var answer = await SubmitPublicRsvpAsync(listed.Id, new SubmitPublicRsvpDto
+                {
+                    Confirmed = dto.Confirmed,
+                    Maybe = dto.Maybe,
+                    AccompanyingCount = dto.AccompanyingCount,
+                    Message = dto.Message,
+                    Side = dto.Side,
+                });
+                if (answer == null) return null;
+                answer.GuestId = Guid.Empty;
+                answer.GuestFullName = fullName;
+                answer.CheckedInAt = null;
+                answer.LinkedToGuestList = true;
+                return answer;
+            }
+            if (rules.GuestListOnly)
+                throw new InvalidOperationException(
+                    "Les réponses sont réservées aux invités de la liste. Utilisez le lien personnel reçu, ou le numéro ou l'e-mail donné à l'organisateur.");
+
             await using var transaction = await OrganizerLock.BeginAsync(_context, eventEntity.OrganizerId);
             if (_plans != null)
                 await _plans.EnsureCanAddGuestAsync(eventEntity.OrganizerId, eventEntity.Id);
@@ -491,6 +516,29 @@ namespace backend_EventMoment.Services
                 .FirstOrDefaultAsync();
 
             return MapInvitation(guest, eventEntity, location, response, rules);
+        }
+
+        // Invité de l'événement au même e-mail, ou au même numéro (9 derniers chiffres : le
+        // même numéro s'écrit « 690… », « +237 690… » ou « 00237 690… »).
+        private async Task<Guest?> FindListedGuestAsync(Guid eventId, string? phone, string? email)
+        {
+            var phoneKey = PhoneKey(phone);
+            var emailKey = email?.ToLowerInvariant();
+            if (phoneKey == null && emailKey == null) return null;
+
+            var candidates = await _context.Guests.IgnoreQueryFilters()
+                .Where(g => g.EventId == eventId
+                    && ((emailKey != null && g.Email != null && g.Email.ToLower() == emailKey)
+                        || (phoneKey != null && g.Phone != null)))
+                .ToListAsync();
+            return candidates.FirstOrDefault(g => emailKey != null && string.Equals(g.Email, emailKey, StringComparison.OrdinalIgnoreCase))
+                ?? candidates.FirstOrDefault(g => phoneKey != null && PhoneKey(g.Phone) == phoneKey);
+        }
+
+        private static string? PhoneKey(string? phone)
+        {
+            var digits = new string((phone ?? string.Empty).Where(char.IsAsciiDigit).ToArray());
+            return digits.Length >= 9 ? digits[^9..] : null;
         }
 
         private static PublicInvitationDto MapInvitation(Guest guest, Event eventEntity, Event_Location? location, RsvpResponse? rsvp, RsvpRules rules, DateTimeOffset? checkedInAt = null) => new()

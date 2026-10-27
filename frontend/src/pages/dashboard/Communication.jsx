@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import AutoReminders from '../../components/communication/AutoReminders'
 import CampaignComposer from '../../components/communication/CampaignComposer'
 import CampaignEditDialog from '../../components/communication/CampaignEditDialog'
@@ -10,8 +11,10 @@ import { listEvents } from '../../api/events'
 import { createCampaign, deleteCampaign, listCampaigns, updateCampaign } from '../../api/campaigns'
 import { useToast } from '../../utils/useToast'
 
-const TABS = ['Email', 'SMS', 'Notifications', 'Rappels']
-const TAB_CHANNEL = { Email: 'E-mail', SMS: 'SMS', Notifications: 'Push' }
+// SMS et notifications ne sont pas encore envoyés par l'API : seuls l'e-mail et les rappels
+// automatiques sont proposés ici ; WhatsApp passe par « Envoyer des invitations ».
+const TABS = ['Email', 'Rappels']
+const TAB_CHANNEL = { Email: 'E-mail' }
 
 export default function Communication() {
   const [events, setEvents] = useState([])
@@ -131,7 +134,8 @@ export default function Communication() {
         <div>
           <h1 className="text-2xl font-bold text-ink">Messages & Communications</h1>
           <p className="mt-1.5 text-sm text-muted">
-            Rédigez et enregistrez des campagnes e-mail, SMS et notifications de vos événements.
+            Envoyez un e-mail à vos invités et programmez les rappels automatiques. Pour WhatsApp,
+            passez par <Link to="/dashboard/invitations" className="font-medium text-brand-purple hover:underline">Envoyer des invitations</Link>.
           </p>
         </div>
         <select

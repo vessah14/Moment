@@ -1,18 +1,14 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import BillingTab from '../../components/settings/BillingTab'
-import BrandTab from '../../components/settings/BrandTab'
 import DataExportTab from '../../components/settings/DataExportTab'
 import DeleteAccountTab from '../../components/settings/DeleteAccountTab'
 import DomainTab from '../../components/settings/DomainTab'
-import IntegrationsTab from '../../components/settings/IntegrationsTab'
 import LanguageTab from '../../components/settings/LanguageTab'
 import NotificationsTab from '../../components/settings/NotificationsTab'
-import PermissionsTab from '../../components/settings/PermissionsTab'
 import ProfileTab from '../../components/settings/ProfileTab'
 import SecurityTab from '../../components/settings/SecurityTab'
 import SubscriptionTab from '../../components/settings/SubscriptionTab'
-import TeamTab from '../../components/settings/TeamTab'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 
 const TABS = [
@@ -21,11 +17,7 @@ const TABS = [
   { label: 'Notifications', Component: NotificationsTab },
   { label: 'Abonnement', Component: SubscriptionTab },
   { label: 'Facturation', Component: BillingTab },
-  { label: 'Langue et fuseau', Component: LanguageTab },
-  { label: 'Marque', Component: BrandTab },
-  { label: 'Équipe', Component: TeamTab },
-  { label: 'Permissions', Component: PermissionsTab },
-  { label: 'Intégrations', Component: IntegrationsTab },
+  { label: 'Langue et affichage', Component: LanguageTab },
   { label: 'Domaine', Component: DomainTab },
   { label: 'Données et export', Component: DataExportTab },
   { label: 'Supprimer le compte', Component: DeleteAccountTab, danger: true }

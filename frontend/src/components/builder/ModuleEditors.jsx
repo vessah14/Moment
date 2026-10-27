@@ -90,6 +90,13 @@ export function RsvpRulesFields({ content, onChange }) {
         <input type="checkbox" className="h-4 w-4 accent-brand-purple" checked={rules.allowMaybe} onChange={(e) => onChange({ allowMaybe: e.target.checked })} />
         Proposer la réponse « Peut-être »
       </label>
+      <label className="flex items-start gap-2 text-sm text-ink">
+        <input type="checkbox" className="mt-0.5 h-4 w-4 accent-brand-purple" checked={rules.guestListOnly} onChange={(e) => onChange({ guestListOnly: e.target.checked })} />
+        <span>
+          Réponses réservées aux invités de ma liste
+          <span className="block text-xs text-faint">Le formulaire public n’accepte que les numéros ou e-mails déjà dans Invités & RSVP : pas d’incrustés.</span>
+        </span>
+      </label>
       <label className={labelClass}>
         Message après un « oui »
         <input className={`${inputClass} mt-1`} maxLength={200} placeholder="Ex. : Nous avons hâte de danser avec vous !" value={content.yesMessage ?? ''} onChange={(e) => onChange({ yesMessage: e.target.value })} />

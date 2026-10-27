@@ -40,7 +40,6 @@ const LegalNotice = lazy(() => import('./pages/LegalNotice'))
 const Login = lazy(() => import('./pages/Login'))
 const MiniSite = lazy(() => import('./pages/MiniSite'))
 const NotFound = lazy(() => import('./pages/NotFound'))
-const Onboarding = lazy(() => import('./pages/Onboarding'))
 const Pricing = lazy(() => import('./pages/Pricing'))
 const TicketModels = lazy(() => import('./pages/TicketModels'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
@@ -96,7 +95,6 @@ function App () {
             element={<ResetPassword />}
           />
           <Route path='/verifier-email' element={<VerifyEmail />} />
-          <Route path='/bienvenue' element={<Onboarding />} />
           <Route path='/inscription' element={<Signup />} />
           <Route path='/inscription/verifiez-vos-emails' element={<CheckEmail />} />
           <Route path='/modeles' element={<Templates />} />

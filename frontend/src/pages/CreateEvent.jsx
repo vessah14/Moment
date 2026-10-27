@@ -38,7 +38,7 @@ const STEPS = ['Univers', 'Type', 'Informations', 'Contenu', 'Modèle', 'Publier
 
 // Sections ajoutées à une nouvelle page si le modèle ne les a pas (réponse et programme).
 const DEFAULT_OPTIONS = { checkin: true, program: true, gallery: false, ticketing: false, guestbook: false, searchable: false }
-const DEFAULT_TIMEZONE = 'Europe/Paris (GMT+1)'
+const DEFAULT_TIMEZONE = 'Africa/Douala (GMT+1)'
 
 const EMPTY_FORM = {
   univers: null,

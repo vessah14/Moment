@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import Button from '../../components/ui/Button'
@@ -10,6 +10,7 @@ import {
   guestsForAudience,
   personalizeMessage,
 } from '../../utils/invitationMessage'
+import { guestMessageUrl, internationalNumber, nextUnsent, readSent, writeSent } from '../../utils/whatsapp'
 
 const CHANNELS = ['WhatsApp', 'E-mail', 'SMS']
 const TAGS = ['prénom', 'nom', 'date', 'lieu', 'lien']
@@ -25,12 +26,24 @@ export default function Invitations () {
   const [locationResult, setLocationResult] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [channel, setChannel] = useState('E-mail')
+  // WhatsApp d'abord : c'est là que circulent les invitations.
+  const [channel, setChannel] = useState('WhatsApp')
   const [message, setMessage] = useState(DEFAULT_MESSAGE)
   const [audience, setAudience] = useState(AUDIENCES[0])
   const [selectedGuestId, setSelectedGuestId] = useState('')
   const [sending, setSending] = useState(false)
   const [sendResult, setSendResult] = useState(null)
+  // Envoi en série (WhatsApp, SMS) : invités déjà contactés, gardés sur cet appareil.
+  const sentKey = `${selectedEventId}|${channel}`
+  const [sentState, setSentState] = useState({ key: '', ids: new Set() })
+  const sentIds = useMemo(
+    () => (sentState.key === sentKey ? sentState.ids : readSent(selectedEventId, channel)),
+    [sentState, sentKey, selectedEventId, channel],
+  )
+  const saveSent = (ids) => {
+    writeSent(selectedEventId, channel, ids)
+    setSentState({ key: sentKey, ids })
+  }
 
   useEffect(() => {
     listEvents()
@@ -133,13 +146,18 @@ export default function Invitations () {
   const selectedGuest =
     shareGuests.find(guest => guest.id === selectedGuestId) ?? shareGuests[0]
   const personalizedPreview = personalizeMessage(message, selectedGuest, previewEvent, window.location.origin)
-  const shareUrl = selectedGuest
-    ? channel === 'WhatsApp'
-      ? `https://wa.me/?text=${encodeURIComponent(personalizedPreview)}`
-      : channel === 'SMS'
-        ? `sms:${selectedGuest.phone.replace(/[^\d+]/g, '')}?body=${encodeURIComponent(personalizedPreview)}`
-        : ''
+  const shareUrl = selectedGuest && channel !== 'E-mail'
+    ? guestMessageUrl(channel, selectedGuest.phone, personalizedPreview)
     : ''
+  const sentCount = shareGuests.filter(guest => sentIds.has(guest.id)).length
+  // Message ouvert pour cet invité : il est noté « envoyé » et le suivant s'affiche.
+  const markSentAndNext = () => {
+    if (!selectedGuest) return
+    const ids = new Set(sentIds).add(selectedGuest.id)
+    saveSent(ids)
+    const next = nextUnsent(shareGuests, ids, selectedGuest.id)
+    if (next) setSelectedGuestId(next.id)
+  }
   const stats = [
     { label: 'Invités ciblés', value: audienceGuests.length },
     {
@@ -266,7 +284,7 @@ export default function Invitations () {
             onChange={e => setSelectedGuestId(e.target.value)}
             className='mt-2 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-brand-purple'
           >
-            {shareGuests.map(guest => <option key={guest.id} value={guest.id}>{guest.fullName}</option>)}
+            {shareGuests.map(guest => <option key={guest.id} value={guest.id}>{sentIds.has(guest.id) ? '✓ ' : ''}{guest.fullName}</option>)}
           </select>
           <p className='mt-2 rounded-lg bg-surface-2 p-3 text-sm text-muted'>
             {personalizedPreview || 'Aucun invité éligible dans cette audience pour afficher un aperçu.'}
@@ -274,15 +292,35 @@ export default function Invitations () {
           {locationResult?.eventId === selectedEventId && locationResult.error && (
             <p className='mt-2 text-xs text-danger'>Le lieu n'a pas pu être chargé pour l'aperçu.</p>
           )}
-          {shareUrl && (
-              <a
-                href={shareUrl}
-                target='_blank'
-                rel='noopener noreferrer'
-                className='mt-3 block rounded-lg border border-brand-purple px-4 py-2.5 text-center text-sm font-medium text-brand-purple'
-              >
-                Ouvrir {channel} pour partager
-              </a>
+          {channel !== 'E-mail' && selectedGuest && (
+            <div className='mt-3 space-y-2'>
+              {shareUrl ? (
+                <a
+                  href={shareUrl}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  onClick={markSentAndNext}
+                  className={`block rounded-lg px-4 py-3 text-center text-sm font-semibold text-white ${channel === 'WhatsApp' ? 'bg-[#25D366]' : 'bg-brand-purple'}`}
+                >
+                  Envoyer à {selectedGuest.fullName} {channel === 'WhatsApp' ? 'sur WhatsApp' : 'par SMS'}
+                </a>
+              ) : (
+                <p className='text-xs text-danger'>Pas de numéro pour {selectedGuest.fullName} : ajoutez-le dans Invités & RSVP.</p>
+              )}
+              {channel === 'WhatsApp' && !internationalNumber(selectedGuest.phone) && (
+                <p className='text-xs text-faint'>Pas de numéro enregistré : WhatsApp vous laissera choisir le contact.</p>
+              )}
+              <p className='flex flex-wrap items-center justify-between gap-2 text-xs text-muted'>
+                <span>
+                  {sentCount} / {shareGuests.length} invité{shareGuests.length > 1 ? 's' : ''} contacté{sentCount > 1 ? 's' : ''} · le suivant s’affiche tout seul
+                </span>
+                {sentCount > 0 && (
+                  <button type='button' onClick={() => saveSent(new Set())} className='font-medium text-brand-purple hover:underline'>
+                    Tout reprendre
+                  </button>
+                )}
+              </p>
+            </div>
           )}
         </div>
 
@@ -300,21 +338,19 @@ export default function Invitations () {
         <p className='mt-4 text-xs text-faint'>
           {channel === 'E-mail'
             ? "Envoie un e-mail réel à chaque invité disposant d'une adresse e-mail."
-            : `Aucun envoi ${channel} automatique n'est disponible. Enregistrez le brouillon puis utilisez le bouton de partage pour envoyer le message à un invité.`}
+            : `Les messages ${channel} partent de votre téléphone, un invité après l'autre, chacun avec son lien personnel.`}
         </p>
 
-        <Button
-          variant='gradient'
-          className='mt-4 w-full disabled:opacity-70'
-          disabled={sending || (channel === 'E-mail' ? emailRecipients.length === 0 : audienceGuests.length === 0)}
-          onClick={handleSend}
-        >
-          {sending
-            ? 'Envoi...'
-            : channel === 'E-mail'
-              ? 'Envoyer par e-mail'
-              : 'Enregistrer comme brouillon'}
-        </Button>
+        {channel === 'E-mail' && (
+          <Button
+            variant='gradient'
+            className='mt-4 w-full disabled:opacity-70'
+            disabled={sending || emailRecipients.length === 0}
+            onClick={handleSend}
+          >
+            {sending ? 'Envoi...' : 'Envoyer par e-mail'}
+          </Button>
+        )}
         {sendResult?.channel === 'E-mail' && sendResult.emailsSentCount > 0 && (
           <p role='status' className='mt-3 text-center text-sm text-success'>
             {sendResult.emailsSentCount} e-mail(s) accepté(s) par le service

@@ -428,6 +428,8 @@ export function RsvpModule({ invitation, onInvitationChange, body, themed, edita
   const [publicName, setPublicName] = useState('')
   const [publicEmail, setPublicEmail] = useState('')
   const [publicPhone, setPublicPhone] = useState('')
+  // Réponse rattachée à un invité de la liste : son pass reste dans son lien personnel.
+  const [linkedNotice, setLinkedNotice] = useState('')
 
   const submitOpen = async (e) => {
     e.preventDefault()
@@ -447,7 +449,13 @@ export function RsvpModule({ invitation, onInvitationChange, body, themed, edita
         message: message.trim() || null,
         side: confirmed && sides.includes(side) ? side : null,
       })
-      onInvitationChange?.(result)
+      if (result?.linkedToGuestList) {
+        setLinkedNotice(confirmed
+          ? 'Merci, votre réponse est enregistrée ! Votre pass d’entrée se trouve dans le lien personnel envoyé par l’organisateur.'
+          : 'Merci, votre réponse est enregistrée.')
+      } else {
+        onInvitationChange?.(result)
+      }
       if (confirmed) onCelebrate?.(form)
     } catch (err) {
       setError(err.message || "La réponse n'a pas pu être enregistrée.")
@@ -457,6 +465,15 @@ export function RsvpModule({ invitation, onInvitationChange, body, themed, edita
   }
 
   // L'aperçu éditeur montre le formulaire réel sans envoyer de réponse.
+  if (!invitation && linkedNotice) {
+    return (
+      <div className={c.card} style={{ textAlign: 'center' }} role="status">
+        <p className={c.title}>Réponse enregistrée</p>
+        <p className={c.muted}>{linkedNotice}</p>
+      </div>
+    )
+  }
+
   if (!invitation) {
     if (!invitationLoading && (editable || submitOpenRsvp)) {
       if (!editable && deadlinePassed(rules.deadline)) {
@@ -478,7 +495,9 @@ export function RsvpModule({ invitation, onInvitationChange, body, themed, edita
           <p className={c.muted} style={{ margin: '-.7rem 0 0' }}>
             {editable
               ? 'Aperçu du formulaire affiché aux invités sur votre site.'
-              : 'Indiquez votre nom et un moyen de vous contacter pour envoyer votre réponse.'}
+              : rules.guestListOnly
+                ? 'Indiquez votre nom et le numéro ou l’e-mail que vous avez donné aux organisateurs.'
+                : 'Indiquez votre nom et un moyen de vous contacter pour envoyer votre réponse.'}
             {deadlineNote && <> {deadlineNote}</>}
           </p>
           {editable && <p className={c.note} style={{ margin: 0 }}>Les réponses ne peuvent pas être envoyées depuis l’aperçu.</p>}

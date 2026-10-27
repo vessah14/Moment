@@ -342,6 +342,54 @@ public class GuestServiceTests
     }
 
     [Fact]
+    public async Task SubmitPublicEventRsvpAsync_AnswersForListedGuest_WithoutDuplicateOrPassLeak()
+    {
+        var context = TestDbContextFactory.CreateAdminContext();
+        var (_, _, evt) = SeedEvent(context);
+        var listed = SeedGuest(context, evt.Id);
+        listed.Phone = "+237 6 90 00 00 00";
+        listed.Seats = 2;
+        context.SaveChanges();
+        var service = new GuestService(context);
+
+        var answer = await service.SubmitPublicEventRsvpAsync(evt.Slug, new SubmitPublicEventRsvpDto
+        {
+            FullName = "Quelqu'un",
+            Phone = "690000000",
+            Confirmed = true,
+            AccompanyingCount = 1,
+        });
+
+        Assert.True(answer!.LinkedToGuestList);
+        Assert.Equal(Guid.Empty, answer.GuestId);
+        Assert.Equal("Quelqu'un", answer.GuestFullName);
+        Assert.Single(context.Guests.IgnoreQueryFilters().Where(g => g.EventId == evt.Id));
+        Assert.Equal(GuestStatus.Present, (await context.Guests.IgnoreQueryFilters().SingleAsync(g => g.Id == listed.Id)).Status);
+        // Les places de l'invité s'appliquent aussi par le formulaire public.
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.SubmitPublicEventRsvpAsync(evt.Slug, new SubmitPublicEventRsvpDto
+        {
+            FullName = "Quelqu'un", Phone = "690000000", Confirmed = true, AccompanyingCount = 3,
+        }));
+    }
+
+    [Fact]
+    public async Task SubmitPublicEventRsvpAsync_GuestListOnly_RefusesStrangers()
+    {
+        var context = TestDbContextFactory.CreateAdminContext();
+        var (_, _, evt) = SeedEvent(context);
+        SeedRsvpBlock(context, evt.Id, """{"guestListOnly":true}""");
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            new GuestService(context).SubmitPublicEventRsvpAsync(evt.Slug, new SubmitPublicEventRsvpDto
+            {
+                FullName = "Incrusté", Phone = "699999999", Confirmed = true,
+            }));
+
+        Assert.Contains("réservées aux invités de la liste", error.Message);
+        Assert.Empty(context.Guests.IgnoreQueryFilters().Where(g => g.EventId == evt.Id));
+    }
+
+    [Fact]
     public async Task SubmitPublicEventRsvpAsync_RequiresContactInformation()
     {
         var context = TestDbContextFactory.CreateAdminContext();

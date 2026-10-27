@@ -39,6 +39,10 @@ namespace backend_EventMoment.Models
 
         // Heure de la première entrée scannée (null tant que l'invité n'est pas arrivé).
         public DateTimeOffset? CheckedInAt { get; set; }
+
+        // Réponse publique rattachée à un invité déjà sur la liste : son pass n'est pas
+        // renvoyé (GuestId vide), il se trouve dans son lien personnel.
+        public bool LinkedToGuestList { get; set; }
     }
 
     public class SubmitPublicRsvpDto

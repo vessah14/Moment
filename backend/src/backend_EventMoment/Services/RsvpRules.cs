@@ -5,14 +5,17 @@ using backend_EventMoment.Models;
 namespace backend_EventMoment.Services
 {
     // Règles du formulaire de réponse, réglées dans le contenu du bloc RSVP :
-    //   {"deadline": "2027-03-01", "maxCompanions": 2, "allowMaybe": true}
-    // Date limite (incluse), nombre d'accompagnants par invitation et réponse « Peut-être ».
-    // Sans réglage : réponses jusqu'au jour de l'événement, 20 accompagnants au plus.
-    public sealed record RsvpRules(DateOnly? Deadline, int MaxCompanions, bool AllowMaybe)
+    //   {"deadline": "2027-03-01", "maxCompanions": 2, "allowMaybe": true, "guestListOnly": true}
+    // Date limite (incluse), nombre d'accompagnants par invitation, réponse « Peut-être » et
+    // réponses réservées aux invités de la liste (contre les incrustés).
+    // Sans réglage : réponses jusqu'au jour de l'événement, 10 accompagnants au plus (comme
+    // le formulaire, frontend/src/utils/rsvpRules.js).
+    public sealed record RsvpRules(DateOnly? Deadline, int MaxCompanions, bool AllowMaybe, bool GuestListOnly = false)
     {
         public const int Limit = 20;
+        public const int DefaultMaxCompanions = 10;
 
-        public static readonly RsvpRules Default = new(null, Limit, false);
+        public static readonly RsvpRules Default = new(null, DefaultMaxCompanions, false);
 
         public static RsvpRules Read(string? blockContent)
         {
@@ -28,9 +31,10 @@ namespace backend_EventMoment.Services
                     : null;
                 var max = root.TryGetProperty("maxCompanions", out var m) && m.ValueKind == JsonValueKind.Number && m.TryGetInt32(out var n)
                     ? Math.Clamp(n, 0, Limit)
-                    : Limit;
+                    : DefaultMaxCompanions;
                 var maybe = root.TryGetProperty("allowMaybe", out var a) && a.ValueKind == JsonValueKind.True;
-                return new RsvpRules(deadline, max, maybe);
+                var listOnly = root.TryGetProperty("guestListOnly", out var l) && l.ValueKind == JsonValueKind.True;
+                return new RsvpRules(deadline, max, maybe, listOnly);
             }
             catch (JsonException)
             {
