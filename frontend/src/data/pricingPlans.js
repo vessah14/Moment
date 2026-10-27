@@ -1,12 +1,18 @@
-// Cartes des offres. Chaque ligne reprend les limites du tableau comparatif (pages/Pricing.jsx) ;
-// événements et invités sont aussi ceux de subscription_plans.features en base.
+// Cartes des offres (payantes : 30 jours, sans renouvellement automatique). Chaque ligne
+// reprend les limites du tableau comparatif (pages/Pricing.jsx) ; événements et invités
+// sont aussi ceux de subscription_plans.features en base (et de PlanService côté API).
+export const PLAN_EVENT_LIMITS = {
+  free: 3,
+  premium: 5,
+}
+
 export const PRICING_PLANS = [
   {
     name: 'Free',
     price: '0 FCFA',
     tagline: 'Découvrir la plateforme',
     features: [
-      '3 événements en ligne',
+      `${PLAN_EVENT_LIMITS.free} événements en ligne`,
       '50 invités par événement',
       '20 photos dans la galerie',
       'Page, réponses et relances WhatsApp',
@@ -17,10 +23,11 @@ export const PRICING_PLANS = [
   {
     name: 'Premium',
     price: '5 000',
-    period: '/mois',
-    tagline: 'Personnalisation complète',
+    period: '/30 jours',
+    tagline: 'Mariages, dots et fêtes de famille',
+    recommended: true,
     features: [
-      '3 événements en ligne',
+      `${PLAN_EVENT_LIMITS.premium} événements en ligne`,
       '500 invités par événement',
       '200 photos dans la galerie',
       'Modèles premium, musique et animations',
@@ -31,9 +38,8 @@ export const PRICING_PLANS = [
   {
     name: 'Business',
     price: '15 000',
-    period: '/mois',
+    period: '/30 jours',
     tagline: 'Équipes et organisations',
-    recommended: true,
     features: [
       'Événements illimités',
       '2 000 invités par événement',
@@ -46,7 +52,7 @@ export const PRICING_PLANS = [
   {
     name: 'Event Pro',
     price: '30 000',
-    period: '/mois',
+    period: '/30 jours',
     tagline: "Billetterie et contrôle d'accès",
     features: [
       'Événements illimités',

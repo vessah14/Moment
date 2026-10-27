@@ -47,7 +47,7 @@ namespace backend_EventMoment.Services
         public const string FreePlanCode = "free";
         // Limites serveur pour Free et Premium, même si la base n'a pas encore été migrée.
         private const int DefaultFreeMaxEvents = 3;
-        private const int DefaultPremiumMaxEvents = 3;
+        private const int DefaultPremiumMaxEvents = 5;
         private const int DefaultFreeMaxGuests = 50;
         private const int DefaultFreeMaxPhotos = 20;
 

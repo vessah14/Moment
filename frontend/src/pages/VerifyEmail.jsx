@@ -5,12 +5,19 @@ import { setCurrentUser, setToken } from '../api/client'
 import logoMark from '../assets/logo-mark.png'
 import AuthLayout from '../components/layout/AuthLayout'
 import Button from '../components/ui/Button'
-import { consumeReturnPath, returnPathFromSearch } from '../utils/returnPath'
+import {
+  consumeReturnPath,
+  consumeSignupReturnPath,
+  loginPathForReturnPath,
+  peekSignupReturnPath,
+  returnPathFromSearch,
+} from '../utils/returnPath'
 
 export default function VerifyEmail() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const token = searchParams.get('token') ?? ''
+  const returnPath = returnPathFromSearch(window.location.search) ?? peekSignupReturnPath()
   const [state, setState] = useState(token ? 'checking' : 'invalid')
   const [error, setError] = useState('')
   const started = useRef(false)
@@ -26,7 +33,7 @@ export default function VerifyEmail() {
         setToken(session.token)
         setCurrentUser(session.utilisateur)
         setState('done')
-        const storedReturnPath = consumeReturnPath()
+        const storedReturnPath = consumeSignupReturnPath() ?? consumeReturnPath()
         navigate(returnPathFromSearch(window.location.search) ?? storedReturnPath ?? '/dashboard', { replace: true })
       })
       .catch((err) => {
@@ -60,7 +67,9 @@ export default function VerifyEmail() {
         {state === 'invalid' && (
           <Button
             as={Link}
-            to="/connexion"
+            to={returnPath
+              ? loginPathForReturnPath(returnPath)
+              : '/connexion'}
             variant="gradient"
             className="mt-6 w-full"
           >

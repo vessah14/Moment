@@ -40,12 +40,11 @@ namespace backend_EventMoment.Services
         }
 
         public const string InvalidCredentialsMessage = "E-mail ou mot de passe incorrect.";
-        public const string EmailNotVerifiedMessage =
-            "Confirmez d'abord votre adresse e-mail : nous venons de vous renvoyer le lien de confirmation.";
 
         // Inscription : la réponse est toujours la même, que l'adresse soit libre ou déjà
-        // utilisée (sinon le formulaire révélerait quelles adresses ont un compte). Le compte
-        // ne sert qu'après confirmation de l'adresse par le lien reçu par e-mail.
+        // utilisée (sinon le formulaire révélerait quelles adresses ont un compte). Le site
+        // connecte ensuite la personne avec son mot de passe ; publier, payer et envoyer des
+        // e-mails attendent la confirmation de l'adresse (EmailVerificationGuard).
         public async Task RegisterAsync(CreateUtilisateurDtos dto)
         {
             if (string.IsNullOrWhiteSpace(dto.FullName))
@@ -224,17 +223,13 @@ namespace backend_EventMoment.Services
             }
             _loginThrottle?.Reset("organizer", dto.Email);
 
-            // Ces deux cas ne sont signalés qu'avec le bon mot de passe : ils ne révèlent rien
-            // à quelqu'un qui teste des adresses.
+            // Signalé seulement avec le bon mot de passe : ne révèle rien à quelqu'un qui teste
+            // des adresses.
             if (!user.IsActive)
                 throw new InvalidOperationException("Ce compte a été désactivé.");
 
-            if (!await IsEmailVerifiedAsync(user.Id))
-            {
-                await SendVerificationEmailAsync(user);
-                throw new InvalidOperationException(EmailNotVerifiedMessage);
-            }
-
+            // Adresse pas encore confirmée : connexion acceptée, mais publier, payer et envoyer
+            // des e-mails restent bloqués (EmailVerificationGuard).
             var (token, expiration) = _jwtService.GenerateOrganizerToken(user);
 
             return new LoginResponseDto

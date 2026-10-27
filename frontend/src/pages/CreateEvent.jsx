@@ -2,7 +2,7 @@ import { ArrowRight } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { createEvent, getEvent, updateEvent as updateEventApi, uploadEventBlockImage } from '../api/events'
-import { mediaUrl } from '../api/client'
+import { getCurrentUser, mediaUrl } from '../api/client'
 import { listEventCategories } from '../api/eventCategories'
 import { createEventLocation, deleteEventLocation, listEventLocations, updateEventLocation } from '../api/eventLocations'
 import { createEventBlock, listEventBlocks, updateEventBlock } from '../api/eventBlocks'
@@ -258,8 +258,12 @@ export default function CreateEvent() {
     })
   }
 
-  const publish = async (status) => {
+  const publish = async (requested) => {
     setPublishError('')
+    // Adresse pas encore confirmée : l'API refuserait la publication. On enregistre le
+    // brouillon (sinon un nouvel essai créerait un second événement) et on explique pourquoi.
+    const mustConfirmEmail = requested === 'publish' && getCurrentUser()?.emailVerified === false
+    const status = mustConfirmEmail ? 'draft' : requested
     if (status === 'publish' && !form.date) {
       setPublishError('Ajoutez la date de votre événement avant de le publier. Vous pouvez enregistrer le brouillon sans date.')
       document.getElementById('f-date')?.focus()
@@ -272,8 +276,10 @@ export default function CreateEvent() {
     const categoryId = category?.id ?? existing.categoryId
     if (!categoryId) return setPublishError('Les catégories ne sont pas disponibles. Rechargez la page et réessayez.')
 
-    setPublishing(status)
-    const warnings = []
+    setPublishing(requested)
+    const warnings = mustConfirmEmail
+      ? ["Confirmez votre adresse e-mail (lien reçu à l'inscription) pour publier : votre page est enregistrée en brouillon en attendant."]
+      : []
     try {
       const hero = existing.hero ?? {}
       const customFields = (logoUrl) =>

@@ -48,6 +48,8 @@ namespace backend_EventMoment.Services
             // Activer un rappel automatique demande une offre qui l'inclut ; le désactiver reste libre.
             if (enabled && _plans != null)
                 await _plans.EnsureFeatureAsync(organizerId, PlanFeature.AutoReminders);
+            if (enabled)
+                await EmailVerificationGuard.EnsureAsync(_context, organizerId);
 
             var entity = await _context.EventReminders
                 .FirstOrDefaultAsync(r => r.EventId == eventId && r.Kind == kind);

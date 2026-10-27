@@ -1,10 +1,11 @@
 import { Check } from 'lucide-react'
 import { Fragment, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import Footer from '../components/layout/Footer'
 import Header from '../components/layout/Header'
 import PricingCard from '../components/pricing/PricingCard'
 import { PRICING_FAQ } from '../data/pricingFaq'
-import { PRICING_PLANS as PLANS } from '../data/pricingPlans'
+import { PLAN_EVENT_LIMITS, PRICING_PLANS as PLANS } from '../data/pricingPlans'
 import { routeSeo } from '../data/seoRoutes'
 import { siteUrl, useSeo } from '../utils/seo'
 
@@ -32,7 +33,6 @@ const AUDIENCES = [
 const PAYMENT_METHODS = [
   { label: 'Orange Money', color: 'bg-[#ff7900]' },
   { label: 'MTN MoMo', color: 'bg-[#ffcb05]' },
-  { label: 'Paiement Mobile Money', color: 'bg-brand-purple' },
   { label: 'Paiement sécurisé', color: 'bg-success' },
 ]
 
@@ -40,11 +40,9 @@ const COMPARISON_SECTIONS = [
   {
     name: 'Capacité',
     rows: [
-      { name: 'Événements en ligne en même temps', values: ['1', '3', 'Illimité', 'Illimité', 'Sur mesure'] },
+      { name: 'Événements en ligne en même temps', values: [String(PLAN_EVENT_LIMITS.free), String(PLAN_EVENT_LIMITS.premium), 'Illimité', 'Illimité', 'Sur mesure'] },
       { name: 'Invités ou billets par événement', values: ['50', '500', '2 000', 'Illimité', 'Sur mesure'] },
       { name: 'Photos dans la galerie', values: ['20', '200', '1 000', '5 000', 'Illimité'] },
-      // Pas encore disponibles : affichés comme tels, jamais vendus comme acquis.
-      { name: 'Co-organisateurs (bientôt)', values: ['1', '2', '5', '15', 'Illimité'] },
       { name: 'Postes d’accueil (scanner)', values: ['—', '1', '5', 'Illimité', 'Illimité'] },
       { name: 'Commission billetterie (hors frais KPay)', values: ['—', '—', '5 %', '3 %', 'Négociée'] },
     ],
@@ -80,14 +78,12 @@ const COMPARISON_SECTIONS = [
     rows: [
       { name: 'Logo de l’organisateur', values: ['—', '—', true, true, true] },
       { name: 'Sans la mention « Créé avec TBF MOMENT »', values: ['—', '—', true, true, true] },
-      { name: 'Adresse personnalisée (bientôt)', values: ['—', '—', '—', true, true] },
       { name: 'Modèle créé sur mesure à vos couleurs', values: ['—', '—', '—', '—', true] },
     ],
   },
   {
     name: 'Services',
     rows: [
-      { name: 'API et intégrations (bientôt)', values: ['—', '—', '—', '—', true] },
       { name: 'Facture au nom de la structure', values: ['—', '—', true, true, true] },
     ],
   },
@@ -109,7 +105,21 @@ function ComparisonValue({ value }) {
 
 export default function Pricing() {
   useSeo(routeSeo('/tarifs', siteUrl()))
-  const [audience, setAudience] = useState(AUDIENCES[0].id)
+  const [searchParams] = useSearchParams()
+  const selectedOfferCode = searchParams.get('offre')
+  const offerNames = { free: 'Free', premium: 'Premium', business: 'Business', eventpro: 'Event Pro' }
+  const selectedOffer = PLANS.find((plan) => offerNames[selectedOfferCode] === plan.name)
+  const audienceForOffer = {
+    free: 'anniversaire',
+    premium: 'mariage',
+    business: 'concert',
+    eventpro: 'agence',
+  }
+  const [audience, setAudience] = useState(() =>
+    AUDIENCES.some((item) => item.id === audienceForOffer[selectedOfferCode])
+      ? audienceForOffer[selectedOfferCode]
+      : AUDIENCES[0].id
+  )
   const selectedAudience = AUDIENCES.find((item) => item.id === audience)
   const plans = PLANS.filter((plan) => !plan.enterprise).map((plan) => ({
     ...plan,
@@ -131,9 +141,14 @@ export default function Pricing() {
             Un prix clair, <span className="bg-brand-gradient bg-clip-text text-transparent">en francs CFA.</span>
           </h1>
           <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-muted sm:text-base">
-            Sans engagement : payez un mois, arrêtez quand vous voulez. Vos invités,
+            Sans engagement : chaque offre dure 30 jours et ne se renouvelle jamais toute seule. Vos invités,
             eux, n’ont jamais rien à payer pour répondre.
           </p>
+          {selectedOffer && (
+            <p role="status" className="mx-auto mt-4 max-w-xl rounded-lg border border-brand-purple/25 bg-brand-purple/10 px-4 py-3 text-sm text-ink">
+              Vous avez choisi l’offre <b>{selectedOffer.name}</b>. Elle est mise en évidence ci-dessous ; sélectionnez-la pour continuer.
+            </p>
+          )}
 
           <div className="mt-5 flex flex-wrap justify-center gap-2">
             {PAYMENT_METHODS.map((method) => (

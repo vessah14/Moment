@@ -110,7 +110,7 @@ public class PlanAndReviewTests
         var approved = await service.ApproveAsync(request.Id, Guid.NewGuid(), "Paiement reçu");
         Assert.Equal(UpgradeRequestStatus.Approuvee, approved.Status);
         var usage = await service.GetUsageAsync(organizer.Id);
-        Assert.Equal(("premium", 3), (usage.PlanCode, usage.MaxEvents));
+        Assert.Equal(("premium", 5), (usage.PlanCode, usage.MaxEvents));
         Assert.True(usage.EndsAt > DateTimeOffset.UtcNow.AddDays(27));
         await service.EnsureCanCreateEventAsync(organizer.Id);
         await Assert.ThrowsAsync<InvalidOperationException>(() => service.ApproveAsync(request.Id, Guid.NewGuid(), null));

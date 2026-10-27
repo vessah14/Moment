@@ -177,6 +177,7 @@ namespace backend_EventMoment.Services
 
             if (dto.SendNow && dto.Channel == "E-mail")
             {
+                await EmailVerificationGuard.EnsureAsync(_context, organizerId);
                 var since = DateTimeOffset.UtcNow.AddMinutes(-5);
                 var duplicate = await _context.MessageCampaigns.AnyAsync(c => c.EventId == eventId
                     && c.Status == CampaignStatus.Envoyee && c.SentAt != null && c.SentAt > since

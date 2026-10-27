@@ -63,6 +63,7 @@ public class SecurityFixesTests
             UpdatedAt = DateTimeOffset.UtcNow,
         };
         context.Organizers.Add(organizer);
+        context.OrganizerEmailVerifications.Add(new OrganizerEmailVerification { OrganizerId = organizer.Id, VerifiedAt = DateTimeOffset.UtcNow });
         context.EventCategories.Add(category);
         context.Events.Add(evt);
         context.SaveChanges();
@@ -225,17 +226,22 @@ public class SecurityFixesTests
     }
 
     [Fact]
-    public async Task Login_RequiresConfirmedEmail_AndResendsTheLink()
+    public async Task Login_WithUnconfirmedEmail_Succeeds_ButPublishingAndPayingStayBlocked()
     {
-        var (service, _, signup, email) = CreateUserService();
-        SeedPasswordAccount(signup, "pending@example.com", "RightPass1");
+        var (service, admin, signup, email) = CreateUserService();
+        var user = SeedPasswordAccount(signup, "pending@example.com", "RightPass1");
 
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            service.LoginAsync(new LoginDto { Email = "pending@example.com", Password = "RightPass1" }));
+        var login = await service.LoginAsync(new LoginDto { Email = "pending@example.com", Password = "RightPass1" });
 
-        Assert.Equal(UserService.EmailNotVerifiedMessage, ex.Message);
-        var mail = Assert.Single(email.Sent);
-        Assert.Contains("verifier-email?token=", mail.Body);
+        Assert.False(string.IsNullOrWhiteSpace(login.Token));
+        Assert.False(Assert.IsType<UtilisateurDtos>(login.Utilisateur).EmailVerified);
+        Assert.Empty(email.Sent);
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => EmailVerificationGuard.EnsureAsync(admin, user.Id));
+        Assert.Equal(EmailVerificationGuard.Message, ex.Message);
+
+        admin.OrganizerEmailVerifications.Add(new OrganizerEmailVerification { OrganizerId = user.Id, VerifiedAt = DateTimeOffset.UtcNow });
+        admin.SaveChanges();
+        await EmailVerificationGuard.EnsureAsync(admin, user.Id);
     }
 
     [Fact]

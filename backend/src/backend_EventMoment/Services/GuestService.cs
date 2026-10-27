@@ -210,6 +210,7 @@ namespace backend_EventMoment.Services
                 ?? throw new KeyNotFoundException($"Invité {id} introuvable.");
             if (string.IsNullOrWhiteSpace(guest.Email))
                 throw new InvalidOperationException("Cet invité n'a pas d'adresse e-mail.");
+            await EmailVerificationGuard.EnsureAsync(_context, organizerId);
 
             var invitation = await _context.GuestInvitations.FirstOrDefaultAsync(i => i.GuestId == id);
             if (invitation == null)
@@ -237,6 +238,7 @@ namespace backend_EventMoment.Services
         {
             if (!await _context.Events.AnyAsync(e => e.Id == eventId && e.OrganizerId == organizerId))
                 throw new KeyNotFoundException("Événement introuvable.");
+            await EmailVerificationGuard.EnsureAsync(_context, organizerId);
 
             var guests = await _context.Guests.AsNoTracking()
                 .Where(g => g.EventId == eventId && g.Email != null && g.Email != ""

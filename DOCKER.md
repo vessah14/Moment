@@ -66,3 +66,12 @@ Si un ancien volume contient déjà une initialisation incomplète, Docker ne re
 Les données restent dans le volume Docker `moment_db`. `docker compose down` arrête les services sans les effacer. Pour repartir de zéro et supprimer les données de test, exécuter `docker compose down -v`.
 
 Les services web et PostgreSQL sont publiés uniquement sur l'ordinateur local. Ne réutilise pas ces identifiants ni cette configuration pour un serveur accessible depuis Internet.
+
+## Adresse des visiteurs derrière Cloudflare et Render
+
+Les quotas par IP (connexion, réponses des invités, consultation publique) doivent voir l'adresse
+du visiteur, pas celle du dernier proxy. Derrière Cloudflare puis Render, l'IP interne de Render
+change sans cesse : définis la variable d'environnement `Proxy__ClientIpHeader=CF-Connecting-IP`
+sur le service API. Ne la règle que si l'API n'est joignable qu'à travers Cloudflare (c'est le
+cas sur Render) : sinon un client pourrait choisir lui-même son adresse. Derrière un proxy aux
+adresses fixes (nginx), utilise plutôt `Proxy:KnownProxies`.

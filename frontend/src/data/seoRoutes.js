@@ -142,6 +142,8 @@ export const STATIC_ROUTES = [
   },
   {
     path: '/inscription',
+    // Page pré-générée (balises de partage) mais hors sitemap : formulaire, pas de contenu.
+    sitemap: false,
     priority: '0.5',
     changefreq: 'yearly',
     title: 'Créer un compte',

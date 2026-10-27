@@ -2,7 +2,7 @@ const PAGES = [
   { label: 'Vue globale', to: '/dashboard' },
   { label: 'Mes événements', to: '/dashboard/evenements' },
   { label: 'Invitations', to: '/dashboard/invitations' },
-  { label: 'Communication', to: '/dashboard/communication' },
+  { label: 'Messages aux invités', to: '/dashboard/communication' },
   { label: 'Participants', to: '/dashboard/participants' },
   { label: 'Billetterie', to: '/dashboard/billetterie' },
   { label: 'Check-in', to: '/dashboard/checkin' },

@@ -29,6 +29,7 @@ public sealed class KPayPaymentService : IKPayPaymentService
     {
         if (idempotencyKey == Guid.Empty)
             throw new InvalidOperationException("Une clé d’idempotence valide est obligatoire.");
+        await EmailVerificationGuard.EnsureAsync(_context, organizerId);
 
         var existing = await _context.KPayPayments
             .FirstOrDefaultAsync(x => x.OrganizerId == organizerId && x.IdempotencyKey == idempotencyKey);

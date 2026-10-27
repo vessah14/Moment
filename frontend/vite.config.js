@@ -27,26 +27,18 @@ export default defineConfig(({ mode }) => {
     strictPort: true,
   },
   build: {
-    modulePreload: {
-      resolveDependencies: (_filename, dependencies) =>
-        dependencies.filter((dependency) => !dependency.includes("charts-")),
-    },
     rollupOptions: {
       output: {
+        // Seuls React et le routeur, utilisés partout, ont leur propre fichier (cache long).
+        // Tout le reste suit le découpage automatique : graphiques, PDF, drapeaux… ne sont
+        // chargés que par les pages qui s'en servent. Un groupe « vendor » fourre-tout ou un
+        // groupe « charts » faisait charger ces bibliothèques sur chaque page, y compris la
+        // page de l'invité ouverte en 3G.
         manualChunks(id) {
           if (!id.includes("node_modules")) return undefined;
-
-          if (id.includes("recharts")) return "charts";
-          // jsPDF et ses dépendances : laissés au découpage automatique, pour qu'ils ne soient
-          // chargés qu'au téléchargement d'un billet (import dynamique dans utils/ticketPrint.js).
-          if (/node_modules[\\/](jspdf|fflate|html2canvas|canvg|rgbcolor|stackblur-canvas|svg-pathdata|dompurify|core-js|raf|performance-now)[\\/]/.test(id))
-            return undefined;
-          if (id.includes("react-router-dom")) return "router";
-          if (id.includes("lucide-react") || id.includes("country-flag-icons"))
-            return "icons";
-          if (id.includes("react") || id.includes("scheduler"))
-            return "react-vendor";
-          return "vendor";
+          if (/node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return "react-vendor";
+          if (/node_modules[\\/](react-router|react-router-dom)[\\/]/.test(id)) return "router";
+          return undefined;
         },
       },
     },

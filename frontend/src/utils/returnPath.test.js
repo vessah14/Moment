@@ -2,7 +2,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   loginPathForReturnPath,
   peekReturnPath,
+  peekSignupReturnPath,
+  consumeSignupReturnPath,
   rememberReturnPath,
+  rememberSignupReturnPath,
   requestedReturnPath,
   returnPathFrom,
   returnPathFromSearch,
@@ -55,5 +58,32 @@ describe('returnPath', () => {
 
     rememberReturnPath('//example.com')
     expect(peekReturnPath()).toBeNull()
+  })
+
+  it('preserves signup destinations across tabs and consumes them once', () => {
+    const values = new Map()
+    vi.stubGlobal('localStorage', {
+      getItem: (key) => values.get(key) ?? null,
+      setItem: (key, value) => values.set(key, value),
+      removeItem: (key) => values.delete(key),
+    })
+
+    const path = '/tarifs?offre=premium'
+    rememberSignupReturnPath(path)
+    expect(peekSignupReturnPath()).toBe(path)
+    expect(consumeSignupReturnPath()).toBe(path)
+    expect(peekSignupReturnPath()).toBeNull()
+  })
+
+  it('rejects external signup return destinations', () => {
+    const values = new Map()
+    vi.stubGlobal('localStorage', {
+      getItem: (key) => values.get(key) ?? null,
+      setItem: (key, value) => values.set(key, value),
+      removeItem: (key) => values.delete(key),
+    })
+
+    rememberSignupReturnPath('//example.com')
+    expect(peekSignupReturnPath()).toBeNull()
   })
 })

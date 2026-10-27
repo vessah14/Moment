@@ -1,16 +1,18 @@
 import { Eye, EyeOff } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { register } from '../../api/auth'
+import { login, register } from '../../api/auth'
 import logoMark from '../../assets/logo-mark.png'
 import Button from '../ui/Button'
 import FacebookSignInButton from './FacebookSignInButton'
 import GoogleSignInButton from './GoogleSignInButton'
 import PasswordStrengthBar from './PasswordStrengthBar'
-import { loginPathForReturnPath, requestedReturnPath } from '../../utils/returnPath'
+import { consumeSignupReturnPath, loginPathForReturnPath, rememberSignupReturnPath, requestedReturnPath } from '../../utils/returnPath'
+import { PRICING_PLANS } from '../../data/pricingPlans'
 
 const GOOGLE_ENABLED = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID)
 const FACEBOOK_ENABLED = Boolean(import.meta.env.VITE_FACEBOOK_APP_ID)
+const OFFER_CODES = { free: 'Free', premium: 'Premium', business: 'Business', eventpro: 'Event Pro' }
 
 export default function SignupForm() {
   const navigate = useNavigate()
@@ -25,10 +27,13 @@ export default function SignupForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
-  const returnPath = requestedReturnPath(location)
-  const selectedTemplate = returnPath
-    ? new URLSearchParams(returnPath.split('?')[1] ?? '').get('modele')
-    : null
+  const requestedPath = requestedReturnPath(location)
+  const returnParams = new URLSearchParams(requestedPath?.split('?')[1] ?? '')
+  const requestedOfferCode = returnParams.get('offre') ?? new URLSearchParams(location.search).get('offre')
+  const selectedOffer = PRICING_PLANS.find((plan) => OFFER_CODES[requestedOfferCode] === plan.name)
+  const returnPath = requestedPath ?? (
+    selectedOffer ? `/tarifs?offre=${encodeURIComponent(requestedOfferCode)}` : null
+  )
   const emailIncomplete = email.length > 0 && !/^\S+@\S+\.\S+$/.test(email)
   const passwordMismatch =
     confirmPassword.length > 0 && password !== confirmPassword
@@ -39,12 +44,23 @@ export default function SignupForm() {
     setError('')
     setSubmitting(true)
     try {
+      rememberSignupReturnPath(returnPath)
       await register({
         fullName: `${firstName} ${lastName}`.trim(),
         email,
         password,
         confirmPassword,
       })
+      // Compte créé : connexion immédiate, l'adresse se confirme ensuite (bandeau du tableau
+      // de bord). Si l'adresse avait déjà un compte, ce mot de passe ne l'ouvre pas : même
+      // page « vérifiez vos e-mails » qu'avant, rien n'est révélé.
+      try {
+        await login({ email, password })
+        navigate(consumeSignupReturnPath() ?? '/dashboard', { replace: true })
+        return
+      } catch {
+        // Adresse déjà inscrite avec un autre mot de passe.
+      }
       const params = new URLSearchParams({ email })
       if (returnPath) params.set('retour', returnPath)
       navigate(`/inscription/verifiez-vos-emails?${params}`)
@@ -63,13 +79,6 @@ export default function SignupForm() {
         </span>
         <img src={logoMark} alt="" className="mx-auto mt-6 h-10 w-10" />
         <h1 className="mt-6 text-3xl font-bold text-ink">Créer un compte</h1>
-        {returnPath && (
-          <p className="mt-4 rounded-lg border border-brand-purple/20 bg-brand-purple/5 px-4 py-3 text-left text-sm text-ink" role="status">
-            {selectedTemplate
-              ? `Après confirmation de votre adresse e-mail, vous reprendrez la création avec le modèle « ${selectedTemplate} ».`
-              : 'Après confirmation de votre adresse e-mail, vous retrouverez la page demandée.'}
-          </p>
-        )}
       </div>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-5">

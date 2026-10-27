@@ -76,14 +76,33 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
         return;
     }
 
-    foreach (var proxy in builder.Configuration.GetSection("ForwardedHeaders:KnownProxies").Get<string[]>() ?? [])
+    // Proxy:KnownProxies (documenté) ; ForwardedHeaders:KnownProxies reste lu pour les
+    // configurations existantes.
+    var proxies = (builder.Configuration.GetSection("Proxy:KnownProxies").Get<string[]>() ?? [])
+        .Concat(builder.Configuration.GetSection("ForwardedHeaders:KnownProxies").Get<string[]>() ?? []);
+    foreach (var proxy in proxies)
     {
         if (System.Net.IPAddress.TryParse(proxy, out var address))
             options.KnownProxies.Add(address);
     }
 });
 // Nombre de requêtes par minute et par IP (RateLimits:<Nom> pour l'ajuster, ex. tests).
+// Les opérateurs mobiles font sortir beaucoup d'abonnés par la même IP (CGNAT) : les quotas
+// publics doivent laisser répondre toute une famille du même réseau en même temps.
 int Limit(string name, int fallback) => builder.Configuration.GetValue($"RateLimits:{name}", fallback);
+
+// Adresse du visiteur pour les quotas. Derrière Cloudflare et un hébergeur (Render…), le
+// dernier proxy a une IP interne qui change : Proxy:ClientIpHeader (ex. CF-Connecting-IP)
+// désigne l'en-tête posé par le proxy de bord. À ne régler que si l'API n'est joignable
+// qu'à travers ce proxy, sinon un client pourrait choisir son adresse.
+var clientIpHeader = builder.Configuration["Proxy:ClientIpHeader"];
+string ClientIp(HttpContext context)
+{
+    if (!string.IsNullOrWhiteSpace(clientIpHeader)
+        && System.Net.IPAddress.TryParse(context.Request.Headers[clientIpHeader].ToString().Trim(), out var fromHeader))
+        return fromHeader.ToString();
+    return context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+}
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -95,26 +114,27 @@ builder.Services.AddRateLimiter(options =>
         await context.HttpContext.Response.WriteAsJsonAsync(
             new { error = "Trop de tentatives. Patientez une minute avant de réessayer." }, ct);
     };
+    // Le blocage par compte (LoginThrottle) protège chaque mot de passe ; ce quota par IP ne
+    // freine que les essais en masse, sans bloquer tout un réseau mobile.
     options.AddPolicy("login", context => RateLimitPartition.GetFixedWindowLimiter(
-        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-        _ => new FixedWindowRateLimiterOptions { PermitLimit = Limit("Login", 5), Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+        ClientIp(context),
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = Limit("Login", 15), Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
     options.AddPolicy("public-write", context => RateLimitPartition.GetFixedWindowLimiter(
-        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-        _ => new FixedWindowRateLimiterOptions { PermitLimit = Limit("PublicWrite", 10), Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
-    // Compteurs de visites/partages : quota séparé pour ne pas consommer celui des RSVP
-    // (plusieurs invités peuvent partager la même IP derrière un opérateur mobile).
+        ClientIp(context),
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = Limit("PublicWrite", 40), Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+    // Compteurs de visites/partages : quota séparé pour ne pas consommer celui des RSVP.
     options.AddPolicy("public-track", context => RateLimitPartition.GetFixedWindowLimiter(
-        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-        _ => new FixedWindowRateLimiterOptions { PermitLimit = Limit("PublicTrack", 30), Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+        ClientIp(context),
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = Limit("PublicTrack", 120), Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
     // Consultation publique (sites d'événements, invitations, cadeaux, sitemap) : large pour
     // un visiteur, mais freine l'aspiration massive des données et la surcharge.
     options.AddPolicy("public-browse", context => RateLimitPartition.GetFixedWindowLimiter(
-        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-        _ => new FixedWindowRateLimiterOptions { PermitLimit = Limit("PublicBrowse", 120), Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+        ClientIp(context),
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = Limit("PublicBrowse", 400), Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
     // Lectures publiques sensibles (ex. « Trouver ma place ») : freine l'énumération de noms.
     options.AddPolicy("public-read", context => RateLimitPartition.GetFixedWindowLimiter(
-        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-        _ => new FixedWindowRateLimiterOptions { PermitLimit = Limit("PublicRead", 30), Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+        ClientIp(context),
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = Limit("PublicRead", 60), Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
 });
 var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
     ?? new[] { "http://localhost:5173", "http://localhost:5174" };
@@ -353,14 +373,8 @@ var app = builder.Build();
 // proxy et les limites par IP (connexion, formulaires publics) s'appliqueraient à tout le
 // site d'un coup. Seuls les proxys de confiance sont crus : la boucle locale par défaut,
 // plus les adresses de Proxy:KnownProxies — un X-Forwarded-For venu d'Internet est ignoré.
-var forwarded = new ForwardedHeadersOptions
-{
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-};
-foreach (var proxy in app.Configuration.GetSection("Proxy:KnownProxies").Get<string[]>() ?? Array.Empty<string>())
-    if (System.Net.IPAddress.TryParse(proxy, out var proxyIp))
-        forwarded.KnownProxies.Add(proxyIp);
-app.UseForwardedHeaders(forwarded);
+// Réglages : Configure<ForwardedHeadersOptions> plus haut (un seul passage).
+app.UseForwardedHeaders();
 app.UseWhen(context =>
     HttpMethods.IsGet(context.Request.Method)
     && (context.Request.Path == "/sitemap-events.xml"
@@ -424,7 +438,6 @@ app.Use(async (context, next) =>
     await next();
 });
 
-app.UseForwardedHeaders();
 app.UseHttpMetrics();
 app.UseHttpsRedirection();
 app.UseStaticFiles(new StaticFileOptions
@@ -441,7 +454,26 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.MapMetrics("/metrics").AllowAnonymous();
+// Métriques Prometheus (routes appelées, volumes, connexions à la base, mémoire) : jamais
+// publiques. En développement (Docker local), Prometheus les lit directement ; ailleurs,
+// elles n'existent que si Metrics:Token est défini, à envoyer en « Authorization: Bearer … ».
+var metricsToken = app.Configuration["Metrics:Token"];
+if (!string.IsNullOrEmpty(metricsToken))
+{
+    var expected = System.Text.Encoding.UTF8.GetBytes("Bearer " + metricsToken);
+    app.UseWhen(context => context.Request.Path.StartsWithSegments("/metrics"), branch => branch.Use(async (context, next) =>
+    {
+        var given = System.Text.Encoding.UTF8.GetBytes(context.Request.Headers.Authorization.ToString());
+        if (!System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(given, expected))
+        {
+            context.Response.StatusCode = StatusCodes.Status404NotFound;
+            return;
+        }
+        await next();
+    }));
+}
+if (app.Environment.IsDevelopment() || !string.IsNullOrEmpty(metricsToken))
+    app.MapMetrics("/metrics").AllowAnonymous();
 app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
 {
     Predicate = _ => false

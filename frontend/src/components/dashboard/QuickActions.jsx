@@ -37,15 +37,6 @@ export default function QuickActions() {
           ))}
         </div>
       </div>
-
-      <div className="rounded-xl border border-border-soft bg-surface p-5">
-        <h3 className="text-xs font-semibold tracking-wider text-faint uppercase">
-          Activité
-        </h3>
-        <p className="mt-3 text-sm text-faint">
-          Le flux d'activité en temps réel arrive bientôt.
-        </p>
-      </div>
     </div>
   )
 }

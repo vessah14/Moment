@@ -2,6 +2,8 @@
 // Seuls les chemins internes sont acceptés ("/..." mais pas "//site.com") pour qu'un
 // lien piégé ne puisse pas rediriger l'utilisateur vers un site externe après connexion.
 const STORAGE_KEY = 'tbf_return_path'
+const SIGNUP_RETURN_STORAGE_KEY = 'tbf_signup_return_path'
+const SIGNUP_RETURN_TTL_MS = 48 * 60 * 60 * 1000
 
 function sanitize(path) {
   return typeof path === 'string' && path.startsWith('/') && !path.startsWith('//') ? path : null
@@ -65,4 +67,49 @@ export function peekReturnPath() {
   } catch {
     return null
   }
+}
+
+// Email verification may open in a new tab, so sessionStorage is not sufficient here.
+export function rememberSignupReturnPath(path) {
+  try {
+    const safe = sanitize(path)
+    if (!safe) {
+      localStorage.removeItem(SIGNUP_RETURN_STORAGE_KEY)
+      return
+    }
+    localStorage.setItem(
+      SIGNUP_RETURN_STORAGE_KEY,
+      JSON.stringify({ path: safe, savedAt: Date.now() }),
+    )
+  } catch {
+    // Continue signup if browser storage is unavailable.
+  }
+}
+
+export function peekSignupReturnPath() {
+  try {
+    const value = localStorage.getItem(SIGNUP_RETURN_STORAGE_KEY)
+    if (!value) return null
+    const saved = JSON.parse(value)
+    if (
+      typeof saved?.savedAt !== 'number' ||
+      Date.now() - saved.savedAt > SIGNUP_RETURN_TTL_MS
+    ) {
+      localStorage.removeItem(SIGNUP_RETURN_STORAGE_KEY)
+      return null
+    }
+    return sanitize(saved.path)
+  } catch {
+    return null
+  }
+}
+
+export function consumeSignupReturnPath() {
+  const path = peekSignupReturnPath()
+  try {
+    localStorage.removeItem(SIGNUP_RETURN_STORAGE_KEY)
+  } catch {
+    // Return the validated in-memory value even if cleanup is unavailable.
+  }
+  return path
 }

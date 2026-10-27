@@ -1,10 +1,52 @@
 {
   "routes": [
     {
-      "handle": "filesystem"
+      "src": "/assets/(.*)",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      },
+      "continue": true
     },
     {
       "src": "/(.*)",
+      "headers": {
+        "X-Frame-Options": "SAMEORIGIN",
+        "X-Content-Type-Options": "nosniff",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "Content-Security-Policy": "frame-ancestors 'self'; object-src 'none'; base-uri 'self'",
+        "Permissions-Policy": "camera=(self), microphone=(), geolocation=(), payment=()"
+      },
+      "continue": true
+    },
+    {
+      "src": "/e/([a-z0-9-]+)/?",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(WhatsApp|facebookexternalhit|Facebot|TelegramBot|Twitterbot|LinkedInBot|Slackbot|Discordbot|SkypeUriPreview|Pinterest|Snapchat).*"
+        }
+      ],
+      "dest": "https://api.tbfmoment.com/share/e/$1"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(?:e|modeles|builder|cadeaux|invitation)/[^/]+/?",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/dashboard(?:/.*)?",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/(?:auth/facebook/callback|bienvenue|chargement|connexion|cookies|inscription/verifiez-vos-emails|loading|mot-de-passe-oublie|politique-cookies|reinitialiser-mot-de-passe|verifier-email)/?",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/(.*)",
+      "status": 404,
       "dest": "/index.html"
     }
   ]

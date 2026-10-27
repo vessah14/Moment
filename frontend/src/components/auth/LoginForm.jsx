@@ -20,9 +20,6 @@ export default function LoginForm() {
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const returnPath = requestedReturnPath(location)
-  const selectedTemplate = returnPath?.startsWith('/dashboard/evenements/nouveau')
-    ? new URLSearchParams(returnPath.split('?')[1] ?? '').get('modele')
-    : null
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -52,13 +49,6 @@ export default function LoginForm() {
         <p className="mt-2 text-sm text-muted">
           Retrouvez vos événements et vos invités.
         </p>
-        {returnPath && (
-          <p className="mt-4 rounded-lg border border-brand-purple/20 bg-brand-purple/5 px-4 py-3 text-left text-sm text-ink" role="status">
-            {selectedTemplate
-              ? `Après connexion, vous reprendrez la création de votre événement avec le modèle « ${selectedTemplate} ».`
-              : 'Après connexion, vous retrouverez la page que vous souhaitiez consulter.'}
-          </p>
-        )}
       </div>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-5">

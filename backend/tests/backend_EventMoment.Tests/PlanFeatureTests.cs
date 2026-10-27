@@ -115,10 +115,20 @@ public class PlanFeatureTests
         context.Events.Add(thirdEvent);
         await context.SaveChangesAsync();
 
+        // Premium va au-delà des 3 événements de Free, jusqu'à 5.
+        await plans.EnsureCanCreateEventAsync(organizerId);
+        foreach (var name in new[] { "Dot", "Baptême" })
+            context.Events.Add(new Event
+            {
+                Id = Guid.NewGuid(), OrganizerId = organizerId, CategoryId = Guid.NewGuid(), Name = name,
+                Slug = $"evt-{Guid.NewGuid():N}", CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow,
+            });
+        await context.SaveChangesAsync();
+
         var usage = await plans.GetUsageAsync(organizerId);
-        Assert.Equal(("premium", 3, 3), (usage.PlanCode, usage.MaxEvents, usage.EventsUsed));
+        Assert.Equal(("premium", 5, 5), (usage.PlanCode, usage.MaxEvents, usage.EventsUsed));
         var limitError = await Assert.ThrowsAsync<InvalidOperationException>(() => plans.EnsureCanCreateEventAsync(organizerId));
-        Assert.Contains("3 événements", limitError.Message);
+        Assert.Contains("5 événements", limitError.Message);
     }
 
     [Fact]

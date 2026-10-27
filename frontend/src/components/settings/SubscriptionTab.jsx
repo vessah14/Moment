@@ -53,7 +53,7 @@ export default function SubscriptionTab() {
             </Button>
           </div>
           <p className="mt-3 text-sm text-muted">
-            {formatCents(active.priceCents)} · {active.billing === 'Gratuit' ? 'Gratuit' : active.billing === 'Mensuel' ? 'par mois' : 'par an'}
+            {formatCents(active.priceCents)} · {active.billing === 'Gratuit' ? 'Gratuit' : active.billing === 'Mensuel' ? '30 jours, sans renouvellement' : 'par an'}
           </p>
           <p className="mt-1 text-xs text-faint">
             Débuté le {new Date(active.startedAt).toLocaleDateString('fr-FR')}

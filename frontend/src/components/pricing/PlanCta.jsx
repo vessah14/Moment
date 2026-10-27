@@ -26,7 +26,13 @@ function UpgradeCta({ plan, className }) {
 export default function PlanCta({ plan, className }) {
   if (!isAuthenticated())
     return (
-      <Link to="/inscription" className={className}>
+      <Link
+        to={`/inscription?${new URLSearchParams({
+          offre: PLAN_CODES[plan.name] ?? 'free',
+          retour: `/tarifs?offre=${encodeURIComponent(PLAN_CODES[plan.name] ?? 'free')}`,
+        })}`}
+        className={className}
+      >
         {plan.cta}
       </Link>
     )

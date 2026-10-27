@@ -4,7 +4,7 @@ import BrandBackdrop from '../ui/BrandBackdrop'
 import { PRICING_PLANS } from '../../data/pricingPlans'
 import SectionHeader from './SectionHeader'
 
-const FEATURED = ['Free', 'Business', 'Enterprise']
+const FEATURED = ['Free', 'Premium', 'Business']
 
 export default function PricingTeaser() {
   const plans = PRICING_PLANS.filter((plan) => FEATURED.includes(plan.name))

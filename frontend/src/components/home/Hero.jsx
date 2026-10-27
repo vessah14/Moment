@@ -19,7 +19,7 @@ const SHOTS = [
   { src: campusShot, alt: 'Modèle Campus pour une journée culturelle' },
   { src: fiestaShot, alt: 'Modèle Fiesta pour un anniversaire' },
 ]
-const TRUST = ['Gratuit pour commencer', 'Aucune application à installer', 'Orange Money et MTN MoMo']
+const TRUST = ['Gratuit jusqu’à 50 invités', 'Aucune application à installer', 'Orange Money et MTN MoMo']
 
 // Chaque téléphone ne rend que sa capture active : pas de décodage des images invisibles.
 function Phone({ active, className }) {

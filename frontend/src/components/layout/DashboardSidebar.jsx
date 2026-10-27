@@ -30,37 +30,49 @@ import BrandLogo from '../ui/BrandLogo'
 import logoMark from '../../assets/logo-mark.png'
 import { useLocalStorageState } from '../../utils/useLocalStorageState'
 
-const NAV_ITEMS = [
-  { label: 'Vue globale', to: '/dashboard', icon: BarChart3, end: true },
+// Menu groupé par moment de l'organisation : on trouve vite ce qui sert maintenant.
+const NAV_SECTIONS = [
   {
-    label: 'Créer un événement',
-    to: '/dashboard/evenements/nouveau',
-    icon: Plus,
-  },
-  { label: 'Mes événements', to: '/dashboard/evenements', icon: Calendar, end: true },
-  { label: 'Envoyer des invitations', to: '/dashboard/invitations', icon: Mail },
-  {
-    label: 'Communication',
-    to: '/dashboard/communication',
-    icon: MessageSquare,
+    items: [
+      { label: 'Vue globale', to: '/dashboard', icon: BarChart3, end: true },
+      { label: 'Créer un événement', to: '/dashboard/evenements/nouveau', icon: Plus },
+      { label: 'Mes événements', to: '/dashboard/evenements', icon: Calendar, end: true },
+    ],
   },
   {
-    label: 'Invités & RSVP',
-    to: '/dashboard/participants',
-    icon: Users,
-    badgeKey: 'guests',
+    title: 'Invités',
+    items: [
+      { label: 'Invités & RSVP', to: '/dashboard/participants', icon: Users, badgeKey: 'guests' },
+      { label: 'Envoyer des invitations', to: '/dashboard/invitations', icon: Mail },
+      { label: 'Messages aux invités', to: '/dashboard/communication', icon: MessageSquare },
+      { label: 'Billetterie', to: '/dashboard/billetterie', icon: Ticket },
+    ],
   },
-  { label: 'Billetterie', to: '/dashboard/billetterie', icon: Ticket },
-  { label: 'Check-in', to: '/dashboard/checkin', icon: QrCode },
-  { label: 'Galerie', to: '/dashboard/galerie', icon: Image },
-  { label: "Livre d'or", to: '/dashboard/livre-dor', icon: BookHeart },
-  { label: 'Programme', to: '/dashboard/programme', icon: ListOrdered },
-  { label: 'Plan de table', to: '/dashboard/plan-de-table', icon: Table2 },
-  { label: 'Liste de cadeaux', to: '/dashboard/liste-mariage', icon: Gift },
-  { label: 'Conférence', to: '/dashboard/conference', icon: Mic2 },
-  { label: 'Statistiques', to: '/dashboard/statistiques', icon: BarChart3 },
-  { label: 'Mon avis', to: '/dashboard/avis', icon: Star },
-  { label: 'Paramètres', to: '/dashboard/parametres', icon: Settings },
+  {
+    title: 'Contenu de la page',
+    items: [
+      { label: 'Programme', to: '/dashboard/programme', icon: ListOrdered },
+      { label: 'Plan de table', to: '/dashboard/plan-de-table', icon: Table2 },
+      { label: 'Liste de cadeaux', to: '/dashboard/liste-mariage', icon: Gift },
+      { label: 'Conférence', to: '/dashboard/conference', icon: Mic2 },
+    ],
+  },
+  {
+    title: 'Jour J et après',
+    items: [
+      { label: 'Check-in', to: '/dashboard/checkin', icon: QrCode },
+      { label: 'Galerie', to: '/dashboard/galerie', icon: Image },
+      { label: "Livre d'or", to: '/dashboard/livre-dor', icon: BookHeart },
+      { label: 'Statistiques', to: '/dashboard/statistiques', icon: BarChart3 },
+    ],
+  },
+  {
+    title: 'Compte',
+    items: [
+      { label: 'Mon avis', to: '/dashboard/avis', icon: Star },
+      { label: 'Paramètres', to: '/dashboard/parametres', icon: Settings },
+    ],
+  },
 ]
 
 // Nombre total d'invités de l'organisateur, tous événements confondus (lu en base).
@@ -143,42 +155,53 @@ export default function DashboardSidebar({ open, onClose }) {
           </button>
         </div>
 
-        <nav className="mt-6 flex-1 space-y-0.5">
-          {NAV_ITEMS.map((item) => {
-            const badge = item.badgeKey ? badges[item.badgeKey] : null
-            return (
-            <NavLink
-              key={item.label}
-              to={item.to}
-              end={item.end}
-              onClick={onClose}
-              title={item.label}
-              className={({ isActive }) =>
-                `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition ${
-                  collapsed ? 'lg:justify-center lg:px-2' : ''
-                } ${
-                  isActive
-                    ? 'bg-brand-indigo text-white'
-                    : 'text-muted hover:bg-surface-2 hover:text-ink'
-                }`
-              }
-            >
-              <item.icon className="h-4 w-4 shrink-0" />
-              <span className={`flex-1 ${collapsed ? 'lg:hidden' : ''}`}>
-                {item.label}
-              </span>
-              {badge > 0 && (
-                <span
-                  className={`rounded-full bg-brand-purple/20 px-2 py-0.5 text-xs font-semibold text-brand-purple ${
-                    collapsed ? 'lg:hidden' : ''
-                  }`}
-                >
-                  {badge > 999 ? '999+' : badge}
-                </span>
+        <nav className="mt-6 flex-1">
+          {NAV_SECTIONS.map((section, index) => (
+            <div key={section.title ?? index} className={index > 0 ? 'mt-4' : ''}>
+              {section.title && (
+                <p className={`mb-1 px-3 text-[11px] font-semibold tracking-wider text-faint uppercase ${collapsed ? 'lg:hidden' : ''}`}>
+                  {section.title}
+                </p>
               )}
-            </NavLink>
-            )
-          })}
+              <div className="space-y-0.5">
+              {section.items.map((item) => {
+                const badge = item.badgeKey ? badges[item.badgeKey] : null
+                return (
+                <NavLink
+                  key={item.label}
+                  to={item.to}
+                  end={item.end}
+                  onClick={onClose}
+                  title={item.label}
+                  className={({ isActive }) =>
+                    `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                      collapsed ? 'lg:justify-center lg:px-2' : ''
+                    } ${
+                      isActive
+                        ? 'bg-brand-indigo text-white'
+                        : 'text-muted hover:bg-surface-2 hover:text-ink'
+                    }`
+                  }
+                >
+                  <item.icon className="h-4 w-4 shrink-0" />
+                  <span className={`flex-1 ${collapsed ? 'lg:hidden' : ''}`}>
+                    {item.label}
+                  </span>
+                  {badge > 0 && (
+                    <span
+                      className={`rounded-full bg-brand-purple/20 px-2 py-0.5 text-xs font-semibold text-brand-purple ${
+                        collapsed ? 'lg:hidden' : ''
+                      }`}
+                    >
+                      {badge > 999 ? '999+' : badge}
+                    </span>
+                  )}
+                </NavLink>
+                )
+              })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         <Link

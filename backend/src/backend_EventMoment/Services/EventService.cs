@@ -117,6 +117,8 @@ namespace backend_EventMoment.Services
             var moderation = await _context.EventModerations.AsNoTracking().FirstOrDefaultAsync(m => m.EventId == id);
             if (moderation != null && dto.Status == EventStatus.Publie && entity.Status != EventStatus.Publie)
                 throw new InvalidOperationException("Cet événement a été suspendu par la modération et ne peut pas être publié.");
+            if (dto.Status == EventStatus.Publie && entity.Status != EventStatus.Publie)
+                await EmailVerificationGuard.EnsureAsync(_context, organizerId);
 
             // Passer à un modèle premium demande une offre qui l'inclut. Un événement qui l'avait
             // déjà (offre arrivée à échéance) reste modifiable sans perdre son modèle.

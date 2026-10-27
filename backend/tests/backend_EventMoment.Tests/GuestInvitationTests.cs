@@ -17,6 +17,7 @@ public class GuestInvitationTests
             Id = organizerId, Email = "org@example.com", PasswordHash = "hash", FullName = "Awa Diop",
             IsActive = true, CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow,
         });
+        context.OrganizerEmailVerifications.Add(new OrganizerEmailVerification { OrganizerId = organizerId, VerifiedAt = DateTimeOffset.UtcNow });
         var evt = new Event
         {
             Id = Guid.NewGuid(), OrganizerId = organizerId, CategoryId = Guid.NewGuid(), Name = "Mariage", Slug = "mariage",

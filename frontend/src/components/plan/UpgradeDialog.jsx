@@ -212,7 +212,7 @@ function RequestUpgradeDialog ({ open, onClose, plan, initialPlanCode }) {
                       <span className='mt-1 font-mono text-lg font-bold text-ink'>
                         {formatFcfa(p.priceCents)}
                         <span className='ml-1 font-sans text-xs font-normal text-faint'>
-                          /mois
+                          /30 jours
                         </span>
                       </span>
                       {current && (

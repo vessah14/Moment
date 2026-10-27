@@ -12,9 +12,6 @@ export default function CheckEmail() {
   const [searchParams] = useSearchParams()
   const email = searchParams.get('email') ?? ''
   const returnPath = returnPathFromSearch(window.location.search)
-  const selectedTemplate = returnPath
-    ? new URLSearchParams(returnPath.split('?')[1] ?? '').get('modele')
-    : null
   const [state, setState] = useState('idle')
   const [error, setError] = useState('')
 
@@ -40,9 +37,6 @@ export default function CheckEmail() {
         <p className="mt-3 text-sm text-muted">
           Nous avons envoyé un lien de confirmation à{' '}
           {email ? <b className="text-ink">{email}</b> : 'votre adresse'}. Cliquez dessus pour activer votre compte.
-          {selectedTemplate
-            ? ` Vous retrouverez ensuite la création de votre événement avec le modèle « ${selectedTemplate} ».`
-            : ' Vous retrouverez ensuite la page demandée.'}
         </p>
         <p className="mt-3 text-xs text-faint">
           Rien reçu ? Regardez dans les courriers indésirables (spam). Le lien reste valable 48 heures.

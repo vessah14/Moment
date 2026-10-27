@@ -134,7 +134,7 @@ export default function PopularTemplates() {
           to="/modeles"
           className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border-soft px-5 text-sm font-semibold text-ink transition hover:border-brand-purple"
         >
-          Voir toute la galerie ({TEMPLATES.length} modèles) <ArrowRight className="h-4 w-4" />
+          Voir les {TEMPLATES.length} modèles de la galerie <ArrowRight className="h-4 w-4" />
         </Link>
       </p>
     </section>

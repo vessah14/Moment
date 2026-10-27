@@ -6,6 +6,13 @@ export async function updateProfile(id, dto) {
   return result
 }
 
+// Relit le compte connecté (ex. adresse confirmée depuis un autre appareil).
+export async function refreshCurrentUser(id) {
+  const result = await apiFetch(`/users/${id}`)
+  setCurrentUser(result)
+  return result
+}
+
 export function changePassword(id, dto) {
   return apiFetch(`/users/${id}/change-password`, { method: 'POST', body: dto })
 }

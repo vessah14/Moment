@@ -168,11 +168,11 @@ function Demo({ theme }) {
     />
   )
 
-  if (embedded) return page
+  if (embedded) return <main className="min-h-svh">{page}</main>
 
   return (
-    <>
-      <div className="relative z-[60] flex flex-wrap items-center gap-x-4 gap-y-2 bg-[#0F0B2E] px-4 py-2.5 text-sm text-[#F2EFFF]">
+    <div className="min-h-svh">
+      <header className="relative z-[60] flex flex-wrap items-center gap-x-4 gap-y-2 bg-[#0F0B2E] px-4 py-2.5 text-sm text-[#F2EFFF]">
         <Link to="/modeles" className="inline-flex items-center gap-1.5 text-[#A8A1D1] hover:text-white">
           <ArrowLeft className="h-4 w-4" />
           Tous les modèles
@@ -229,9 +229,11 @@ function Demo({ theme }) {
             Utiliser ce modèle
           </Link>
         </div>
-      </div>
-      {view === 'telephone' ? <PhoneFrame theme={theme} name={template.name} /> : page}
-    </>
+      </header>
+      <main id="main-content">
+        {view === 'telephone' ? <PhoneFrame theme={theme} name={template.name} /> : page}
+      </main>
+    </div>
   )
 }
 

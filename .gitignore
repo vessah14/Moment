@@ -39,3 +39,6 @@ Thumbs.db
 
 .vercel
 .env*
+
+# Archives de test locales (jamais versionnées)
+*.zip
