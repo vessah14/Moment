@@ -458,6 +458,7 @@ app.UseAuthorization();
 app.Use(async (context, next) =>
 {
     var isAdminApi = context.Request.Path.StartsWithSegments("/api/admin");
+    var isApiRequest = context.Request.Path.StartsWithSegments("/api");
     var isMutation = !HttpMethods.IsGet(context.Request.Method)
         && !HttpMethods.IsHead(context.Request.Method)
         && !HttpMethods.IsOptions(context.Request.Method);
@@ -473,10 +474,17 @@ app.Use(async (context, next) =>
     }
     catch (Exception exception)
     {
-        if (context.Response.StatusCode >= 500 || exception is DbUpdateException)
+        var (statusCode, category) = exception switch
         {
-            var statusCode = exception is DbUpdateException ? StatusCodes.Status409Conflict : StatusCodes.Status500InternalServerError;
-            var category = exception is DbUpdateException ? "Conflit de données" : "Erreur interne";
+            DbUpdateException => (StatusCodes.Status409Conflict, "Conflit de données"),
+            IdempotencyConflictException => (StatusCodes.Status409Conflict, "Conflit de données"),
+            KeyNotFoundException => (StatusCodes.Status404NotFound, "Ressource introuvable"),
+            InvalidOperationException => (StatusCodes.Status400BadRequest, "Requête invalide"),
+            BadHttpRequestException bad => (bad.StatusCode, "Requête invalide"),
+            _ => (StatusCodes.Status500InternalServerError, "Erreur interne")
+        };
+        if (statusCode == StatusCodes.Status409Conflict || statusCode >= 500)
+        {
             try
             {
                 await context.RequestServices.GetRequiredService<IAdminTelemetryService>()
@@ -510,7 +518,7 @@ app.Use(async (context, next) =>
         }
     }
 
-    if (isAdminApi && context.Response.StatusCode is 409 or >= 500)
+    if (isApiRequest && context.Response.StatusCode is 409 or >= 500)
     {
         var category = context.Response.StatusCode == 409 ? "Conflit de données" : "Erreur interne";
         try
