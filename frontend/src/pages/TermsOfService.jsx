@@ -40,7 +40,7 @@ export default function TermsOfService () {
       <H2>3. Création de compte</H2>
       <p>
         L'utilisation de TBF Moment nécessite un compte organisateur, créé avec une adresse e-mail
-        et un mot de passe d'au moins 8 caractères, ou avec un compte Google ou Facebook.
+        et un mot de passe d'au moins 8 caractères, ou avec un compte Google.
         L'adresse e-mail doit être confirmée avant la première connexion. Vous devez avoir au
         moins 18 ans, ou agir avec l'accord d'un parent ou au nom d'une structure.
       </p>

@@ -61,15 +61,6 @@ namespace backend_EventMoment.Controllers
             return Ok(result);
         }
 
-        [HttpPost("oauth/facebook")]
-        [AllowAnonymous]
-        [EnableRateLimiting("login")]
-        public async Task<IActionResult> LoginWithFacebook([FromBody] FacebookAuthDto dto)
-        {
-            var result = await _service.LoginWithFacebookAsync(dto);
-            return Ok(result);
-        }
-
         [HttpPost("forgot-password")]
         [AllowAnonymous]
         [EnableRateLimiting("login")]

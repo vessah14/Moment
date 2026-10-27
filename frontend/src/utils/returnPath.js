@@ -39,8 +39,7 @@ export function loginPathForReturnPath(path) {
   return `/connexion?${params}`
 }
 
-// Connexion Facebook : l'utilisateur quitte le site puis revient sur /auth/facebook/callback,
-// l'état du routeur est perdu — on garde la destination dans sessionStorage.
+// Les connexions externes quittent le site : on garde la destination dans sessionStorage.
 export function rememberReturnPath(path) {
   const safe = sanitize(path)
   try {

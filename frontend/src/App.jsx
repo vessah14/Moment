@@ -31,7 +31,6 @@ const Settings = lazy(() => import('./pages/dashboard/Settings'))
 const MyReview = lazy(() => import('./pages/dashboard/MyReview'))
 const Ticketing = lazy(() => import('./pages/dashboard/Ticketing'))
 const Ecosystem = lazy(() => import('./pages/Ecosystem'))
-const FacebookCallback = lazy(() => import('./pages/FacebookCallback'))
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
 const GiftRegistryPublic = lazy(() => import('./pages/GiftRegistryPublic'))
 const GuestInvitation = lazy(() => import('./pages/GuestInvitation'))
@@ -85,10 +84,6 @@ function App () {
             }
           />
           <Route path='/connexion' element={<Login />} />
-          <Route
-            path='/auth/facebook/callback'
-            element={<FacebookCallback />}
-          />
           <Route path='/mot-de-passe-oublie' element={<ForgotPassword />} />
           <Route
             path='/reinitialiser-mot-de-passe'

@@ -23,19 +23,6 @@ export async function loginWithGoogle(accessToken) {
   return result
 }
 
-// Code à usage unique renvoyé par Facebook : c'est le serveur qui l'échange contre le
-// jeton d'accès (avec la clé secrète de l'application), jamais le navigateur.
-export async function loginWithFacebook(code) {
-  const result = await apiFetch('/users/oauth/facebook', {
-    method: 'POST',
-    auth: false,
-    body: { code },
-  })
-  setToken(result.token)
-  setCurrentUser(result.utilisateur)
-  return result
-}
-
 export async function register({ fullName, email, phone, password, confirmPassword }) {
   return apiFetch('/users/register', {
     method: 'POST',

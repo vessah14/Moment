@@ -5,11 +5,9 @@ import { consumeReturnPath, loginPathForReturnPath, requestedReturnPath } from '
 import { login } from '../../api/auth'
 import logoMark from '../../assets/logo-mark.png'
 import Button from '../ui/Button'
-import FacebookSignInButton from './FacebookSignInButton'
 import GoogleSignInButton from './GoogleSignInButton'
 
 const GOOGLE_ENABLED = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID)
-const FACEBOOK_ENABLED = Boolean(import.meta.env.VITE_FACEBOOK_APP_ID)
 
 export default function LoginForm() {
   const navigate = useNavigate()
@@ -125,32 +123,17 @@ export default function LoginForm() {
         </Button>
       </form>
 
-      <div className="my-6 flex items-center gap-4 text-xs text-faint">
-        <span className="h-px flex-1 bg-border-soft" />
-        ou
-        <span className="h-px flex-1 bg-border-soft" />
-      </div>
-
-      <div className="flex flex-col items-center gap-3">
-        {GOOGLE_ENABLED ? (
-          <GoogleSignInButton onError={setError} />
-        ) : (
-          <Button variant="outline" disabled title="Bientôt disponible" className="w-full disabled:opacity-50">
-            Google
-          </Button>
-        )}
-        {FACEBOOK_ENABLED ? (
-          <FacebookSignInButton />
-        ) : (
-          <Button variant="outline" disabled title="Bientôt disponible" className="w-full disabled:opacity-50">
-            Facebook
-          </Button>
-        )}
-      </div>
-      {!GOOGLE_ENABLED && !FACEBOOK_ENABLED && (
-        <p className="mt-2 text-center text-xs text-faint">
-          Connexion Google/Facebook bientôt disponible.
-        </p>
+      {GOOGLE_ENABLED && (
+        <>
+          <div className="my-6 flex items-center gap-4 text-xs text-faint">
+            <span className="h-px flex-1 bg-border-soft" />
+            ou
+            <span className="h-px flex-1 bg-border-soft" />
+          </div>
+          <div className="flex flex-col items-center gap-3">
+            <GoogleSignInButton onError={setError} />
+          </div>
+        </>
       )}
 
       <p className="mt-8 text-center text-sm text-muted">
