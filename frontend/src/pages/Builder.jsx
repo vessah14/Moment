@@ -26,10 +26,8 @@ import { listTicketTypes } from '../api/ticketing'
 import { listGiftItems } from '../api/giftRegistry'
 import { listTables } from '../api/seating'
 import {
-  createEventBlock,
-  deleteEventBlock,
+  replaceEventBlocks,
   listEventBlocks,
-  updateEventBlock,
 } from '../api/eventBlocks'
 import { builderSnapshot, clearBuilderDraft, readBuilderDraft, writeBuilderDraft } from '../utils/builderDraft'
 import { formatEventDate } from '../utils/eventStatus'
@@ -78,7 +76,6 @@ export default function Builder() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [event, setEvent] = useState(null)
-  const [existingBlocks, setExistingBlocks] = useState([])
 
   const [pageBlocks, setPageBlocks] = useState([])
   const [selectedBlock, setSelectedBlock] = useState('Hero')
@@ -182,7 +179,6 @@ export default function Builder() {
             .map((t, i) => ({ number: i + 1, label: t.label, capacity: t.capacity })),
         })
         setEvent(eventData)
-        setExistingBlocks(blocks ?? [])
         setPublished(eventData.status === 'Publie')
 
         const heroBlock = (blocks ?? []).find((b) => b.blockType === 'Hero')
@@ -498,24 +494,6 @@ export default function Builder() {
         await updateEventApi(eventId, eventDto(published ? 'Publie' : 'Brouillon'))
         setTemplateDirty(false)
       }
-      const existingByType = new Map(
-        existingBlocks.map((b) => [normalizeBlockType(b.blockType), b]),
-      )
-
-      // Décale d'abord tous les blocs existants vers des positions temporaires
-      // négatives : la contrainte unique (event_id, position) en base
-      // refuserait sinon un réordonnancement où deux blocs échangeraient leurs
-      // positions (l'un prendrait la place que l'autre occupe encore).
-      const toReposition = [...existingByType.values()].filter((b) => b.blockType !== 'Hero')
-      for (const b of toReposition) {
-        await updateEventBlock(b.id, {
-          blockType: b.blockType,
-          position: -(b.position + 1000),
-          isVisible: true,
-          content: b.content,
-        })
-      }
-
       const heroContent = JSON.stringify({
         color: heroStyle.color,
         font: heroStyle.font,
@@ -530,37 +508,17 @@ export default function Builder() {
         motif: heroStyle.motif,
         kicker: heroStyle.kicker,
       })
-      const heroExisting = existingByType.get('Hero')
-      if (heroExisting) {
-        await updateEventBlock(heroExisting.id, {
-          blockType: 'Hero',
-          position: 0,
+      // Toute la page en un seul appel, tout ou rien (l'ancienne suite d'appels bloc par
+      // bloc pouvait laisser la page à moitié enregistrée : « Conflit de données »).
+      await replaceEventBlocks(eventId, [
+        { blockType: 'Hero', position: 0, isVisible: true, content: heroContent },
+        ...pageBlocks.map((type, i) => ({
+          blockType: type,
+          position: i + 1,
           isVisible: true,
-          content: heroContent,
-        })
-      } else {
-        await createEventBlock({ blockType: 'Hero', position: 0, isVisible: true, content: heroContent }, eventId)
-      }
-
-      for (let i = 0; i < pageBlocks.length; i++) {
-        const type = pageBlocks[i]
-        const content = JSON.stringify(blockContent[type] ?? {})
-        const existing = existingByType.get(type)
-        if (existing) {
-          await updateEventBlock(existing.id, { blockType: type, position: i + 1, isVisible: true, content })
-        } else {
-          await createEventBlock({ blockType: type, position: i + 1, isVisible: true, content }, eventId)
-        }
-      }
-
-      for (const [type, b] of existingByType) {
-        if (type !== 'Hero' && !pageBlocks.includes(type)) {
-          await deleteEventBlock(b.id)
-        }
-      }
-
-      const fresh = await listEventBlocks(eventId)
-      setExistingBlocks(fresh ?? [])
+          content: JSON.stringify(blockContent[type] ?? {}),
+        })),
+      ])
       setSavedSnapshot(savingSnapshot)
       setSavedJustNow(true)
       setTimeout(() => setSavedJustNow(false), 2500)
@@ -690,9 +648,10 @@ export default function Builder() {
                 disabled={saving}
                 onClick={handleSave}
                 aria-label={saving ? 'Enregistrement en cours' : 'Enregistrer'}
-                className="h-10 w-10 p-0 disabled:opacity-70 lg:hidden"
+                className={`h-10 px-3 text-xs disabled:opacity-70 lg:hidden ${dirty ? "border-brand-orange text-brand-orange" : ""}`}
               >
                 <Save className="h-4 w-4" />
+                {saving ? "…" : "Enregistrer"}
               </Button>
               <Button
                 variant="gradient"

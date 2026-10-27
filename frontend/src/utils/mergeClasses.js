@@ -16,6 +16,9 @@ export function mergeClasses(defaults, className = '') {
   const custom = className.split(/\s+/).filter(Boolean)
   // Seules les classes sans préfixe (pas "sm:", "hover:"...) remplacent un défaut.
   const overridden = new Set(custom.filter((c) => !c.includes(':')).map(groupOf).filter(Boolean))
+  // « p-0 » remplace aussi les marges horizontales et verticales par défaut (sinon un
+  // bouton icône de 40 px garde 24 px de marge de chaque côté et l'icône disparaît).
+  if (custom.some((c) => /^-?p-/.test(c))) overridden.add('px').add('py')
   const kept = defaults.split(/\s+/).filter((c) => c && !overridden.has(groupOf(c)))
   return [...kept, ...custom].join(' ')
 }
