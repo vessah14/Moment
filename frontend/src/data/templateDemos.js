@@ -509,6 +509,7 @@ export const TEMPLATE_DEMOS = {
     kicker: 'Saint-Sylvestre · 31 décembre',
     description: 'Un dîner, de la musique et le compte à rebours tous ensemble. On vous attend pour fêter la nouvelle année.',
     eventDateTime: t('2026-12-31', '20:00'),
+    story: 'Nous avons hâte de fêter la nouvelle année avec vous.',
     locationLabel: 'Résidence Ekwalla',
     locationAddress: 'Bonapriso, Douala',
     program: program('2026-12-31', [

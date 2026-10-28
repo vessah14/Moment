@@ -283,15 +283,24 @@ builder.Services.AddScoped<IEmailSender>(services =>
         ? services.GetRequiredService<SmtpEmailSender>()
         : services.GetRequiredService<BrevoEmailSender>());
 builder.Services.AddSingleton<LocalUploadStorage>();
-var cloudinaryOptions = CloudinaryOptions.FromConfiguration(builder.Configuration);
-if (cloudinaryOptions is null)
+var r2Options = CloudflareR2Options.FromConfiguration(builder.Configuration);
+if (r2Options is not null)
 {
-    builder.Services.AddSingleton<IUploadStorage>(services => services.GetRequiredService<LocalUploadStorage>());
+    builder.Services.AddSingleton(r2Options);
+    builder.Services.AddSingleton<IUploadStorage, CloudflareR2UploadStorage>();
 }
 else
 {
-    builder.Services.AddSingleton(cloudinaryOptions);
-    builder.Services.AddSingleton<IUploadStorage, CloudinaryUploadStorage>();
+    var cloudinaryOptions = CloudinaryOptions.FromConfiguration(builder.Configuration);
+    if (cloudinaryOptions is null)
+    {
+        builder.Services.AddSingleton<IUploadStorage>(services => services.GetRequiredService<LocalUploadStorage>());
+    }
+    else
+    {
+        builder.Services.AddSingleton(cloudinaryOptions);
+        builder.Services.AddSingleton<IUploadStorage, CloudinaryUploadStorage>();
+    }
 }
 builder.Services.AddScoped<INotificationSettingsService, NotificationSettingsService>();
 builder.Services.AddScoped<IEventReminderService, EventReminderService>();

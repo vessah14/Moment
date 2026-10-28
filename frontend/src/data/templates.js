@@ -882,13 +882,20 @@ const RAW_TEMPLATES = [
       title: "2027",
       date: "31 déc. 2026 · Douala"
     },
-    blocks: ["Rebours", "Programme", "Localisation", "Dress code", "Galerie", "Livre d'or", "RSVP", "Pied de page"],
+    blocks: ["Rebours", "Histoire", "Programme", "Localisation", "Dress code", "Galerie", "Livre d'or", "RSVP", "Pied de page"],
     headings: {
+      Histoire: "Vos hôtes",
       Programme: "Le programme",
       "Dress code": "Chic et scintillant",
       Galerie: "Après la fête",
       "Livre d'or": "Vos vœux pour la nouvelle année",
       RSVP: "Serez-vous des nôtres ?"
+    },
+    content: {
+      Histoire: {
+        heading: "Vos hôtes",
+        body: "Nous avons hâte de fêter la nouvelle année avec vous.",
+      },
     },
     presentation: { heroAlign: "center", heroHeight: "32rem", panelRadius: "1.25rem" }
   },

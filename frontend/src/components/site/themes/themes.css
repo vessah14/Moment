@@ -877,6 +877,32 @@
 .tbft[data-tbft="minuit"] .hero-frame svg { width: 100%; height: 100%; opacity: .55 }
 .tbft[data-tbft="minuit"] .countdown { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)) }
 .tbft[data-tbft="minuit"] .cd .num span { color: var(--accent-2) }
+.tbft[data-tbft="minuit"] .topbar .lang { display: flex; gap: 2px; padding: 3px; border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); border-radius: 999px }
+.tbft[data-tbft="minuit"] .topbar .lang button { min-width: 40px; height: 34px; border: 0; border-radius: 999px; background: none; color: var(--fg); font: inherit; font-size: .78rem; font-weight: 700; cursor: pointer }
+.tbft[data-tbft="minuit"] .topbar .lang button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent) }
+.tbft[data-tbft="minuit"] .story.minuit-host { width: min(100%, 900px); margin: 0 auto; grid-template-columns: minmax(0, 1fr) minmax(180px, .75fr) }
+.tbft[data-tbft="minuit"] .story.minuit-host .lead-text { text-align: left }
+.tbft[data-tbft="minuit"] .minuit-host-photo,
+.tbft[data-tbft="minuit"] .minuit-host .photo-pick { aspect-ratio: 3/4; width: min(100%, 340px); justify-self: center; padding: 8px; border: 1px solid var(--accent); border-radius: 180px 180px 16px 16px; background: var(--surface) }
+.tbft[data-tbft="minuit"] .minuit-host .photo-pick img { border-radius: 172px 172px 10px 10px }
+.tbft[data-tbft="minuit"] .minuit-host-placeholder { width: min(100%, 340px); aspect-ratio: 3/4; justify-self: center; display: grid; place-items: center; border: 1px solid var(--accent); border-radius: 180px 180px 16px 16px; background: radial-gradient(ellipse at 50% 35%, color-mix(in srgb, var(--accent) 20%, var(--surface)), var(--surface) 70%); color: var(--accent-2) }
+.tbft[data-tbft="minuit"] .minuit-host-placeholder span { display: grid; place-items: center; width: 82px; height: 82px; border: 1px solid var(--accent); border-radius: 50%; font: 500 1.8rem var(--f-display) }
+.tbft[data-tbft="minuit"] .minuit-host-signature { grid-column: 1 / -1; margin: -1rem 0 0; color: var(--accent-2); font: italic 1.15rem var(--f-display); text-align: right }
+.tbft[data-tbft="minuit"] .minuit-ndop { height: 22px; overflow: hidden; color: var(--accent); border-block: 1px solid color-mix(in srgb, var(--accent) 55%, transparent); text-align: center; line-height: 20px; letter-spacing: .42em; font-size: 15px }
+.tbft[data-tbft="minuit"] .minuit-ndop span { opacity: .9 }
+.tbft .minuit-falling-confetti { position: fixed; inset: 0; z-index: 1; overflow: hidden; pointer-events: none }
+.tbft .minuit-confetti { position: absolute; top: -8vh; left: var(--x); width: 8px; height: 13px; border-radius: 2px; opacity: .75; animation: minuit-confetti-fall var(--duration) linear var(--delay) infinite }
+.tbft .minuit-confetti.c0 { background: var(--accent) }
+.tbft .minuit-confetti.c1 { background: #F08FB0 }
+.tbft .minuit-confetti.c2 { background: #A996FF }
+.tbft .minuit-confetti.c3 { background: var(--accent-2) }
+@keyframes minuit-confetti-fall { to { transform: translate3d(22px, 116vh, 0) rotate(720deg) } }
+.tbft[data-tbft="minuit"] .cd-wish { max-width: 32rem; margin: 1.1rem auto 0; color: var(--fg); font: italic 1rem/1.5 var(--f-display) }
+.tbft[data-tbft="minuit"] .cd-wish p { margin: 0 }
+.tbft[data-tbft="minuit"] .cd-wish cite { display: block; margin-top: .35rem; color: var(--muted); font: 600 .72rem var(--f-body) }
+.tbft[data-tbft="minuit"] .cd-wish-link { display: inline-block; margin-top: 1rem; color: var(--accent-2); font-size: .8rem; font-weight: 700; text-decoration: underline; text-underline-offset: .2em }
+@container tbft (max-width: 759px) { .tbft[data-tbft="minuit"] .story.minuit-host { grid-template-columns: 1fr } .tbft[data-tbft="minuit"] .minuit-host-signature { text-align: center } }
+@media (prefers-reduced-motion: reduce) { .tbft .minuit-confetti { animation: none; display: none } }
 
 /* ---------- Envol : cérémonie des vœux, ivoire et or ---------- */
 .tbft[data-tbft="envol"] { --f-script: "Cormorant Garamond", Georgia, serif; --f-display: "Cormorant Garamond", Georgia, serif; --f-body: "Geist", "Segoe UI", Arial, sans-serif; --radius: 14px; --radius-sm: 8px }

@@ -95,8 +95,10 @@ function Demo({ theme }) {
   const template = TEMPLATES.find((t) => t.theme === theme)
   const demo = TEMPLATE_DEMOS[theme]
   const [searchParams] = useSearchParams()
+  const [minuitDemoTarget] = useState(() => Date.now() + 10_000)
   // ?cadre=1 : la démo seule, sans barre, affichée dans le téléphone de l'aperçu.
   const embedded = searchParams.get('cadre') === '1'
+  const minuitDemo = theme === 'minuit' && searchParams.get('demo') === 'minuit'
   // &apercu=1 : aperçu de l'assistant de création. La page s'affiche ouverte et reprend ce
   // que l'organisateur saisit (message envoyé par la page parente, même origine uniquement).
   const live = embedded && searchParams.get('apercu') === '1'
@@ -131,6 +133,8 @@ function Demo({ theme }) {
   const data = {
     slug: null,
     eventDateTime: draft?.eventDateTime || demo.eventDateTime,
+    countdownTarget: minuitDemo ? minuitDemoTarget : undefined,
+    countdownDemo: minuitDemo,
     coverPath: null,
     description: draft?.description || demo.description,
     locationLabel: draft?.locationLabel || demo.locationLabel,

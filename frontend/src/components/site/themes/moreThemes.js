@@ -1,4 +1,6 @@
-import { ENVOL_EN } from './envol/envolI18n'
+import { ENVOL_EN, identity } from './envol/envolI18n'
+import { MINUIT_EN } from './minuitI18n'
+import { isNewYearMidnight, minuitCountdownTarget, nextMidnightInTimeZone, timeZoneYear } from '../../../utils/minuitTime'
 
 // Modèles premium des autres catégories (sport, concert, conférence, entreprise,
 // baptême, religieux, scolaire, graduation, hommage, famille, soirée, personnalisé,
@@ -218,14 +220,6 @@ const envolFrame = (() => {
   d += '<circle class="fillin" style="--fd:1.9s;fill:var(--accent-2)" cx="1194" cy="62" r="5"/>'
   return `<svg viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${d}</svg>`
 })()
-
-// Minuit du 31 décembre qui suit le début de la soirée (heure locale de l'invité).
-const midnightAfter = (d) => {
-  if (!d) return null
-  const m = new Date(d)
-  m.setHours(24, 0, 0, 0)
-  return m
-}
 
 // ---------- Ornements sous les titres de section ----------
 const svg24 =(sw, body) =>
@@ -853,16 +847,27 @@ export const MORE_THEMES = {
     introFor: 'Vous êtes invité·e au réveillon',
     introLabel: 'Réveillon',
     countdownLabel: 'Avant minuit',
-    // Le compte à rebours vise minuit, pas le début de la soirée, puis souhaite la bonne année.
-    countdownTo: midnightAfter,
+    countdownToday: 'C’est ce soir !',
+    eventTimeZone: 'Africa/Douala',
+    countdownTimeZone: 'Africa/Douala',
+    translations: MINUIT_EN,
+    countdownTo: (date, content) => minuitCountdownTarget(date, content?.target ?? content?.cible),
     countdownFinal: true,
-    countdownDone: (target) => {
-      const y = target ? target.getFullYear() : ''
-      return { kicker: 'Il est minuit', title: `Bonne année ${y} !`, sub: 'Happy New Year!' }
+    countdownDone: (target, t = identity) => {
+      if (!target || !isNewYearMidnight(target, 'Africa/Douala')) return null
+      const nextYear = timeZoneYear(target, 'Africa/Douala')
+      return {
+        kicker: t('Il est minuit'),
+        title: `${t('Bonne année')} ${nextYear} !`,
+        sub: t('Happy New Year!'),
+      }
     },
     bigFor: (d) => {
-      const m = midnightAfter(d)
-      return m ? { big: year(m), label: 'Ensemble vers' } : null
+      if (!d) return null
+      const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Douala', month: '2-digit' }).formatToParts(d)
+      const month = Number(parts.find((part) => part.type === 'month')?.value)
+      const nextYear = timeZoneYear(month === 12 ? nextMidnightInTimeZone(d, 'Africa/Douala') : d, 'Africa/Douala') + (month === 12 ? 0 : 1)
+      return { big: String(nextYear), label: 'Ensemble vers' }
     },
     palettes: [
       { id: 'festive', label: 'Festive · or', dark: true,

@@ -56,6 +56,34 @@ Pour les bases existantes, applique aussi `20261024_kpay_only.sql` après les mi
 Toute nouvelle table doit aussi être ajoutée à `20261011_row_level_security.sql`
 (politiques RLS) et donner ses droits à `app_admin`.
 
+## Stockage des images en production
+
+L'API accepte les images, les valide et les stocke dans Cloudflare R2 (S3 compatible).
+Crée un bucket R2, une clé API limitée à ce bucket avec les droits de lecture/écriture
+d'objets, et un domaine personnalisé HTTPS pour servir les images publiques des événements
+(par exemple `media.tbfmoment.com`). Les clés R2 sont des secrets du service backend : ne les
+place ni dans le frontend, ni dans Git.
+
+Configure les variables d'environnement du backend :
+
+| Variable | Valeur |
+|---|---|
+| `CloudflareR2__AccountId` | ID du compte Cloudflare |
+| `CloudflareR2__AccessKeyId` | Access Key ID R2 |
+| `CloudflareR2__SecretAccessKey` | Secret Access Key R2 |
+| `CloudflareR2__Bucket` | Nom du bucket |
+| `CloudflareR2__PublicBaseUrl` | URL HTTPS du domaine public, sans chemin (ex. `https://media.tbfmoment.com`) |
+| `CloudflareR2__Folder` | Préfixe des objets, par défaut `tbf-moment` |
+
+Configure aussi `VITE_R2_PUBLIC_BASE_URL` avec la même URL HTTPS dans l'environnement de
+build du frontend, puis reconstruis et déploie les deux services. L'API donne priorité à R2
+lorsque ces paramètres sont renseignés ; sinon elle conserve le stockage Cloudinary configuré,
+ou le disque local en développement. Les anciennes URLs Cloudinary et `/uploads/…` restent
+compatibles. Le domaine public sert les images, tandis que les clés d'écriture restent côté API.
+Dans Cloudflare, configure le domaine personnalisé sur le bucket R2 et ne publie pas les clés
+d'API. Si tu utilises l'export d'images depuis le navigateur, autorise aussi en lecture les
+origines du site dans la politique CORS du bucket.
+
 ## Documentation
 
 - `frontend/README.md` : architecture du site, routes, modèles de sites.

@@ -50,6 +50,7 @@ import { usableSides } from '../../../data/rsvpSides'
 import { createGuestTicketQr } from '../../../utils/ticketQr'
 import Sceau, { BandeGuillochee } from './envol/Sceau'
 import { identity, makeTranslator } from './envol/envolI18n'
+import { isSameDayInTimeZone, parseDateTimeInTimeZone, timeZoneYear } from '../../../utils/minuitTime'
 import './themes.css'
 
 // Rendu « premium » du site d'un événement (Noor, Bloom, Toghu, Ndop, Fiesta,
@@ -125,12 +126,12 @@ function guestFromHash() {
 
 const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1)
 
-function formatTime(iso) {
+function formatTime(iso, locale = 'fr-FR', timeZone) {
   if (!iso) return ''
-  const d = new Date(iso)
-  return Number.isNaN(d.getTime())
-    ? ''
-    : d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', 'h')
+  const d = timeZone ? parseDateTimeInTimeZone(iso, timeZone) : new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const formatted = d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', ...(timeZone && { timeZone }) })
+  return locale === 'fr-FR' ? formatted.replace(':', 'h') : formatted
 }
 
 function formatPrice(priceCents) {
@@ -147,13 +148,30 @@ function computeRemaining(target) {
   return [Math.floor(s / 86400), Math.floor((s % 86400) / 3600), Math.floor((s % 3600) / 60), s % 60]
 }
 
-const isSameDay = (target) => new Date(target).toDateString() === new Date().toDateString()
+const isSameDay = (target, timeZone) =>
+  timeZone
+    ? isSameDayInTimeZone(target, new Date(), timeZone)
+    : new Date(target).toDateString() === new Date().toDateString()
 
 const COUNTDOWN_UNITS = ['Jours', 'Heures', 'Minutes', 'Secondes']
 
-function Countdown({ target, label, todayLabel, final = false, done = null, onReach, units = 4, t = identity }) {
+function Countdown({
+  target,
+  label,
+  todayLabel,
+  final = false,
+  done = null,
+  onReach,
+  units = 4,
+  t = identity,
+  timeZone,
+  wishes: rawWishes = [],
+  wishYear,
+}) {
   const [parts, setParts] = useState(() => computeRemaining(target))
-  const [today, setToday] = useState(() => isSameDay(target))
+  const [today, setToday] = useState(() => isSameDay(target, timeZone))
+  const [wishIndex, setWishIndex] = useState(0)
+  const wishes = Array.isArray(rawWishes) ? rawWishes.filter((wish) => wish?.message?.trim()) : []
   const onReachRef = useRef(onReach)
   useEffect(() => {
     onReachRef.current = onReach
@@ -166,27 +184,43 @@ function Countdown({ target, label, todayLabel, final = false, done = null, onRe
       if (running && !next) onReachRef.current?.()
       running = next !== null
       setParts(next)
-      setToday(isSameDay(target))
+      setToday(isSameDay(target, timeZone))
     }, 1000)
     return () => clearInterval(id)
-  }, [target])
+  }, [target, timeZone])
+
+  useEffect(() => {
+    if (!done || wishes.length < 2) return undefined
+    const id = setInterval(() => setWishIndex((index) => (index + 1) % wishes.length), 3500)
+    return () => clearInterval(id)
+  }, [done, wishes.length])
 
   const lastMinute = final && parts && parts[0] === 0 && parts[1] === 0 && parts[2] === 0
+  const wish = wishes.length ? wishes[wishIndex % wishes.length] : null
 
   return (
     <div className={`countdown${lastMinute ? ' cd-final' : ''}${!parts && done ? ' cd-reached' : ''}`}>
       {!(lastMinute || (!parts && done)) && <div className="label">{t((today && todayLabel) || label || 'Le grand jour dans')}</div>}
       {lastMinute ? (
         <div className="cd-last" aria-live="polite">
-          <small>Plus que</small>
+          <small>{t('Plus que')}</small>
           <span key={parts[3]}>{parts[3]}</span>
-          <small>{parts[3] > 1 ? 'secondes' : 'seconde'}</small>
+          <small>{t(parts[3] > 1 ? 'secondes' : 'seconde')}</small>
         </div>
       ) : !parts && done ? (
         <div className="cd-new">
           <small>{done.kicker}</small>
           <strong>{done.title}</strong>
           {done.sub && <em>{done.sub}</em>}
+          {wish && (
+            <blockquote key={`${wish.authorName}-${wishIndex}`} className="cd-wish" aria-live="polite">
+              <p>“{wish.message}”</p>
+              <cite>{wish.authorName}</cite>
+            </blockquote>
+          )}
+          <a className="cd-wish-link" href={`#${siteBlockDomId("Livre d'or")}`}>
+            {t('Laisser un vœu pour')} {wishYear}
+          </a>
         </div>
       ) : parts ? (
         <div className="cd">
@@ -195,13 +229,21 @@ function Countdown({ target, label, todayLabel, final = false, done = null, onRe
               <div className="num">
                 <span key={parts[i]}>{String(parts[i]).padStart(2, '0')}</span>
               </div>
-              <small>{t(label)}</small>
+              <small>{t(label.toLowerCase())}</small>
             </div>
           ))}
         </div>
       ) : (
         <p className="cd-done">{t("Merci d'avoir célébré avec nous")}</p>
       )}
+    </div>
+  )
+}
+
+function MinuitBand() {
+  return (
+    <div className="minuit-ndop" aria-hidden="true">
+      <span>◇ ◆ ◇ ◆ ◇ ◆ ◇ ◆ ◇</span>
     </div>
   )
 }
@@ -396,6 +438,25 @@ export default function ThemedSitePage({
   // l'organisateur laissés tels quels.
   const [lang, setLang] = useState('fr')
   const t = useMemo(() => makeTranslator(theme.translations, lang), [theme.translations, lang])
+  const hasLanguageToggle = Boolean(theme.translations)
+  const languageToggle = hasLanguageToggle ? (
+    <div className="lang" role="group" aria-label={t('Langue')}>
+      {['fr', 'en'].map((l) => (
+        <button
+          key={l}
+          type="button"
+          lang={l}
+          aria-pressed={lang === l}
+          onClick={(e) => {
+            e.stopPropagation()
+            setLang(l)
+          }}
+        >
+          {l.toUpperCase()}
+        </button>
+      ))}
+    </div>
+  ) : null
   const guestFull = data.invitation?.guestFullName?.trim() || hashGuest
   const guest = guestFull.split(' ')[0]
 
@@ -442,7 +503,11 @@ export default function ThemedSitePage({
   const artSvg = useMemo(() => (art ? ILLUS.svg(art.illus) : ''), [art])
   const artTiles = useMemo(() => (art ? Array.from({ length: 6 }, (_, i) => ILLUS.tile(art.illus, i)) : []), [art])
   const coverPath = safeCoverPath(data.coverPath)
-  const start = data.eventDateTime ? new Date(data.eventDateTime) : null
+  const start = data.eventDateTime
+    ? theme.eventTimeZone
+      ? parseDateTimeInTimeZone(data.eventDateTime, theme.eventTimeZone)
+      : new Date(data.eventDateTime)
+    : null
   const validStart = start && !Number.isNaN(start.getTime()) ? start : null
   // Grand mot du héros « big » : l'âge (« 30 ans ») ou, à défaut, celui du modèle
   // (LIVE, la date de la soirée, EXPO…).
@@ -452,16 +517,34 @@ export default function ThemedSitePage({
       ? (theme.bigFor?.(validStart) ?? null)
       : null
   const dateLong = validStart
-    ? capitalize(validStart.toLocaleDateString(t.locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))
-    : ''
-  const timeLabel = validStart ? formatTime(data.eventDateTime) : ''
+      ? capitalize(validStart.toLocaleDateString(t.locale, {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+          ...(theme.eventTimeZone && { timeZone: theme.eventTimeZone }),
+        }))
+      : ''
+  const timeLabel = validStart ? formatTime(data.eventDateTime, t.locale, theme.eventTimeZone) : ''
   // Année dorée de l'en-tête officiel (Envol), sauf si le surtitre la donne déjà.
-  const heroYear = theme.heroSeal && validStart && !String(heroStyle.kicker ?? '').includes(String(validStart.getFullYear()))
-    ? String(validStart.getFullYear())
+  const eventYear = validStart ? (theme.eventTimeZone ? timeZoneYear(validStart, theme.eventTimeZone) : validStart.getFullYear()) : null
+  const heroYear = theme.heroSeal && validStart && !String(heroStyle.kicker ?? '').includes(String(eventYear))
+    ? String(eventYear)
     : ''
   const has = (block) => blocks.includes(block)
   // Moment visé par le compte à rebours : le début, ou celui du modèle (minuit pour Minuit).
-  const countdownTarget = (validStart && theme.countdownTo?.(validStart)) || validStart
+  const overrideTarget = data.countdownTarget == null ? null : new Date(data.countdownTarget)
+  const countdownTarget =
+    (overrideTarget && !Number.isNaN(overrideTarget.getTime()) && overrideTarget) ||
+    (validStart && theme.countdownTo?.(validStart, blockContent.Rebours)) ||
+    validStart
+  const countdownDone = data.countdownDemo && theme.id === 'minuit'
+    ? {
+        kicker: t('Il est minuit'),
+        title: `${t('Bonne année')} ${heroBig?.big ?? ''} !`,
+        sub: t('Happy New Year!'),
+      }
+    : theme.countdownDone?.(countdownTarget, t) ?? null
 
   // ---------- Effets du site public ----------
   // Défilement bloqué tant que l'ouverture est affichée.
@@ -704,7 +787,8 @@ export default function ThemedSitePage({
 
       case 'Histoire': {
         const imagePath = safeBlockImagePath(content.imageUrl)
-        if (!editable && !body && !imagePath) return null
+        const hostMessage = theme.id === 'minuit' ? body || t('Nous avons hâte de fêter la nouvelle année avec vous.') : body
+        if (!editable && !hostMessage && !imagePath && theme.id !== 'minuit') return null
         const photo = editable ? (
           <label className="photo-pick rv" onClick={(e) => e.stopPropagation()}>
             {imagePath ? <img src={mediaUrl(imagePath)} alt="" /> : (
@@ -724,16 +808,22 @@ export default function ThemedSitePage({
             />
           </label>
         ) : imagePath ? (
-          <img className="rv" src={mediaUrl(imagePath)} alt="" />
+          <img className={`rv ${theme.id === 'minuit' ? 'minuit-host-photo' : ''}`} src={mediaUrl(imagePath)} alt="" />
+        ) : theme.id === 'minuit' ? (
+          <div className="minuit-host-placeholder rv" aria-hidden="true">
+            <span>{(organizerName || heroStyle.title).split(/\s+/).map((part) => part[0]).slice(0, 2).join('')}</span>
+          </div>
         ) : null
         return sectionShell(
           block,
           index,
           <>
+            {theme.id === 'minuit' && <MinuitBand />}
             {headFor(block, content)}
-            <div className={`story ${photo ? 'has-photo' : 'narrow'}`}>
-              {body ? <div className="lead-text rv">{body}</div> : placeholder('Racontez votre histoire dans l’onglet Contenu, à droite.')}
+            <div className={`story ${theme.id === 'minuit' ? 'minuit-host' : ''} ${photo ? 'has-photo' : 'narrow'}`}>
+              {hostMessage ? <div className="lead-text rv">{hostMessage}</div> : placeholder('Racontez votre histoire dans l’onglet Contenu, à droite.')}
               {photo}
+              {theme.id === 'minuit' && <p className="minuit-host-signature rv">— {organizerName || heroStyle.title}</p>}
             </div>
           </>,
         )
@@ -757,10 +847,10 @@ export default function ThemedSitePage({
                         <Icon />
                       </span>
                       <div>
-                        {item.startTime && <time>{formatTime(item.startTime)}</time>}
-                        <h3>{item.title}</h3>
+                        {item.startTime && <time>{formatTime(item.startTime, t.locale, theme.eventTimeZone)}</time>}
+                        <h3>{t(item.title)}</h3>
                         {(item.location || item.description) && (
-                          <p>{[item.location, item.description].filter(Boolean).join(' · ')}</p>
+                          <p>{[item.location, t(item.description)].filter(Boolean).join(' · ')}</p>
                         )}
                       </div>
                     </li>
@@ -1016,7 +1106,11 @@ export default function ThemedSitePage({
             {live && validStart && (
               <p className="live-badge rv">
                 <i aria-hidden="true" />
-                {t(theme.live.badge)} {validStart.toLocaleDateString(t.locale, { day: 'numeric', month: 'long' })}
+                {t(theme.live.badge)} {validStart.toLocaleDateString(t.locale, {
+                  day: 'numeric',
+                  month: 'long',
+                  ...(theme.eventTimeZone && { timeZone: theme.eventTimeZone }),
+                })}
               </p>
             )}
             {headFor(block, content)}
@@ -1185,7 +1279,7 @@ export default function ThemedSitePage({
             onClick={selectable(block).onClick}
           >
             {toolbar(block, index)}
-            {theme.footerBand && <BandeGuillochee />}
+            {theme.id === 'minuit' ? <MinuitBand /> : theme.footerBand && <BandeGuillochee />}
             <div className="names">
               {titleInfo.names.length === 2 ? (
                 <>
@@ -1254,8 +1348,21 @@ export default function ThemedSitePage({
     ...palette.vars,
     colorScheme: palette.dark ? 'dark' : 'light',
   }
+  const fallingConfetti = motion && theme.id === 'minuit'
+    ? Array.from({ length: 18 }, (_, i) => (
+        <i
+          key={i}
+          className={`minuit-confetti c${i % 4}`}
+          style={{
+            '--x': `${(i * 37) % 100}%`,
+            '--delay': `${-(i % 9) * 0.8}s`,
+            '--duration': `${8 + (i % 6)}s`,
+          }}
+        />
+      ))
+    : null
   const heroSel = selectable('Hero')
-  const forText = guest ? `Pour ${guest}` : theme.introFor
+  const forText = guest ? `Pour ${guest}` : t(theme.introFor)
   const sealButton = (label, extra = {}) => (
     <button type="button" className="seal-btn" onClick={openIntro} aria-label="Ouvrir l'invitation" {...extra}>
       {label}
@@ -1279,6 +1386,7 @@ export default function ThemedSitePage({
     >
       <div className="bg-glow" aria-hidden="true" />
       <div className="bg-motif" ref={motifRef} aria-hidden="true" style={motifCss} />
+      {fallingConfetti && <div className="minuit-falling-confetti" aria-hidden="true">{fallingConfetti}</div>}
       {!embedded && <canvas className="tbft-particles" ref={particlesRef} aria-hidden="true" />}
       {!embedded && <canvas className="tbft-fx" ref={fxRef} aria-hidden="true" />}
 
@@ -1294,6 +1402,7 @@ export default function ThemedSitePage({
               </a>
             ))}
           </nav>
+          {theme.id === 'minuit' && languageToggle}
           {hasPass ? (
             <button type="button" className="btn sm top-cta" onClick={() => setPassOpen(true)}>
               <Ticket />
@@ -1337,24 +1446,7 @@ export default function ThemedSitePage({
               {theme.heroSeal && (
                 <div className="hero-top h-in" style={{ '--i': 0 }}>
                   <span className="kicker">{t(theme.introFor)}</span>
-                  {theme.translations && (
-                    <div className="lang" role="group" aria-label={t('Langue')}>
-                      {['fr', 'en'].map((l) => (
-                        <button
-                          key={l}
-                          type="button"
-                          lang={l}
-                          aria-pressed={lang === l}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setLang(l)
-                          }}
-                        >
-                          {l.toUpperCase()}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                  {languageToggle}
                 </div>
               )}
               {theme.heroSeal && (
@@ -1370,12 +1462,12 @@ export default function ThemedSitePage({
               {theme.heroSeal ? (
                 <p className="hero-orgname h-in" style={{ '--i': 1 }}>{heroStyle.title}</p>
               ) : (
-                <p className="kicker h-in" style={{ '--i': 0 }}>{heroStyle.kicker || theme.kicker}</p>
+                <p className="kicker h-in" style={{ '--i': 0 }}>{t(heroStyle.kicker || theme.kicker)}</p>
               )}
               {heroBig && (
                 <div className="hero-big h-in" style={{ '--i': 1 }} aria-hidden="true">
                   {heroBig.big}
-                  {heroBig.label && <small>{heroBig.label}</small>}
+                  {heroBig.label && <small>{t(heroBig.label)}</small>}
                 </div>
               )}
               {titleInfo.pre && <p className="hero-pre h-in" style={{ '--i': 1 }}>{titleInfo.pre}</p>}
@@ -1400,7 +1492,7 @@ export default function ThemedSitePage({
                 )}
               </h1>
               )}
-              {data.description && <p className="hero-sub h-in" style={{ '--i': 3 }}>{data.description}</p>}
+              {data.description && <p className="hero-sub h-in" style={{ '--i': 3 }}>{t(data.description)}</p>}
               {(dateLong || data.locationAddress) && (
                 <div className="chips h-in" style={{ '--i': 4 }}>
                   {dateLong && (
@@ -1458,13 +1550,16 @@ export default function ThemedSitePage({
               <div className="hero-side h-in" style={{ '--i': 6 }}>
                 <Countdown
                   target={countdownTarget.getTime()}
-                  label={theme.countdownLabel}
-                  todayLabel={theme.countdownToday}
+                  label={blockContent.Rebours?.label || blockContent.Rebours?.libelle || theme.countdownLabel}
+                  todayLabel={blockContent.Rebours?.todayLabel || theme.countdownToday}
                   units={theme.countdownUnits}
                   t={t}
                   final={Boolean(theme.countdownFinal)}
-                  done={theme.countdownDone?.(countdownTarget) ?? null}
+                  done={countdownDone}
                   onReach={celebrateCountdown}
+                  timeZone={theme.countdownTimeZone}
+                  wishes={theme.id === 'minuit' ? data.guestBookEntries : []}
+                  wishYear={heroBig?.big}
                 />
               </div>
             )}
@@ -1476,7 +1571,7 @@ export default function ThemedSitePage({
 
         {!has('Pied de page') && data.showBranding !== false && (
           <footer className="footer">
-            {theme.footerBand && <BandeGuillochee />}
+            {theme.id === 'minuit' ? <MinuitBand /> : theme.footerBand && <BandeGuillochee />}
             <p className="made">
               Créé avec <b>TBF MOMENT</b> · Create. Connect. Celebrate.
             </p>
@@ -1570,7 +1665,7 @@ export default function ThemedSitePage({
                 {theme.intro === 'ticket' && (
                   <div className="tk-intro">
                     <div className="tk-body">
-                      <small>{theme.introLabel || 'Entrée'}</small>
+                      <small>{t(theme.introLabel || 'Entrée')}</small>
                       <b>{heroStyle.title}</b>
                       {validStart && (
                         <span>
@@ -1602,7 +1697,7 @@ export default function ThemedSitePage({
                     <span className="lanyard" aria-hidden="true" />
                     <button type="button" className="badge" onClick={openIntro} aria-label="Prendre son badge et entrer" autoFocus>
                       <span className="hole" aria-hidden="true" />
-                      <small>{theme.introLabel || 'Participant'}</small>
+                      <small>{t(theme.introLabel || 'Participant')}</small>
                       <b>{guestFull || 'Votre nom ici'}</b>
                       <span className="org">{heroStyle.title}</span>
                       <span className="bar" aria-hidden="true" />

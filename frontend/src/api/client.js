@@ -1,4 +1,5 @@
 import { rememberReturnPath } from '../utils/returnPath'
+import { isR2MediaUrl } from '../utils/r2Media'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5146/api'
 const TOKEN_KEY = 'tbf_auth_token'
@@ -19,9 +20,7 @@ function decodeTokenPayload(token) {
 // uploadés (galerie) renvoyées en chemins relatifs par l'API.
 export const API_ORIGIN = API_URL.replace(/\/api\/?$/, '')
 
-// URL d'affichage d'une image téléversée : les chemins « /uploads/… » sont servis par le
-// backend ; les images Cloudinary (URL https complètes) sont servies par leur CDN, en
-// format et qualité automatiques (WebP/AVIF selon le navigateur, poids réduit).
+// URL d'affichage d'une image téléversée : chemins locaux, Cloudinary et domaine public R2.
 const SITE_ORIGIN = (import.meta.env.VITE_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/+$/, '')
 
 // Lien de partage d'un site d'événement (WhatsApp, Facebook…) : l'adresse lisible
@@ -40,6 +39,7 @@ export function mediaUrl(path) {
   if (typeof path !== 'string' || !path) return ''
   if (path.startsWith('https://res.cloudinary.com/'))
     return path.replace('/image/upload/', '/image/upload/f_auto,q_auto/')
+  if (isR2MediaUrl(path)) return path
   return path.startsWith('/') ? `${API_ORIGIN}${path}` : ''
 }
 

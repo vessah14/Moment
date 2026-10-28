@@ -112,6 +112,54 @@ public class UploadStorageTests : IDisposable
         Assert.False(storage.IsUploadedCover($"https://res.cloudinary.com/other/image/upload/v123/tbf-moment/covers/{eventId}/{fileId}.jpg"));
     }
 
+    [Fact]
+    public void CloudflareR2Options_UsesLocalStorageWhenNotConfigured()
+    {
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>())
+            .Build();
+
+        Assert.Null(CloudflareR2Options.FromConfiguration(config));
+    }
+
+    [Fact]
+    public void CloudflareR2Options_RequiresAllSettingsWhenPartiallyConfigured()
+    {
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["CloudflareR2:AccountId"] = "account",
+            })
+            .Build();
+
+        Assert.Throws<InvalidOperationException>(() => CloudflareR2Options.FromConfiguration(config));
+    }
+
+    [Fact]
+    public void CloudflareR2UploadStorage_AcceptsOnlyItsOwnCoversAndLegacyLocalCovers()
+    {
+        var eventId = Guid.NewGuid();
+        var fileId = Guid.NewGuid();
+        var local = CreateStorage();
+        var options = new CloudflareR2Options
+        {
+            AccountId = "account",
+            AccessKeyId = "test-key",
+            SecretAccessKey = "test-secret",
+            Bucket = "tbf-moment-media",
+            PublicBaseUrl = "https://media.example.com",
+        };
+        using var storage = new CloudflareR2UploadStorage(
+            options,
+            local,
+            NullLogger<CloudflareR2UploadStorage>.Instance);
+
+        Assert.True(storage.IsUploadedCover($"https://media.example.com/tbf-moment/covers/{eventId}/{fileId}.jpg"));
+        Assert.True(storage.IsUploadedCover($"/uploads/covers/{eventId}/{fileId}.jpg"));
+        Assert.False(storage.IsUploadedCover($"https://attacker.example/tbf-moment/covers/{eventId}/{fileId}.jpg"));
+        Assert.False(storage.IsUploadedCover($"https://media.example.com/tbf-moment/gallery/{eventId}/{fileId}.jpg"));
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_root))

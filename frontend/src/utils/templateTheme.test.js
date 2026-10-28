@@ -137,6 +137,9 @@ describe("TEMPLATES", () => {
     expect(templateBlocks(findTemplate("Fiesta"))).toEqual([
       "Invitation", "Rebours", "Programme", "Localisation", "Dress code", "Galerie", "Cadeaux", "Livre d'or", "RSVP", "Pied de page",
     ]);
+    expect(templateBlocks(findTemplate("Minuit"))).toEqual([
+      "Invitation", "Rebours", "Histoire", "Programme", "Localisation", "Dress code", "Galerie", "Livre d'or", "RSVP", "Pied de page",
+    ]);
   });
 
   it("shows both venue stops in the Noor and Bloom previews", () => {

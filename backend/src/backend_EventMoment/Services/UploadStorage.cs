@@ -2,16 +2,15 @@ using System.Text.RegularExpressions;
 
 namespace backend_EventMoment.Services
 {
-    // Stockage des images téléversées (couvertures, photos de blocs, galerie). Deux
-    // implémentations : le disque local (wwwroot/uploads, par défaut) et Cloudinary
-    // (CloudinaryUploadStorage), choisie dès que Cloudinary est configuré.
+    // Stockage des images téléversées (couvertures, photos de blocs, galerie). Le disque
+    // local reste le défaut, Cloudinary est disponible et R2 prend priorité lorsqu'il est configuré.
     //
     // Les fichiers sont toujours nommés et rangés à partir d'identifiants (Guid), jamais
     // d'un nom ou d'une URL fournis par l'utilisateur.
     public interface IUploadStorage
     {
         // Enregistre une image déjà validée (taille, extension, signature) et renvoie son
-        // URL publique : « /uploads/… » en local, « https://res.cloudinary.com/… » sinon.
+        // URL publique : locale, Cloudinary ou domaine public configuré pour R2.
         Task<string> SaveImageAsync(IFormFile file, UploadFolder folder, Guid eventId, string extension);
 
         // Vrai si l'URL désigne une couverture téléversée sur la plateforme (et non une

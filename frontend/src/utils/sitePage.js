@@ -1,3 +1,5 @@
+import { isR2MediaUrl } from './r2Media'
+
 // Ces chemins finissent dans un src / le CSS de la page : on n'accepte que ceux
 // produits par nos propres routes d'envoi (couverture, photo de bloc).
 const COVER_PATH =
@@ -16,11 +18,17 @@ const cloudinaryUrl = (kind) =>
 const CLOUDINARY_COVER_URL = cloudinaryUrl('covers')
 const CLOUDINARY_BLOCK_IMAGE_URL = cloudinaryUrl('blocks')
 
-export const safeCoverPath = (value) =>
-  typeof value === 'string' && (COVER_PATH.test(value) || CLOUDINARY_COVER_URL.test(value)) ? value : null
+export const safeCoverPath = (value) => {
+  if (typeof value !== 'string') return null
+  if (COVER_PATH.test(value) || CLOUDINARY_COVER_URL.test(value)) return value
+  return isR2MediaUrl(value) && /\/covers\//.test(new URL(value).pathname) ? value : null
+}
 
-export const safeBlockImagePath = (value) =>
-  typeof value === 'string' && (BLOCK_IMAGE_PATH.test(value) || CLOUDINARY_BLOCK_IMAGE_URL.test(value)) ? value : null
+export const safeBlockImagePath = (value) => {
+  if (typeof value !== 'string') return null
+  if (BLOCK_IMAGE_PATH.test(value) || CLOUDINARY_BLOCK_IMAGE_URL.test(value)) return value
+  return isR2MediaUrl(value) && /\/blocks\//.test(new URL(value).pathname) ? value : null
+}
 
 // Identifiant DOM d'un bloc du site (le Builder fait défiler jusqu'au bloc choisi).
 export function siteBlockDomId(block) {
