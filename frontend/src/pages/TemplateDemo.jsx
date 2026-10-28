@@ -62,11 +62,22 @@ function buildDemo(template, demo) {
       showHeading: true,
       people: (demo.people ?? []).map(([name, role, topic]) => ({ name, role, topic })),
     },
+    Distinctions: {
+      heading: heading('Distinctions', 'Distinctions'),
+      showHeading: true,
+      body: demo.honours?.body,
+      people: (demo.honours?.people ?? []).map(([name, role, topic, rank]) => ({ name, role, topic, rank })),
+    },
     Partenaires: { heading: heading('Partenaires', 'Partenaires'), showHeading: true, partners: demo.partners ?? [] },
     Billetterie: { heading: heading('Billetterie', 'Billetterie'), showHeading: true },
     FAQ: { heading: heading('FAQ', 'Questions'), showHeading: true, items: (demo.faq ?? []).map(([question, answer]) => ({ question, answer })) },
     'Plan de table': { heading: heading('Plan de table', 'Trouver ma place'), showHeading: true },
     'Pied de page': {},
+  }
+  // Textes fixes du modèle (data/templates.js, content) là où la démo n'en donne pas.
+  for (const [type, extra] of Object.entries(template.content ?? {})) {
+    if (!blockContent[type]) continue
+    for (const [key, value] of Object.entries(extra)) blockContent[type][key] ||= value
   }
   return { blocks: template.blocks, blockContent }
 }
@@ -147,8 +158,9 @@ function Demo({ theme }) {
       rsvpMaybe: Boolean(dto.maybe),
       rsvpAccompanyingCount: dto.accompanyingCount,
       rsvpSide: dto.side,
+      rsvpExtra: dto.extra,
     }),
-    submitGuestBook: async (dto) => setEntries((prev) => [{ authorName: dto.authorName, message: dto.message }, ...prev]),
+    submitGuestBook: async (dto) => setEntries((prev) => [{ authorName: dto.authorName, message: dto.message, service: dto.service }, ...prev]),
     findSeat: async (name) => {
       const key = nameKey(name)
       const table = seatingTables.find((t) => (t.guests ?? []).some((g) => nameKey(g) === key))

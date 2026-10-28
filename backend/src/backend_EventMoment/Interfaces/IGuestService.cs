@@ -15,6 +15,8 @@ namespace backend_EventMoment.Interfaces
         Task<GuestDTO> UndoCheckInAsync(Guid id, Guid organizerId);
         Task<GuestDTO> QueueInvitationAsync(Guid id, Guid organizerId);
         Task<int> QueuePendingInvitationsAsync(Guid eventId, Guid organizerId);
+        Task<ImportGuestsResultDto> ImportAsync(Guid eventId, ImportGuestsDto dto, Guid organizerId);
+        Task<GuestDTO> MarkSharedAsync(Guid id, Guid organizerId);
 
         Task<PublicInvitationDto?> GetPublicInvitationAsync(Guid guestId);
         Task<PublicInvitationDto?> SubmitPublicRsvpAsync(Guid guestId, SubmitPublicRsvpDto dto);

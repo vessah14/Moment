@@ -2,7 +2,7 @@ import { Check, Copy, Gift, MapPin, Search, Ticket } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { submitPublicRsvp } from '../../../api/guests'
-import { findPublicSeat } from '../../../api/publicEvents'
+import { findPublicSeat, uploadGuestPhoto } from '../../../api/publicEvents'
 import { DEFAULT_SIDE_LABEL, usableSides } from '../../../data/rsvpSides'
 import { initialsOf } from '../../../utils/blockLists'
 import { deadlineLabel, deadlinePassed, rsvpRules } from '../../../utils/rsvpRules'
@@ -13,6 +13,8 @@ import { eventStartIso } from '../../../utils/ticketLive'
 import { useCheckInWatch } from '../../../utils/useCheckInWatch'
 import { operatorStyle, usableAccounts, usableColors } from '../../../utils/mobileMoney'
 import { parseVideoUrl } from '../../../utils/videoEmbed'
+import { compressImage } from '../../../utils/imageCompress'
+import { identity } from '../themes/envol/envolI18n'
 
 // Modules du site d'événement partagés par le rendu classique (Tailwind) et les modèles
 // premium (classes .tbft) : familles, code vestimentaire, intervenants, partenaires,
@@ -44,6 +46,58 @@ const CLASSES = {
 }
 const cls = (themed) => (themed ? CLASSES.themed : CLASSES.classic)
 const stop = (e) => e.stopPropagation()
+
+// Choix « côté » (service, famille…) : liste déroulante, ou boutons à toucher quand le
+// modèle le demande (rules.sidePills, modèle Envol). Un second appui désélectionne.
+function SidePicker({ themed, c, label, sides, side, setSide, pills, t }) {
+  const title = t(label?.trim() || DEFAULT_SIDE_LABEL)
+  if (pills && themed) {
+    return (
+      <div className="field">
+        <span>{title}</span>
+        <div className="pills" role="group" aria-label={title}>
+          {sides.map((s) => (
+            <button
+              key={s}
+              type="button"
+              className="pill"
+              aria-pressed={side === s}
+              onClick={(e) => {
+                e.stopPropagation()
+                setSide(side === s ? '' : s)
+              }}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      </div>
+    )
+  }
+  return (
+    <label className={themed ? 'field' : 'block text-xs font-semibold tracking-wider text-muted uppercase'}>
+      <span>{title}</span>
+      <select className={c.input} value={sides.includes(side) ? side : ''} onChange={(e) => setSide(e.target.value)}>
+        <option value="">{t('Choisir…')}</option>
+        {sides.map((s) => (
+          <option key={s} value={s}>
+            {s}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
+// Case optionnelle du formulaire (« Je reste pour le cocktail »).
+function ExtraCheck({ themed, label, checked, onChange, t }) {
+  return (
+    <label className={themed ? 'check-row' : 'flex min-h-11 cursor-pointer items-center gap-3 text-sm font-medium text-ink'}>
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      <span>{t(label)}</span>
+    </label>
+  )
+}
 
 // ---------- Familles (dot) ----------
 export function FamiliesModule({ content, themed }) {
@@ -97,6 +151,57 @@ export function DressCodeModule({ content, themed }) {
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+// ---------- Album des invités : envoi de photos depuis la page ----------
+// Chaque photo est réduite sur le téléphone puis attend la validation de l'organisateur.
+export function GuestPhotoUpload({ slug, themed }) {
+  const c = cls(themed)
+  const [name, setName] = useState('')
+  const [progress, setProgress] = useState(null)
+  const [done, setDone] = useState(0)
+  const [error, setError] = useState('')
+
+  const send = async (e) => {
+    const files = Array.from(e.target.files ?? []).slice(0, 10)
+    e.target.value = ''
+    if (!files.length) return
+    setError('')
+    let sent = 0
+    for (let i = 0; i < files.length; i++) {
+      setProgress({ current: i + 1, total: files.length })
+      try {
+        await uploadGuestPhoto(slug, await compressImage(files[i]), name)
+        sent++
+      } catch (err) {
+        setError(err.message || 'Une photo n’a pas pu être envoyée.')
+        break
+      }
+    }
+    setProgress(null)
+    setDone((n) => n + sent)
+  }
+
+  return (
+    <div className={themed ? 'card rv narrow' : `${c.card} mx-auto mt-6 max-w-xl`} style={{ textAlign: 'center', display: 'grid', gap: '.8rem' }} onClick={stop}>
+      <p className={c.title} style={{ margin: 0 }}>Partagez vos photos</p>
+      <p className={c.muted} style={{ margin: 0 }}>Elles rejoindront l’album après validation par les organisateurs.</p>
+      <label className={themed ? 'field' : 'block text-left text-xs font-semibold tracking-wider text-muted uppercase'}>
+        <span>Votre prénom (facultatif)</span>
+        <input className={c.input} maxLength={80} value={name} onChange={(e) => setName(e.target.value)} />
+      </label>
+      <label className={c.btn} style={{ cursor: progress ? 'wait' : 'pointer', justifySelf: 'center' }}>
+        {progress ? `Envoi ${progress.current} / ${progress.total}…` : 'Ajouter mes photos'}
+        <input type="file" accept="image/*" multiple hidden disabled={Boolean(progress)} onChange={send} />
+      </label>
+      {done > 0 && !progress && (
+        <p className={c.muted} role="status" style={{ margin: 0 }}>
+          Merci ! {done} photo{done > 1 ? 's envoyées' : ' envoyée'}, visible{done > 1 ? 's' : ''} après validation.
+        </p>
+      )}
+      {error && <p className={themed ? 'err' : 'text-sm text-danger'} role="alert" style={{ margin: 0 }}>{error}</p>}
     </div>
   )
 }
@@ -162,6 +267,39 @@ export function SpeakersModule({ people, themed }) {
           <h3 className="mt-3 text-lg font-bold text-ink">{p.name}</h3>
           {p.role && <p className="text-sm font-semibold text-brand-purple">{p.role}</p>}
           {p.topic && <p className="mt-1 text-sm text-muted">{p.topic}</p>}
+        </article>
+      ))}
+    </div>
+  )
+}
+
+// ---------- Distinctions : médaillés, lauréats ----------
+// Couleur de la médaille selon le rang : or, vermeil, argent.
+const MEDALS = ['#C49A3C', '#B5654A', '#9AA3B2']
+
+export function HonoursModule({ people, themed }) {
+  if (themed) {
+    return (
+      <div className="honours">
+        {people.map((p, i) => (
+          <article key={i} className="honour card rv" style={{ '--d': i % 4, '--medal': MEDALS[p.rank] }}>
+            <span className="medal" aria-hidden="true" />
+            <h3>{p.name}</h3>
+            {p.role && <p className="role">{p.role}</p>}
+            {p.topic && <p className="grade">{p.topic}</p>}
+          </article>
+        ))}
+      </div>
+    )
+  }
+  return (
+    <div className="grid gap-4 @xl:grid-cols-2 @5xl:grid-cols-3">
+      {people.map((p, i) => (
+        <article key={i} className={`${CLASSES.classic.card} text-center`}>
+          <span className="mx-auto block h-12 w-12 rounded-full border-4 border-white shadow" style={{ background: MEDALS[p.rank] }} aria-hidden="true" />
+          <h3 className="mt-3 text-lg font-bold text-ink">{p.name}</h3>
+          {p.role && <p className="text-sm text-muted">{p.role}</p>}
+          {p.topic && <p className="mt-2 inline-block rounded-full px-3 py-1 text-xs font-semibold text-white" style={{ background: MEDALS[p.rank] }}>{p.topic}</p>}
         </article>
       ))}
     </div>
@@ -406,21 +544,24 @@ export function GuestPass({ invitation, eventTitle, ticket = {}, onInvitationCha
 
 // sideLabel / sides : question « côté » propre au modèle (famille, pronostic, département…),
 // réglée dans le bloc RSVP ; posée seulement à ceux qui confirment leur présence.
-export function RsvpModule({ invitation, onInvitationChange, body, themed, editable, eventTitle, ticket, onCelebrate, submitRsvp, submitOpenRsvp, sideLabel, sides: rawSides, rules: rawRules, invitationLoading, invitationError }) {
+export function RsvpModule({ invitation, onInvitationChange, body, themed, editable, eventTitle, ticket, onCelebrate, submitRsvp, submitOpenRsvp, sideLabel, sides: rawSides, rules: rawRules, invitationLoading, invitationError, t = identity }) {
   const c = cls(themed)
   const sides = usableSides(rawSides)
   const rules = rsvpRules(rawRules)
   // Réponses proposées : « Peut-être » seulement si l'organisateur l'a activé.
   const choices = [
-    ['oui', 'Je serai là'],
-    ['non', 'Je ne pourrai pas'],
-    ...(rules.allowMaybe ? [['peut-etre', 'Peut-être']] : []),
+    ['oui', t('Je serai là')],
+    ['non', t('Je ne pourrai pas')],
+    ...(rules.allowMaybe ? [['peut-etre', t('Peut-être')]] : []),
   ]
   const choiceGrid = choices.length > 2 ? 'grid-cols-3' : 'grid-cols-2'
-  const deadlineNote = rules.deadline ? `Merci de répondre avant le ${deadlineLabel(rules.deadline)}.` : ''
+  const deadlineNote = rules.deadline ? `${t('Merci de répondre avant le')} ${deadlineLabel(rules.deadline, t.locale)}.` : ''
   const [attending, setAttending] = useState('oui')
   const [count, setCount] = useState(invitation?.rsvpAccompanyingCount ?? 0)
   const [side, setSide] = useState(invitation?.rsvpSide ?? '')
+  const [extra, setExtra] = useState(invitation?.rsvpExtra ?? true)
+  const sidePicker = <SidePicker themed={themed} c={c} label={sideLabel} sides={sides} side={side} setSide={setSide} pills={rules.sidePills} t={t} />
+  const extraCheck = rules.extraLabel ? <ExtraCheck themed={themed} label={rules.extraLabel} checked={extra} onChange={setExtra} t={t} /> : null
   const [message, setMessage] = useState('')
   const [editing, setEditing] = useState(false)
   const [sending, setSending] = useState(false)
@@ -448,6 +589,7 @@ export function RsvpModule({ invitation, onInvitationChange, body, themed, edita
         accompanyingCount: confirmed ? Math.min(count, rules.maxCompanions) : 0,
         message: message.trim() || null,
         side: confirmed && sides.includes(side) ? side : null,
+        extra: confirmed && rules.extraLabel ? extra : null,
       })
       if (result?.linkedToGuestList) {
         setLinkedNotice(confirmed
@@ -458,7 +600,7 @@ export function RsvpModule({ invitation, onInvitationChange, body, themed, edita
       }
       if (confirmed) onCelebrate?.(form)
     } catch (err) {
-      setError(err.message || "La réponse n'a pas pu être enregistrée.")
+      setError(err.message || t("La réponse n'a pas pu être enregistrée."))
     } finally {
       setSending(false)
     }
@@ -468,7 +610,7 @@ export function RsvpModule({ invitation, onInvitationChange, body, themed, edita
   if (!invitation && linkedNotice) {
     return (
       <div className={c.card} style={{ textAlign: 'center' }} role="status">
-        <p className={c.title}>Réponse enregistrée</p>
+        <p className={c.title}>{t('Réponse enregistrée')}</p>
         <p className={c.muted}>{linkedNotice}</p>
       </div>
     )
@@ -479,7 +621,7 @@ export function RsvpModule({ invitation, onInvitationChange, body, themed, edita
       if (!editable && deadlinePassed(rules.deadline)) {
         return (
           <div className={c.card} style={{ textAlign: 'center' }}>
-            <p className={c.title}>Les réponses sont closes</p>
+            <p className={c.title}>{t('Les réponses sont closes')}</p>
             <p className={c.muted}>La date limite de réponse était le {deadlineLabel(rules.deadline)}.</p>
           </div>
         )
@@ -491,34 +633,34 @@ export function RsvpModule({ invitation, onInvitationChange, body, themed, edita
           onClick={stop}
           style={{ display: 'grid', gap: '1.1rem' }}
         >
-          <p className={c.title} style={{ margin: 0 }}>Confirmez votre présence</p>
+          <p className={c.title} style={{ margin: 0 }}>{t('Confirmez votre présence')}</p>
           <p className={c.muted} style={{ margin: '-.7rem 0 0' }}>
             {editable
               ? 'Aperçu du formulaire affiché aux invités sur votre site.'
               : rules.guestListOnly
-                ? 'Indiquez votre nom et le numéro ou l’e-mail que vous avez donné aux organisateurs.'
-                : 'Indiquez votre nom et un moyen de vous contacter pour envoyer votre réponse.'}
+                ? t('Indiquez votre nom et le numéro ou l’e-mail que vous avez donné aux organisateurs.')
+                : t('Indiquez votre nom et un moyen de vous contacter pour envoyer votre réponse.')}
             {deadlineNote && <> {deadlineNote}</>}
           </p>
           {editable && <p className={c.note} style={{ margin: 0 }}>Les réponses ne peuvent pas être envoyées depuis l’aperçu.</p>}
           {invitationError && <p className={themed ? 'err' : 'text-sm text-danger'}>{invitationError}</p>}
           <label className={themed ? 'field' : 'block text-xs font-semibold tracking-wider text-muted uppercase'}>
-            <span>Votre nom</span>
+            <span>{t('Votre nom')}</span>
             <input className={c.input} autoComplete="name" maxLength={255} required value={publicName} onChange={(e) => setPublicName(e.target.value)} />
           </label>
           <div className={c.grid2}>
             <label className={themed ? 'field' : 'block text-xs font-semibold tracking-wider text-muted uppercase'}>
-              <span>E-mail {!publicPhone.trim() && '(obligatoire si aucun téléphone)'}</span>
+              <span>{t('E-mail')} {!publicPhone.trim() && t('(obligatoire si aucun téléphone)')}</span>
               <input className={c.input} type="email" autoComplete="email" maxLength={254} required={!publicPhone.trim()} value={publicEmail} onChange={(e) => setPublicEmail(e.target.value)} />
             </label>
             <label className={themed ? 'field' : 'block text-xs font-semibold tracking-wider text-muted uppercase'}>
-              <span>Téléphone {!publicEmail.trim() && '(obligatoire si aucun e-mail)'}</span>
+              <span>{t('Téléphone')} {!publicEmail.trim() && t('(obligatoire si aucun e-mail)')}</span>
               <input className={c.input} type="tel" autoComplete="tel" maxLength={40} required={!publicEmail.trim()} value={publicPhone} onChange={(e) => setPublicPhone(e.target.value)} />
             </label>
           </div>
           <div className={themed ? 'field' : ''}>
-            <span className={themed ? '' : 'text-xs font-semibold tracking-wider text-muted uppercase'}>Votre présence</span>
-            <div className={themed ? 'seg' : `mt-2 grid ${choiceGrid} gap-2`} role="radiogroup" aria-label="Votre présence">
+            <span className={themed ? '' : 'text-xs font-semibold tracking-wider text-muted uppercase'}>{t('Votre présence')}</span>
+            <div className={themed ? 'seg' : `mt-2 grid ${choiceGrid} gap-2`} role="radiogroup" aria-label={t('Votre présence')}>
               {choices.map(([v, label]) => (
                 <label key={v} className={themed ? '' : `flex min-h-12 cursor-pointer items-center justify-center rounded-lg border text-sm font-bold transition ${attending === v ? 'border-brand-purple bg-brand-purple text-white' : 'border-border text-ink'}`}>
                   <input type="radio" name="public-attending" value={v} checked={attending === v} onChange={() => setAttending(v)} className={themed ? '' : 'sr-only'} />
@@ -529,31 +671,24 @@ export function RsvpModule({ invitation, onInvitationChange, body, themed, edita
           </div>
           {attending === 'oui' && rules.maxCompanions > 0 && (
             <label className={themed ? 'field' : 'block text-xs font-semibold tracking-wider text-muted uppercase'}>
-              <span>Accompagnants</span>
+              <span>{t('Accompagnants')}</span>
               <select className={c.input} value={count} onChange={(e) => setCount(Number(e.target.value))}>
                 {Array.from({ length: rules.maxCompanions + 1 }, (_, i) => (
-                  <option key={i} value={i}>{i === 0 ? 'Aucun' : `${i} accompagnant${i > 1 ? 's' : ''}`}</option>
+                  <option key={i} value={i}>{i === 0 ? t('Aucun') : `${i} accompagnant${i > 1 ? 's' : ''}`}</option>
                 ))}
               </select>
             </label>
           )}
-          {attending === 'oui' && sides.length > 0 && (
-            <label className={themed ? 'field' : 'block text-xs font-semibold tracking-wider text-muted uppercase'}>
-              <span>{sideLabel?.trim() || DEFAULT_SIDE_LABEL}</span>
-              <select className={c.input} value={sides.includes(side) ? side : ''} onChange={(e) => setSide(e.target.value)}>
-                <option value="">Choisir…</option>
-                {sides.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </label>
-          )}
+          {attending === 'oui' && sides.length > 0 && sidePicker}
+          {attending === 'oui' && extraCheck}
           <label className={themed ? 'field' : 'block text-xs font-semibold tracking-wider text-muted uppercase'}>
-            <span>Un mot (facultatif)</span>
+            <span>{t('Un mot (facultatif)')}</span>
             <textarea className={c.input} rows={3} maxLength={1000} value={message} onChange={(e) => setMessage(e.target.value)} />
           </label>
           {error && <p className={themed ? 'err' : 'text-sm text-danger'}>{error}</p>}
           <button className={c.btn} type="submit" disabled={sending || editable}>
             <Check style={{ width: 18, height: 18 }} />
-            {sending ? 'Envoi…' : 'Envoyer ma réponse'}
+            {sending ? t('Envoi…') : t('Envoyer ma réponse')}
           </button>
         </form>
       )
@@ -571,10 +706,10 @@ export function RsvpModule({ invitation, onInvitationChange, body, themed, edita
             ? 'Chargement de votre invitation…'
             : invitationError
               ? 'Votre invitation n’est pas accessible'
-              : 'Vous avez reçu une invitation personnelle ?'}
+              : t('Vous avez reçu une invitation personnelle ?')}
         </p>
         <p className={c.muted} style={{ margin: '.4rem 0 0' }}>
-          {invitationError || body || 'Ouvrez le lien qui vous a été envoyé (SMS, WhatsApp ou e-mail) : vous pourrez répondre ici et recevoir votre pass d’entrée.'}
+          {invitationError || t(body) || t('Ouvrez le lien qui vous a été envoyé (SMS, WhatsApp ou e-mail) : vous pourrez répondre ici et recevoir votre pass d’entrée.')}
         </p>
         {editable && <p className={c.note} style={{ marginTop: '1rem' }}>Les invités peuvent répondre directement sur le site ; un lien personnel leur permet aussi de retrouver ou modifier leur réponse.</p>}
         {editable && deadlineNote && <p className={c.note} style={{ marginTop: '.4rem' }}>{deadlineNote}</p>}
@@ -605,12 +740,13 @@ export function RsvpModule({ invitation, onInvitationChange, body, themed, edita
         accompanyingCount: confirmed ? Math.min(count, rules.maxCompanions) : 0,
         message: message.trim() || null,
         side: confirmed && sides.includes(side) ? side : null,
+        extra: confirmed && rules.extraLabel ? extra : null,
       })
       onInvitationChange?.(result)
       setEditing(false)
       if (confirmed) onCelebrate?.(e.currentTarget)
     } catch (err) {
-      setError(err.message || "La réponse n'a pas pu être enregistrée.")
+      setError(err.message || t("La réponse n'a pas pu être enregistrée."))
     } finally {
       setSending(false)
     }
@@ -631,8 +767,8 @@ export function RsvpModule({ invitation, onInvitationChange, body, themed, edita
           {maybe
             ? `Vous pourrez confirmer ou décliner plus tard${rules.deadline ? `, avant le ${deadlineLabel(rules.deadline)}` : ''}.`
             : invitation.rsvpConfirmed
-              ? rules.yesMessage || 'Voici votre pass d’entrée : présentez-le à l’accueil le jour J.'
-              : rules.noMessage || 'Merci de nous avoir prévenus, vous nous manquerez.'}
+              ? rules.yesMessage || t('Voici votre pass d’entrée : présentez-le à l’accueil le jour J.')
+              : rules.noMessage || t('Merci de nous avoir prévenus, vous nous manquerez.')}
         </p>
         {invitation.rsvpConfirmed && rules.yesMessage && (
           <p className={c.muted} style={{ margin: '.4rem 0 0' }}>Votre pass d’entrée est ci-dessous : présentez-le à l’accueil le jour J.</p>
@@ -642,7 +778,7 @@ export function RsvpModule({ invitation, onInvitationChange, body, themed, edita
         )}
         {!closed && (
           <button type="button" className={c.ghost} style={{ marginTop: '1.2rem' }} onClick={(e) => { e.stopPropagation(); setAttending(maybe ? 'peut-etre' : invitation.rsvpConfirmed ? 'oui' : 'non'); setEditing(true) }}>
-            Modifier ma réponse
+            {t('Modifier ma réponse')}
           </button>
         )}
       </div>
@@ -652,7 +788,7 @@ export function RsvpModule({ invitation, onInvitationChange, body, themed, edita
   if (closed) {
     return (
       <div className={c.card} style={{ textAlign: 'center' }}>
-        <p className={c.title}>Les réponses sont closes</p>
+        <p className={c.title}>{t('Les réponses sont closes')}</p>
         <p className={c.muted}>
           {deadlinePassed(rules.deadline) ? `La date limite de réponse était le ${deadlineLabel(rules.deadline)}.` : "L'événement a déjà eu lieu."} Merci {first} !
         </p>
@@ -662,11 +798,11 @@ export function RsvpModule({ invitation, onInvitationChange, body, themed, edita
 
   return (
     <form className={c.card} onSubmit={submit} onClick={stop} style={{ display: 'grid', gap: '1.1rem' }}>
-      <p className={c.title} style={{ margin: 0 }}>Bonjour {invitation.guestFullName}</p>
+      <p className={c.title} style={{ margin: 0 }}>{t('Bonjour')} {invitation.guestFullName}</p>
       {deadlineNote && <p className={c.muted} style={{ margin: '-.7rem 0 0' }}>{deadlineNote}</p>}
       <div className={themed ? 'field' : ''}>
-        <span className={themed ? '' : 'text-xs font-semibold tracking-wider text-muted uppercase'}>Votre présence</span>
-        <div className={themed ? 'seg' : `mt-2 grid ${choiceGrid} gap-2`} role="radiogroup" aria-label="Votre présence">
+        <span className={themed ? '' : 'text-xs font-semibold tracking-wider text-muted uppercase'}>{t('Votre présence')}</span>
+        <div className={themed ? 'seg' : `mt-2 grid ${choiceGrid} gap-2`} role="radiogroup" aria-label={t('Votre présence')}>
           {choices.map(([v, label]) => (
             <label key={v} className={themed ? '' : `flex min-h-12 cursor-pointer items-center justify-center rounded-lg border text-sm font-bold transition ${attending === v ? 'border-brand-purple bg-brand-purple text-white' : 'border-border text-ink'}`}>
               <input type="radio" name="attending" value={v} checked={attending === v} onChange={() => setAttending(v)} className={themed ? '' : 'sr-only'} />
@@ -677,37 +813,26 @@ export function RsvpModule({ invitation, onInvitationChange, body, themed, edita
       </div>
       {attending === 'oui' && rules.maxCompanions > 0 && (
         <label className={themed ? 'field' : 'block text-xs font-semibold tracking-wider text-muted uppercase'}>
-          <span>Accompagnants</span>
+          <span>{t('Accompagnants')}</span>
           <select className={c.input} value={count} onChange={(e) => setCount(Number(e.target.value))}>
             {Array.from({ length: rules.maxCompanions + 1 }, (_, i) => (
               <option key={i} value={i}>
-                {i === 0 ? 'Aucun' : `${i} accompagnant${i > 1 ? 's' : ''}`}
+                {i === 0 ? t('Aucun') : `${i} accompagnant${i > 1 ? 's' : ''}`}
               </option>
             ))}
           </select>
         </label>
       )}
-      {attending === 'oui' && sides.length > 0 && (
-        <label className={themed ? 'field' : 'block text-xs font-semibold tracking-wider text-muted uppercase'}>
-          <span>{sideLabel?.trim() || DEFAULT_SIDE_LABEL}</span>
-          <select className={c.input} value={sides.includes(side) ? side : ''} onChange={(e) => setSide(e.target.value)}>
-            <option value="">Choisir…</option>
-            {sides.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
+      {attending === 'oui' && sides.length > 0 && sidePicker}
+      {attending === 'oui' && extraCheck}
       <label className={themed ? 'field' : 'block text-xs font-semibold tracking-wider text-muted uppercase'}>
-        <span>Un mot (facultatif)</span>
+        <span>{t('Un mot (facultatif)')}</span>
         <textarea className={c.input} rows={3} maxLength={1000} value={message} onChange={(e) => setMessage(e.target.value)} />
       </label>
       {error && <p className={themed ? 'err' : 'text-sm text-danger'}>{error}</p>}
       <button className={c.btn} type="submit" disabled={sending}>
         <Check style={{ width: 18, height: 18 }} />
-        {sending ? 'Envoi…' : 'Envoyer ma réponse'}
+        {sending ? t('Envoi…') : t('Envoyer ma réponse')}
       </button>
     </form>
   )

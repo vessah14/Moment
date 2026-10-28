@@ -27,9 +27,9 @@ import {
 import { HEADING_FONT_STACKS, siteRootStyle } from '../../utils/templateTheme'
 import GuestBookForm from '../minisite/GuestBookForm'
 import BlockToolbar from './BlockToolbar'
-import { DressCodeModule, FamiliesModule, GiftModule, PartnersModule, RsvpModule, SeatingModule, SpeakersModule, VideoModule } from './modules/SiteModules'
+import { DressCodeModule, FamiliesModule, GiftModule, GuestPhotoUpload, HonoursModule, PartnersModule, RsvpModule, SeatingModule, SpeakersModule, VideoModule } from './modules/SiteModules'
 import { parseVideoUrl } from '../../utils/videoEmbed'
-import { usablePartners, usablePeople, usableVenues } from '../../utils/blockLists'
+import { usableHonours, usablePartners, usablePeople, usableVenues } from '../../utils/blockLists'
 import { usableColors } from '../../utils/mobileMoney'
 import ThemedSitePage from './themes/ThemedSitePage'
 import { invitationGreeting, invitationParagraphs } from '../../utils/invitationText'
@@ -61,6 +61,7 @@ const SECTION_META = {
   'Dress code': { eyebrow: 'Tenue' },
   Cadeaux: { eyebrow: 'Cadeaux', nav: 'Cadeaux' },
   Partenaires: { eyebrow: 'Ils nous accompagnent' },
+  Distinctions: { eyebrow: 'À l’honneur', nav: 'Distinctions' },
 }
 
 function computeRemaining(target) {
@@ -628,15 +629,22 @@ function renderBlockBody({ block, content, data, editable, editor, fullPage, ani
 
     case 'Galerie': {
       const photos = data.galleryPhotos ?? []
-      if (photos.length === 0 && !editable) return null
+      // Album des invités : ouvert sauf si l'organisateur l'a fermé (guestUploads: false).
+      const guestUploads = !editable && Boolean(data.slug) && content.guestUploads !== false
+      if (photos.length === 0 && !editable && !guestUploads) return null
       return (
-        <GalleryGrid
-          photos={photos}
-          editable={editable}
-          editor={editor}
-          fullPage={fullPage}
-          animate={animate}
-        />
+        <>
+          {(photos.length > 0 || editable) && (
+            <GalleryGrid
+              photos={photos}
+              editable={editable}
+              editor={editor}
+              fullPage={fullPage}
+              animate={animate}
+            />
+          )}
+          {guestUploads && <GuestPhotoUpload slug={data.slug} />}
+        </>
       )
     }
 
@@ -778,6 +786,17 @@ function renderBlockBody({ block, content, data, editable, editor, fullPage, ani
         <div className="space-y-6">
           {bodyText && <div className="mx-auto max-w-3xl text-center">{bodyText}</div>}
           <SpeakersModule people={people} />
+        </div>
+      )
+    }
+
+    case 'Distinctions': {
+      const people = usableHonours(content.people)
+      if (!people.length) return bodyText ? <div className="mx-auto max-w-3xl text-center">{bodyText}</div> : editable ? <Placeholder>Ajoutez les personnes honorées dans l'onglet Contenu, à droite.</Placeholder> : null
+      return (
+        <div className="space-y-6">
+          {bodyText && <div className="mx-auto max-w-3xl text-center">{bodyText}</div>}
+          <HonoursModule people={people} />
         </div>
       )
     }

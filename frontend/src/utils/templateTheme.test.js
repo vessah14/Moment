@@ -22,7 +22,7 @@ describe("templatesForCategory", () => {
     ["conference", "Conférence / séminaire / atelier", ["Summit", "Signal", "Forum"]],
     ["obseques", "Obsèques / commémoration / hommage", ["Mémoire", "Lumière"]],
     ["concert", "Concert / spectacle", ["Live", "Amplify", "Scène"]],
-    ["evenement_entreprise", "Événement professionnel", ["Horizon", "Sobre"]],
+    ["evenement_entreprise", "Événement professionnel", ["Horizon", "Envol", "Sobre"]],
     ["bapteme", "Baptême", ["Nuage", "Berceau", "Plume"]],
   ])("returns only the models of %s", (code, label, names) => {
     expect(
@@ -102,6 +102,20 @@ describe("templateBlockDefaults", () => {
     expect(nuage.Programme.heading).toBe("Programme");
     expect(templateBlockDefaults(findTemplate("Éclat")).Programme.heading).toBe(BLOCK_CONTENT_DEFAULTS.Programme.heading);
     expect(templateBlockDefaults(findTemplate("Live")).Intervenants.heading).toBe("Line-up");
+  });
+});
+
+describe("variantes d'un modèle selon le type d'événement", () => {
+  it("prennent les titres et textes de la variante, sinon ceux du modèle", async () => {
+    const { templateBlockContent } = await import("./templateTheme");
+    const { invitationStarter } = await import("../data/invitations");
+    const envol = findTemplate("Envol");
+    expect(templateBlockHeading(envol, "Distinctions", "voeux")).toBe("Les médaillés de l’année");
+    expect(templateBlockHeading(envol, "Distinctions", "voeux-ecole")).toBe("Les lauréats de l’année");
+    expect(templateBlockHeading(envol, "Programme", "voeux-ecole")).toBe("Déroulé de la cérémonie");
+    expect(templateBlockContent(envol, "Dress code", "voeux-administration").title).toBe("Tenue de ville ou pagne du service");
+    expect(invitationStarter(envol, "Lycée de Bonabéri", "voeux-ecole").body).toMatch(/communauté éducative/);
+    expect(invitationStarter(envol, "Wouri Logistics").body).toMatch(/Directeur Général/);
   });
 });
 

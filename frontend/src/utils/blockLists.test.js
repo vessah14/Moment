@@ -1,5 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { initialsOf, usablePartners, usablePeople, usableVenues } from './blockLists'
+import { initialsOf, usableHonours, usablePartners, usablePeople, usableVenues } from './blockLists'
+
+describe('usableHonours', () => {
+  it('keeps named people with a known medal rank, gold by default', () => {
+    expect(
+      usableHonours([
+        { name: ' Jeanne Ekotto ', role: 'Finances', topic: "Médaille d'or", rank: 2 },
+        { name: 'Paul Mbida', rank: 7 },
+        { name: '', rank: 1 },
+      ]),
+    ).toEqual([
+      { name: 'Jeanne Ekotto', role: 'Finances', topic: "Médaille d'or", rank: 2 },
+      { name: 'Paul Mbida', role: '', topic: '', rank: 0 },
+    ])
+    expect(usableHonours(null)).toEqual([])
+  })
+})
 
 describe('usablePeople', () => {
   it('keeps only named people, as trimmed strings', () => {

@@ -1,5 +1,5 @@
 import jsQR from 'jsqr'
-import { QrCode, Search, X } from 'lucide-react'
+import { FileDown, QrCode, Search, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Avatar from '../../components/ui/Avatar'
 import StatCard from '../../components/dashboard/StatCard'
@@ -8,11 +8,50 @@ import DashboardLayout from '../../components/layout/DashboardLayout'
 import { listEvents } from '../../api/events'
 import { checkInGuest, listGuests, undoCheckInGuest } from '../../api/guests'
 import { guestStatusLabel } from '../../utils/guestStatus'
-import { dequeueCheckin, enqueueCheckin, flushQueue, isNetworkError, readQueue, withQueued } from '../../utils/offlineCheckins'
+import { cacheGuestList, dequeueCheckin, enqueueCheckin, flushQueue, isNetworkError, readGuestList, readQueue, withQueued } from '../../utils/offlineCheckins'
+import { arrivalTime, downloadAttendanceCsv, downloadAttendancePdf } from '../../utils/attendanceSheet'
 
 function formatTime(value) {
   if (!value) return '—'
   return new Date(value).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+}
+
+// Résultat en grand pour l'hôtesse, avec une forme par cas (lisible sans les couleurs) :
+// rond vert « Bienvenue », carré arrondi orange « Déjà enregistré », carré rouge « inconnu ».
+const RESULT_LOOK = {
+  ok: { title: 'Bienvenue', icon: '✓', badge: 'rounded-full bg-success', text: 'text-success' },
+  deja: { title: 'Déjà enregistré', icon: '!', badge: 'rounded-xl bg-brand-orange', text: 'text-brand-orange' },
+  inconnu: { title: 'QR code inconnu', icon: '×', badge: 'rounded bg-danger', text: 'text-danger' },
+}
+
+function ScanResult({ result }) {
+  const look = RESULT_LOOK[result.kind]
+  const g = result.guest
+  const detail =
+    result.kind === 'inconnu'
+      ? 'Ce code ne correspond à aucun invité de cet événement. Cherchez le nom ci-dessus.'
+      : [
+          g.side,
+          result.kind === 'ok' && g.extra !== null && g.extra !== undefined && `cocktail : ${g.extra ? 'oui' : 'non'}`,
+          `${result.kind === 'ok' ? 'enregistré(e)' : 'arrivé(e)'} à ${formatTime(g.checkedInAt)}`,
+          g.seats > 1 && `${g.seats} places`,
+        ]
+          .filter(Boolean)
+          .join(' · ')
+  return (
+    <div key={`${result.kind}-${g?.id ?? ''}-${g?.checkedInAt ?? ''}`} className="flex gap-3 rounded-2xl border border-border-soft bg-surface p-4">
+      <span className={`grid h-11 w-11 shrink-0 place-items-center text-2xl font-bold text-white ${look.badge}`} aria-hidden="true">
+        {look.icon}
+      </span>
+      <div className="min-w-0">
+        <p className={`text-xs font-semibold ${look.text}`}>{look.title}</p>
+        {g && <p className="truncate text-lg font-bold text-ink">{g.fullName}</p>}
+        <p className="text-sm text-muted">{detail}</p>
+        {g?.status === 'Absent' && <p className="mt-1 text-xs text-brand-orange">Attention : cet invité avait décliné l'invitation.</p>}
+        {g?.pendingSync && <p className="mt-1 text-xs text-faint">Gardé sur ce téléphone, envoyé au retour du réseau.</p>}
+      </div>
+    </div>
+  )
 }
 
 export default function CheckIn() {
@@ -22,12 +61,14 @@ export default function CheckIn() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [query, setQuery] = useState('')
-  const [lastChecked, setLastChecked] = useState(null)
+  // Dernier scan ou dernière recherche : { kind: 'ok' | 'deja' | 'inconnu', guest }.
+  const [result, setResult] = useState(null)
+  // Liste lue sur ce téléphone faute de réseau à l'ouverture : date de la sauvegarde.
+  const [offlineSince, setOfflineSince] = useState('')
   const [checkingId, setCheckingId] = useState('')
 
   const [scanning, setScanning] = useState(false)
   const [scanError, setScanError] = useState('')
-  const [scanFeedback, setScanFeedback] = useState('')
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const streamRef = useRef(null)
@@ -54,9 +95,18 @@ export default function CheckIn() {
     listGuests(eventId)
       .then((data) => {
         setGuests(withQueued(data ?? [], readQueue(eventId)))
+        setOfflineSince('')
         setError('')
       })
-      .catch((err) => setError(err.message || 'Impossible de charger les invités.'))
+      .catch((err) => {
+        // Pas de réseau : la liste gardée sur ce téléphone permet de continuer à scanner.
+        const saved = isNetworkError(err) ? readGuestList(eventId) : null
+        if (saved) {
+          setGuests(withQueued(saved.guests, readQueue(eventId)))
+          setOfflineSince(saved.savedAt)
+          setError('')
+        } else setError(err.message || 'Impossible de charger les invités.')
+      })
       .finally(() => setLoading(false))
   }
 
@@ -67,7 +117,8 @@ export default function CheckIn() {
 
   useEffect(() => {
     guestsRef.current = guests
-  }, [guests])
+    if (selectedEventId && guests.length) cacheGuestList(selectedEventId, guests)
+  }, [guests, selectedEventId])
 
   // Entrées gardées sur ce téléphone pendant une coupure : envoyées au retour du réseau,
   // puis toutes les 15 s tant qu'il en reste.
@@ -108,8 +159,8 @@ export default function CheckIn() {
       .filter(
         (g) =>
           g.fullName.toLowerCase().includes(q) ||
-          g.email.toLowerCase().includes(q) ||
-          g.phone.toLowerCase().includes(q),
+          (g.email ?? '').toLowerCase().includes(q) ||
+          (g.phone ?? '').toLowerCase().includes(q),
       )
       .slice(0, 8)
   }, [pending, query])
@@ -120,7 +171,7 @@ export default function CheckIn() {
     try {
       const updated = await checkInGuest(guest.id)
       setGuests((prev) => prev.map((g) => (g.id === updated.id ? updated : g)))
-      setLastChecked(updated)
+      setResult({ kind: updated.alreadyCheckedIn ? 'deja' : 'ok', guest: updated })
       setQuery('')
     } catch (err) {
       if (!isNetworkError(err)) {
@@ -132,7 +183,7 @@ export default function CheckIn() {
       enqueueCheckin(selectedEventId, guest.id, at)
       const local = { ...guest, checkedInAt: at, pendingSync: true }
       setGuests((prev) => prev.map((g) => (g.id === guest.id ? local : g)))
-      setLastChecked(local)
+      setResult({ kind: 'ok', guest: local })
       setQuery('')
     } finally {
       setCheckingId('')
@@ -144,7 +195,7 @@ export default function CheckIn() {
     if (guest.pendingSync) {
       dequeueCheckin(selectedEventId, guest.id)
       setGuests((prev) => prev.map((g) => (g.id === guest.id ? { ...g, checkedInAt: null, pendingSync: false } : g)))
-      if (lastChecked?.id === guest.id) setLastChecked(null)
+      if (result?.guest?.id === guest.id) setResult(null)
       return
     }
     setCheckingId(guest.id)
@@ -152,7 +203,7 @@ export default function CheckIn() {
     try {
       const updated = await undoCheckInGuest(guest.id)
       setGuests((prev) => prev.map((g) => (g.id === updated.id ? updated : g)))
-      if (lastChecked?.id === guest.id) setLastChecked(null)
+      if (result?.guest?.id === guest.id) setResult(null)
     } catch (err) {
       setError(err.message || "L'annulation a échoué.")
     } finally {
@@ -195,11 +246,10 @@ export default function CheckIn() {
         lastScannedRef.current = { id: code.data, at: now }
         const match = guestsRef.current.find((g) => g.id === code.data)
         if (!match) {
-          setScanFeedback('QR non reconnu pour cet événement.')
+          setResult({ kind: 'inconnu' })
         } else if (match.checkedInAt) {
-          setScanFeedback(`${match.fullName} est déjà entré(e) à ${formatTime(match.checkedInAt)}.`)
+          setResult({ kind: 'deja', guest: match })
         } else {
-          setScanFeedback('')
           handleCheckInRef.current?.(match)
         }
       }
@@ -209,7 +259,7 @@ export default function CheckIn() {
 
   const startScan = async () => {
     setScanError('')
-    setScanFeedback('')
+    setResult(null)
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
       streamRef.current = stream
@@ -255,6 +305,26 @@ export default function CheckIn() {
             Scannez le QR d'un invité ou recherchez-le par nom, email ou téléphone pour valider son entrée.
           </p>
         </div>
+        <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={!guests.length}
+          onClick={() => downloadAttendancePdf(events.find((ev) => ev.id === selectedEventId)?.name, guests)}
+          className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-ink hover:border-brand-purple disabled:opacity-40"
+        >
+          <FileDown className="h-4 w-4" />
+          Feuille d'émargement (PDF)
+        </button>
+        <button
+          type="button"
+          disabled={!guests.length}
+          onClick={() => downloadAttendanceCsv(events.find((ev) => ev.id === selectedEventId)?.name, guests)}
+          className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-ink hover:border-brand-purple disabled:opacity-40"
+          title="Fichier CSV, ouvert directement par Excel"
+        >
+          <FileDown className="h-4 w-4" />
+          Liste de présence (Excel)
+        </button>
         <select
           value={selectedEventId}
           onChange={(e) => setSelectedEventId(e.target.value)}
@@ -266,8 +336,15 @@ export default function CheckIn() {
             </option>
           ))}
         </select>
+        </div>
       </div>
 
+      {offlineSince && (
+        <p role="status" className="mt-6 rounded-lg border border-brand-orange/30 bg-brand-orange/10 px-4 py-2.5 text-sm text-ink">
+          Pas de réseau : liste des invités gardée sur ce téléphone (enregistrée à {arrivalTime(offlineSince)}). Les QR restent
+          vérifiés ; les entrées seront envoyées au retour du réseau.
+        </p>
+      )}
       {error && (
         <p className="mt-6 rounded-lg border border-danger/30 bg-danger/10 px-4 py-2.5 text-sm text-danger">
           {error}
@@ -343,11 +420,6 @@ export default function CheckIn() {
                   </button>
                 </div>
                 <canvas ref={canvasRef} className="hidden" />
-                {scanFeedback && (
-                  <p className="mt-2 rounded-lg border border-border-soft bg-surface-2 px-3 py-2 text-center text-xs text-muted">
-                    {scanFeedback}
-                  </p>
-                )}
               </div>
             )}
             {scanError && (
@@ -355,17 +427,9 @@ export default function CheckIn() {
             )}
           </div>
 
-          {lastChecked && (
-            <div className="mt-4 rounded-lg border border-success/30 bg-success/10 p-3">
-              <p className="text-sm font-semibold text-success">Entrée validée</p>
-              <p className="mt-1 text-sm text-ink">{lastChecked.fullName}{lastChecked.seats > 1 && ` · ${lastChecked.seats} places`}</p>
-              {lastChecked.status === 'Absent' && (
-                <p className="mt-1 text-xs text-brand-orange">
-                  Attention : cet invité avait décliné l'invitation.
-                </p>
-              )}
-            </div>
-          )}
+          <div role="status" aria-live="polite" className="mt-4">
+            {result && <ScanResult result={result} />}
+          </div>
         </div>
 
         <div>

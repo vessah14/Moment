@@ -45,6 +45,14 @@ export const BLOCK_CONTENT_DEFAULTS = {
     tinted: true,
     people: []
   },
+  // Médaillés, lauréats, distinctions : nom, service, distinction et rang de la médaille.
+  Distinctions: {
+    heading: "Distinctions",
+    body: "",
+    showHeading: true,
+    tinted: false,
+    people: []
+  },
   Localisation: {
     heading: "Comment Nous Rejoindre",
     body: "",

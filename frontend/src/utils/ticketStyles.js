@@ -39,7 +39,7 @@ const BY_THEME = {
   noor: 'fairepart', bloom: 'fairepart', nuage: 'fairepart', grace: 'fairepart',
   toghu: 'pagne', ndop: 'pagne', racines: 'pagne',
   fiesta: 'polaroid', douceur: 'polaroid', prestige: 'or',
-  live: 'concert', velvet: 'or', arena: 'stade',
+  live: 'concert', velvet: 'or', minuit: 'or', envol: 'or', arena: 'stade',
   summit: 'badge', horizon: 'badge', campus: 'badge', toge: 'badge',
   memoire: 'sobre', souvenir: 'sobre',
 }

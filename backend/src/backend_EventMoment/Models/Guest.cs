@@ -46,6 +46,14 @@ namespace backend_EventMoment.Models
         [Column("seats")]
         public short? Seats { get; set; }
 
+        // Première ouverture du lien personnel (statut « Vue » dans l'espace organisateur).
+        [Column("invitation_opened_at")]
+        public DateTimeOffset? InvitationOpenedAt { get; set; }
+
+        // Dernier partage de l'invitation par WhatsApp ou SMS (statut « Envoyée »).
+        [Column("invitation_shared_at")]
+        public DateTimeOffset? InvitationSharedAt { get; set; }
+
         [Column("import_batch_id")]
         public Guid? ImportBatchId { get; set; }
 

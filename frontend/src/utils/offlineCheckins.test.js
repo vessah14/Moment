@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dequeueCheckin, enqueueCheckin, flushQueue, readQueue, withQueued } from './offlineCheckins'
+import { cacheGuestList, dequeueCheckin, enqueueCheckin, flushQueue, readGuestList, readQueue, withQueued } from './offlineCheckins'
 
 function memoryStorage() {
   const data = new Map()
@@ -44,5 +44,16 @@ describe('offline check-ins', () => {
       { id: 'a', checkedInAt: 't', pendingSync: true },
       { id: 'b', checkedInAt: 'x' },
     ])
+  })
+})
+
+describe('guest list cache', () => {
+  it('keeps only what reception needs, without email or phone', () => {
+    const storage = memoryStorage()
+    cacheGuestList('e1', [{ id: 'g1', fullName: 'Paul Ekané', email: 'p@x.cm', phone: '677', status: 'Present', side: 'Commercial', extra: true, checkedInAt: null }], storage)
+    const saved = readGuestList('e1', storage)
+    expect(saved.guests).toEqual([{ id: 'g1', fullName: 'Paul Ekané', email: '', phone: '', status: 'Present', side: 'Commercial', extra: true, checkedInAt: null }])
+    expect(storage.getItem('tbf_checkin_guests_e1')).not.toMatch(/p@x\.cm|677/)
+    expect(readGuestList('autre', storage)).toBeNull()
   })
 })

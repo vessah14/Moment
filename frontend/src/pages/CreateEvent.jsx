@@ -73,8 +73,8 @@ const dayMonthYear = (iso) =>
     : ''
 
 // Surtitre de la page : le type d'événement, puis la date.
-const kickerFor = (type, date) => (type ? [type.label, dayMonthYear(date)].filter(Boolean).join(' · ') : '')
-const isGeneratedKicker = (kicker) => !kicker?.trim() || EVENT_TYPES.some((t) => kicker.startsWith(t.label))
+const kickerFor = (type, date) => (type ? [type.kicker ?? type.label, dayMonthYear(date)].filter(Boolean).join(' · ') : '')
+const isGeneratedKicker = (kicker) => !kicker?.trim() || EVENT_TYPES.some((t) => kicker.startsWith(t.kicker ?? t.label))
 const displayTitleFor = (form, type) => {
   return formatEventDisplayTitle(type?.id, form.birthdayAge, form.display, form.name)
 }
@@ -344,7 +344,7 @@ export default function CreateEvent() {
       }
 
       try {
-        await composePage({ targetId, blocks: existing.blocks, template, hero, title: displayTitleFor(form, type), kicker: kickerFor(type, form.date), pageContent })
+        await composePage({ targetId, blocks: existing.blocks, template, eventTypeId: type.id, hero, title: displayTitleFor(form, type), kicker: kickerFor(type, form.date), pageContent })
       } catch {
         warnings.push("Les sections de la page n'ont pas pu être toutes mises à jour.")
       }
@@ -528,7 +528,7 @@ export default function CreateEvent() {
 
 // Compose la page : le Hero (titre en grand, surtitre) et les sections manquantes du modèle.
 // Le contenu déjà réglé dans le Builder est conservé.
-async function composePage({ targetId, blocks, template, hero, title, kicker, pageContent = {} }) {
+async function composePage({ targetId, blocks, template, eventTypeId, hero, title, kicker, pageContent = {} }) {
   const findBlock = (type) => blocks.find((b) => normalizeBlockType(b.blockType) === type)
   let nextPosition = Math.max(0, ...blocks.map((b) => b.position ?? 0)) + 1
   const upsert = async (type, patch) => {
@@ -557,11 +557,11 @@ async function composePage({ targetId, blocks, template, hero, title, kicker, pa
       position: nextPosition++,
       isVisible: true,
       content: JSON.stringify({
-        ...templateBlockContent(template, type),
-        ...(type === 'Invitation' && invitationStarter(template, title)),
-        ...(type === 'RSVP' && rsvpSidesStarter(template?.theme)),
+        ...templateBlockContent(template, type, eventTypeId),
+        ...(type === 'Invitation' && invitationStarter(template, title, eventTypeId)),
+        ...(type === 'RSVP' && rsvpSidesStarter(template?.theme, eventTypeId)),
         ...(pageContent[type] ?? {}),
-        heading: templateBlockHeading(template, type),
+        heading: templateBlockHeading(template, type, eventTypeId),
         showHeading: Boolean(defaults.showHeading),
         tinted: Boolean(defaults.tinted),
       }),

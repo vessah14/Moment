@@ -55,3 +55,26 @@ export function withQueued(guests, queue) {
   const at = new Map(queue.map((i) => [i.guestId, i.at]))
   return guests.map((g) => (!g.checkedInAt && at.has(g.id) ? { ...g, checkedInAt: at.get(g.id), pendingSync: true } : g))
 }
+
+// Liste des invités gardée sur le téléphone de l'accueil : si la page est rouverte sans
+// réseau, les QR restent vérifiables. Seulement ce qu'il faut à l'accueil (ni e-mail ni
+// téléphone).
+const listKey = (eventId) => `tbf_checkin_guests_${eventId}`
+
+export function cacheGuestList(eventId, guests, storage = globalThis.localStorage) {
+  try {
+    const slim = guests.map(({ id, fullName, status, seats, side, extra, checkedInAt }) => ({ id, fullName, status, seats, side, extra, checkedInAt }))
+    storage?.setItem(listKey(eventId), JSON.stringify({ savedAt: new Date().toISOString(), guests: slim }))
+  } catch {
+    // Stockage plein ou indisponible : pas de liste hors ligne.
+  }
+}
+
+export function readGuestList(eventId, storage = globalThis.localStorage) {
+  try {
+    const saved = JSON.parse(storage?.getItem(listKey(eventId)) ?? 'null')
+    return Array.isArray(saved?.guests) ? { savedAt: saved.savedAt, guests: saved.guests.map((g) => ({ email: '', phone: '', ...g })) } : null
+  } catch {
+    return null
+  }
+}

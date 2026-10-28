@@ -11,7 +11,7 @@ describe('premium themes', () => {
     expect(premium.map((t) => t.name)).toEqual([
       'Noor', 'Bloom', 'Toghu Royal', 'Ndop', 'Fiesta', 'Prestige',
       'Arena', 'Live', 'Summit', 'Horizon', 'Nuage', 'Grâce', 'Campus', 'Toge', 'Mémoire', 'Racines', 'Velvet', 'Atelier', 'Libre',
-      'Douceur', 'Souvenir', 'Étoile', 'Cœur', 'Hilal', 'Aurore', 'Unité', 'Maman',
+      'Douceur', 'Souvenir', 'Étoile', 'Cœur', 'Hilal', 'Aurore', 'Unité', 'Maman', 'Minuit', 'Envol',
     ])
     for (const t of premium) {
       expect(SITE_THEMES[t.theme]).toBeDefined()

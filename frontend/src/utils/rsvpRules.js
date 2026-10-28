@@ -17,6 +17,9 @@ export function rsvpRules(content = {}) {
     guestListOnly: content.guestListOnly === true,
     yesMessage: typeof content.yesMessage === 'string' ? content.yesMessage.trim() : '',
     noMessage: typeof content.noMessage === 'string' ? content.noMessage.trim() : '',
+    // Case optionnelle (« Je reste pour le cocktail ») et choix « côté » en boutons.
+    extraLabel: typeof content.extraLabel === 'string' ? content.extraLabel.trim().slice(0, 80) : '',
+    sidePills: content.sidePills === true,
   }
 }
 
@@ -28,7 +31,7 @@ const localToday = (now) => {
 // Date limite passée (elle est incluse : on peut encore répondre ce jour-là).
 export const deadlinePassed = (deadline, now = new Date()) => Boolean(deadline) && deadline < localToday(now)
 
-export const deadlineLabel = (deadline) =>
+export const deadlineLabel = (deadline, locale = 'fr-FR') =>
   deadline
-    ? new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(`${deadline}T12:00:00`))
+    ? new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(`${deadline}T12:00:00`))
     : ''

@@ -214,8 +214,8 @@ export function ensureRsvpBlock(blocks) {
 
 // Titre de section proposé par un modèle (« Line-up » pour un concert, « Registre de
 // condoléances » pour un hommage…), sinon le titre par défaut du bloc.
-export function templateBlockHeading(template, type) {
-  const heading = template?.headings?.[type];
+export function templateBlockHeading(template, type, eventTypeId) {
+  const heading = template?.variants?.[eventTypeId]?.headings?.[type] ?? template?.headings?.[type];
   if (typeof heading === "string") return heading;
   // Modèles premium : titres sobres de leurs démos plutôt que les titres par défaut du
   // Builder, pensés pour un mariage (« Le Programme de la Journée »…).
@@ -238,8 +238,8 @@ const PREMIUM_HEADINGS = {
 
 // Contenu propre à un modèle pour un bloc (ex. « La marraine » / « Le parrain » au lieu
 // des deux familles d'un mariage), sans exemple de contenu.
-export function templateBlockContent(template, type) {
-  const content = template?.content?.[type];
+export function templateBlockContent(template, type, eventTypeId) {
+  const content = template?.variants?.[eventTypeId]?.content?.[type] ?? template?.content?.[type];
   return content && typeof content === "object" ? content : {};
 }
 

@@ -135,6 +135,10 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy("public-read", context => RateLimitPartition.GetFixedWindowLimiter(
         ClientIp(context),
         _ => new FixedWindowRateLimiterOptions { PermitLimit = Limit("PublicRead", 60), Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+    // Photos des invités (jusqu’à 10 Mo chacune) : quota plus serré que les formulaires.
+    options.AddPolicy("public-upload", context => RateLimitPartition.GetFixedWindowLimiter(
+        ClientIp(context),
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = Limit("PublicUpload", 12), Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
 });
 var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
     ?? new[] { "http://localhost:5173", "http://localhost:5174" };

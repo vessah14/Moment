@@ -15,6 +15,11 @@ describe('share message', () => {
     )
   })
 
+  it('starts with the event type sentence when there is one', () => {
+    expect(buildShareMessage({ title: 'Wouri Logistics', url: 'https://x.test/e/w', intro: 'Vous êtes invité·e à la cérémonie de présentation des vœux de' }))
+      .toBe('Vous êtes invité·e à la cérémonie de présentation des vœux de Wouri Logistics.\n\nToutes les infos et votre réponse ici : https://x.test/e/w')
+  })
+
   it('skips missing date and place', () => {
     expect(buildShareMessage({ title: 'Fête', url: 'https://x.test/e/f' }))
       .toBe('Fête\n\nToutes les infos et votre réponse ici : https://x.test/e/f')

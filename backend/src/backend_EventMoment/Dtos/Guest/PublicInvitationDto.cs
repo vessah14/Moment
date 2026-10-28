@@ -27,6 +27,7 @@ namespace backend_EventMoment.Models
         public short RsvpAccompanyingCount { get; set; }
         public string? RsvpMessage { get; set; }
         public string? RsvpSide { get; set; }
+        public bool? RsvpExtra { get; set; }
         // Réponse « Peut-être » (présence ni confirmée ni déclinée).
         public bool RsvpMaybe { get; set; }
         // Règles du formulaire réglées par l'organisateur (bloc RSVP).
@@ -60,6 +61,9 @@ namespace backend_EventMoment.Models
         [MaxLength(80)]
         public string? Side { get; set; }
 
+        // Case optionnelle (« Je reste pour le cocktail »), ignorée si l'événement ne la propose pas.
+        public bool? Extra { get; set; }
+
         // « Peut-être » (seulement si l'organisateur le propose) : Confirmed est alors ignoré.
         public bool Maybe { get; set; }
     }
@@ -86,6 +90,8 @@ namespace backend_EventMoment.Models
 
         [MaxLength(80)]
         public string? Side { get; set; }
+
+        public bool? Extra { get; set; }
 
         // « Peut-être » (seulement si l'organisateur le propose) : Confirmed est alors ignoré.
         public bool Maybe { get; set; }

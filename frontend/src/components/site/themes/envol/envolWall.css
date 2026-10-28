@@ -1,0 +1,53 @@
+/* Modèle Envol — mur des vœux projeté (maquette projection.html), prévu pour 1920×1080
+   et proportionnel à la fenêtre. */
+.envol-wall {
+  --ivoire: #F7F2E7; --carte: #FFFDF8; --texte: #1E2433; --doux: #5B6278; --or: #C49A3C; --or-clair: #D9B567;
+  box-sizing: border-box; position: relative; isolation: isolate; overflow: hidden; height: 100svh; display: flex; gap: 6vw; padding: 8vh 6vw;
+  background: var(--org); color: var(--ivoire); font-family: "Geist", system-ui, sans-serif;
+}
+.envol-wall h1, .envol-wall p, .envol-wall figure, .envol-wall blockquote { margin: 0 }
+.envol-wall .envol-seal { position: relative; display: inline-grid; place-items: center; aspect-ratio: 1 }
+.envol-wall .envol-seal svg { position: absolute; inset: 0; width: 100%; height: 100% }
+.envol-wall .envol-seal-logo { position: relative; display: grid; place-items: center; width: 48%; aspect-ratio: 1; border-radius: 50% }
+.envol-wall .envol-seal-logo img { max-width: 72%; max-height: 72%; object-fit: contain }
+.envol-wall .envol-spin { transform-box: fill-box; transform-origin: center; animation: envol-wall-spin 120s linear infinite }
+.envol-wall-wm { position: absolute !important; right: -16vw; top: -20vh; z-index: -1; width: 58vw; opacity: .09 }
+.envol-wall-left { width: 33vw; flex-shrink: 0; display: flex; flex-direction: column; justify-content: space-between }
+.envol-wall-live { display: flex; align-items: center; gap: .6vw; font-size: 1.05vw; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; color: var(--or-clair) }
+.envol-wall-live i { width: .62vw; height: .62vw; border-radius: 50%; background: #E5554B; animation: envol-wall-pulse 1.6s ease-in-out infinite }
+.envol-wall-brand { display: flex; align-items: center; gap: 1.5vw; font-size: 1.15vw; font-weight: 600; letter-spacing: .2em; text-transform: uppercase }
+.envol-wall-seal { width: 8.8vw }
+.envol-wall h1 { margin-top: 1.2vh; font: 600 3.75vw/1.05 "Cormorant Garamond", Georgia, serif }
+.envol-wall-year { margin-top: -1vh !important; font: 700 11.5vw/.95 "Cormorant Garamond", Georgia, serif;
+  background: linear-gradient(100deg, #B8892E 0%, #F1D9A0 42%, #D9B567 52%, #9A6F1E 100%); background-size: 220% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent; animation: envol-wall-shine 6s ease-in-out infinite }
+.envol-wall-send { display: flex; align-items: center; gap: 1.7vw }
+.envol-wall-send img, .envol-wall-qr { width: 9vw; aspect-ratio: 1; border-radius: .8vw; background: var(--ivoire); outline: 1px solid var(--or-clair); outline-offset: .35vw }
+.envol-wall-send b { display: block; font: 600 2vw/1.1 "Cormorant Garamond", Georgia, serif }
+.envol-wall-send span { display: block; font-size: 1.15vw; line-height: 1.4; color: #E4E6EE }
+.envol-wall-send em { display: block; margin-top: .4vh; font-style: normal; font-size: 1.05vw; font-weight: 600; color: var(--or-clair) }
+.envol-wall-right { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 4vh }
+.envol-wall figure { position: relative; padding: 8vh 4.2vw 6vh; border-radius: 1.5vw; background: var(--carte); color: var(--texte); box-shadow: 0 4vh 8vh rgba(0, 0, 0, .25);
+  animation: envol-wall-rise .9s cubic-bezier(.2, .7, .2, 1) both }
+.envol-wall figure::before { content: "\201C"; position: absolute; left: 2.9vw; top: -2.4vh; font: 10.4vw/1 "Cormorant Garamond", Georgia, serif; color: var(--or) }
+.envol-wall blockquote { font: italic 500 3.1vw/1.25 "Cormorant Garamond", Georgia, serif; overflow-wrap: anywhere }
+.envol-wall figcaption { margin-top: 3.3vh; display: flex; align-items: center; gap: .8vw; font-size: 1.35vw }
+.envol-wall figcaption::before { content: ""; width: 2.5vw; height: 2px; background: var(--or) }
+.envol-wall figcaption b { color: var(--org) }
+.envol-wall figcaption span { color: var(--doux) }
+.envol-wall-dots { display: flex; justify-content: center; gap: .73vw }
+.envol-wall-dots i { height: .52vw; width: .52vw; border-radius: 999px; background: rgba(247, 242, 231, .3); transition: width .4s }
+.envol-wall-dots i.on { width: 1.9vw; background: var(--or-clair) }
+.envol-wall-empty { font: italic 500 2.6vw/1.3 "Cormorant Garamond", Georgia, serif; color: #E4E6EE; text-align: center }
+.envol-wall-full { position: absolute; right: 1.5vw; bottom: 1.5vw; display: flex; align-items: center; gap: .5rem; min-height: 40px; padding: 0 1rem;
+  border-radius: 999px; border: 1px solid rgba(247, 242, 231, .25); background: none; color: rgba(247, 242, 231, .8); font: inherit; font-size: .85rem; cursor: pointer; opacity: .4 }
+.envol-wall-full:hover, .envol-wall-full:focus-visible { opacity: 1 }
+.envol-wall-full svg { width: 16px; height: 16px }
+:fullscreen .envol-wall-full { display: none }
+@keyframes envol-wall-spin { to { transform: rotate(360deg) } }
+@keyframes envol-wall-shine { 0%, 100% { background-position: 100% 0 } 50% { background-position: 0 0 } }
+@keyframes envol-wall-pulse { 50% { opacity: .35 } }
+@keyframes envol-wall-rise { from { transform: translateY(24px); opacity: 0 } to { transform: none; opacity: 1 } }
+@media (prefers-reduced-motion: reduce) {
+  .envol-wall .envol-spin, .envol-wall-year, .envol-wall-live i, .envol-wall figure { animation: none }
+}

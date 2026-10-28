@@ -6,13 +6,10 @@ import portraitPhoto from '../../assets/home/souvenir-portrait.jpeg'
 import framePhoto from '../../assets/home/souvenir-frame.jpeg'
 import printPhoto from '../../assets/home/souvenir-print.jpeg'
 import mugPhoto from '../../assets/home/souvenir-mug.jpeg'
+import { tbfDigitalOrderUrl } from '../../data/tbfDigital'
 
 // « Et après la fête ? » : souvenirs imprimés par TBF DIGITAL, commandés sur WhatsApp.
-const WHATSAPP = '237680264060'
-const orderUrl = (product) =>
-  `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(
-    `Bonjour TBF DIGITAL, je souhaite commander : ${product}. Pouvez-vous m'indiquer le prix et le délai ?`,
-  )}`
+const orderUrl = (product) => tbfDigitalOrderUrl(product)
 
 const ACCENT = '#6C4BF4'
 const ACCENT_2 = '#FF7A3D'

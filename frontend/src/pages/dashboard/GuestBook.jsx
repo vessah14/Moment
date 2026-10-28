@@ -1,10 +1,12 @@
-import { FileDown } from 'lucide-react'
+import { AlertTriangle, FileDown, MonitorPlay } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import Avatar from '../../components/ui/Avatar'
 import Button from '../../components/ui/Button'
 import StatusBadge from '../../components/ui/StatusBadge'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import { listEvents } from '../../api/events'
+import { listEventBlocks, updateEventBlock } from '../../api/eventBlocks'
+import { templateFromCustomFields } from '../../utils/templateTheme'
 import { downloadCsv } from '../../utils/csv'
 import {
   createGuestBookEntry,
@@ -44,6 +46,9 @@ export default function GuestBook() {
   const [replyOpenId, setReplyOpenId] = useState(null)
   const [replyDraft, setReplyDraft] = useState('')
   const [replying, setReplying] = useState(false)
+  // Bloc « Livre d'or » de l'événement : réglage de la validation automatique.
+  const [guestBookBlock, setGuestBookBlock] = useState(null)
+  const [savingAuto, setSavingAuto] = useState(false)
 
   useEffect(() => {
     listEvents()
@@ -72,7 +77,51 @@ export default function GuestBook() {
   useEffect(() => {
     if (!selectedEventId) return
     reload(selectedEventId)
+    setGuestBookBlock(null)
+    listEventBlocks(selectedEventId)
+      .then((blocks) => setGuestBookBlock((blocks ?? []).find((b) => b.blockType === "Livre d'or") ?? null))
+      .catch(() => {})
   }, [selectedEventId])
+
+  const selectedEvent = events.find((ev) => ev.id === selectedEventId)
+  // Modèle Envol : le livre d'or est le mur des vœux projeté dans la salle.
+  const wallMode = templateFromCustomFields(selectedEvent?.customFields)?.theme === 'envol'
+  const blockSettings = useMemo(() => {
+    try {
+      return JSON.parse(guestBookBlock?.content || '{}') ?? {}
+    } catch {
+      return {}
+    }
+  }, [guestBookBlock])
+  const autoApprove = blockSettings.autoApprove === true
+
+  // Pendant la cérémonie, les vœux arrivent en continu : la liste se relit toute seule.
+  useEffect(() => {
+    if (!wallMode || !selectedEventId) return
+    const timer = setInterval(() => {
+      listGuestBookEntries(selectedEventId).then((data) => setMessages(data ?? [])).catch(() => {})
+    }, 20000)
+    return () => clearInterval(timer)
+  }, [wallMode, selectedEventId])
+
+  const toggleAutoApprove = async (on) => {
+    if (!guestBookBlock) return
+    setSavingAuto(true)
+    setError('')
+    try {
+      const updated = await updateEventBlock(guestBookBlock.id, {
+        blockType: guestBookBlock.blockType,
+        position: guestBookBlock.position,
+        isVisible: guestBookBlock.isVisible,
+        content: JSON.stringify({ ...blockSettings, autoApprove: on }),
+      })
+      setGuestBookBlock(updated)
+    } catch (err) {
+      setError(err.message || "Le réglage n'a pas pu être enregistré.")
+    } finally {
+      setSavingAuto(false)
+    }
+  }
 
   const filters = useMemo(
     () => FILTERS.map((f) => ({ ...f, count: messages.filter((m) => m.status === f.status).length })),
@@ -162,9 +211,11 @@ export default function GuestBook() {
     <DashboardLayout>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-ink">Livre d'or</h1>
+          <h1 className="text-2xl font-bold text-ink">{wallMode ? 'Vœux à valider' : "Livre d'or"}</h1>
           <p className="mt-1.5 text-sm text-muted">
-            {messages.length} messages · {filters[0].count} en attente
+            {wallMode
+              ? "Aucun vœu ne passe à l'écran de la salle sans votre accord."
+              : `${messages.length} messages · ${filters[0].count} en attente`}
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -179,6 +230,17 @@ export default function GuestBook() {
               </option>
             ))}
           </select>
+          {selectedEvent?.slug && selectedEvent.status === 'Publie' && (
+            <a
+              href={`/e/${encodeURIComponent(selectedEvent.slug)}/${wallMode ? 'projection' : 'mur'}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-semibold text-ink hover:border-brand-purple"
+            >
+              <MonitorPlay className="h-4 w-4" />
+              Ouvrir l'écran de la salle
+            </a>
+          )}
           <Button variant="outline" onClick={handleExport} disabled={messages.length === 0}>
             <FileDown className="h-4 w-4" />
             Exporter
@@ -193,6 +255,24 @@ export default function GuestBook() {
         <p className="mt-6 rounded-lg border border-danger/30 bg-danger/10 px-4 py-2.5 text-sm text-danger">
           {error}
         </p>
+      )}
+
+      {guestBookBlock && (
+        <label className="mt-6 flex min-h-11 cursor-pointer items-center gap-3 text-sm text-ink">
+          <input
+            type="checkbox"
+            checked={autoApprove}
+            disabled={savingAuto}
+            onChange={(e) => toggleAutoApprove(e.target.checked)}
+            className="h-4 w-4 rounded border-border accent-brand-purple"
+          />
+          <span>
+            Valider automatiquement les messages sans alerte
+            <span className="block text-xs text-faint">
+              Un message qui contient un numéro de téléphone, un lien ou un mot signalé attend toujours votre accord.
+            </span>
+          </span>
+        </label>
       )}
 
       {formOpen && (
@@ -225,6 +305,16 @@ export default function GuestBook() {
         </form>
       )}
 
+      {wallMode ? (
+        <WishColumns
+          loading={loading}
+          messages={messages}
+          onShow={(id) => applyAction(id, 'Publie')}
+          onRefuse={(id) => applyAction(id, 'Masque')}
+          onRemove={(id) => applyAction(id, 'EnAttente')}
+        />
+      ) : (
+      <>
       <div className="mt-8 flex flex-wrap gap-3">
         {filters.map((f) => (
           <button
@@ -261,7 +351,10 @@ export default function GuestBook() {
                 <div className="flex items-center gap-3">
                   <Avatar name={msg.authorName} />
                   <div>
-                    <p className="font-medium text-ink">{msg.authorName}</p>
+                    <p className="font-medium text-ink">
+                      {msg.authorName}
+                      {msg.service && <span className="ml-1.5 text-xs font-normal text-faint">· {msg.service}</span>}
+                    </p>
                     <p className="text-xs text-faint">
                       {new Date(msg.createdAt).toLocaleString('fr-FR')}
                     </p>
@@ -270,6 +363,7 @@ export default function GuestBook() {
                 <StatusBadge status={STATUS_LABELS[msg.status]} />
               </div>
 
+              {msg.alert && <AlertChip text={msg.alert} />}
               <p className="mt-3 text-sm text-muted">{msg.message}</p>
 
               {msg.reply && replyOpenId !== msg.id && (
@@ -346,6 +440,78 @@ export default function GuestBook() {
             </div>
           ))}
       </div>
+      </>
+      )}
     </DashboardLayout>
+  )
+}
+
+function AlertChip({ text }) {
+  return (
+    <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-brand-orange/15 px-3 py-1 text-xs font-semibold text-brand-orange">
+      <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
+      {text}
+    </span>
+  )
+}
+
+const timeOf = (iso) =>
+  new Intl.DateTimeFormat('fr-FR', { timeZone: 'Africa/Douala', hour: '2-digit', minute: '2-digit' }).format(new Date(iso))
+
+// Mur des vœux (modèle Envol) : à gauche les vœux à valider, à droite ceux qui passent à
+// l'écran de la salle.
+function WishColumns({ loading, messages, onShow, onRefuse, onRemove }) {
+  const pending = messages.filter((m) => m.status === 'EnAttente' || m.status === 'Signale')
+  const onScreen = messages.filter((m) => m.status === 'Publie')
+  return (
+    <div className="mt-8 grid items-start gap-6 lg:grid-cols-2">
+      <section className="space-y-3" aria-labelledby="wishes-pending">
+        <h2 id="wishes-pending" className="text-sm font-semibold text-ink">
+          À valider · {pending.length}
+        </h2>
+        {loading && <p className="text-sm text-faint">Chargement…</p>}
+        {!loading && pending.length === 0 && (
+          <p className="rounded-xl border border-dashed border-border-soft py-8 text-center text-sm text-faint">Tout est validé.</p>
+        )}
+        {pending.map((msg) => (
+          <article key={msg.id} className={`rounded-xl border bg-surface p-4 ${msg.alert ? 'border-brand-orange/60' : 'border-border-soft'}`}>
+            {msg.alert && <AlertChip text={msg.alert} />}
+            <p className="mt-2 text-[15px] text-ink">« {msg.message} »</p>
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-faint">
+              <span>
+                {[msg.authorName, msg.service, timeOf(msg.createdAt)].filter(Boolean).join(' · ')}
+              </span>
+              <span className="flex gap-2">
+                <button type="button" onClick={() => onRefuse(msg.id)} className="min-h-9 rounded-lg border border-border px-3 font-semibold text-muted hover:border-danger hover:text-danger">
+                  Refuser
+                </button>
+                <button type="button" onClick={() => onShow(msg.id)} className="min-h-9 rounded-lg bg-brand-purple px-3 font-semibold text-white hover:opacity-90">
+                  Afficher à l'écran
+                </button>
+              </span>
+            </div>
+          </article>
+        ))}
+      </section>
+      <section className="space-y-3" aria-labelledby="wishes-screen">
+        <h2 id="wishes-screen" className="text-sm font-semibold text-ink">
+          Sur l'écran de la salle · {onScreen.length}
+        </h2>
+        {!loading && onScreen.length === 0 && (
+          <p className="rounded-xl border border-dashed border-border-soft py-8 text-center text-sm text-faint">Aucun vœu à l'écran pour l'instant.</p>
+        )}
+        {onScreen.map((msg) => (
+          <article key={msg.id} className="flex items-start gap-3 rounded-xl bg-[#0F0B2E] p-4 text-[#EDEBFA]">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm">« {msg.message} »</p>
+              <p className="mt-1 text-xs text-[#A9A4C9]">{[msg.authorName, msg.service].filter(Boolean).join(' · ')}</p>
+            </div>
+            <button type="button" onClick={() => onRemove(msg.id)} className="min-h-9 shrink-0 rounded-lg border border-white/25 px-3 text-xs font-semibold hover:bg-white/10">
+              Retirer de l'écran
+            </button>
+          </article>
+        ))}
+      </section>
+    </div>
   )
 }

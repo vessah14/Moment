@@ -21,6 +21,17 @@ namespace backend_EventMoment.Models
         // Arrivée le jour J (null tant que l'invité n'a pas été pointé au check-in).
         public DateTimeOffset? CheckedInAt { get; set; }
 
+        // Vrai quand un scan retrouve un invité déjà pointé (écran d'accueil : « Déjà enregistré »).
+        public bool AlreadyCheckedIn { get; set; }
+
+        // Dernière réponse : choix « côté » (service, filière…) et case optionnelle (cocktail).
+        public string? Side { get; set; }
+        public bool? Extra { get; set; }
+
+        // Lien personnel ouvert par l'invité (« Vue ») ; invitation partagée par WhatsApp ou SMS.
+        public DateTimeOffset? InvitationOpenedAt { get; set; }
+        public DateTimeOffset? InvitationSharedAt { get; set; }
+
         // Lien d'invitation par e-mail : envoyé le…, en attente (événement pas encore
         // publié ou envoi en cours), ou dernière erreur d'envoi. Tout à null : jamais demandé.
         public DateTimeOffset? InvitationSentAt { get; set; }

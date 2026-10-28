@@ -9,6 +9,7 @@ const BLOCKS = [
   'Galerie',
   'Vidéo',
   'Intervenants',
+  'Distinctions',
   'Rebours',
   'RSVP',
   'Localisation',

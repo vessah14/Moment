@@ -4,7 +4,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout'
 import Button from '../../components/ui/Button'
 import { listEvents } from '../../api/events'
 import { listEventLocations } from '../../api/eventLocations'
-import { listGuests } from '../../api/guests'
+import { listGuests, markInvitationShared } from '../../api/guests'
 import { createCampaign, listCampaigns } from '../../api/campaigns'
 import {
   guestsForAudience,
@@ -155,6 +155,8 @@ export default function Invitations () {
     if (!selectedGuest) return
     const ids = new Set(sentIds).add(selectedGuest.id)
     saveSent(ids)
+    // Noté aussi sur le serveur : statut « Envoyée » visible depuis tous les appareils.
+    markInvitationShared(selectedGuest.id).catch(() => {})
     const next = nextUnsent(shareGuests, ids, selectedGuest.id)
     if (next) setSelectedGuestId(next.id)
   }

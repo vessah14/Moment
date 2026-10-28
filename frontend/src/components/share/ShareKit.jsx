@@ -12,10 +12,10 @@ const POSTERS = [
 
 // Kit de partage WhatsApp d'un événement publié : message prêt (modifiable), envoi direct,
 // et deux images générées par l'API. Le partage natif transmet l'affiche et le message.
-export default function ShareKit({ slug, title, date, time, location }) {
+export default function ShareKit({ slug, title, date, time, location, intro }) {
   const toast = useToast()
   const url = eventShareUrl(slug)
-  const [message, setMessage] = useState(() => buildShareMessage({ title, date, time, location, url }))
+  const [message, setMessage] = useState(() => buildShareMessage({ title, date, time, location, url, intro }))
 
   const copy = async () => {
     try {

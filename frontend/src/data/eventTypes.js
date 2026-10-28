@@ -3,7 +3,11 @@
 //   organisation) ou 'optional' (événement privé : les initiales suffisent) ;
 // - templates : modèles premium conseillés (theme de data/templates.js), le premier par défaut ;
 // - categoryCode : catégorie enregistrée côté serveur (table event_categories) ;
-// - date : jour fixe (MM-JJ) proposé pour les fêtes qui reviennent chaque année.
+// - date : jour fixe (MM-JJ) proposé pour les fêtes qui reviennent chaque année ;
+// - kicker : surtitre de la page, au lieu du libellé du type ;
+// - shareIntro : début du message WhatsApp, suivi du nom de l'événement.
+
+const VOEUX_INTRO = 'Vous êtes invité·e à la cérémonie de présentation des vœux de'
 
 export const EVENT_UNIVERSES = [
   { id: 'prives', label: 'Événements privés', icon: 'heart', hint: 'Mariages, anniversaires, baptêmes' },
@@ -29,10 +33,13 @@ export const EVENT_TYPES = [
   { id: 'graduation', univers: 'ecoles', label: 'Graduation et remise de diplômes', icon: 'cap', logo: 'required', categoryCode: 'graduation', templates: ['toge'] },
   { id: 'scolaire', univers: 'ecoles', label: 'Journée culturelle et événement étudiant', icon: 'school', logo: 'required', categoryCode: 'evenement_scolaire', templates: ['campus'] },
   { id: 'portes-ouvertes', univers: 'ecoles', label: 'Rentrée et journée portes ouvertes', icon: 'school', logo: 'required', categoryCode: 'evenement_scolaire', templates: ['campus', 'summit'] },
+  { id: 'voeux-ecole', univers: 'ecoles', label: "Présentation des vœux de l'établissement", kicker: 'Présentation des vœux', icon: 'school', logo: 'required', categoryCode: 'evenement_scolaire', templates: ['envol', 'campus'], shareIntro: VOEUX_INTRO },
   { id: 'kermesse', univers: 'ecoles', label: "Kermesse et fête de fin d'année", icon: 'party', logo: 'required', categoryCode: 'evenement_scolaire', templates: ['campus', 'fiesta'] },
 
   { id: 'conference', univers: 'entreprises', label: 'Conférence, séminaire et atelier', icon: 'briefcase', logo: 'required', categoryCode: 'conference', templates: ['summit'] },
-  { id: 'entreprise', univers: 'entreprises', label: "Événement d'entreprise", icon: 'award', logo: 'required', categoryCode: 'evenement_entreprise', templates: ['horizon'] },
+  { id: 'entreprise', univers: 'entreprises', label: "Événement d'entreprise", icon: 'award', logo: 'required', categoryCode: 'evenement_entreprise', templates: ['horizon', 'envol'] },
+  { id: 'voeux', univers: 'entreprises', label: 'Présentation des vœux en entreprise', kicker: 'Présentation des vœux', icon: 'award', logo: 'required', categoryCode: 'evenement_entreprise', templates: ['envol', 'horizon'], shareIntro: VOEUX_INTRO },
+  { id: 'voeux-administration', univers: 'entreprises', label: 'Présentation des vœux en administration', kicker: 'Présentation des vœux', icon: 'award', logo: 'required', categoryCode: 'evenement_entreprise', templates: ['envol'], shareIntro: VOEUX_INTRO },
   { id: 'lancement', univers: 'entreprises', label: 'Lancement de produit, salon ou foire', icon: 'sparkle', logo: 'required', categoryCode: 'evenement_entreprise', templates: ['horizon', 'summit'] },
   { id: 'concert', univers: 'entreprises', label: 'Concert et spectacle', icon: 'music', logo: 'suggested', categoryCode: 'concert', templates: ['live'] },
   { id: 'sport', univers: 'entreprises', label: 'Compétition et événement sportif', icon: 'trophy', logo: 'suggested', categoryCode: 'competition_sportive', templates: ['arena'] },
@@ -40,7 +47,7 @@ export const EVENT_TYPES = [
   { id: 'autre', univers: 'entreprises', label: 'Autre', icon: 'sparkle', logo: 'suggested', categoryCode: 'autre', templates: ['libre'] },
 
   { id: 'noel', univers: 'fetes', label: 'Noël et arbre de Noël', icon: 'gift', logo: 'suggested', categoryCode: 'fetes_saisons', date: '12-25', templates: ['noel'] },
-  { id: 'nouvel-an', univers: 'fetes', label: 'Nouvel An et réveillon', icon: 'party', logo: 'optional', categoryCode: 'fetes_saisons', date: '12-31', templates: ['velvet'] },
+  { id: 'nouvel-an', univers: 'fetes', label: 'Nouvel An et réveillon', icon: 'party', logo: 'optional', categoryCode: 'fetes_saisons', date: '12-31', templates: ['minuit', 'velvet'] },
   { id: 'saint-valentin', univers: 'fetes', label: 'Saint-Valentin', icon: 'heart', logo: 'suggested', categoryCode: 'fetes_saisons', date: '02-14', templates: ['coeur'] },
   { id: 'aid', univers: 'fetes', label: 'Aïd el-Fitr et Tabaski', icon: 'moon', logo: 'optional', categoryCode: 'fetes_saisons', templates: ['hilal'] },
   { id: 'paques', univers: 'fetes', label: 'Pâques', icon: 'church', logo: 'suggested', categoryCode: 'fetes_saisons', templates: ['aurore'] },

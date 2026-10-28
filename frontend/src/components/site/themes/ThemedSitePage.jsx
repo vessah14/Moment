@@ -16,6 +16,7 @@ import {
   MapPin,
   Music,
   Navigation,
+  Play,
   Share2,
   Star,
   Ticket,
@@ -31,10 +32,11 @@ import { eventShareUrl, mediaUrl } from '../../../api/client'
 import { signPublicGuestBook } from '../../../api/publicEvents'
 import { safeBlockImagePath, safeCoverPath, siteBlockDomId } from '../../../utils/sitePage'
 import BlockToolbar from '../BlockToolbar'
-import { DressCodeModule, FamiliesModule, GiftModule, GuestPass, PartnersModule, RsvpModule, SeatingModule, SpeakersModule, VideoModule } from '../modules/SiteModules'
+import { tbfDigitalOrderUrl } from '../../../data/tbfDigital'
+import { DressCodeModule, FamiliesModule, GiftModule, GuestPass, GuestPhotoUpload, HonoursModule, PartnersModule, RsvpModule, SeatingModule, SpeakersModule, VideoModule } from '../modules/SiteModules'
 import { parseVideoUrl } from '../../../utils/videoEmbed'
 import { usableColors } from '../../../utils/mobileMoney'
-import { usablePartners, usablePeople, usableVenues } from '../../../utils/blockLists'
+import { usableHonours, usablePartners, usablePeople, usableVenues } from '../../../utils/blockLists'
 import { burst, createMusic, createParticles } from './effects'
 import { motifStyle } from './motifs'
 import { loadThemeFonts } from './themeFonts'
@@ -44,6 +46,10 @@ import { invitationGreeting, invitationParagraphs, invitationWords } from '../..
 import { ILLUS } from '../../../utils/illus'
 import { invitationFor } from '../../../data/invitations'
 import { googleCalendarUrl, handleAddToCalendar } from '../../../utils/calendar'
+import { usableSides } from '../../../data/rsvpSides'
+import { createGuestTicketQr } from '../../../utils/ticketQr'
+import Sceau, { BandeGuillochee } from './envol/Sceau'
+import { identity, makeTranslator } from './envol/envolI18n'
 import './themes.css'
 
 // Rendu « premium » du site d'un événement (Noor, Bloom, Toghu, Ndop, Fiesta,
@@ -60,6 +66,7 @@ const NAV_LABELS = {
   "Livre d'or": "Livre d'or",
   Billetterie: 'Billets',
   Intervenants: 'Intervenants',
+  Distinctions: 'Distinctions',
   FAQ: 'FAQ',
 }
 
@@ -74,6 +81,7 @@ const EYEBROWS = {
   Billetterie: 'Billets',
   FAQ: 'Questions',
   Intervenants: 'Avec nous',
+  Distinctions: 'À l’honneur',
   Vidéo: 'En images',
   'Plan de table': 'Plan de table',
   Familles: "L'alliance",
@@ -139,32 +147,78 @@ function computeRemaining(target) {
   return [Math.floor(s / 86400), Math.floor((s % 86400) / 3600), Math.floor((s % 3600) / 60), s % 60]
 }
 
-function Countdown({ target, label }) {
+const isSameDay = (target) => new Date(target).toDateString() === new Date().toDateString()
+
+const COUNTDOWN_UNITS = ['Jours', 'Heures', 'Minutes', 'Secondes']
+
+function Countdown({ target, label, todayLabel, final = false, done = null, onReach, units = 4, t = identity }) {
   const [parts, setParts] = useState(() => computeRemaining(target))
+  const [today, setToday] = useState(() => isSameDay(target))
+  const onReachRef = useRef(onReach)
   useEffect(() => {
-    const id = setInterval(() => setParts(computeRemaining(target)), 1000)
+    onReachRef.current = onReach
+  }, [onReach])
+  useEffect(() => {
+    let running = computeRemaining(target) !== null
+    const id = setInterval(() => {
+      const next = computeRemaining(target)
+      // Passage à zéro pendant que l'invité regarde la page (et pas à l'ouverture).
+      if (running && !next) onReachRef.current?.()
+      running = next !== null
+      setParts(next)
+      setToday(isSameDay(target))
+    }, 1000)
     return () => clearInterval(id)
   }, [target])
 
+  const lastMinute = final && parts && parts[0] === 0 && parts[1] === 0 && parts[2] === 0
+
   return (
-    <div className="countdown">
-      <div className="label">{label || 'Le grand jour dans'}</div>
-      {parts ? (
+    <div className={`countdown${lastMinute ? ' cd-final' : ''}${!parts && done ? ' cd-reached' : ''}`}>
+      {!(lastMinute || (!parts && done)) && <div className="label">{t((today && todayLabel) || label || 'Le grand jour dans')}</div>}
+      {lastMinute ? (
+        <div className="cd-last" aria-live="polite">
+          <small>Plus que</small>
+          <span key={parts[3]}>{parts[3]}</span>
+          <small>{parts[3] > 1 ? 'secondes' : 'seconde'}</small>
+        </div>
+      ) : !parts && done ? (
+        <div className="cd-new">
+          <small>{done.kicker}</small>
+          <strong>{done.title}</strong>
+          {done.sub && <em>{done.sub}</em>}
+        </div>
+      ) : parts ? (
         <div className="cd">
-          {['Jours', 'Heures', 'Minutes', 'Secondes'].map((label, i) => (
+          {COUNTDOWN_UNITS.slice(0, units).map((label, i) => (
             <div key={label}>
               <div className="num">
                 <span key={parts[i]}>{String(parts[i]).padStart(2, '0')}</span>
               </div>
-              <small>{label}</small>
+              <small>{t(label)}</small>
             </div>
           ))}
         </div>
       ) : (
-        <p className="cd-done">Merci d'avoir célébré avec nous</p>
+        <p className="cd-done">{t("Merci d'avoir célébré avec nous")}</p>
       )}
     </div>
   )
+}
+
+// QR d'entrée de l'invité (même contenu que son pass : l'identifiant d'invité).
+function GuestQr({ guestId }) {
+  const [src, setSrc] = useState('')
+  useEffect(() => {
+    let cancelled = false
+    createGuestTicketQr(guestId)
+      .then((url) => !cancelled && setSrc(url))
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [guestId])
+  return src ? <img className="inv-qr" src={src} alt="QR code d’entrée" /> : <span className="inv-qr" />
 }
 
 function SectionHead({ eyebrow, title, ornament }) {
@@ -231,9 +285,11 @@ function Lightbox({ photos, index, onClose, onMove }) {
 }
 
 // Livre d'or : public -> envoi en modération ; Builder -> message de l'organisateur publié.
-function GuestBookBox({ slug, onSubmitOverride }) {
+// Mur des vœux (Envol) : services = choix du formulaire de réponse, en boutons à toucher.
+function GuestBookBox({ slug, onSubmitOverride, labels = {}, services = [], serviceLabel = '', t = identity }) {
   const [name, setName] = useState('')
   const [message, setMessage] = useState('')
+  const [service, setService] = useState('')
   const [state, setState] = useState('idle')
   const [error, setError] = useState('')
 
@@ -244,30 +300,43 @@ function GuestBookBox({ slug, onSubmitOverride }) {
     setState('sending')
     setError('')
     try {
-      const dto = { authorName: name.trim(), message: message.trim() }
+      const dto = { authorName: name.trim(), message: message.trim(), ...(service && { service }) }
       await (onSubmitOverride ? onSubmitOverride(dto) : signPublicGuestBook(slug, dto))
       setName('')
       setMessage('')
+      setService('')
       setState('sent')
     } catch (err) {
-      setError(err.status === 429 ? 'Trop de messages envoyés. Réessayez dans une minute.' : err.message || "L'envoi a échoué.")
+      setError(err.status === 429 ? t('Trop de messages envoyés. Réessayez dans une minute.') : err.message || t("L'envoi a échoué."))
       setState('idle')
     }
   }
 
   return (
     <div className="rv" onClick={(e) => e.stopPropagation()}>
-      <form className="gb-form" onSubmit={submit}>
-        <input value={name} onChange={(e) => setName(e.target.value)} maxLength={150} placeholder="Votre prénom" aria-label="Votre prénom" required />
-        <textarea value={message} onChange={(e) => setMessage(e.target.value)} maxLength={2000} rows={1} placeholder="Votre message" aria-label="Votre message" required />
+      <form className={`gb-form ${services.length ? 'gb-services' : ''}`} onSubmit={submit}>
+        <input value={name} onChange={(e) => setName(e.target.value)} maxLength={150} placeholder={t('Votre prénom')} aria-label={t('Votre prénom')} required />
+        <textarea value={message} onChange={(e) => setMessage(e.target.value)} maxLength={2000} rows={1} placeholder={t(labels.placeholder ?? 'Votre message')} aria-label={t('Votre message')} required />
+        {services.length > 0 && (
+          <div className="field gb-service">
+            <span>{t(serviceLabel || 'Votre service')}</span>
+            <div className="pills" role="group" aria-label={t(serviceLabel || 'Votre service')}>
+              {services.map((s) => (
+                <button key={s} type="button" className="pill" aria-pressed={service === s} onClick={() => setService(service === s ? '' : s)}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <button className="btn" type="submit" disabled={state === 'sending'}>
           <Heart />
-          {state === 'sending' ? 'Envoi…' : 'Publier'}
+          {state === 'sending' ? t('Envoi…') : t(labels.button ?? 'Publier')}
         </button>
       </form>
       {state === 'sent' && (
-        <p className="form-note muted">
-          {onSubmitOverride ? 'Message publié dans votre livre d’or.' : "Merci ! Votre message apparaîtra après validation par l'organisateur."}
+        <p className="form-note muted" role="status">
+          {onSubmitOverride ? 'Message publié dans votre livre d’or.' : t("Merci ! Votre message apparaîtra après validation par l'organisateur.")}
         </p>
       )}
       {error && <p className="form-note err">{error}</p>}
@@ -323,6 +392,10 @@ export default function ThemedSitePage({
   const palette = themePalette(theme, heroStyle.palette)
   const motif = themeMotif(theme, heroStyle.motif)
   const [hashGuest] = useState(() => (fullPage ? guestFromHash() : ''))
+  // Bouton FR | EN (modèles qui ont une traduction) : textes du modèle traduits, ceux de
+  // l'organisateur laissés tels quels.
+  const [lang, setLang] = useState('fr')
+  const t = useMemo(() => makeTranslator(theme.translations, lang), [theme.translations, lang])
   const guestFull = data.invitation?.guestFullName?.trim() || hashGuest
   const guest = guestFull.split(' ')[0]
 
@@ -379,10 +452,16 @@ export default function ThemedSitePage({
       ? (theme.bigFor?.(validStart) ?? null)
       : null
   const dateLong = validStart
-    ? capitalize(validStart.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))
+    ? capitalize(validStart.toLocaleDateString(t.locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))
     : ''
   const timeLabel = validStart ? formatTime(data.eventDateTime) : ''
+  // Année dorée de l'en-tête officiel (Envol), sauf si le surtitre la donne déjà.
+  const heroYear = theme.heroSeal && validStart && !String(heroStyle.kicker ?? '').includes(String(validStart.getFullYear()))
+    ? String(validStart.getFullYear())
+    : ''
   const has = (block) => blocks.includes(block)
+  // Moment visé par le compte à rebours : le début, ou celui du modèle (minuit pour Minuit).
+  const countdownTarget = (validStart && theme.countdownTo?.(validStart)) || validStart
 
   // ---------- Effets du site public ----------
   // Défilement bloqué tant que l'ouverture est affichée.
@@ -483,6 +562,16 @@ export default function ThemedSitePage({
     burst(fxRef.current, r.left + r.width / 2, r.top + 40, theme.burst, palette.particleColors)
   }
 
+  // Fin du compte à rebours pendant la visite (Minuit) : trois salves de confettis.
+  const celebrateCountdown = () => {
+    if (!motion || !fxRef.current || theme.burst === 'none') return
+    const W = window.innerWidth
+    const H = window.innerHeight
+    ;[[0.5, 0.35, 0], [0.22, 0.45, 450], [0.78, 0.4, 900]].forEach(([x, y, delay]) =>
+      setTimeout(() => fxRef.current && burst(fxRef.current, W * x, H * y, 'confetti', palette.particleColors), delay),
+    )
+  }
+
   const scrollTo = (block) => (e) => {
     e.preventDefault()
     document.getElementById(siteBlockDomId(block))?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -518,15 +607,51 @@ export default function ThemedSitePage({
 
   const headFor = (block, content) => (
     <SectionHead
-      eyebrow={EYEBROWS[block]}
-      title={content.showHeading === false && block !== 'RSVP' ? null : content.heading || EYEBROWS[block]}
+      eyebrow={t(EYEBROWS[block])}
+      title={content.showHeading === false && block !== 'RSVP' ? null : t(content.heading || EYEBROWS[block])}
       ornament={theme.ornament}
     />
   )
 
+  // Carton d'invitation (Envol) : double filet or, texte officiel, nom de l'invité et son
+  // QR d'entrée quand la page est ouverte depuis son lien personnel.
+  const renderInvitationCard = (block, index, content) => {
+    const paragraphs = invitationParagraphs(content.body)
+    const signature = (content.signature ?? '').trim()
+    if (!editable && !paragraphs.length) return null
+    const guestId = data.invitation?.guestId
+    return sectionShell(
+      block,
+      index,
+      <div className="inv-card rv">
+        <div className="inv-card-in">
+          <p className="kicker">{t('Invitation')}</p>
+          {paragraphs.length
+            ? paragraphs.map((p, i) => (
+                <p key={i} className={i === 0 ? 'inv-card-text' : 'muted'}>
+                  {p}
+                </p>
+              ))
+            : placeholder('Écrivez le texte officiel de votre invitation dans l’onglet Contenu, à droite.')}
+          <div className="orn" aria-hidden="true" dangerouslySetInnerHTML={{ __html: theme.ornament }} />
+          {(guestFull || editable) && (
+            <div>
+              <p className="muted inv-card-for">{t('Invitation personnelle')}</p>
+              <p className="inv-card-name">{guestFull || 'Nom de l’invité'}</p>
+            </div>
+          )}
+          {guestId ? <GuestQr guestId={guestId} /> : editable && <span className="inv-qr ph-qr">QR</span>}
+          {(guestId || editable) && <p className="muted inv-card-qr">{t('QR code d’entrée, à présenter à l’accueil')}</p>}
+          {signature && <p className="sig">{signature}</p>}
+        </div>
+      </div>,
+      'inv-card-section',
+    )
+  }
+
   const renderBlock = (block, index) => {
     const content = blockContent[block] ?? {}
-    const body = (content.body ?? '').trim()
+    const body = t((content.body ?? '').trim())
 
     switch (block) {
       case 'Rebours':
@@ -536,6 +661,7 @@ export default function ThemedSitePage({
           : null
 
       case 'Invitation': {
+        if (theme.invitationCard) return renderInvitationCard(block, index, content)
         const paragraphs = invitationParagraphs(content.body)
         const greeting = invitationGreeting(content, guest)
         const signature = (content.signature ?? '').trim()
@@ -719,7 +845,9 @@ export default function ThemedSitePage({
         const photos = data.galleryPhotos ?? []
         // Sans photo : vignettes illustrées du modèle (légendes de la démo, s'il y en a).
         const tiles = photos.length ? [] : artTiles
-        if (!photos.length && !editable && !tiles.length) return null
+        // Album des invités : ouvert sauf si l'organisateur l'a fermé (guestUploads: false).
+        const guestUploads = !editable && Boolean(data.slug) && content.guestUploads !== false
+        if (!photos.length && !editable && !tiles.length && !guestUploads) return null
         return sectionShell(
           block,
           index,
@@ -770,7 +898,15 @@ export default function ThemedSitePage({
                   ? tiles.length
                     ? 'Ces illustrations attendent vos photos : elles disparaissent dès la première photo publiée.'
                     : "La galerie n'apparaîtra sur le site qu'avec au moins une photo."
-                  : 'Les photos de l’événement apparaîtront ici.'}
+                  : t('Les photos de l’événement apparaîtront ici.')}
+              </p>
+            )}
+            {guestUploads && <GuestPhotoUpload themed slug={data.slug} />}
+            {theme.printOffer && (
+              <p className="form-note muted print-offer rv" style={{ textAlign: 'center' }}>
+                <a href={tbfDigitalOrderUrl(theme.printOffer.product, data.slug ? eventShareUrl(data.slug) : '')} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                  {t(theme.printOffer.label)}
+                </a>
               </p>
             )}
           </>,
@@ -785,19 +921,29 @@ export default function ThemedSitePage({
           <>
             {headFor(block, content)}
             <div className="narrow" style={{ maxWidth: 'none' }}>
-              <GuestBookBox slug={data.slug} onSubmitOverride={editable ? editor.onAddGuestBookEntry : data.submitGuestBook} />
+              {body && <p className="lead-text rv" style={{ textAlign: 'center', marginBottom: '1.5rem' }}>{body}</p>}
+              <GuestBookBox
+                slug={data.slug}
+                onSubmitOverride={editable ? editor.onAddGuestBookEntry : data.submitGuestBook}
+                labels={theme.guestbook}
+                services={theme.guestbook?.services ? usableSides(blockContent.RSVP?.sides) : []}
+                serviceLabel={blockContent.RSVP?.sideLabel}
+                t={t}
+              />
               {entries.length > 0 ? (
                 <div className="gb">
                   {entries.map((entry, i) => (
                     <article key={`${entry.authorName}-${i}`}>
                       <p>{entry.message}</p>
-                      <b>{entry.authorName}</b>
+                      <b>{entry.service ? `${entry.authorName} · ${entry.service}` : entry.authorName}</b>
                       {entry.reply && <p className="reply">{entry.reply}</p>}
                     </article>
                   ))}
                 </div>
-              ) : (
+              ) : editable ? (
                 placeholder('Les messages validés de vos invités apparaîtront ici.')
+              ) : (
+                theme.guestbook?.empty && <p className="form-note muted" style={{ textAlign: 'center' }}>{t(theme.guestbook.empty)}</p>
               )}
             </div>
           </>,
@@ -811,6 +957,7 @@ export default function ThemedSitePage({
           <div className="narrow">
             {headFor(block, { ...content, heading: content.heading || 'Serez-vous des nôtres ?' })}
             <RsvpModule
+              t={t}
               themed
               editable={editable}
               invitation={data.invitation}
@@ -851,20 +998,42 @@ export default function ThemedSitePage({
           index,
           <>
             {headFor(block, content)}
-            {filled ? <DressCodeModule themed content={content} /> : placeholder('Décrivez la tenue et ses couleurs dans l’onglet Contenu, à droite.')}
+            {filled ? <DressCodeModule themed content={{ ...content, title: t(content.title), body }} /> : placeholder('Décrivez la tenue et ses couleurs dans l’onglet Contenu, à droite.')}
           </>,
         )
       }
 
       case 'Vidéo': {
         const filled = Boolean(parseVideoUrl(content.url))
-        if (!filled && !editable) return null
+        // Direct annoncé (modèle Envol) : la section reste visible avant que le lien existe,
+        // avec la date du direct et l'heure de début.
+        const live = Boolean(theme.live && content.live)
+        if (!filled && !editable && !live) return null
         return sectionShell(
           block,
           index,
           <>
+            {live && validStart && (
+              <p className="live-badge rv">
+                <i aria-hidden="true" />
+                {t(theme.live.badge)} {validStart.toLocaleDateString(t.locale, { day: 'numeric', month: 'long' })}
+              </p>
+            )}
             {headFor(block, content)}
-            {filled ? <VideoModule themed content={content} /> : placeholder('Collez le lien YouTube ou Facebook de la vidéo ou du direct dans l’onglet Contenu, à droite.')}
+            {body && (filled || live) && <p className="lead-text narrow rv" style={{ marginBottom: '1.5rem' }}>{body}</p>}
+            {filled ? (
+              <VideoModule themed content={content} />
+            ) : live ? (
+              <div className="live-wait rv">
+                <Play aria-hidden="true" />
+                <span>
+                  {t(theme.live.waiting)} {timeLabel}
+                </span>
+                {editable && <small>Collez le lien YouTube ou Facebook du direct dans l’onglet Contenu, à droite.</small>}
+              </div>
+            ) : (
+              placeholder('Collez le lien YouTube ou Facebook de la vidéo ou du direct dans l’onglet Contenu, à droite.')
+            )}
           </>,
         )
       }
@@ -953,6 +1122,20 @@ export default function ThemedSitePage({
         )
       }
 
+      case 'Distinctions': {
+        const people = usableHonours(content.people)
+        if (!people.length && !body && !editable) return null
+        return sectionShell(
+          block,
+          index,
+          <>
+            {headFor(block, content)}
+            {body && <p className="lead-text narrow rv" style={{ marginBottom: '2rem' }}>{body}</p>}
+            {people.length ? <HonoursModule themed people={people} /> : !body && placeholder('Ajoutez les personnes honorées dans l’onglet Contenu, à droite.')}
+          </>,
+        )
+      }
+
       case 'Partenaires': {
         const partners = usablePartners(content.partners)
         if (!partners.length && !editable) return null
@@ -1002,6 +1185,7 @@ export default function ThemedSitePage({
             onClick={selectable(block).onClick}
           >
             {toolbar(block, index)}
+            {theme.footerBand && <BandeGuillochee />}
             <div className="names">
               {titleInfo.names.length === 2 ? (
                 <>
@@ -1027,13 +1211,13 @@ export default function ThemedSitePage({
                 href={`https://wa.me/?text=${encodeURIComponent(`${heroStyle.title}${dateLong ? ` · ${dateLong}` : ''}. Toutes les infos : ${eventShareUrl(data.slug)}`)}`}
               >
                 <Share2 />
-                Partager sur WhatsApp
+                {t('Partager sur WhatsApp')}
               </a>
             )}
             <div className="links">
               {data.slug && <Link to={`/cadeaux/${data.slug}`}>Liste de cadeaux</Link>}
-              <Link to="/confidentialite">Confidentialité</Link>
-              <Link to="/mentions-legales">Mentions légales</Link>
+              <Link to="/confidentialite">{t('Confidentialité')}</Link>
+              <Link to="/mentions-legales">{t('Mentions légales')}</Link>
             </div>
             {data.showBranding !== false && (
               <p className="made">
@@ -1089,6 +1273,7 @@ export default function ThemedSitePage({
     <div
       ref={rootRef}
       data-tbft={theme.id}
+      lang={t.lang}
       className={`tbft hv-${theme.hero} ${motion ? 'motion' : ''} ${opened ? 'is-open' : ''} ${embedded ? 'is-embedded' : ''} ${className}`}
       style={rootStyle}
     >
@@ -1105,19 +1290,19 @@ export default function ThemedSitePage({
           <nav className="topnav" aria-label="Sections">
             {navBlocks.map((b) => (
               <a key={b} href={`#${siteBlockDomId(b)}`} onClick={scrollTo(b)} className={activeSection === b ? 'on' : ''}>
-                {NAV_LABELS[b]}
+                {t(NAV_LABELS[b])}
               </a>
             ))}
           </nav>
           {hasPass ? (
             <button type="button" className="btn sm top-cta" onClick={() => setPassOpen(true)}>
               <Ticket />
-              Mon pass
+              {t('Mon pass')}
             </button>
           ) : rsvpVisible && (
             <a className="btn sm top-cta" href={`#${siteBlockDomId('RSVP')}`} onClick={scrollTo('RSVP')}>
               <Check />
-              Répondre
+              {t('Répondre')}
             </a>
           )}
         </div>
@@ -1149,12 +1334,44 @@ export default function ThemedSitePage({
           )}
           <div className="hero-inner">
             <div className="hero-text">
+              {theme.heroSeal && (
+                <div className="hero-top h-in" style={{ '--i': 0 }}>
+                  <span className="kicker">{t(theme.introFor)}</span>
+                  {theme.translations && (
+                    <div className="lang" role="group" aria-label={t('Langue')}>
+                      {['fr', 'en'].map((l) => (
+                        <button
+                          key={l}
+                          type="button"
+                          lang={l}
+                          aria-pressed={lang === l}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setLang(l)
+                          }}
+                        >
+                          {l.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              {theme.heroSeal && (
+                <Sceau className="hero-seal h-in" style={{ '--i': 0 }} spin={motion}>
+                  {logoSrc ? <img src={logoSrc} alt="" /> : <span className="hero-seal-mono">{monogram}</span>}
+                </Sceau>
+              )}
               {theme.portrait && (
                 <div className="portrait h-in" style={{ '--i': 0 }} aria-hidden="true">
                   <span>{monogram}</span>
                 </div>
               )}
-              <p className="kicker h-in" style={{ '--i': 0 }}>{heroStyle.kicker || theme.kicker}</p>
+              {theme.heroSeal ? (
+                <p className="hero-orgname h-in" style={{ '--i': 1 }}>{heroStyle.title}</p>
+              ) : (
+                <p className="kicker h-in" style={{ '--i': 0 }}>{heroStyle.kicker || theme.kicker}</p>
+              )}
               {heroBig && (
                 <div className="hero-big h-in" style={{ '--i': 1 }} aria-hidden="true">
                   {heroBig.big}
@@ -1162,6 +1379,15 @@ export default function ThemedSitePage({
                 </div>
               )}
               {titleInfo.pre && <p className="hero-pre h-in" style={{ '--i': 1 }}>{titleInfo.pre}</p>}
+              {theme.heroSeal ? (
+                <>
+                  <h1 className="hero-names ink" style={{ '--i': 2 }}>
+                    {t(heroStyle.kicker || theme.kicker)}
+                  </h1>
+                  {heroYear && <p className="hero-year foil h-in" style={{ '--i': 3 }}>{heroYear}</p>}
+                  <div className="orn h-in" style={{ '--i': 3 }} aria-hidden="true" dangerouslySetInnerHTML={{ __html: theme.ornament }} />
+                </>
+              ) : (
               <h1 className="hero-names ink" style={{ '--i': 2 }}>
                 {titleInfo.names.length === 2 ? (
                   <>
@@ -1173,6 +1399,7 @@ export default function ThemedSitePage({
                   titleInfo.names[0]
                 )}
               </h1>
+              )}
               {data.description && <p className="hero-sub h-in" style={{ '--i': 3 }}>{data.description}</p>}
               {(dateLong || data.locationAddress) && (
                 <div className="chips h-in" style={{ '--i': 4 }}>
@@ -1196,9 +1423,9 @@ export default function ThemedSitePage({
                   )}
                 </div>
               )}
-              {organizerName && (
+              {organizerName && !theme.heroSeal && (
                 <p className="hero-org h-in" style={{ '--i': 4 }}>
-                  Organisé par <b>{organizerName}</b>
+                  {t('Organisé par')} <b>{organizerName}</b>
                 </p>
               )}
               <div className="ctas h-in" style={{ '--i': 5 }}>
@@ -1210,7 +1437,7 @@ export default function ThemedSitePage({
                 ) : rsvpVisible && (
                   <a className="btn" href={`#${siteBlockDomId('RSVP')}`} onClick={scrollTo('RSVP')}>
                     <Check />
-                    {blockContent.RSVP?.cta?.trim() || 'Confirmer ma présence'}
+                    {theme.heroSeal ? t('Confirmer ma présence') : blockContent.RSVP?.cta?.trim() || 'Confirmer ma présence'}
                   </a>
                 )}
                 {calendarUrl && (
@@ -1222,14 +1449,23 @@ export default function ThemedSitePage({
                     onClick={(e) => (editable ? e.preventDefault() : handleAddToCalendar(e, calendarDetails))}
                   >
                     <Calendar />
-                    Ajouter à mon agenda
+                    {t('Ajouter à mon agenda')}
                   </a>
                 )}
               </div>
             </div>
             {has('Rebours') && validStart && (
               <div className="hero-side h-in" style={{ '--i': 6 }}>
-                <Countdown target={validStart.getTime()} label={theme.countdownLabel} />
+                <Countdown
+                  target={countdownTarget.getTime()}
+                  label={theme.countdownLabel}
+                  todayLabel={theme.countdownToday}
+                  units={theme.countdownUnits}
+                  t={t}
+                  final={Boolean(theme.countdownFinal)}
+                  done={theme.countdownDone?.(countdownTarget) ?? null}
+                  onReach={celebrateCountdown}
+                />
               </div>
             )}
           </div>
@@ -1240,6 +1476,7 @@ export default function ThemedSitePage({
 
         {!has('Pied de page') && data.showBranding !== false && (
           <footer className="footer">
+            {theme.footerBand && <BandeGuillochee />}
             <p className="made">
               Créé avec <b>TBF MOMENT</b> · Create. Connect. Celebrate.
             </p>
@@ -1267,7 +1504,7 @@ export default function ThemedSitePage({
             .map(([b, label, Icon]) => (
               <a key={b} href={`#${siteBlockDomId(b)}`} onClick={scrollTo(b)} className={activeSection === b ? 'on' : ''}>
                 <Icon />
-                <span>{label}</span>
+                <span>{t(label)}</span>
               </a>
             ))}
         </nav>

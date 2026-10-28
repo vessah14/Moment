@@ -1,5 +1,5 @@
-import { Link2, Mail, Pencil, Plus, Printer, Search, Send, Trash2 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { Eye, Link2, Mail, MessageCircle, Pencil, Plus, Printer, Search, Send, Trash2, Upload } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import Avatar from '../../components/ui/Avatar'
 import Button from '../../components/ui/Button'
@@ -9,7 +9,8 @@ import DashboardLayout from '../../components/layout/DashboardLayout'
 import GuestEditDialog from '../../components/guests/GuestEditDialog'
 import PrintTicketsDialog from '../../components/guests/PrintTicketsDialog'
 import { ConfirmDialog } from '../../components/ui/Dialog'
-import { createGuest, deleteGuest, listGuests, sendGuestInvitation, sendPendingInvitations, updateGuest } from '../../api/guests'
+import { createGuest, deleteGuest, importGuests, listGuests, sendGuestInvitation, sendPendingInvitations, updateGuest } from '../../api/guests'
+import { maskPhone, readGuestFile } from '../../utils/guestImport'
 import { createGuestGroup, listGuestGroups } from '../../api/guestGroups'
 import { listEvents } from '../../api/events'
 import { listRsvps } from '../../api/rsvps'
@@ -37,6 +38,10 @@ export default function Guests() {
   const [error, setError] = useState('')
 
   const [filter, setFilter] = useState('Tous')
+  // Filtre par groupe (service, filière… : un import crée un groupe par service).
+  const [groupFilter, setGroupFilter] = useState('')
+  const [importing, setImporting] = useState(false)
+  const importInput = useRef(null)
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState(() => new Set())
   const [addFormOpen, setAddFormOpen] = useState(() => searchParams.get('add') === '1')
@@ -129,17 +134,20 @@ export default function Guests() {
     const expectedStatus = GUEST_STATUS_BY_FILTER[filter]
     const q = query.trim().toLocaleLowerCase('fr')
     return guests.filter((g) => {
-      const matchesFilter = filter === 'Tous' || hasGuestStatus(g.status, expectedStatus)
+      const matchesFilter = (filter === 'Tous' || hasGuestStatus(g.status, expectedStatus))
+        && (!groupFilter || (groupFilter === 'none' ? !g.groupId : g.groupId === groupFilter))
       const matchesQuery =
         String(g.fullName ?? '').toLocaleLowerCase('fr').includes(q) ||
         String(g.email ?? '').toLocaleLowerCase('fr').includes(q) ||
         String(g.phone ?? '').toLocaleLowerCase('fr').includes(q)
       return matchesFilter && matchesQuery
     })
-  }, [guests, filter, query])
+  }, [guests, filter, groupFilter, query])
 
   // Pagination : retour à la page 1 quand l'événement, le filtre ou la recherche change.
-  const pagination = usePagination(visible, 'tbf_page_size_guests', `${selectedEventId}|${filter}|${query}`)
+  const pagination = usePagination(visible, 'tbf_page_size_guests', `${selectedEventId}|${filter}|${groupFilter}|${query}`)
+  // Colonne « Cocktail » : seulement si le formulaire de réponse pose la question.
+  const hasExtra = guests.some((g) => g.extra !== null && g.extra !== undefined)
 
   const counts = useMemo(
     () => ({
@@ -169,6 +177,35 @@ export default function Guests() {
       clearTimeout(stop)
     }
   }, [hasPendingInvitations, selectedEventId])
+
+  // Import Excel ou CSV : nom, service, téléphone. Doublons ignorés par le serveur.
+  const handleImport = async (file) => {
+    if (!file || !selectedEventId) return
+    setImporting(true)
+    setError('')
+    try {
+      const rows = await readGuestFile(file)
+      if (!rows.length) {
+        setError('Aucun invité trouvé dans ce fichier. Colonnes attendues : nom, service, téléphone.')
+        return
+      }
+      const result = await importGuests(selectedEventId, rows)
+      const [fresh, freshGroups] = await Promise.all([listGuests(selectedEventId), listGuestGroups(selectedEventId)])
+      setGuests(fresh ?? [])
+      setGroups(freshGroups ?? [])
+      notifyGuestsChanged()
+      const parts = [`${result.added} invité${result.added > 1 ? 's' : ''} importé${result.added > 1 ? 's' : ''}`]
+      if (result.groups) parts.push(`${result.groups} groupe${result.groups > 1 ? 's' : ''} créé${result.groups > 1 ? 's' : ''}`)
+      if (result.skipped) parts.push(`${result.skipped} doublon${result.skipped > 1 ? 's' : ''} ou ligne${result.skipped > 1 ? 's' : ''} sans nom ignoré${result.skipped > 1 ? 's' : ''}`)
+      toast(parts.join(' · '))
+      if (result.limitReached) setError(result.limitReached)
+    } catch (err) {
+      setError(err.message || "L'import a échoué. Vérifiez que le fichier est bien un tableau Excel (.xlsx) ou CSV.")
+    } finally {
+      setImporting(false)
+      if (importInput.current) importInput.current.value = ''
+    }
+  }
 
   const handleUpdateGuest = async (dto) => {
     const updated = await updateGuest(editingGuest.id, dto)
@@ -385,6 +422,24 @@ export default function Guests() {
               Envoyer les invitations ({notInvited.length})
             </Button>
           )}
+          <input
+            ref={importInput}
+            type="file"
+            accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+            className="sr-only"
+            tabIndex={-1}
+            aria-hidden="true"
+            onChange={(e) => handleImport(e.target.files?.[0])}
+          />
+          <Button
+            variant="outline"
+            onClick={() => importInput.current?.click()}
+            disabled={!selectedEventId || importing}
+            title="Fichier Excel (.xlsx) ou CSV avec les colonnes nom, service, téléphone"
+          >
+            <Upload className="h-4 w-4" />
+            {importing ? 'Import…' : 'Importer la liste (Excel)'}
+          </Button>
           <Button variant="outline" onClick={() => setPrintOpen(true)} disabled={guests.length === 0}>
             <Printer className="h-4 w-4" />
             Imprimer les billets
@@ -533,6 +588,22 @@ export default function Guests() {
               {f} · {counts[f]}
             </button>
           ))}
+          {groups.length > 0 && (
+            <select
+              value={groupFilter}
+              onChange={(e) => setGroupFilter(e.target.value)}
+              aria-label="Filtrer par groupe"
+              className="rounded-full border border-border bg-surface px-4 py-2 text-sm text-ink outline-none focus:border-brand-purple"
+            >
+              <option value="">Tous les groupes</option>
+              {groups.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name} · {guests.filter((guest) => guest.groupId === g.id).length}
+                </option>
+              ))}
+              <option value="none">Sans groupe</option>
+            </select>
+          )}
         </div>
       </div>
 
@@ -556,7 +627,7 @@ export default function Guests() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium text-ink">{guest.fullName}{guest.seats > 1 && <span className="ml-1.5 text-xs font-normal text-faint">· {guest.seats} places</span>}</p>
                   <p className="break-all text-xs text-muted">{guest.email || 'Aucun e-mail'}</p>
-                  <p className="text-xs text-faint">{guest.phone || 'Aucun téléphone'}</p>
+                  <p className="font-mono text-xs text-faint">{guest.phone ? maskPhone(guest.phone) : 'Aucun téléphone'}</p>
                 </div>
                 <StatusBadge status={guestStatusLabel(guest.status)} />
               </div>
@@ -564,6 +635,7 @@ export default function Guests() {
                 <span>{groupNameById(guest.groupId)}</span>
                 <InvitationStatus guest={guest} published={eventPublished} />
                 <span>{accompanyingByGuest[guest.id] ?? '–'} accompagnant(s)</span>
+                {hasExtra && <span>Cocktail : {guest.extra === true ? 'oui' : guest.extra === false ? 'non' : '—'}</span>}
               </div>
               <div className="flex justify-end gap-1 pl-7">
                 {guest.email && !guest.invitationPending && (
@@ -616,32 +688,34 @@ export default function Guests() {
                 <th className="px-3 py-3 font-medium">Statut</th>
                 <th className="px-3 py-3 font-medium">Invitation</th>
                 <th className="px-3 py-3 font-medium">Accomp.</th>
+                {hasExtra && <th className="px-3 py-3 font-medium">Cocktail</th>}
                 <th className="w-10 px-3 py-3" />
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={8} className="px-6 py-10 text-center text-sm text-faint">
+                  <td colSpan={hasExtra ? 9 : 8} className="px-6 py-10 text-center text-sm text-faint">
                     Chargement…
                   </td>
                 </tr>
               )}
               {!loading && visible.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-6 py-10 text-center text-sm text-faint">
+                  <td colSpan={hasExtra ? 9 : 8} className="px-6 py-10 text-center text-sm text-faint">
                     <div className="flex flex-col items-center gap-3">
                       <span>
                         {guests.length === 0
                           ? 'Aucun invité dans cet événement.'
                           : 'Aucun invité ne correspond aux filtres sélectionnés.'}
                       </span>
-                      {(query || filter !== 'Tous') && (
+                      {(query || filter !== 'Tous' || groupFilter) && (
                         <button
                           type="button"
                           onClick={() => {
                             setQuery('')
                             setFilter('Tous')
+                            setGroupFilter('')
                           }}
                           className="font-medium text-brand-purple hover:underline"
                         >
@@ -675,7 +749,7 @@ export default function Guests() {
                     </td>
                     <td className="px-3 py-4 text-muted">
                       <p>{guest.email}</p>
-                      <p className="text-xs text-faint">{guest.phone}</p>
+                      <p className="font-mono text-xs text-faint" title="Numéro complet dans la fiche de l'invité">{maskPhone(guest.phone)}</p>
                     </td>
                     <td className="px-3 py-4 text-muted">{groupNameById(guest.groupId)}</td>
                     <td className="px-3 py-4">
@@ -687,6 +761,9 @@ export default function Guests() {
                     <td className="px-3 py-4 font-mono text-muted">
                       {accompanyingByGuest[guest.id] ?? '–'}
                     </td>
+                    {hasExtra && (
+                      <td className="px-3 py-4 text-muted">{guest.extra === true ? 'Oui' : guest.extra === false ? 'Non' : '—'}</td>
+                    )}
                     <td className="flex items-center px-3 py-4">
                       {guest.email && !guest.invitationPending && (
                         <button
@@ -792,8 +869,16 @@ export default function Guests() {
   )
 }
 
-// État de l'e-mail d'invitation d'un invité (lien personnel de confirmation de présence).
+// État de l'invitation d'un invité (lien personnel de confirmation de présence) : vue,
+// envoyée par e-mail, partagée par WhatsApp ou SMS, en cours ou à envoyer.
 function InvitationStatus({ guest, published }) {
+  if (guest.invitationOpenedAt)
+    return (
+      <span className="inline-flex items-center gap-1 text-brand-purple" title={`Lien ouvert le ${new Date(guest.invitationOpenedAt).toLocaleString('fr-FR')}`}>
+        <Eye className="h-3.5 w-3.5" />
+        Vue
+      </span>
+    )
   if (guest.invitationSentAt)
     return (
       <span className="inline-flex items-center gap-1 text-success" title={new Date(guest.invitationSentAt).toLocaleString('fr-FR')}>
@@ -813,5 +898,12 @@ function InvitationStatus({ guest, published }) {
         Échec de l'envoi
       </span>
     )
-  return <span className="text-faint">{guest.email ? 'Non envoyée' : 'Pas d’e-mail'}</span>
+  if (guest.invitationSharedAt)
+    return (
+      <span className="inline-flex items-center gap-1 text-success" title={new Date(guest.invitationSharedAt).toLocaleString('fr-FR')}>
+        <MessageCircle className="h-3.5 w-3.5" />
+        Envoyée (WhatsApp)
+      </span>
+    )
+  return <span className="text-faint">À envoyer</span>
 }

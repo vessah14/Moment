@@ -3,8 +3,8 @@ import { MOBILE_MONEY_OPERATORS } from '../../utils/mobileMoney'
 import { MAX_COMPANIONS, rsvpRules } from '../../utils/rsvpRules'
 import { parseVideoUrl } from '../../utils/videoEmbed'
 
-// Éditeurs des blocs « Familles », « Dress code », « Cadeaux », « Intervenants » et
-// « Partenaires » (onglet Contenu du Builder). Tout est rangé dans le contenu JSON du
+// Éditeurs des blocs « Familles », « Dress code », « Cadeaux », « Intervenants »,
+// « Distinctions » et « Partenaires » (onglet Contenu du Builder). Tout est rangé dans le contenu JSON du
 // bloc, enregistré avec la page.
 
 const inputClass =
@@ -56,6 +56,15 @@ export function RsvpSidesEditor({ content, onChange }) {
           onChange={(e) => onChange({ sides: e.target.value.split('\n').slice(0, 8).map((s) => s.slice(0, 80)) })}
         />
         <span className="mt-1 block text-faint">Sans choix, la question n'est pas posée. La réponse figure sur le pass et dans la liste des invités.</span>
+      </label>
+      <label className={labelClass}>
+        Case à cocher (facultatif)
+        <input className={`${inputClass} mt-1`} maxLength={80} placeholder="Je reste pour le cocktail" value={content.extraLabel ?? ''} onChange={(e) => onChange({ extraLabel: e.target.value })} />
+        <span className="mt-1 block text-faint">Posée à ceux qui viennent ; la réponse apparaît dans Invités (colonne « Cocktail »). Vide : pas de case.</span>
+      </label>
+      <label className="flex items-center gap-2 text-sm text-ink">
+        <input type="checkbox" className="h-4 w-4 accent-brand-purple" checked={content.sidePills === true} onChange={(e) => onChange({ sidePills: e.target.checked })} />
+        Choix en boutons à toucher (au lieu d'une liste)
       </label>
       <label className={labelClass}>
         Bouton de l'en-tête
@@ -354,6 +363,51 @@ export function PeopleEditor({ content, onChange }) {
         Ajouter une personne
       </button>
       <p className="text-xs text-faint">Intervenants, artistes, jury, témoins… Chacun apparaît avec ses initiales.</p>
+    </div>
+  )
+}
+
+const HONOUR_RANKS = ['Or', 'Vermeil', 'Argent']
+
+export function HonoursEditor({ content, onChange }) {
+  const people = Array.isArray(content.people) ? content.people : []
+  const setPerson = (i, patch) => onChange({ people: people.map((p, k) => (k === i ? { ...p, ...patch } : p)) })
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm font-medium text-ink">Personnes honorées</p>
+      {people.map((p, i) => (
+        <div key={i} className="space-y-2 rounded-lg border border-border-soft bg-surface-2/40 p-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-faint">Personne {i + 1}</span>
+            <button type="button" className={removeClass} aria-label="Retirer la personne" onClick={() => onChange({ people: people.filter((_, k) => k !== i) })}>
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <input className={inputClass} maxLength={80} placeholder="Nom (ex. Jeanne Ekotto)" value={p.name ?? ''} onChange={(e) => setPerson(i, { name: e.target.value })} />
+          <input className={inputClass} maxLength={80} placeholder="Service ou filière (ex. Finances)" value={p.role ?? ''} onChange={(e) => setPerson(i, { role: e.target.value })} />
+          <input className={inputClass} maxLength={160} placeholder="Distinction (ex. Médaille d'or, 30 ans de service)" value={p.topic ?? ''} onChange={(e) => setPerson(i, { topic: e.target.value })} />
+          <div className="flex gap-2" role="radiogroup" aria-label="Couleur de la médaille">
+            {HONOUR_RANKS.map((label, rank) => (
+              <button
+                key={label}
+                type="button"
+                role="radio"
+                aria-checked={(p.rank ?? 0) === rank}
+                onClick={() => setPerson(i, { rank })}
+                className={`flex-1 rounded-lg border px-2 py-1.5 text-xs font-medium ${(p.rank ?? 0) === rank ? 'border-brand-purple bg-brand-purple/10 text-ink' : 'border-border-soft text-muted hover:border-faint'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+      <button type="button" className={addClass} disabled={people.length >= MAX_PEOPLE} onClick={() => onChange({ people: [...people, { name: '', role: '', topic: '', rank: 0 }] })}>
+        <Plus className="h-4 w-4" />
+        Ajouter une personne
+      </button>
+      <p className="text-xs text-faint">Médaillés, lauréats, distinctions honorifiques… La couleur de la médaille suit le rang choisi.</p>
     </div>
   )
 }

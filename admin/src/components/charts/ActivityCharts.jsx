@@ -9,8 +9,14 @@ const PERIODS = [
   { days: 90, label: '90 jours' },
   { days: 365, label: '12 mois' },
 ]
+const REFRESH_INTERVAL_MS = 30_000
 
 const fcfa = (v) => `${v.toLocaleString('fr-FR')} F`
+const updatedAtLabel = (value) => new Intl.DateTimeFormat('fr-FR', {
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+}).format(value)
 
 // Au-delà de 90 jours, une barre par jour devient illisible : regroupement par semaine
 // (la date affichée est le premier jour de la semaine).
@@ -31,19 +37,43 @@ export default function ActivityCharts({ kPayEnabled }) {
   const [days, setDays] = useState(30)
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
+  const [lastUpdated, setLastUpdated] = useState(null)
 
   useEffect(() => {
     let cancelled = false
-    getTimeSeries(days)
-      .then((rows) => {
+    let loading = false
+
+    const refresh = async () => {
+      if (loading || document.visibilityState === 'hidden') return
+      loading = true
+      try {
+        const rows = await getTimeSeries(days)
         if (!cancelled) {
           setData(rows ?? [])
+          setLastUpdated(new Date())
           setError('')
         }
-      })
-      .catch((err) => !cancelled && setError(err.message || 'Graphiques indisponibles.'))
+      } catch (err) {
+        if (!cancelled) setError(err.message || 'Graphiques indisponibles.')
+      } finally {
+        loading = false
+      }
+    }
+
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') refresh()
+    }
+
+    refresh()
+    const intervalId = window.setInterval(refresh, REFRESH_INTERVAL_MS)
+    window.addEventListener('focus', refresh)
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+
     return () => {
       cancelled = true
+      window.clearInterval(intervalId)
+      window.removeEventListener('focus', refresh)
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
     }
   }, [days])
 
@@ -70,6 +100,11 @@ export default function ActivityCharts({ kPayEnabled }) {
           ))}
         </div>
       </div>
+      <p className="mt-1 text-right text-xs text-faint" aria-live="polite">
+        {lastUpdated
+          ? `Données actualisées à ${updatedAtLabel(lastUpdated)} · actualisation automatique toutes les 30 s`
+          : 'Chargement des données depuis la base…'}
+      </p>
 
       {error && <p className="mt-4 rounded-lg border border-danger/30 bg-danger/10 px-4 py-2.5 text-sm text-danger">{error}</p>}
 

@@ -34,6 +34,24 @@ namespace backend_EventMoment.Services
             }
         }
 
+        // Case optionnelle du formulaire (« Je reste pour le cocktail ») : proposée seulement
+        // si le bloc RSVP lui donne un libellé, {"extraLabel": "Je reste pour le cocktail"}.
+        public static bool OffersExtra(string? blockContent)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(blockContent) ? "{}" : blockContent);
+                return doc.RootElement.ValueKind == JsonValueKind.Object
+                    && doc.RootElement.TryGetProperty("extraLabel", out var label)
+                    && label.ValueKind == JsonValueKind.String
+                    && !string.IsNullOrWhiteSpace(label.GetString());
+            }
+            catch (JsonException)
+            {
+                return false;
+            }
+        }
+
         // Choix retenu pour une réponse : null si la question n'existe pas ou si l'invité
         // n'a rien choisi ; erreur si le choix n'est pas dans la liste.
         public static string? Validate(string? blockContent, string? side)

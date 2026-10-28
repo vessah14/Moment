@@ -12,6 +12,15 @@ export function usablePeople(list) {
     .filter((p) => p.name)
 }
 
+// Distinctions (médaillés, lauréats) : { name, role, topic, rank } ; le rang (0, 1, 2)
+// donne la couleur de la médaille : or, vermeil, argent.
+export function usableHonours(list) {
+  if (!Array.isArray(list)) return []
+  return list
+    .map((p) => ({ ...usablePeople([p])[0], rank: [0, 1, 2].includes(p?.rank) ? p.rank : 0 }))
+    .filter((p) => p.name)
+}
+
 // Partenaires et sponsors : simples noms.
 export function usablePartners(list) {
   if (!Array.isArray(list)) return []

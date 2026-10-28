@@ -220,6 +220,18 @@ export async function buildCardSheetPdf(canvases, layout) {
   return doc
 }
 
+// Cartons d'invitation A5 (modèle Envol) : un carton par page A5, sans marge, prêt pour
+// l'imprimeur.
+export async function cartonPdf(canvases, { title }) {
+  const JsPDF = await loadPdf()
+  const doc = new JsPDF({ unit: 'mm', format: 'a5', orientation: 'portrait' })
+  canvases.forEach((canvas, i) => {
+    if (i) doc.addPage('a5', 'portrait')
+    doc.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 148, 210)
+  })
+  doc.save(`cartons-${fname(title || 'evenement')}.pdf`)
+}
+
 export async function cardSheetPdf(canvases, layout, { title, prefix }) {
   const doc = await buildCardSheetPdf(canvases, layout)
   doc.save(`${prefix || 'billet'}s-${fname(title || 'evenement')}.pdf`)

@@ -50,6 +50,17 @@ export function submitPublicRsvp(guestId, dto) {
   return apiFetch(`/public/invitations/${guestId}/rsvp`, { method: 'POST', body: dto, auth: false })
 }
 
+// Import d'une liste lue dans le navigateur (Excel) : [{ fullName, service, phone }].
+// Doublons ignorés côté serveur ; chaque service devient un groupe d'invités.
+export function importGuests(eventId, rows) {
+  return apiFetch(`/guests/import?eventId=${eventId}`, { method: 'POST', body: { rows } })
+}
+
+// Invitation partagée par WhatsApp ou SMS depuis cet appareil (statut « Envoyée » partout).
+export function markInvitationShared(id) {
+  return apiFetch(`/guests/${id}/invitation/shared`, { method: 'POST' })
+}
+
 // Lien d'invitation par e-mail (confirmation de présence) : envoi ou renvoi à un invité.
 export function sendGuestInvitation(id) {
   return apiFetch(`/guests/${id}/invitation`, { method: 'POST' })

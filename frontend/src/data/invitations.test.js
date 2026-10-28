@@ -5,9 +5,9 @@ import { INVITATIONS, invitationStarter } from './invitations'
 import { TEMPLATES } from './templates'
 
 describe('section Invitation', () => {
-  it('existe pour les 27 modèles premium, avec démo et texte de départ', () => {
+  it('existe pour les 29 modèles premium, avec démo et texte de départ', () => {
     const premium = TEMPLATES.filter((t) => t.premium)
-    expect(premium).toHaveLength(27)
+    expect(premium).toHaveLength(29)
     for (const t of premium) {
       const inv = INVITATIONS[t.theme]
       expect(inv, t.theme).toBeTruthy()

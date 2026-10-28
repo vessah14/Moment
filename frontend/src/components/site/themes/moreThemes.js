@@ -1,3 +1,5 @@
+import { ENVOL_EN } from './envol/envolI18n'
+
 // Modèles premium des autres catégories (sport, concert, conférence, entreprise,
 // baptême, religieux, scolaire, graduation, hommage, famille, soirée, personnalisé,
 // autre), portés depuis les maquettes HTML comme Noor, Bloom, etc. Même structure que
@@ -5,6 +7,19 @@
 //   introLabel      étiquette du billet (ouverture « ticket ») ou du badge (« badge »)
 //   introButton     texte du bouton de l'ouverture « bougie »
 //   countdownLabel  libellé du compte à rebours dans l'en-tête
+//   countdownTo(d)  moment visé par le compte à rebours, au lieu du début (minuit)
+//   countdownToday  libellé du compte à rebours le jour même (« C'est aujourd'hui »)
+//   guestbook       textes du livre d'or : { placeholder, button, empty }
+//   printOffer      lien de commande des tirages TBF DIGITAL sous la galerie : { label, product }
+//   countdownFinal  dernière minute affichée en un seul grand chiffre
+//   countdownUnits  nombre d'unités du compte à rebours (3 : jours, heures, minutes)
+//   heroSeal        en-tête « officiel » : sceau guilloché avec le logo, organisation,
+//                   titre (le surtitre) et année dorée (modèle Envol)
+//   invitationCard  bloc Invitation en carton à double filet or, nominatif, avec QR d'entrée
+//   live            bloc Vidéo en direct : { badge, waiting } (badge daté, attente du direct)
+//   footerBand      bande guillochée en haut du pied de page
+//   translations    dictionnaire anglais : bouton FR | EN dans l'en-tête
+//   countdownDone(t) message une fois l'heure passée ({ kicker, title, sub })
 //   joiner          séparateur affiché entre deux noms (« vs » pour un match)
 //   portrait        médaillon d'initiales au-dessus du titre (hommage)
 //   bigFor(date)    grand mot du héros « big » quand le titre ne contient pas d'âge
@@ -151,8 +166,69 @@ const noelFrame = (() => {
   return `<svg viewBox="0 0 1200 160" aria-hidden="true">${d}</svg>`
 })()
 
+const minuitFrame = (() => {
+  // Deux feux d'artifice en haut, et une bande de losanges inspirée du ndop en bas
+  let d = ''
+  ;[
+    [230, 150, 120, 0],
+    [990, 120, 100, 0.5],
+    [640, 70, 70, 1],
+  ].forEach(([cx, cy, R, delay]) => {
+    for (let i = 0; i < 16; i++) {
+      const a = (i * Math.PI) / 8
+      const r0 = R * 0.25
+      const r1 = i % 2 ? R * 0.7 : R
+      d += `<path class="draw" pathLength="1" style="--fd:${(delay + i * 0.03).toFixed(2)}s;opacity:${i % 2 ? 0.45 : 0.85}" d="M${f(cx + Math.cos(a) * r0)} ${f(cy + Math.sin(a) * r0)}L${f(cx + Math.cos(a) * r1)} ${f(cy + Math.sin(a) * r1)}"/>`
+    }
+    d += `<circle class="fillin" style="--fd:${(delay + 0.6).toFixed(1)}s;fill:var(--accent)" cx="${cx}" cy="${cy}" r="4"/>`
+  })
+  let band = '<path class="draw" pathLength="1" style="--fd:1.4s" d="M0 556H1200M0 594H1200"/>'
+  for (let i = 0; i < 30; i++) {
+    const x = 20 + i * 40
+    band += `<path class="draw" pathLength="1" style="--fd:${(1.5 + i * 0.02).toFixed(2)}s" d="M${x} 562L${x + 13} 575L${x} 588L${x - 13} 575Z"/>`
+    band += `<circle class="fillin" style="--fd:${(1.8 + i * 0.02).toFixed(2)}s;fill:var(--accent)" cx="${x + 20}" cy="575" r="2.5"/>`
+  }
+  return `<svg viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${d}${band}</svg>`
+})()
+
+const envolFrame = (() => {
+  // Rosace guillochée (six ondes à douze lobes, décalées de 5°) et trois traits d'or qui s'envolent
+  let d = ''
+  for (let k = 0; k < 6; k++) {
+    let p = ''
+    for (let i = 0; i <= 144; i++) {
+      const a = (i * Math.PI) / 72
+      const r = 190 + 22 * Math.sin(12 * a + (k * 5 * Math.PI) / 180)
+      p += `${i ? 'L' : 'M'}${f(600 + Math.cos(a) * r)} ${f(300 + Math.sin(a) * r)}`
+    }
+    d += `<path class="draw" pathLength="1" style="--fd:${(k * 0.12).toFixed(2)}s;opacity:${k % 2 ? 0.45 : 0.8}" d="${p}Z"/>`
+  }
+  // Bord festonné
+  let edge = `M${f(600 + 240)} 300`
+  for (let i = 1; i <= 48; i++) {
+    const a = (i * Math.PI) / 24
+    edge += `A16 16 0 0 1 ${f(600 + Math.cos(a) * 240)} ${f(300 + Math.sin(a) * 240)}`
+  }
+  d += `<path class="draw" pathLength="1" style="--fd:.8s" d="${edge}"/>`
+  d += '<circle class="draw" pathLength="1" style="--fd:1s;opacity:.6" cx="600" cy="300" r="150"/>'
+  ;[0, 1, 2].forEach((i) => {
+    const y = 560 + i * 25
+    d += `<path class="draw" pathLength="1" style="--fd:${(1.2 + i * 0.15).toFixed(2)}s;opacity:${(0.9 - i * 0.2).toFixed(1)}" d="M0 ${y}C${360 + i * 40} ${y - 40} ${780 - i * 30} ${330 + i * 30} 1200 ${60 + i * 50}"/>`
+  })
+  d += '<circle class="fillin" style="--fd:1.9s;fill:var(--accent-2)" cx="1194" cy="62" r="5"/>'
+  return `<svg viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${d}</svg>`
+})()
+
+// Minuit du 31 décembre qui suit le début de la soirée (heure locale de l'invité).
+const midnightAfter = (d) => {
+  if (!d) return null
+  const m = new Date(d)
+  m.setHours(24, 0, 0, 0)
+  return m
+}
+
 // ---------- Ornements sous les titres de section ----------
-const svg24 = (sw, body) =>
+const svg24 =(sw, body) =>
   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" aria-hidden="true">${body}</svg>`
 const ORN = {
   ball: svg24(1.5, '<circle cx="12" cy="12" r="9"/><path d="M12 7l4 3-1.5 4.5h-5L8 10z"/>'),
@@ -759,6 +835,85 @@ export const MORE_THEMES = {
       { id: 'prune', label: 'Prune', dark: true,
         vars: { '--bg': '#22131C', '--surface': '#2E1A26', '--surface-2': '#3A2231', '--fg': '#FBEFF3', '--muted': '#D3B8C5', '--accent': '#F09AAE', '--accent-2': '#C9A8F0', '--on-accent': '#22131C', '--line': '#4D2D40', '--motif': '#F09AAE', '--motif-opacity': '.1' },
         particleColors: ['#F09AAE', '#C9A8F0'] },
+    ],
+  },
+  minuit: {
+    id: 'minuit',
+    name: 'Minuit',
+    fonts: `${GF}family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Geist:wght@400;500;600;700&display=swap`,
+    intro: 'ticket',
+    hero: 'big',
+    particles: 'etoiles',
+    burst: 'confetti',
+    music: 'lounge',
+    motifs: ['ndop', 'etoile', 'deco', 'aucun'],
+    ornament: ORN.sparkle,
+    frame: minuitFrame,
+    kicker: 'Saint-Sylvestre · 31 décembre',
+    introFor: 'Vous êtes invité·e au réveillon',
+    introLabel: 'Réveillon',
+    countdownLabel: 'Avant minuit',
+    // Le compte à rebours vise minuit, pas le début de la soirée, puis souhaite la bonne année.
+    countdownTo: midnightAfter,
+    countdownFinal: true,
+    countdownDone: (target) => {
+      const y = target ? target.getFullYear() : ''
+      return { kicker: 'Il est minuit', title: `Bonne année ${y} !`, sub: 'Happy New Year!' }
+    },
+    bigFor: (d) => {
+      const m = midnightAfter(d)
+      return m ? { big: year(m), label: 'Ensemble vers' } : null
+    },
+    palettes: [
+      { id: 'festive', label: 'Festive · or', dark: true,
+        vars: { '--bg': '#100B30', '--surface': '#1C1548', '--surface-2': '#261D5C', '--fg': '#ECE8F5', '--muted': '#A8A4C4', '--accent': '#E3B65A', '--accent-2': '#F3E6C4', '--on-accent': '#0A0F24', '--line': '#352B6E', '--motif': '#E3B65A', '--motif-opacity': '.1' },
+        particleColors: ['#E3B65A', '#F08FB0', '#A996FF', '#F3E6C4'] },
+      { id: 'sobre', label: 'Sobre · argent', dark: true,
+        vars: { '--bg': '#0A0F24', '--surface': '#131B3B', '--surface-2': '#1B254C', '--fg': '#ECEEF5', '--muted': '#A6ADC4', '--accent': '#C9CCD6', '--accent-2': '#E3B65A', '--on-accent': '#0A0F24', '--line': '#2A3560', '--motif': '#C9CCD6', '--motif-opacity': '.08' },
+        particleColors: ['#C9CCD6', '#FFFFFF', '#E3B65A'] },
+      { id: 'rose', label: 'Festive · or rosé', dark: true,
+        vars: { '--bg': '#160B2A', '--surface': '#23143F', '--surface-2': '#2E1B52', '--fg': '#F5ECF0', '--muted': '#C2AFC4', '--accent': '#E8A98C', '--accent-2': '#F3E6C4', '--on-accent': '#160B2A', '--line': '#43295F', '--motif': '#E8A98C', '--motif-opacity': '.1' },
+        particleColors: ['#E8A98C', '#F08FB0', '#F3E6C4'] },
+    ],
+  },
+  envol: {
+    id: 'envol',
+    name: 'Envol',
+    fonts: `${GF}family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Geist:wght@400;500;600;700&display=swap`,
+    intro: 'envelope',
+    hero: 'centered',
+    particles: 'or',
+    burst: 'etoiles',
+    music: 'lounge',
+    motifs: ['cercles', 'rayons', 'vagues', 'aucun'],
+    ornament: ORN.sunrise,
+    frame: envolFrame,
+    kicker: 'Cérémonie de présentation des vœux',
+    introFor: 'Invitation officielle',
+    introLabel: 'Présentation des vœux',
+    countdownLabel: 'Avant la cérémonie',
+    countdownToday: 'C’est aujourd’hui',
+    countdownUnits: 3,
+    heroSeal: true,
+    invitationCard: true,
+    live: { badge: 'En direct le', waiting: 'Le direct commence à' },
+    footerBand: true,
+    translations: ENVOL_EN,
+    // Livre d'or devenu « mur des vœux » : les vœux validés passent sur l'écran de la salle (/e/{slug}/mur).
+    // services : l'auteur d'un vœu choisit son service parmi ceux du formulaire de réponse.
+    guestbook: { placeholder: 'Santé, paix et réussite à toute l’équipe…', button: 'Envoyer mon vœu', empty: 'Soyez le premier à présenter vos vœux.', services: true },
+    printOffer: { label: 'Commandez l’album de la cérémonie ou des tirages encadrés auprès de TBF DIGITAL', product: 'l’album de la cérémonie ou des tirages encadrés' },
+    // Une page claire, ivoire et or, aux couleurs de l'organisation (l'accent).
+    palettes: [
+      { id: 'nuit', label: 'Bleu nuit · or', dark: false,
+        vars: { '--bg': '#F7F2E7', '--surface': '#FFFDF8', '--surface-2': '#EFE6D2', '--fg': '#1E2433', '--muted': '#5B6278', '--accent': '#0F1F44', '--accent-2': '#86601A', '--on-accent': '#FFFDF8', '--line': '#E6DCC6', '--motif': '#C49A3C', '--motif-opacity': '.12' },
+        particleColors: ['#C49A3C', '#D9B567', '#0F1F44'] },
+      { id: 'bordeaux', label: 'Bordeaux · or', dark: false,
+        vars: { '--bg': '#F7F2E7', '--surface': '#FFFDF8', '--surface-2': '#EFE6D2', '--fg': '#2A1E22', '--muted': '#6B5A5F', '--accent': '#5A1A2B', '--accent-2': '#86601A', '--on-accent': '#FFFDF8', '--line': '#E6DCC6', '--motif': '#C49A3C', '--motif-opacity': '.12' },
+        particleColors: ['#C49A3C', '#D9B567', '#5A1A2B'] },
+      { id: 'foret', label: 'Vert forêt · or', dark: false,
+        vars: { '--bg': '#F7F2E7', '--surface': '#FFFDF8', '--surface-2': '#EFE6D2', '--fg': '#1C2A24', '--muted': '#56665E', '--accent': '#0F3B2E', '--accent-2': '#86601A', '--on-accent': '#FFFDF8', '--line': '#E6DCC6', '--motif': '#C49A3C', '--motif-opacity': '.12' },
+        particleColors: ['#C49A3C', '#D9B567', '#0F3B2E'] },
     ],
   },
 }

@@ -55,6 +55,14 @@ public static class EventSharePosterRenderer
         var (width, height) = SizeOf(format);
         using var surface = SKSurface.Create(new SKImageInfo(width, height));
         var canvas = surface.Canvas;
+        // Modèle Envol : aperçu bleu nuit et or aux couleurs de l'organisation (lien seulement).
+        if (format == SharePosterFormat.Link && string.Equals(evt.Template, "Envol", StringComparison.OrdinalIgnoreCase))
+        {
+            DrawEnvol(canvas, evt);
+            using var envolImage = surface.Snapshot();
+            using var envolPng = envolImage.Encode(SKEncodedImageFormat.Png, 95);
+            return envolPng.ToArray();
+        }
         canvas.Clear(Background);
         DrawBackground(canvas, ParseAccent(evt.HeroColor ?? evt.ThemeColor), width, height);
         if (format == SharePosterFormat.Link)
@@ -290,6 +298,165 @@ public static class EventSharePosterRenderer
             StrokeCap = SKStrokeCap.Round,
         };
         canvas.DrawLine(centerX - 45, 155, centerX + 45, 155, dividerPaint);
+    }
+
+    private static readonly SKColor EnvolNight = new(15, 31, 68);
+    private static readonly SKColor EnvolIvory = new(247, 242, 231);
+    private static readonly SKColor EnvolGold = new(217, 181, 103);
+
+    // Aperçu Envol (maquette partage.html) : sceau guilloché, titre, année dorée, date et
+    // lieu. Tout est centré : WhatsApp recadre parfois l'image en carré.
+    private static void DrawEnvol(SKCanvas canvas, PublicEventDto evt)
+    {
+        var org = ParseAccent(evt.HeroColor ?? evt.ThemeColor);
+        if (org == DefaultAccent) org = EnvolNight;
+        canvas.Clear(org);
+        const float centerX = Width / 2f;
+
+        // Deux sceaux en filigrane qui débordent des coins, puis le sceau central.
+        DrawSeal(canvas, 130, 110, 310, EnvolGold.WithAlpha(26), 1.2f, bare: true, org);
+        DrawSeal(canvas, Width - 110, Height - 70, 310, EnvolGold.WithAlpha(26), 1.2f, bare: true, org);
+        DrawSeal(canvas, centerX, 130, 66, EnvolGold, 0.6f, bare: false, org);
+
+        using var serifBold = SKTypeface.FromFamilyName("DejaVu Serif", SKFontStyle.Bold);
+        using var sansBold = SKTypeface.FromFamilyName("DejaVu Sans", SKFontStyle.Bold);
+        using var sans = SKTypeface.FromFamilyName("DejaVu Sans", SKFontStyle.Normal);
+        using var ivoryPaint = TextPaint(EnvolIvory);
+        using var softPaint = TextPaint(new SKColor(205, 209, 222));
+        var fr = CultureInfo.GetCultureInfo("fr-FR");
+
+        var y = 236f;
+        // En-tête Envol : le titre de la page est le nom de l'organisation, le surtitre celui
+        // de la cérémonie (« Présentation des vœux »).
+        var kicker = Clean(evt.HeroTitle, 60) ?? Clean(evt.Name, 60);
+        if (kicker != null)
+        {
+            using var kickerFont = new SKFont(sansBold, 17);
+            DrawSpaced(canvas, kicker.ToUpper(fr), centerX, y, kickerFont, ivoryPaint, 3.5f);
+            y += 16;
+        }
+
+        var title = Clean(evt.HeroKicker, 120) ?? "Cérémonie de présentation des vœux";
+        using var titleFont = new SKFont(serifBold, 48);
+        var titleLines = Wrap(title, titleFont, ivoryPaint, 1000).ToList();
+        if (titleLines.Count > 1)
+        {
+            titleFont.Size = 40;
+            titleLines = Wrap(title, titleFont, ivoryPaint, 1000).Take(2).ToList();
+        }
+        foreach (var line in titleLines)
+        {
+            y += titleFont.Size + 6;
+            DrawCentered(canvas, line, centerX, y, titleFont, ivoryPaint);
+        }
+
+        // Année en dégradé or, sauf si le titre la donne déjà.
+        var year = evt.EventDate?.Year.ToString(CultureInfo.InvariantCulture);
+        if (year != null && !title.Contains(year, StringComparison.Ordinal))
+        {
+            using var yearFont = new SKFont(serifBold, titleLines.Count > 1 ? 104 : 124);
+            y += yearFont.Size * 0.95f;
+            var w = yearFont.MeasureText(year, ivoryPaint);
+            using var yearPaint = new SKPaint
+            {
+                IsAntialias = true,
+                Shader = SKShader.CreateLinearGradient(
+                    new SKPoint(centerX - w / 2, y - yearFont.Size), new SKPoint(centerX + w / 2, y),
+                    new[] { new SKColor(184, 137, 46), new SKColor(241, 217, 160), EnvolGold, new SKColor(154, 111, 30) },
+                    new[] { 0f, 0.42f, 0.52f, 1f }, SKShaderTileMode.Clamp),
+            };
+            DrawCentered(canvas, year, centerX, y, yearFont, yearPaint);
+        }
+
+        // Filet et losange.
+        y += 26;
+        using (var gold = new SKPaint { IsAntialias = true, Color = EnvolGold, StrokeWidth = 1.2f })
+        {
+            canvas.DrawLine(centerX - 100, y, centerX - 12, y, gold);
+            canvas.DrawLine(centerX + 12, y, centerX + 100, y, gold);
+            using var diamond = new SKPath();
+            diamond.MoveTo(centerX, y - 5);
+            diamond.LineTo(centerX + 5, y);
+            diamond.LineTo(centerX, y + 5);
+            diamond.LineTo(centerX - 5, y);
+            diamond.Close();
+            canvas.DrawPath(diamond, gold);
+        }
+
+        var details = new List<string>();
+        if (evt.EventDate is DateOnly date)
+        {
+            var dateText = date.ToDateTime(TimeOnly.MinValue).ToString("dddd d MMMM yyyy", fr);
+            dateText = char.ToUpper(dateText[0], fr) + dateText[1..];
+            if (evt.StartTime is TimeOnly time)
+                dateText += " · " + time.ToString("HH'h'mm", CultureInfo.InvariantCulture);
+            details.Add(dateText);
+        }
+        var location = Clean(
+            !string.IsNullOrWhiteSpace(evt.LocationLabel) && evt.LocationLabel != "Lieu principal" ? evt.LocationLabel : evt.LocationAddress, 60);
+        if (location != null) details.Add(location);
+        if (details.Count > 0)
+        {
+            using var detailFont = new SKFont(sans, 24);
+            var text = string.Join(" · ", details);
+            detailFont.Size = Math.Min(24, 24 * 1060 / Math.Max(1, detailFont.MeasureText(text, ivoryPaint)));
+            y += 58;
+            DrawCentered(canvas, text, centerX, Math.Min(y, 572), detailFont, ivoryPaint);
+        }
+        using var footFont = new SKFont(sans, 17);
+        DrawCentered(canvas, "Invitation officielle · tbfmoment.com", centerX, 606, footFont, softPaint);
+    }
+
+    // Sceau guilloché (maquette envol.js), dessiné sur une base de 200 : bord festonné, six
+    // ondes à douze lobes décalées de 5°, disque central ivoire (sauf en filigrane).
+    private static void DrawSeal(SKCanvas canvas, float cx, float cy, float radius, SKColor stroke, float strokeWidth, bool bare, SKColor background)
+    {
+        var scale = radius / 100f;
+        using var paint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, Color = stroke, StrokeWidth = strokeWidth };
+        SKPath Guilloche(float r0, float amp, int k, int n, float rotation)
+        {
+            var path = new SKPath();
+            for (var i = 0; i < n; i++)
+            {
+                var t = 2 * Math.PI * i / n;
+                var r = r0 + amp * Math.Sin(k * t);
+                var a = t + rotation * Math.PI / 180;
+                var point = new SKPoint(cx + (float)(r * Math.Cos(a)) * scale, cy + (float)(r * Math.Sin(a)) * scale);
+                if (i == 0) path.MoveTo(point); else path.LineTo(point);
+            }
+            path.Close();
+            return path;
+        }
+        using (var edge = Guilloche(97, 2.2f, 60, 180, 0))
+        {
+            paint.StrokeWidth = strokeWidth * 1.6f;
+            canvas.DrawPath(edge, paint);
+        }
+        paint.StrokeWidth = strokeWidth;
+        foreach (var angle in new[] { 0, 5, 10, 15, 20, 25 })
+        {
+            using var wave = Guilloche(78, 16, 12, 144, angle);
+            canvas.DrawPath(wave, paint);
+        }
+        if (bare) return;
+        canvas.DrawCircle(cx, cy, 61 * scale, paint);
+        using var fill = new SKPaint { IsAntialias = true, Color = EnvolIvory };
+        canvas.DrawCircle(cx, cy, 57 * scale, fill);
+        using var dash = SKPathEffect.CreateDash(new[] { 3f, 3f }, 0);
+        using var inner = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, Color = background.WithAlpha(150), StrokeWidth = 1, PathEffect = dash };
+        canvas.DrawCircle(cx, cy, 30 * scale, inner);
+    }
+
+    // Texte en capitales espacées (sur-titre de la maquette).
+    private static void DrawSpaced(SKCanvas canvas, string text, float centerX, float baseline, SKFont font, SKPaint paint, float spacing)
+    {
+        var widths = text.Select(c => font.MeasureText(c.ToString(), paint)).ToArray();
+        var x = centerX - (widths.Sum() + spacing * (text.Length - 1)) / 2;
+        for (var i = 0; i < text.Length; i++)
+        {
+            canvas.DrawText(text[i].ToString(), x, baseline, SKTextAlign.Left, font, paint);
+            x += widths[i] + spacing;
+        }
     }
 
     private static SKPaint TextPaint(SKColor color) => new()

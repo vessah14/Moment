@@ -3,7 +3,7 @@ import { Check } from 'lucide-react'
 import TemplatePreview from '../templates/TemplatePreview'
 import { getSiteTheme } from '../site/themes/themeDefs'
 import FaqEditor from './FaqEditor'
-import { AdditionalVenuesEditor, DressCodeEditor, FamiliesEditor, GiftAccountsEditor, InvitationEditor, PartnersEditor, PeopleEditor, RsvpSidesEditor, VideoEditor } from './ModuleEditors'
+import { AdditionalVenuesEditor, DressCodeEditor, FamiliesEditor, GiftAccountsEditor, HonoursEditor, InvitationEditor, PartnersEditor, PeopleEditor, RsvpSidesEditor, VideoEditor } from './ModuleEditors'
 import PremiumThemeFields from './PremiumThemeFields'
 import Toggle from './Toggle'
 import TicketCard from '../tickets/TicketCard'
@@ -205,6 +205,23 @@ export default function StylePanel({
               )}
               {selectedBlock === 'Vidéo' && (
                 <VideoEditor content={content} onChange={(patch) => onChangeBlockContent(selectedBlock, patch)} />
+              )}
+              {selectedBlock === 'Galerie' && (
+                <label className="flex items-start gap-2 text-sm text-ink">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4 accent-brand-purple"
+                    checked={content.guestUploads !== false}
+                    onChange={(e) => onChangeBlockContent(selectedBlock, { guestUploads: e.target.checked })}
+                  />
+                  <span>
+                    Les invités peuvent ajouter leurs photos
+                    <span className="block text-xs text-faint">Elles n’apparaissent qu’après votre validation, dans Galerie (tableau de bord).</span>
+                  </span>
+                </label>
+              )}
+              {selectedBlock === 'Distinctions' && (
+                <HonoursEditor content={content} onChange={(patch) => onChangeBlockContent(selectedBlock, patch)} />
               )}
               {selectedBlock === 'Intervenants' && (
                 <PeopleEditor content={content} onChange={(patch) => onChangeBlockContent(selectedBlock, patch)} />

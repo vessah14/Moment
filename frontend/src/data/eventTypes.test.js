@@ -39,7 +39,7 @@ describe("types d'événement de l'assistant", () => {
     expect(anniversaryModels.some((model) => model.theme === 'fiesta')).toBe(false)
   })
 
-  it('utilisent les 27 modèles premium', () => {
+  it('utilisent tous les modèles premium', () => {
     const used = new Set(EVENT_TYPES.flatMap((t) => t.templates))
     expect(used.size).toBe(TEMPLATES.filter((t) => t.premium).length)
   })

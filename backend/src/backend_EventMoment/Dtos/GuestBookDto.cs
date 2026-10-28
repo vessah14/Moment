@@ -10,6 +10,10 @@ namespace backend_EventMoment.Dtos
 
         [Required, MaxLength(2000)]
         public string Message { get; set; } = string.Empty;
+
+        // Service ou filière (mur des vœux) : gardé seulement s'il fait partie des choix du bloc RSVP.
+        [MaxLength(80)]
+        public string? Service { get; set; }
     }
 
     public class UpdateGuestBookStatusDto
@@ -31,6 +35,9 @@ namespace backend_EventMoment.Dtos
         public string Message { get; set; } = string.Empty;
         public GuestBookStatus Status { get; set; }
         public string? Reply { get; set; }
+        public string? Service { get; set; }
+        // Alerte automatique (numéro, lien, mot signalé), recalculée à chaque lecture.
+        public string? Alert { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
     }
 }

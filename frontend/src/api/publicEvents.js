@@ -8,6 +8,19 @@ export function getPublicSite(slug) {
   return apiFetch(`/public/events/${slug}/site`, { auth: false })
 }
 
+// Mur du jour J : dernières photos et derniers messages validés.
+export function getPublicWall(slug) {
+  return apiFetch(`/public/events/${encodeURIComponent(slug)}/wall`, { auth: false })
+}
+
+// Album des invités : la photo attend la validation de l'organisateur avant d'être visible.
+export function uploadGuestPhoto(slug, file, name) {
+  const formData = new FormData()
+  formData.append('file', file)
+  if (name?.trim()) formData.append('name', name.trim())
+  return apiFetch(`/public/events/${encodeURIComponent(slug)}/photos`, { method: 'POST', body: formData, auth: false })
+}
+
 export function submitPublicEventRsvp(slug, dto) {
   return apiFetch(`/public/events/${encodeURIComponent(slug)}/rsvp`, { method: 'POST', body: dto, auth: false })
 }

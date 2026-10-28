@@ -78,6 +78,25 @@ export const INVITATIONS = {
     demo: { greeting: "Chers amis,", prefix: "Cher·e", body: "On termine 2026 comme il se doit : en blanc, au bord de l'eau, avec les gens qu'on aime.\n\nLe nombre de places est limité. Confirme vite et garde ton QR code pour l'entrée.", signature: "Steve & Linda" },
     starter: { greeting: "Chers amis,", prefix: "Cher·e", body: "On se retrouve comme il se doit, avec les gens qu'on aime.\n\nLe nombre de places est limité. Confirme vite et garde ton QR code pour l'entrée." },
   },
+  minuit: {
+    illus: 'party',
+    frame: 'arch',
+    gallery: ["L'accueil","Le dîner","La piste de danse","Le compte à rebours","Minuit","Les vœux"],
+    demo: { greeting: "Chers parents, chers amis,", prefix: "Cher·e", body: "Un dîner, de la musique et le compte à rebours tous ensemble. On termine 2026 réunis et on accueille 2027 de la plus belle des façons.\n\nMerci de confirmer votre présence avant le 20 décembre pour que nous prévoyions votre place à table.", signature: "La famille Ekwalla" },
+    starter: { greeting: "Chers parents, chers amis,", prefix: "Cher·e", body: "Un dîner, de la musique et le compte à rebours tous ensemble. On termine l'année réunis et on accueille la nouvelle de la plus belle des façons.\n\nMerci de confirmer votre présence pour que nous prévoyions votre place à table." },
+  },
+  envol: {
+    illus: 'conference',
+    frame: 'rect',
+    gallery: ["L'accueil","L'allocution","Les médaillés","La photo de famille","Le cocktail","Vœux 2026"],
+    demo: { greeting: "Madame, Monsieur,", prefix: "Cher·e", body: "Le Directeur Général et l'ensemble du personnel de Wouri Logistics ont l'honneur de vous convier à la cérémonie de présentation des vœux pour l'année 2027.\n\nMerci de confirmer votre présence avant le 8 janvier.", signature: "La Direction générale" },
+    starter: { greeting: "Madame, Monsieur,", prefix: "Cher·e", body: "Le Directeur Général et l'ensemble du personnel ont l'honneur de vous convier à la cérémonie de présentation des vœux pour la nouvelle année.\n\nMerci de confirmer votre présence." },
+    // Variantes selon le type d'événement (data/eventTypes.js).
+    starterFor: {
+      'voeux-ecole': { greeting: "Madame, Monsieur,", prefix: "Cher·e", body: "Le Fondateur, la Direction et toute la communauté éducative ont l'honneur de vous convier à la cérémonie de présentation des vœux pour la nouvelle année.\n\nMerci de confirmer votre présence." },
+      'voeux-administration': { greeting: "Madame, Monsieur,", prefix: "Cher·e", body: "Le Directeur et l'ensemble du personnel ont l'honneur de vous convier à la cérémonie de présentation des vœux pour la nouvelle année.\n\nMerci de confirmer votre présence." },
+    },
+  },
   grace: {
     illus: 'church',
     frame: 'arch',
@@ -209,7 +228,8 @@ export const DEFAULT_INVITATION = {
 }
 
 // Contenu du bloc Invitation à la création : texte de départ du modèle, signé du nom affiché.
-export function invitationStarter(template, signature) {
-  const starter = invitationFor(template?.theme)?.starter ?? DEFAULT_INVITATION
+export function invitationStarter(template, signature, eventTypeId) {
+  const inv = invitationFor(template?.theme)
+  const starter = inv?.starterFor?.[eventTypeId] ?? inv?.starter ?? DEFAULT_INVITATION
   return { ...starter, signature: signature ?? '' }
 }

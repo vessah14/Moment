@@ -857,6 +857,104 @@ const RAW_TEMPLATES = [
     },
     presentation: { heroAlign: "center", heroHeight: "32rem", panelRadius: "1.25rem" }
   },
+  {
+    name: "Minuit",
+    theme: "minuit",
+    sourceModel: "minuit.html",
+    category: "Fêtes",
+    categoryCode: "fetes_saisons",
+    badge: "PREMIUM",
+    premium: true,
+    subtitle: "Nouvel An · 31 décembre",
+    description: "Bleu nuit, or et compte à rebours jusqu’à minuit, pour le réveillon d’une famille, d’une association ou le gala de fin d’année d’une entreprise.",
+    features: [
+      { label: "Ouverture", text: "invitation-billet du réveillon" },
+      { label: "Fond", text: "étoiles, feux d’artifice, bande ndop dorée" },
+      { label: "Modules", text: "compte à rebours jusqu’à minuit, vœux pour la nouvelle année" }
+    ],
+    preview: {
+      bg: "#100B30",
+      ink: "#ECE8F5",
+      accent: "#E3B65A",
+      accent2: "#F3E6C4",
+      font: "\"Playfair Display\", serif",
+      eyebrow: "Saint-Sylvestre",
+      title: "2027",
+      date: "31 déc. 2026 · Douala"
+    },
+    blocks: ["Rebours", "Programme", "Localisation", "Dress code", "Galerie", "Livre d'or", "RSVP", "Pied de page"],
+    headings: {
+      Programme: "Le programme",
+      "Dress code": "Chic et scintillant",
+      Galerie: "Après la fête",
+      "Livre d'or": "Vos vœux pour la nouvelle année",
+      RSVP: "Serez-vous des nôtres ?"
+    },
+    presentation: { heroAlign: "center", heroHeight: "32rem", panelRadius: "1.25rem" }
+  },
+  {
+    name: "Envol",
+    theme: "envol",
+    sourceModel: "envol.html",
+    category: "Professionnel",
+    categoryCode: "evenement_entreprise",
+    badge: "PREMIUM",
+    premium: true,
+    subtitle: "Présentation des vœux",
+    description: "Ivoire, or et couleur de l’organisation, pour la cérémonie de présentation des vœux d’une entreprise, d’une école ou d’une administration.",
+    features: [
+      { label: "Ouverture", text: "enveloppe de l’invitation officielle" },
+      { label: "Fond", text: "rosace guillochée et traits d’or qui s’envolent" },
+      { label: "Modules", text: "allocutions, déroulé protocolaire, tenue, infos pratiques, réponse" }
+    ],
+    preview: {
+      bg: "#F7F2E7",
+      ink: "#1E2433",
+      accent: "#0F1F44",
+      accent2: "#86601A",
+      font: "\"Cormorant Garamond\", serif",
+      eyebrow: "Vœux 2027",
+      title: "Wouri Logistics",
+      date: "15 janv. 2027 · Douala"
+    },
+    blocks: ["Rebours", "Invitation", "RSVP", "Programme", "Intervenants", "Distinctions", "Livre d'or", "Localisation", "Dress code", "FAQ", "Vidéo", "Galerie", "Pied de page"],
+    headings: {
+      RSVP: "Confirmez votre présence",
+      Programme: "Déroulé de la cérémonie",
+      Intervenants: "Les allocutions",
+      Distinctions: "Les médaillés de l’année",
+      "Livre d'or": "Le mur des vœux",
+      "Dress code": "Tenue",
+      FAQ: "Informations pratiques",
+      Vidéo: "Suivez la cérémonie à distance",
+      Galerie: "Souvenirs de la cérémonie"
+    },
+    content: {
+      Distinctions: { body: "Ils seront honorés pendant la cérémonie." },
+      "Livre d'or": { body: "Vos vœux s’affichent sur l’écran de la salle pendant la cérémonie." },
+      "Dress code": { title: "Pagne de l’entreprise ou tenue de ville" },
+      Vidéo: { live: true, body: "Les agences en région et les collaborateurs en mission suivent le direct ici." },
+      Galerie: { body: "Les photos officielles seront publiées ici le jour même." }
+    },
+    // Variantes selon le type d'événement choisi dans l'assistant (data/eventTypes.js).
+    variants: {
+      "voeux-ecole": {
+        headings: { Distinctions: "Les lauréats de l’année" },
+        content: {
+          "Dress code": { title: "Tenue de l’établissement ou tenue de ville" },
+          Vidéo: { live: true, body: "Les parents et les étudiants des autres campus suivent le direct ici." }
+        }
+      },
+      "voeux-administration": {
+        headings: { Distinctions: "Les distinctions de l’année" },
+        content: {
+          "Dress code": { title: "Tenue de ville ou pagne du service" },
+          Vidéo: { live: true, body: "Les services déconcentrés suivent le direct ici." }
+        }
+      }
+    },
+    presentation: { heroAlign: "center", heroHeight: "32rem", panelRadius: "1rem" }
+  },
   // Modèles classiques : rendu générique (SitePage), couleurs du modèle.
   {
     name: "Éclat",

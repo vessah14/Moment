@@ -7,6 +7,7 @@ import {
   GiftAccountsEditor,
   InvitationEditor,
   PartnersEditor,
+  HonoursEditor,
   PeopleEditor,
 } from '../builder/ModuleEditors'
 
@@ -42,6 +43,7 @@ export default function ContentStep({ template, content, onChange }) {
       {blocks.has('Localisation') && <Panel title="Autres lieux"><AdditionalVenuesEditor content={value('Localisation')} onChange={(patch) => edit('Localisation', patch)} /></Panel>}
       {blocks.has('Cadeaux') && <Panel title="Contributions"><Field label="Message affiché aux invités" multiline value={value('Cadeaux').body} onChange={(body) => edit('Cadeaux', { body })} placeholder="Expliquez comment participer, si les invités le souhaitent." /><GiftAccountsEditor content={value('Cadeaux')} onChange={(patch) => edit('Cadeaux', patch)} /><p className="text-xs text-muted">Les coordonnées sont affichées pour permettre un transfert direct. Aucun paiement n’est déclenché depuis cette page.</p></Panel>}
       {blocks.has('Intervenants') && <Panel title="Intervenants, artistes ou témoins"><PeopleEditor content={value('Intervenants')} onChange={(patch) => edit('Intervenants', patch)} /></Panel>}
+      {blocks.has('Distinctions') && <Panel title="Distinctions"><HonoursEditor content={value('Distinctions')} onChange={(patch) => edit('Distinctions', patch)} /></Panel>}
       {blocks.has('Partenaires') && <Panel title="Partenaires"><PartnersEditor content={value('Partenaires')} onChange={(patch) => edit('Partenaires', patch)} /></Panel>}
       {blocks.has('Programme') && <Panel title="Programme"><Field label="Introduction du programme" multiline value={value('Programme').body} onChange={(body) => edit('Programme', { body })} placeholder="Présentez brièvement les temps forts. Les horaires se complètent ensuite dans l’onglet Programme." /></Panel>}
       {blocks.has('FAQ') && <Panel title="Questions fréquentes"><Field label="Introduction" multiline value={value('FAQ').body} onChange={(body) => edit('FAQ', { body })} placeholder="Ajoutez les questions et réponses dans le Builder." /></Panel>}

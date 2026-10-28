@@ -48,6 +48,24 @@ namespace backend_EventMoment.Controllers
             return Ok(new { queued = await _service.QueuePendingInvitationsAsync(eventId, organizerId) });
         }
 
+        // Import d'une liste (Excel lu dans le navigateur) : doublons ignorés, services → groupes.
+        [HttpPost("import")]
+        public async Task<IActionResult> Import([FromQuery] Guid eventId, [FromBody] ImportGuestsDto dto)
+        {
+            if (!TryGetOrganizerId(out var organizerId))
+                return Unauthorized();
+            return Ok(await _service.ImportAsync(eventId, dto, organizerId));
+        }
+
+        // Invitation partagée par WhatsApp ou SMS depuis cet appareil (statut « Envoyée »).
+        [HttpPost("{id:guid}/invitation/shared")]
+        public async Task<IActionResult> MarkShared(Guid id)
+        {
+            if (!TryGetOrganizerId(out var organizerId))
+                return Unauthorized();
+            return Ok(await _service.MarkSharedAsync(id, organizerId));
+        }
+
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetById(Guid id)
         {

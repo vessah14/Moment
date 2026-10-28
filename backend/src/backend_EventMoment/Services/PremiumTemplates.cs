@@ -11,7 +11,7 @@ namespace backend_EventMoment.Services
         {
             "Noor", "Bloom", "Toghu Royal", "Ndop", "Fiesta", "Prestige", "Arena", "Live", "Summit",
             "Horizon", "Nuage", "Grâce", "Campus", "Toge", "Mémoire", "Racines", "Velvet", "Atelier",
-            "Libre", "Douceur", "Souvenir", "Étoile", "Cœur", "Hilal", "Aurore", "Unité", "Maman",
+            "Libre", "Douceur", "Souvenir", "Étoile", "Cœur", "Hilal", "Aurore", "Unité", "Maman", "Minuit", "Envol",
         };
 
         // Nom du modèle premium rangé dans custom_fields, ou null (modèle gratuit, aucun, JSON invalide).

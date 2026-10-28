@@ -90,7 +90,11 @@ namespace backend_EventMoment.Services
 
             var existing = await _context.GuestCheckins.AsNoTracking().FirstOrDefaultAsync(c => c.GuestId == id);
             if (existing != null)
-                return await WithInvitationAsync(Map(guest, existing.CheckedInAt));
+            {
+                var already = await WithInvitationAsync(Map(guest, existing.CheckedInAt));
+                already.AlreadyCheckedIn = true;
+                return already;
+            }
 
             var checkin = new GuestCheckin { GuestId = id, EventId = guest.EventId, CheckedInAt = DateTimeOffset.UtcNow };
             _context.GuestCheckins.Add(checkin);
@@ -103,7 +107,9 @@ namespace backend_EventMoment.Services
                 // Deux appareils ont scanné le même invité au même instant : déjà pointé.
                 _context.Entry(checkin).State = EntityState.Detached;
                 var saved = await _context.GuestCheckins.AsNoTracking().FirstAsync(c => c.GuestId == id);
-                return await WithInvitationAsync(Map(guest, saved.CheckedInAt));
+                var already = await WithInvitationAsync(Map(guest, saved.CheckedInAt));
+                already.AlreadyCheckedIn = true;
+                return already;
             }
             return await WithInvitationAsync(Map(guest, checkin.CheckedInAt));
         }
@@ -266,6 +272,104 @@ namespace backend_EventMoment.Services
             return guests.Count;
         }
 
+        // Import d'une liste : une ligne par invité (nom, service, téléphone). Les doublons
+        // (même téléphone, ou même nom quand il n'y a pas de téléphone) sont ignorés, dans la
+        // liste comme dans l'événement ; chaque service devient un groupe d'invités.
+        public async Task<ImportGuestsResultDto> ImportAsync(Guid eventId, ImportGuestsDto dto, Guid organizerId)
+        {
+            if (!await _context.Events.AnyAsync(e => e.Id == eventId && e.OrganizerId == organizerId))
+                throw new KeyNotFoundException("Événement introuvable.");
+
+            var existing = await _context.Guests.AsNoTracking()
+                .Where(g => g.EventId == eventId)
+                .Select(g => new { g.FullName, g.Phone })
+                .ToListAsync();
+            var phones = existing.Select(g => PhoneKey(g.Phone)).OfType<string>().ToHashSet();
+            var names = existing.Select(g => NameKey(g.FullName)).ToHashSet();
+            var groups = (await _context.GuestGroups.Where(g => g.EventId == eventId).ToListAsync())
+                .GroupBy(g => NameKey(g.Label))
+                .ToDictionary(g => g.Key, g => g.First());
+
+            var result = new ImportGuestsResultDto();
+            var batchId = Guid.NewGuid();
+            await using var transaction = await OrganizerLock.BeginAsync(_context, organizerId);
+            foreach (var row in dto.Rows)
+            {
+                var fullName = row.FullName?.Trim() ?? string.Empty;
+                var phone = string.IsNullOrWhiteSpace(row.Phone) ? null : row.Phone.Trim();
+                var phoneKey = PhoneKey(phone);
+                if (fullName.Length == 0
+                    || (phoneKey != null ? phones.Contains(phoneKey) : names.Contains(NameKey(fullName))))
+                {
+                    result.Skipped++;
+                    continue;
+                }
+
+                if (_plans != null)
+                {
+                    try
+                    {
+                        await _plans.EnsureCanAddGuestAsync(organizerId, eventId);
+                    }
+                    catch (InvalidOperationException limit)
+                    {
+                        result.LimitReached = limit.Message;
+                        break;
+                    }
+                }
+
+                Guid? groupId = null;
+                var service = row.Service?.Trim();
+                if (!string.IsNullOrEmpty(service))
+                {
+                    if (!groups.TryGetValue(NameKey(service), out var group))
+                    {
+                        group = new Guest_group { Id = Guid.NewGuid(), EventId = eventId, Label = service, CreatedAt = DateTimeOffset.UtcNow };
+                        _context.GuestGroups.Add(group);
+                        groups[NameKey(service)] = group;
+                        result.Groups++;
+                    }
+                    groupId = group.Id;
+                }
+
+                var now = DateTimeOffset.UtcNow;
+                _context.Guests.Add(new Guest
+                {
+                    Id = Guid.NewGuid(),
+                    EventId = eventId,
+                    GroupId = groupId,
+                    FullName = fullName,
+                    Phone = phone,
+                    Email = string.Empty,
+                    Status = GuestStatus.EnAttente,
+                    ImportBatchId = batchId,
+                    CreatedAt = now,
+                    UpdatedAt = now
+                });
+                // Enregistré ligne par ligne : la limite de l'offre compte les invités en base.
+                await _context.SaveChangesAsync();
+                if (phoneKey != null) phones.Add(phoneKey);
+                names.Add(NameKey(fullName));
+                result.Added++;
+            }
+            if (transaction != null)
+                await transaction.CommitAsync();
+            return result;
+        }
+
+        private static string NameKey(string? name) =>
+            string.Join(' ', (name ?? string.Empty).Trim().ToLowerInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries));
+
+        public async Task<GuestDTO> MarkSharedAsync(Guid id, Guid organizerId)
+        {
+            var guest = await _context.Guests.FirstOrDefaultAsync(x => x.Id == id && x.Event.OrganizerId == organizerId)
+                ?? throw new KeyNotFoundException($"Invité {id} introuvable.");
+            guest.InvitationSharedAt = DateTimeOffset.UtcNow;
+            await _context.SaveChangesAsync();
+            var checkins = await CheckinsForAsync(new[] { id });
+            return await WithInvitationAsync(Map(guest, checkins.TryGetValue(id, out var at) ? at : null));
+        }
+
         private async Task<GuestDTO> WithInvitationAsync(GuestDTO dto) => (await WithInvitationsAsync(new List<GuestDTO> { dto }))[0];
 
         private async Task<List<GuestDTO>> WithInvitationsAsync(List<GuestDTO> dtos)
@@ -274,8 +378,20 @@ namespace backend_EventMoment.Services
             var invitations = await _context.GuestInvitations.AsNoTracking()
                 .Where(i => ids.Contains(i.GuestId))
                 .ToDictionaryAsync(i => i.GuestId);
+            // Dernière réponse de chaque invité : service (choix « côté ») et cocktail.
+            var answers = (await _context.RsvpResponses.AsNoTracking()
+                    .Where(r => ids.Contains(r.GuestId))
+                    .Select(r => new { r.GuestId, r.Side, r.Extra, r.CreatedAt })
+                    .ToListAsync())
+                .GroupBy(r => r.GuestId)
+                .ToDictionary(g => g.Key, g => g.OrderByDescending(r => r.CreatedAt).First());
             foreach (var dto in dtos)
             {
+                if (answers.TryGetValue(dto.Id, out var answer))
+                {
+                    dto.Side = answer.Side;
+                    dto.Extra = answer.Extra;
+                }
                 if (!invitations.TryGetValue(dto.Id, out var inv)) continue;
                 dto.InvitationSentAt = inv.SentAt;
                 dto.InvitationPending = inv.SentAt == null && inv.Attempts < InvitationDispatcher.MaxAttempts;
@@ -322,6 +438,14 @@ namespace backend_EventMoment.Services
                 .OrderBy(c => c.CheckedInAt)
                 .Select(c => (DateTimeOffset?)c.CheckedInAt)
                 .FirstOrDefaultAsync();
+
+            // Première ouverture du lien personnel : statut « Vue » dans l'espace organisateur.
+            if (guest.InvitationOpenedAt == null)
+            {
+                var tracked = await _context.Guests.IgnoreQueryFilters().FirstAsync(g => g.Id == guestId);
+                tracked.InvitationOpenedAt = DateTimeOffset.UtcNow;
+                await _context.SaveChangesAsync();
+            }
 
             var rules = RsvpRules.Read(await RsvpBlockContentAsync(guest.EventId)).ForSeats(guest.Seats);
             var invitation = MapInvitation(guest, eventEntity, location, rsvp, rules, checkedInAt);
@@ -384,6 +508,7 @@ namespace backend_EventMoment.Services
 
             // Le choix « côté » n'a de sens que pour une présence confirmée.
             var side = confirmed ? RsvpSides.Validate(rsvpBlock, dto.Side) : null;
+            var extra = confirmed && RsvpSides.OffersExtra(rsvpBlock) ? dto.Extra ?? false : (bool?)null;
 
             guest.Status = dto.Maybe ? GuestStatus.EnAttente : confirmed ? GuestStatus.Present : GuestStatus.Absent;
             guest.UpdatedAt = DateTimeOffset.UtcNow;
@@ -409,6 +534,7 @@ namespace backend_EventMoment.Services
             rsvp.AccompanyingCount = confirmed ? dto.AccompanyingCount : (short)0;
             rsvp.Message = dto.Message;
             rsvp.Side = side;
+            rsvp.Extra = extra;
             rsvp.RespondedAt = DateTimeOffset.UtcNow;
 
             await _context.SaveChangesAsync();
@@ -446,6 +572,7 @@ namespace backend_EventMoment.Services
                 throw new InvalidOperationException("Veuillez indiquer un numéro de téléphone ou une adresse e-mail.");
 
             var side = confirmed ? RsvpSides.Validate(rsvpBlock, dto.Side) : null;
+            var extra = confirmed && RsvpSides.OffersExtra(rsvpBlock) ? dto.Extra ?? false : (bool?)null;
 
             // Déjà sur la liste (même téléphone ou même e-mail) : la réponse va à cet invité,
             // sans doublon. Son identifiant (QR du pass) et son nom ne sont jamais renvoyés :
@@ -460,6 +587,7 @@ namespace backend_EventMoment.Services
                     AccompanyingCount = dto.AccompanyingCount,
                     Message = dto.Message,
                     Side = dto.Side,
+                    Extra = dto.Extra,
                 });
                 if (answer == null) return null;
                 answer.GuestId = Guid.Empty;
@@ -498,6 +626,7 @@ namespace backend_EventMoment.Services
                 AccompanyingCount = confirmed ? dto.AccompanyingCount : (short)0,
                 Message = string.IsNullOrWhiteSpace(dto.Message) ? null : dto.Message.Trim(),
                 Side = side,
+                Extra = extra,
                 RespondedAt = now,
                 CreatedAt = now,
             };
@@ -559,6 +688,7 @@ namespace backend_EventMoment.Services
             RsvpAccompanyingCount = rsvp?.AccompanyingCount ?? 0,
             RsvpMessage = rsvp?.Message,
             RsvpSide = rsvp?.Side,
+            RsvpExtra = rsvp?.Extra,
             RsvpMaybe = rsvp is { Confirmed: null, RespondedAt: not null },
             RsvpClosed = rules.IsClosed(eventEntity, Today),
             RsvpDeadline = rules.Deadline,
@@ -603,7 +733,9 @@ namespace backend_EventMoment.Services
             Email = entity.Email ?? string.Empty,
             GroupId = entity.GroupId,
             Seats = entity.Seats,
-            Status = entity.Status
+            Status = entity.Status,
+            InvitationOpenedAt = entity.InvitationOpenedAt,
+            InvitationSharedAt = entity.InvitationSharedAt
         };
     }
 }

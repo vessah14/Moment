@@ -33,6 +33,10 @@ namespace backend_EventMoment.Models
         [Column("side")]
         public string? Side { get; set; }
 
+        // Case optionnelle du formulaire (« Je reste pour le cocktail ») : null si non proposée.
+        [Column("extra")]
+        public bool? Extra { get; set; }
+
         [Column("responded_at")]
         public DateTimeOffset? RespondedAt { get; set; }
 

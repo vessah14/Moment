@@ -1,6 +1,8 @@
 // Message prêt à envoyer sur WhatsApp pour un événement publié : titre, date, lieu, lien.
-export function buildShareMessage({ title, date, time, location, url }) {
-  const lines = [title?.trim() || 'Vous êtes invité']
+// intro : début de phrase propre au type d'événement (« Vous êtes invité·e à la cérémonie… de »).
+export function buildShareMessage({ title, date, time, location, url, intro }) {
+  const name = title?.trim()
+  const lines = [intro && name ? `${intro} ${name}.` : name || 'Vous êtes invité']
   if (date) {
     const day = new Date(`${String(date).slice(0, 10)}T12:00:00`)
     if (!Number.isNaN(day.getTime())) {

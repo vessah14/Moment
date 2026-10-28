@@ -34,6 +34,11 @@ namespace backend_EventMoment.Models
         [Column("status")]
         public GuestBookStatus Status { get; set; } = GuestBookStatus.EnAttente;
 
+        // Service ou filière de l'auteur (mur des vœux), parmi les choix du bloc RSVP.
+        [MaxLength(80)]
+        [Column("service")]
+        public string? Service { get; set; }
+
         [Column("reply")]
         public string? Reply { get; set; }
 

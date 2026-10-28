@@ -54,10 +54,18 @@ export const RSVP_SIDES = {
     starter: { sideLabel: 'Type de groupe', sides: GROUPS, cta: 'Inscrire mon groupe' },
   },
   maman: { demo: { cta: 'Inscrire une maman' }, starter: { cta: 'Inscrire une maman' } },
+  // Envol : services en boutons à toucher (sidePills) et case « cocktail » (extraLabel).
+  envol: {
+    demo: { sideLabel: 'Votre service', sides: ['Direction générale', 'Commercial', 'Technique', 'Finances', 'Ressources humaines', 'Invité·e extérieur·e'], cta: 'Envoyer ma réponse', sidePills: true, extraLabel: 'Je reste pour le cocktail' },
+    starter: { sideLabel: 'Votre service', sides: [], cta: 'Envoyer ma réponse', sidePills: true, extraLabel: 'Je reste pour le cocktail' },
+    starterFor: {
+      'voeux-ecole': { sideLabel: 'Votre filière', sides: [], cta: 'Envoyer ma réponse', sidePills: true, extraLabel: 'Je reste pour le cocktail' },
+    },
+  },
 }
 
 export const rsvpSidesDemo = (theme) => RSVP_SIDES[theme]?.demo ?? {}
-export const rsvpSidesStarter = (theme) => RSVP_SIDES[theme]?.starter ?? {}
+export const rsvpSidesStarter = (theme, eventTypeId) => RSVP_SIDES[theme]?.starterFor?.[eventTypeId] ?? RSVP_SIDES[theme]?.starter ?? {}
 
 // Choix utilisables : textes non vides, sans doublon, 8 au plus (comme le serveur).
 export function usableSides(sides) {

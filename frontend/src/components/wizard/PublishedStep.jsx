@@ -141,6 +141,7 @@ export default function PublishedStep({
               date={form.date}
               time={form.timeStart}
               location={[form.venueName, form.venueAddr].filter(Boolean).join(', ')}
+              intro={type.shareIntro}
             />
           </div>
         )}

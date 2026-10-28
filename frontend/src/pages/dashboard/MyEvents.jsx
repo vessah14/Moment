@@ -8,6 +8,7 @@ import {
   deleteEvent
 } from '../../api/events'
 import { eventShareUrl } from '../../api/client'
+import { eventType } from '../../data/eventTypes'
 import { trackPublicEvent } from '../../api/publicEvents'
 import { listEventCategories } from '../../api/eventCategories'
 import { listGuestStats } from '../../api/guests'
@@ -20,6 +21,15 @@ import Dialog, { ConfirmDialog } from '../../components/ui/Dialog'
 import { formatEventDate, statusLabel } from '../../utils/eventStatus'
 
 const FILTERS = ['Tous', 'Publiés', 'Brouillons', 'Passés']
+
+// Début du message WhatsApp propre au type de l'événement (customFields.eventType).
+function shareIntroOf(customFields) {
+  try {
+    return eventType(JSON.parse(customFields || '{}')?.eventType)?.shareIntro
+  } catch {
+    return undefined
+  }
+}
 
 export default function MyEvents () {
   const toast = useToast()
@@ -398,6 +408,7 @@ export default function MyEvents () {
             title={sharingEvent.name}
             date={sharingEvent.eventDate}
             time={sharingEvent.startTime}
+            intro={shareIntroOf(sharingEvent.customFields)}
           />
         )}
       </Dialog>

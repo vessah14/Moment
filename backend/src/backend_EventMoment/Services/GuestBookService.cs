@@ -27,19 +27,25 @@ namespace backend_EventMoment.Services
             if (eventEntity == null)
                 return false;
 
-            var hasGuestBook = await _context.EventBlocks.IgnoreQueryFilters()
-                .AnyAsync(b => b.EventId == eventEntity.Id && b.IsVisible && b.BlockType == "Livre d'or");
-            if (!hasGuestBook)
+            var guestBook = await _context.EventBlocks.IgnoreQueryFilters().AsNoTracking()
+                .Where(b => b.EventId == eventEntity.Id && b.IsVisible && b.BlockType == "Livre d'or")
+                .Select(b => new { b.Content })
+                .FirstOrDefaultAsync();
+            if (guestBook == null)
                 return false;
 
+            var message = dto.Message.Trim();
+            // En attente par défaut : rien n'est publié sans validation de l'organisateur, sauf
+            // s'il a activé la validation automatique, et seulement pour un message sans alerte.
+            var autoApproved = WishAlerts.AutoApprove(guestBook.Content) && WishAlerts.Detect(message) == null;
             _context.GuestBookEntries.Add(new GuestBookEntry
             {
                 Id = Guid.NewGuid(),
                 EventId = eventEntity.Id,
                 AuthorName = dto.AuthorName.Trim(),
-                Message = dto.Message.Trim(),
-                // Toujours en attente : rien n'est publié sur le site sans validation de l'organisateur.
-                Status = GuestBookStatus.EnAttente,
+                Message = message,
+                Service = await ServiceOfAsync(eventEntity.Id, dto.Service),
+                Status = autoApproved ? GuestBookStatus.Publie : GuestBookStatus.EnAttente,
                 CreatedAt = DateTimeOffset.UtcNow
             });
             await _context.SaveChangesAsync();
@@ -47,6 +53,19 @@ namespace backend_EventMoment.Services
             if (_notifier != null)
                 await _notifier.NotifyNewGuestbookEntryAsync(eventEntity.Id, dto.AuthorName.Trim());
             return true;
+        }
+
+        // Service ou filière choisi par l'auteur : seulement un des choix du bloc RSVP,
+        // sinon rien (un choix inconnu ne doit pas faire perdre le vœu).
+        private async Task<string?> ServiceOfAsync(Guid eventId, string? service)
+        {
+            var value = service?.Trim();
+            if (string.IsNullOrEmpty(value)) return null;
+            var rsvpBlock = await _context.EventBlocks.IgnoreQueryFilters().AsNoTracking()
+                .Where(b => b.EventId == eventId && (b.BlockType == "RSVP" || b.BlockType == "Rsvp"))
+                .Select(b => b.Content)
+                .FirstOrDefaultAsync();
+            return RsvpSides.Read(rsvpBlock).Contains(value, StringComparer.Ordinal) ? value : null;
         }
 
         public async Task<GuestBookEntryDto> CreateAsync(CreateGuestBookEntryDto dto, Guid eventId, Guid organizerId)
@@ -121,6 +140,8 @@ namespace backend_EventMoment.Services
             Message = entity.Message,
             Status = entity.Status,
             Reply = entity.Reply,
+            Service = entity.Service,
+            Alert = WishAlerts.Detect(entity.Message),
             CreatedAt = entity.CreatedAt
         };
     }
