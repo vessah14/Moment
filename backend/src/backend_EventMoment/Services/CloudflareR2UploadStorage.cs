@@ -137,6 +137,9 @@ namespace backend_EventMoment.Services
                     BucketName = _options.Bucket,
                     Key = key,
                     InputStream = stream,
+                    // R2 ne prend pas en charge la signature SigV4 en streaming ni les checksums par défaut du SDK.
+                    DisablePayloadSigning = true,
+                    DisableDefaultChecksumValidation = true,
                     ContentType = extension.ToLowerInvariant() switch
                     {
                         ".jpg" or ".jpeg" => "image/jpeg",
