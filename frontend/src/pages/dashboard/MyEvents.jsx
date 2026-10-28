@@ -1,6 +1,6 @@
 import { Search } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   listEvents,
   updateEvent,
@@ -44,6 +44,25 @@ export default function MyEvents () {
   const [deletingEvent, setDeletingEvent] = useState(null)
   const [deleteBusy, setDeleteBusy] = useState(false)
   const [sharingEvent, setSharingEvent] = useState(null)
+  // Arrivée depuis l'assistant : l'événement créé ou modifié est mis en évidence quelques
+  // secondes. L'état de navigation est vidé pour ne pas recommencer au rechargement.
+  const location = useLocation()
+  const navigate = useNavigate()
+  const [highlight] = useState(() => location.state?.highlightEventId
+    ? { id: location.state.highlightEventId, label: location.state.highlightLabel ?? 'Nouveau' }
+    : null)
+  const [highlightOn, setHighlightOn] = useState(Boolean(highlight))
+
+  useEffect(() => {
+    if (location.state?.highlightEventId) navigate(location.pathname, { replace: true, state: null })
+  }, [location.pathname, location.state, navigate])
+
+  useEffect(() => {
+    if (!highlight || loading) return
+    document.getElementById(`event-${highlight.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    const timer = setTimeout(() => setHighlightOn(false), 8000)
+    return () => clearTimeout(timer)
+  }, [highlight, loading])
 
   useEffect(() => {
     let cancelled = false
@@ -98,15 +117,19 @@ export default function MyEvents () {
     })
   }, [activeEvents, filter, query])
 
-  const runAction = async action => {
+  // Action sur un événement, puis notification (succès ou erreur) et liste rechargée.
+  const runAction = async (action, successMessage) => {
     setError('')
     try {
       await action()
+      if (successMessage) toast(successMessage, { duration: 4000 })
       const fresh = await listEvents()
       setEvents(fresh ?? [])
       return true
     } catch (err) {
-      setError(err.message || "L'action a échoué.")
+      const message = err.message || "L'action a échoué."
+      setError(message)
+      toast(message, { variant: 'danger', duration: 8000 })
       return false
     }
   }
@@ -125,8 +148,9 @@ export default function MyEvents () {
   })
 
   const handlePublish = event =>
-    runAction(() =>
-      updateEvent(event.id, toUpdateDto(event, { status: 'Publie' }))
+    runAction(
+      () => updateEvent(event.id, toUpdateDto(event, { status: 'Publie' })),
+      `« ${event.name} » est publié : vos invités peuvent ouvrir sa page.`
     )
 
   const handleUnpublish = event => {
@@ -135,8 +159,9 @@ export default function MyEvents () {
     )
     if (!confirmed) return
 
-    return runAction(() =>
-      updateEvent(event.id, toUpdateDto(event, { status: 'Brouillon' }))
+    return runAction(
+      () => updateEvent(event.id, toUpdateDto(event, { status: 'Brouillon' })),
+      `« ${event.name} » n'est plus en ligne. Il est repassé en brouillon.`
     )
   }
 
@@ -145,24 +170,29 @@ export default function MyEvents () {
   const confirmDelete = async () => {
     if (!deletingEvent || deleteBusy) return
     setDeleteBusy(true)
-    const deleted = await runAction(() => deleteEvent(deletingEvent.id))
+    const deleted = await runAction(
+      () => deleteEvent(deletingEvent.id),
+      `« ${deletingEvent.name} » a été supprimé.`
+    )
     if (deleted) setDeletingEvent(null)
     setDeleteBusy(false)
   }
 
   const handleArchive = event =>
-    runAction(() =>
-      updateEvent(event.id, toUpdateDto(event, { status: 'Archive' }))
+    runAction(
+      () => updateEvent(event.id, toUpdateDto(event, { status: 'Archive' })),
+      `« ${event.name} » a été archivé. Retrouvez-le dans « Archives ».`
     )
 
   const handleRestore = event =>
-    runAction(() =>
-      updateEvent(event.id, toUpdateDto(event, { status: 'Brouillon' }))
+    runAction(
+      () => updateEvent(event.id, toUpdateDto(event, { status: 'Brouillon' })),
+      `« ${event.name} » est restauré en brouillon.`
     )
 
   const handleDuplicate = event =>
-    runAction(() =>
-      createEvent({
+    runAction(
+      () => createEvent({
         name: `${event.name} (copie)`,
         categoryId: event.categoryId,
         eventDate: event.eventDate,
@@ -171,12 +201,15 @@ export default function MyEvents () {
         themeColor: event.themeColor,
         themeFont: event.themeFont,
         customFields: event.customFields
-      })
+      }),
+      `Copie de « ${event.name} » créée en brouillon.`
     )
 
   const toCardProps = event => {
     const eventGuestStats = guestStatsByEvent.get(event.id)
     return {
+      id: `event-${event.id}`,
+      highlightLabel: highlightOn && highlight?.id === event.id ? highlight.label : null,
       name: event.name,
       status: event.isSuspended ? 'Suspendu' : statusLabel(event.status),
       category: categoryLabel(event.categoryId),
@@ -357,7 +390,7 @@ export default function MyEvents () {
                                     trackPublicEvent(event.slug, 'share')
                                     toast('Lien de partage copié')
                                   } catch {
-                                    toast('Copie impossible : ' + eventShareUrl(event.slug), { variant: 'error', duration: 10000 })
+                                    toast('Copie impossible : ' + eventShareUrl(event.slug), { variant: 'danger', duration: 10000 })
                                   }
                                 }
                               }

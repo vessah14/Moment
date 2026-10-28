@@ -16,13 +16,20 @@ export default function EventCard ({
   barColor,
   coverImageUrl,
   customFields,
-  actions
+  actions,
+  id,
+  highlightLabel
 }) {
   const template = templateFromCustomFields(customFields)
   const coverUrl = mediaUrl(coverImageUrl)
 
   return (
-    <div className='overflow-hidden rounded-2xl border border-border-soft bg-surface'>
+    <div
+      id={id}
+      className={`overflow-hidden rounded-2xl border bg-surface transition-shadow duration-700 ${
+        highlightLabel ? 'border-brand-purple shadow-[0_0_0_3px_color-mix(in_srgb,var(--color-brand-purple)_35%,transparent)]' : 'border-border-soft'
+      }`}
+    >
       <div
         className='relative aspect-video overflow-hidden bg-[linear-gradient(160deg,_var(--color-surface-2),_var(--color-panel))]'
         aria-label={template ? `Aperçu du modèle ${template.name}` : `Aperçu de ${name}`}
@@ -57,6 +64,12 @@ export default function EventCard ({
         <span className='absolute top-3 left-3 z-10'>
           <StatusBadge status={status} />
         </span>
+        {/* Événement qu'on vient de créer ou de modifier dans l'assistant. */}
+        {highlightLabel && (
+          <span className='absolute top-3 right-3 z-10 rounded-full bg-brand-purple px-2.5 py-1 text-[10px] font-semibold text-white shadow-sm'>
+            {highlightLabel}
+          </span>
+        )}
       </div>
 
       <div className='p-5'>

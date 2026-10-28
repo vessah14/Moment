@@ -14,13 +14,13 @@ import InfoStep, { infoErrors } from '../components/wizard/InfoStep'
 import ContentStep from '../components/wizard/ContentStep'
 import LivePreview from '../components/wizard/LivePreview'
 import ModelStep, { modelsForType } from '../components/wizard/ModelStep'
-import PublishedStep from '../components/wizard/PublishedStep'
 import { BLOCK_CONTENT_DEFAULTS } from '../data/blockDefaults'
 import { EVENT_TYPES, eventType, eventTypeFor, nextFixedDate } from '../data/eventTypes'
 import { invitationStarter } from '../data/invitations'
 import { rsvpSidesStarter } from '../data/rsvpSides'
 import { displayNameFromTitle, eventRequiresAge, formatEventDisplayTitle } from '../utils/eventTitle'
 import { isEventLimitReached, notifyPlanChanged, usePlan } from '../utils/usePlan'
+import { useToast } from '../utils/useToast'
 import {
   findTemplate,
   missingEventPageBlocks,
@@ -31,10 +31,11 @@ import {
 } from '../utils/templateTheme'
 
 // Assistant de création en 5 étapes (repris du prototype creer.html) : univers, type,
-// informations (logo compris), modèle, puis la page publiée. L'aperçu à droite montre la
-// vraie page de l'invité ; le reste (programme, invités, billets…) se règle ensuite dans
+// informations (logo compris), contenu, puis modèle et publication. L'aperçu à droite
+// montre la vraie page de l'invité. Une fois publié, l'organisateur est ramené à « Mes
+// événements » avec une notification ; le reste (invités, billets…) se règle ensuite dans
 // le Builder et le tableau de bord.
-const STEPS = ['Univers', 'Type', 'Informations', 'Contenu', 'Modèle', 'Publier']
+const STEPS = ['Univers', 'Type', 'Informations', 'Contenu', 'Modèle']
 
 // Sections ajoutées à une nouvelle page si le modèle ne les a pas (réponse et programme).
 const DEFAULT_OPTIONS = { checkin: true, program: true, gallery: false, ticketing: false, guestbook: false, searchable: false }
@@ -113,7 +114,7 @@ export default function CreateEvent() {
 
   const [publishing, setPublishing] = useState('')
   const [publishError, setPublishError] = useState('')
-  const [result, setResult] = useState(null)
+  const toast = useToast()
 
   const { plan } = usePlan()
   const [upgrade, setUpgrade] = useState(null)
@@ -202,7 +203,7 @@ export default function CreateEvent() {
   )
 
   const infoValid = type && Object.keys(infoErrors(form, type)).length === 0
-  const maxReachable = result ? 5 : !form.univers ? 0 : !form.type ? 1 : !infoValid ? 2 : 4
+  const maxReachable = !form.univers ? 0 : !form.type ? 1 : !infoValid ? 2 : 4
 
   const goTo = (n) => {
     setNudge('')
@@ -324,7 +325,7 @@ export default function CreateEvent() {
         }
       }
 
-      const saved = await updateEventApi(targetId, {
+      await updateEventApi(targetId, {
         ...dto,
         customFields: customFields(logoUrl),
         status: status === 'publish' ? 'Publie' : 'Brouillon',
@@ -350,24 +351,30 @@ export default function CreateEvent() {
       }
 
       if (!isEditMode) notifyPlanChanged()
-      setResult({ id: targetId, slug: saved?.slug ?? '', published: status === 'publish', warnings })
-      goTo(4)
+      const name = form.name.trim()
+      const published = status === 'publish'
+      toast(
+        published
+          ? isEditMode
+            ? `« ${name} » est à jour et en ligne.`
+            : `Félicitations ! « ${name} » est publié : vos invités peuvent ouvrir sa page.`
+          : isEditMode
+            ? `Modifications de « ${name} » enregistrées en brouillon.`
+            : `« ${name} » est enregistré en brouillon. Publiez-le quand vous êtes prêt.`,
+        { duration: 6000 },
+      )
+      for (const warning of warnings) toast(warning, { variant: 'warning', duration: 10000 })
+      navigate('/dashboard/evenements', {
+        state: { highlightEventId: targetId, highlightLabel: isEditMode ? 'Mis à jour' : 'Nouveau' },
+      })
     } catch (err) {
       setPublishError(err.message || 'La publication a échoué.')
+      toast(err.message || 'La publication a échoué.', { variant: 'danger', duration: 8000 })
     } finally {
       setPublishing('')
     }
   }
 
-  const restart = () => {
-    setForm(EMPTY_FORM)
-    setExisting({ custom: {}, location: null, blocks: [], categoryId: null })
-    setResult(null)
-    setErrors({})
-    setPublishError('')
-    if (isEditMode) navigate('/dashboard/evenements/nouveau')
-    else goTo(0)
-  }
 
   if (isEditMode && (loadingEvent || loadError)) {
     return (
@@ -414,27 +421,11 @@ export default function CreateEvent() {
         searchable={form.searchable}
         onSearchable={(searchable) => update({ searchable })}
       />
-    ) : step === 5 && result && type ? (
-      <PublishedStep
-        form={form}
-        type={type}
-        template={template}
-        plan={plan}
-        published={result.published}
-        slug={result.slug}
-        warnings={result.warnings}
-        isEditMode={isEditMode}
-        onUpgrade={() => setUpgrade('business')}
-        onBuilder={() => navigate(`/builder/${result.id}`)}
-        onRestart={restart}
-        onEvents={() => navigate('/dashboard/evenements')}
-        onGuests={() => navigate(`/dashboard/participants?eventId=${encodeURIComponent(result.id)}&add=1`)}
-      />
     ) : null
 
   return (
     <DashboardLayout focus={Boolean(firstEvent)}>
-      {limitReached && !result && (
+      {limitReached && (
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-orange/30 bg-brand-orange/10 px-4 py-3">
           <p className="text-sm text-ink">
             Votre offre <b>{plan.planLabel}</b> permet {plan.maxEvents} événement{plan.maxEvents > 1 ? 's' : ''} et vous en avez
@@ -455,7 +446,7 @@ export default function CreateEvent() {
                 <li key={label} className="min-w-22 flex-1">
                   <button
                     type="button"
-                    disabled={i > maxReachable || (result && i < 5) || i === 5}
+                    disabled={i > maxReachable}
                     aria-current={i === step ? 'step' : undefined}
                     onClick={() => goTo(i)}
                     className={`grid w-full gap-1.5 text-left disabled:cursor-default ${i === step ? 'text-ink' : 'text-muted'}`}
@@ -491,31 +482,29 @@ export default function CreateEvent() {
             )}
           </div>
 
-          {step < 5 && (
-            <div className="mt-7 border-t border-border-soft pt-5">
-              {publishError && (
-                <p className="mb-4 rounded-lg border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger" role="alert">
-                  {publishError}
-                </p>
-              )}
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <Button variant="outline" onClick={() => goTo(Math.max(0, step - 1))} className={step === 0 ? 'invisible' : ''}>
-                  Retour
-                </Button>
-                <div className="flex flex-wrap items-center gap-3">
-                  {step === 4 && (
-                    <Button variant="ghost" onClick={() => publish('draft')} disabled={Boolean(publishing)}>
-                      {publishing === 'draft' ? 'Enregistrement…' : 'Enregistrer en brouillon'}
-                    </Button>
-                  )}
-                  <Button variant="gradient" onClick={next} disabled={Boolean(publishing) || (step === 4 && limitReached)}>
-                    {step === 4 ? (publishing === 'publish' ? 'Publication…' : isEditMode ? 'Enregistrer et publier' : 'Publier') : 'Continuer'}
-                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          <div className="mt-7 border-t border-border-soft pt-5">
+            {publishError && (
+              <p className="mb-4 rounded-lg border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger" role="alert">
+                {publishError}
+              </p>
+            )}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <Button variant="outline" onClick={() => goTo(Math.max(0, step - 1))} className={step === 0 ? 'invisible' : ''}>
+                Retour
+              </Button>
+              <div className="flex flex-wrap items-center gap-3">
+                {step === 4 && (
+                  <Button variant="ghost" onClick={() => publish('draft')} disabled={Boolean(publishing)}>
+                    {publishing === 'draft' ? 'Enregistrement…' : 'Enregistrer en brouillon'}
                   </Button>
-                </div>
+                )}
+                <Button variant="gradient" onClick={next} disabled={Boolean(publishing) || (step === 4 && limitReached)}>
+                  {step === 4 ? (publishing === 'publish' ? 'Publication…' : isEditMode ? 'Enregistrer et publier' : 'Publier') : 'Continuer'}
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Button>
               </div>
             </div>
-          )}
+          </div>
         </div>
 
         <div id="wizard-preview" className="contents">
