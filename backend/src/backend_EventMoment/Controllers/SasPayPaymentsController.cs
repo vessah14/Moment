@@ -23,11 +23,14 @@ public sealed class SasPayPaymentsController : ControllerBase
 
     private readonly ISasPayPaymentService _payments;
     private readonly IConfiguration _configuration;
+    private readonly ILogger<SasPayPaymentsController> _logger;
 
-    public SasPayPaymentsController(ISasPayPaymentService payments, IConfiguration configuration)
+    public SasPayPaymentsController(ISasPayPaymentService payments, IConfiguration configuration,
+        ILogger<SasPayPaymentsController> logger)
     {
         _payments = payments;
         _configuration = configuration;
+        _logger = logger;
     }
 
     [HttpPost("checkout")]
@@ -64,7 +67,14 @@ public sealed class SasPayPaymentsController : ControllerBase
                 Request.Headers["X-Webhook-Signature"].ToString(),
                 secret,
                 DateTimeOffset.UtcNow))
+        {
+            // Secret absent, signature fausse ou rejouée : mauvaise configuration ou tentative
+            // de falsification, à surveiller (OWASP A09).
+            _logger.LogWarning(
+                "Webhook SasPay rejeté (secret configuré : {SecretConfigured}) depuis {RemoteIp}",
+                !string.IsNullOrWhiteSpace(secret), HttpContext.Connection.RemoteIpAddress);
             return StatusCode(StatusCodes.Status403Forbidden);
+        }
 
         SasPayWebhookDto? dto;
         try { dto = JsonSerializer.Deserialize<SasPayWebhookDto>(rawBody); }
@@ -80,7 +90,8 @@ public sealed class SasPayPaymentsController : ControllerBase
         // Toujours 200 une fois la signature validée : une transaction non rattachée est soit
         // déjà traitée (webhook rejoué), soit étrangère au site (lien de paiement…). La session
         // étant enregistrée avant la redirection, un nouvel essai de SasPay n'apporterait rien.
-        await _payments.HandleTransactionSuccessAsync(dto.Data.Id, dto.Data.Amount.Value, dto.Data.Currency ?? string.Empty);
+        if (!await _payments.HandleTransactionSuccessAsync(dto.Data.Id, dto.Data.Amount.Value, dto.Data.Currency ?? string.Empty))
+            _logger.LogInformation("Webhook SasPay : transaction {TransactionId} non rattachée à un paiement en attente", dto.Data.Id);
         return Ok();
     }
 

@@ -408,6 +408,9 @@ app.UseExceptionHandler(errorApp =>
         {
             KeyNotFoundException => (StatusCodes.Status404NotFound, exception.Message),
             IdempotencyConflictException => (StatusCodes.Status409Conflict, exception.Message),
+            // Prestataire de paiement indisponible ou mal configuré : détail dans les journaux.
+            PaymentProviderException => (StatusCodes.Status503ServiceUnavailable,
+                "Le paiement en ligne est momentanément indisponible. Réessayez dans quelques minutes ou contactez-nous."),
             // Messages métier de nos services uniquement : une InvalidOperationException levée
             // par le framework (EF, sérialisation…) contient des détails techniques internes.
             InvalidOperationException when IsOwnException(exception) => (StatusCodes.Status400BadRequest, exception.Message),
@@ -420,7 +423,7 @@ app.UseExceptionHandler(errorApp =>
             _ => (StatusCodes.Status500InternalServerError, "Une erreur interne est survenue.")
         };
 
-        if (statusCode == StatusCodes.Status500InternalServerError && exception != null)
+        if (statusCode >= StatusCodes.Status500InternalServerError && exception != null)
         {
             context.RequestServices.GetRequiredService<ILogger<Program>>()
                 .LogError(exception, "Erreur non gérée lors du traitement de la requête {Path}", context.Request.Path);
@@ -492,6 +495,7 @@ app.Use(async (context, next) =>
         {
             DbUpdateException => (StatusCodes.Status409Conflict, "Conflit de données"),
             IdempotencyConflictException => (StatusCodes.Status409Conflict, "Conflit de données"),
+            PaymentProviderException => (StatusCodes.Status503ServiceUnavailable, "Paiement indisponible"),
             KeyNotFoundException => (StatusCodes.Status404NotFound, "Ressource introuvable"),
             InvalidOperationException => (StatusCodes.Status400BadRequest, "Requête invalide"),
             BadHttpRequestException bad => (bad.StatusCode, "Requête invalide"),

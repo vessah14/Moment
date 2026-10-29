@@ -80,7 +80,7 @@ public sealed class SasPayPaymentService : ISasPayPaymentService
         try
         {
             var frontendUrl = _configuration["Frontend:BaseUrl"]?.TrimEnd('/')
-                ?? throw new InvalidOperationException("Frontend:BaseUrl n'est pas configurée.");
+                ?? throw new PaymentProviderException("Frontend:BaseUrl n'est pas configurée.");
             var request = new CheckoutSessionRequest
             {
                 Amount = FormatAmount(payment.Amount),
@@ -106,7 +106,7 @@ public sealed class SasPayPaymentService : ISasPayPaymentService
                 || !AmountEquals(session.Amount, payment.Amount)
                 || !string.Equals(session.Currency, "XAF", StringComparison.OrdinalIgnoreCase)
                 || !IsSasPayCheckoutUrl(session.CheckoutUrl))
-                throw new HttpRequestException("SasPay a retourné une session ou une URL de paiement invalide.");
+                throw new PaymentProviderException("SasPay a retourné une session ou une URL de paiement invalide.");
 
             payment.SessionId = session.Id;
             payment.CheckoutUrl = session.CheckoutUrl;
@@ -175,7 +175,8 @@ public sealed class SasPayPaymentService : ISasPayPaymentService
                 return;
             if (!AmountEquals(transaction.RequestedAmount, payment.Amount)
                 || !string.Equals(transaction.Currency, "XAF", StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException("Les informations du paiement SasPay ne correspondent pas.");
+                throw new PaymentProviderException(
+                    $"Paiement {payment.Id:D} : la transaction SasPay {session.TransactionId} ne correspond pas (montant ou devise).");
             await ApplyStatusAsync(payment, "SUCCESSFUL");
             return;
         }
@@ -292,15 +293,14 @@ public sealed class SasPayPaymentService : ISasPayPaymentService
             {
                 var providerMessage = root.HasValue ? ReadProviderError(root.Value) : null;
                 var detail = string.IsNullOrWhiteSpace(providerMessage) ? string.Empty : $" Détail SasPay : {providerMessage}";
-                throw new HttpRequestException(
+                throw new PaymentProviderException(
                     $"SasPay a refusé {action} (HTTP {(int)response.StatusCode}).{detail}",
-                    null,
                     response.StatusCode);
             }
 
             var data = root!.Value.TryGetProperty("data", out var inner) ? inner : root.Value;
             return data.Deserialize<T>()
-                ?? throw new HttpRequestException("Réponse SasPay invalide.");
+                ?? throw new PaymentProviderException("Réponse SasPay invalide.");
         }
     }
 
@@ -329,11 +329,11 @@ public sealed class SasPayPaymentService : ISasPayPaymentService
     {
         var secretKey = _configuration["SasPay:SecretKey"];
         if (string.IsNullOrWhiteSpace(secretKey))
-            throw new InvalidOperationException("La clé secrète SasPay n'est pas configurée.");
+            throw new PaymentProviderException("La clé secrète SasPay n'est pas configurée (SasPay:SecretKey).");
         var allowLive = _configuration.GetValue("SasPay:AllowLive", false);
         if (!secretKey.StartsWith("sk_test_", StringComparison.Ordinal)
             && !(allowLive && secretKey.StartsWith("sk_live_", StringComparison.Ordinal)))
-            throw new InvalidOperationException("SasPay est limité aux clés de test. Le mode live doit être activé explicitement.");
+            throw new PaymentProviderException("SasPay est limité aux clés de test : une clé sk_live_ demande SasPay:AllowLive=true.");
         message.Headers.TryAddWithoutValidation("Authorization", $"Bearer {secretKey}");
     }
 

@@ -91,7 +91,7 @@ public sealed class SasPayPaymentServiceTests
         SeedPlanAndOrganizer(context, organizerId);
         var handler = new StubHandler(_ => Task.FromResult(SessionCreated("https://evil.example/checkout")));
 
-        await Assert.ThrowsAsync<HttpRequestException>(() =>
+        await Assert.ThrowsAsync<PaymentProviderException>(() =>
             CreateService(context, handler).CreateCheckoutAsync(organizerId, PlanId, IdempotencyKey));
 
         Assert.Equal("FAILED", (await context.SubscriptionPayments.SingleAsync()).Status);
@@ -106,7 +106,7 @@ public sealed class SasPayPaymentServiceTests
         var handler = new StubHandler(_ => Task.FromResult(Json(HttpStatusCode.Forbidden,
             """{"success":false,"error":{"message":"Clé sans portée PAYIN","code":"api_key_scope_forbidden"},"code":403}""")));
 
-        var error = await Assert.ThrowsAsync<HttpRequestException>(() =>
+        var error = await Assert.ThrowsAsync<PaymentProviderException>(() =>
             CreateService(context, handler).CreateCheckoutAsync(organizerId, PlanId, IdempotencyKey));
 
         Assert.Equal(HttpStatusCode.Forbidden, error.StatusCode);
@@ -126,7 +126,7 @@ public sealed class SasPayPaymentServiceTests
         SeedPlanAndOrganizer(context, organizerId);
         var handler = new StubHandler(_ => Task.FromResult(SessionCreated()));
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        await Assert.ThrowsAsync<PaymentProviderException>(() =>
             CreateService(context, handler, secretKey: "sk_live_key")
                 .CreateCheckoutAsync(organizerId, PlanId, IdempotencyKey));
         Assert.Empty(handler.Requests);
@@ -195,7 +195,7 @@ public sealed class SasPayPaymentServiceTests
             ? Verified("SUCCESS", "100.00")
             : SessionStatus("PAID", "tx_1", "SUCCESS")));
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        await Assert.ThrowsAsync<PaymentProviderException>(() =>
             CreateService(context, handler).GetStatusAsync(payment.Id, organizerId));
 
         Assert.Equal("PENDING", (await context.SubscriptionPayments.SingleAsync()).Status);
