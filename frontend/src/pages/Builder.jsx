@@ -102,6 +102,9 @@ export default function Builder() {
     palette: null,
     motif: null,
     kicker: '',
+    // Pastille de la barre du site : logo envoyé ou monogramme (vide = automatique).
+    logoUrl: '',
+    monogram: '',
   })
 
   // Photos publiées de la galerie : ce sont elles que le bloc Galerie affiche en ligne.
@@ -204,6 +207,8 @@ export default function Builder() {
           palette: heroContent.palette ?? null,
           motif: heroContent.motif ?? null,
           kicker: heroContent.kicker ?? '',
+          logoUrl: heroContent.logoUrl ?? '',
+          monogram: heroContent.monogram ?? '',
           blockHeight: heroContent.blockHeight ?? 72,
           darkOverlay: heroContent.darkOverlay ?? true,
           entryAnimation: heroContent.entryAnimation ?? false,
@@ -449,6 +454,20 @@ export default function Builder() {
     }
   }
 
+  const handleUploadSiteLogo = async (file) => {
+    if (!file) return
+    setUploading(true)
+    setSaveError('')
+    try {
+      const { url } = await uploadEventBlockImage(eventId, file)
+      setHeroStyle((prev) => ({ ...prev, logoUrl: url }))
+    } catch (err) {
+      setSaveError(err.message || "Le logo n'a pas pu être envoyé.")
+    } finally {
+      setUploading(false)
+    }
+  }
+
   // Les photos ajoutées ici vont directement dans la galerie de l'événement (publiées).
   const handleUploadGalleryPhotos = async (files) => {
     if (!files?.length) return
@@ -507,6 +526,8 @@ export default function Builder() {
         palette: heroStyle.palette,
         motif: heroStyle.motif,
         kicker: heroStyle.kicker,
+        logoUrl: heroStyle.logoUrl,
+        monogram: heroStyle.monogram,
       })
       // Toute la page en un seul appel, tout ou rien (l'ancienne suite d'appels bloc par
       // bloc pouvait laisser la page à moitié enregistrée : « Conflit de données »).
@@ -750,6 +771,8 @@ export default function Builder() {
             palette={palette}
             heroStyle={displayedHeroStyle}
             onChangeHeroStyle={handleChangeHeroStyle}
+            uploading={uploading}
+            onUploadSiteLogo={handleUploadSiteLogo}
             selectedBlock={selectedBlock}
             blockContent={blockContent}
             onChangeBlockContent={updateBlockContent}
@@ -814,6 +837,8 @@ export default function Builder() {
             palette={palette}
             heroStyle={displayedHeroStyle}
             onChangeHeroStyle={handleChangeHeroStyle}
+            uploading={uploading}
+            onUploadSiteLogo={handleUploadSiteLogo}
             selectedBlock={selectedBlock}
             blockContent={blockContent}
             onChangeBlockContent={updateBlockContent}

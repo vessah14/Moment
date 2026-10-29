@@ -1,17 +1,22 @@
+import { PencilLine } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useLocation, useParams, useSearchParams } from 'react-router-dom'
-import { mediaUrl } from '../api/client'
+import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom'
+import { isAuthenticated, mediaUrl } from '../api/client'
+import { listEvents } from '../api/events'
 import { getPublicGifts } from '../api/giftRegistry'
 import { getPublicInvitation } from '../api/guests'
 import { getPublicSeating, getPublicSite, submitPublicEventRsvp, trackPublicEvent } from '../api/publicEvents'
 import logoMark from '../assets/logo-mark.png'
 import SitePage from '../components/site/SitePage'
 import InvitationLoader from '../components/site/InvitationLoader'
+import SiteLoader from '../components/site/SiteLoader'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
 import { formatEventDate } from '../utils/eventStatus'
 import { isInviteCode } from '../utils/mobileMoney'
 import { absoluteUrl, useSeo } from '../utils/seo'
-import { safeCoverPath } from '../utils/sitePage'
+import { safeBlockImagePath, safeCoverPath } from '../utils/sitePage'
+import { monogramFavicon, useFavicon } from '../utils/favicon'
+import { customMonogram, monogramOf, parseTitle } from '../components/site/themes/titleParts'
 import { displayNameFromTitle, eventRequiresAge, formatEventDisplayTitle } from '../utils/eventTitle'
 import {
   findTemplate,
@@ -124,7 +129,34 @@ export default function MiniSite () {
   const [invitation, setInvitation] = useState(matchingPreview)
   const [invitationLoading, setInvitationLoading] = useState(false)
   const [invitationError, setInvitationError] = useState('')
+  // Réponse donnée via le lien général et rattachée à un invité de la liste : retenue sur
+  // cet appareil pour ne plus reproposer le formulaire ('oui' / 'non').
+  const linkedKey = `tbf_rsvp_linked_${slug}`
+  const [linkedAnswer, setLinkedAnswer] = useState(() => {
+    try {
+      return localStorage.getItem(linkedKey)
+    } catch {
+      return null
+    }
+  })
+  // Organisateur connecté qui regarde son propre site : raccourci vers le Builder.
+  const [ownEventId, setOwnEventId] = useState(null)
   useSeo(eventSeo(error ? null : site, slug))
+
+  useEffect(() => {
+    setOwnEventId(null)
+    if (!isAuthenticated()) return
+    let cancelled = false
+    listEvents()
+      .then(events => {
+        const own = events?.find(e => e.slug === slug)
+        if (!cancelled && own) setOwnEventId(own.id)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [slug])
 
   // Lien personnel : /e/slug?invite=<code>. Le code est retenu sur cet appareil pour que
   // l'invité retrouve sa réponse et son pass en revenant sur le site.
@@ -204,10 +236,23 @@ export default function MiniSite () {
   }, [slug])
 
   const loaderHero = site?.blocks?.find(block => block.blockType === 'Hero')
-  const loaderDisplayTitle = loaderHero
-    ? parseContent(loaderHero.content).title
-    : ''
+  const loaderHeroContent = loaderHero ? parseContent(loaderHero.content) : {}
+  const loaderDisplayTitle = loaderHeroContent.title || ''
   const loaderEventName = invitation?.eventName || site?.event?.name
+  // Logo de l'événement (Builder), sinon celui de l'organisateur : écran de chargement
+  // et icône de l'onglet. Sans logo, l'onglet affiche le monogramme du site.
+  const siteLogo = site
+    ? mediaUrl(safeBlockImagePath(loaderHeroContent.logoUrl)) || mediaUrl(site.organizerLogoUrl)
+    : ''
+  const siteMonogram = site
+    ? customMonogram(loaderHeroContent.monogram) ||
+      monogramOf(parseTitle(loaderDisplayTitle || site.event.name, 'big'))
+    : ''
+  useFavicon(
+    site && !error
+      ? siteLogo || monogramFavicon(siteMonogram, loaderHeroContent.color || site.event.themeColor || undefined)
+      : ''
+  )
 
   if (loading) {
     if (invitationLoading || isInviteCode(inviteParam)) {
@@ -216,14 +261,11 @@ export default function MiniSite () {
           invitation={invitation}
           eventName={loaderEventName}
           displayTitle={loaderDisplayTitle}
+          logoSrc={siteLogo}
         />
       )
     }
-    return (
-      <div className='flex min-h-svh items-center justify-center text-sm text-faint'>
-        Chargement…
-      </div>
-    )
+    return <SiteLoader />
   }
 
   if (invitationLoading) {
@@ -232,6 +274,7 @@ export default function MiniSite () {
         invitation={invitation}
         eventName={loaderEventName || slug}
         displayTitle={loaderDisplayTitle}
+        logoSrc={siteLogo}
       />
     )
   }
@@ -277,6 +320,16 @@ export default function MiniSite () {
 
   return (
     <>
+      {ownEventId && (
+        <Link
+          to={`/builder/${ownEventId}`}
+          className='fixed bottom-[calc(1rem+var(--site-bottom-bar,0px))] left-4 z-50 inline-flex transition-[bottom] duration-300 sm:bottom-4 items-center gap-1.5 rounded-full border border-border-soft bg-surface/90 px-3.5 py-2 text-xs font-semibold text-ink shadow-lg backdrop-blur transition hover:border-brand-purple'
+          title='Visible uniquement par vous'
+        >
+          <PencilLine className='h-4 w-4' />
+          Modifier ma page
+        </Link>
+      )}
       <LanguageSwitcher floating />
       <SitePage
         fullPage
@@ -288,6 +341,8 @@ export default function MiniSite () {
           palette: heroContent.palette,
           motif: heroContent.motif,
           kicker: heroContent.kicker,
+          logoUrl: heroContent.logoUrl,
+          monogram: heroContent.monogram,
           title: heroTitle,
           subtitle:
             heroContent.subtitle || event.tagline || defaultSubtitle(event)
@@ -321,7 +376,20 @@ export default function MiniSite () {
               }
             }
           },
-          submitOpenRsvp: dto => submitPublicEventRsvp(event.slug, dto),
+          submitOpenRsvp: async dto => {
+            const result = await submitPublicEventRsvp(event.slug, dto)
+            if (result?.linkedToGuestList) {
+              const answer = dto.confirmed && !dto.maybe ? 'oui' : 'non'
+              setLinkedAnswer(answer)
+              try {
+                localStorage.setItem(linkedKey, answer)
+              } catch {
+                // Stockage indisponible : la réponse reste affichée pendant cette visite.
+              }
+            }
+            return result
+          },
+          linkedAnswer,
           ticketTypes: site.ticketTypes,
           // Faux pour les offres qui retirent la mention TBF Moment (Business et plus).
           showBranding: site.showBranding !== false,

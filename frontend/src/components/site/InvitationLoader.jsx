@@ -1,6 +1,6 @@
 import { findTemplate, resolveSiteStyle, siteRootStyle } from '../../utils/templateTheme'
 
-export default function InvitationLoader({ invitation, eventName, displayTitle }) {
+export default function InvitationLoader({ invitation, eventName, displayTitle, logoSrc }) {
   const template = findTemplate(invitation?.template)
   const siteStyle = resolveSiteStyle({
     template,
@@ -27,6 +27,9 @@ export default function InvitationLoader({ invitation, eventName, displayTitle }
     >
       <div className='invitation-loader-card'>
         <div className='invitation-loader-seal' aria-hidden='true'>
+          {logoSrc ? (
+            <img src={logoSrc} alt='' className='invitation-loader-logo' />
+          ) : (
           <svg viewBox='0 0 48 48' fill='none'>
             <path
               d='M10 24c0-8 6-14 14-14s14 6 14 14-6 14-14 14-14-6-14-14Z'
@@ -41,6 +44,7 @@ export default function InvitationLoader({ invitation, eventName, displayTitle }
               strokeWidth='2'
             />
           </svg>
+          )}
         </div>
         <p className='invitation-loader-eyebrow'>Une invitation personnelle</p>
         <h1 className='invitation-loader-title'>

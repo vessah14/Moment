@@ -27,13 +27,14 @@ import {
 import { HEADING_FONT_STACKS, siteRootStyle } from '../../utils/templateTheme'
 import GuestBookForm from '../minisite/GuestBookForm'
 import BlockToolbar from './BlockToolbar'
-import { DressCodeModule, FamiliesModule, GiftModule, GuestPhotoUpload, HonoursModule, PartnersModule, RsvpModule, SeatingModule, SpeakersModule, VideoModule } from './modules/SiteModules'
+import { DressCodeModule, FamiliesModule, GiftModule, GuestPass, GuestPhotoUpload, HonoursModule, PartnersModule, RsvpModule, SeatingModule, SpeakersModule, VideoModule } from './modules/SiteModules'
 import { parseVideoUrl } from '../../utils/videoEmbed'
 import { usableHonours, usablePartners, usablePeople, usableVenues } from '../../utils/blockLists'
 import { usableColors } from '../../utils/mobileMoney'
 import ThemedSitePage from './themes/ThemedSitePage'
 import { invitationGreeting, invitationParagraphs } from '../../utils/invitationText'
 import { getSiteTheme } from './themes/themeDefs'
+import { customMonogram, monogramOf, parseTitle } from './themes/titleParts'
 
 // Rendu unique du site d'un événement : le Builder (mode édition / aperçu) et le
 // mini-site public (/e/:slug) affichent exactement ce composant, avec les mêmes
@@ -74,19 +75,21 @@ function computeRemaining(target) {
   ]
 }
 
+// Défilement vers une section, calé sous la barre fixe du site (sa hauteur varie avec
+// le logo et le menu) : la section précédente ne dépasse plus sous la barre.
 function scrollToBlock(block) {
-  document
-    .getElementById(siteBlockDomId(block))
-    ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  const el = document.getElementById(siteBlockDomId(block))
+  if (!el) return
+  const nav = document.querySelector('[data-site-nav]')
+  const offset = nav ? nav.getBoundingClientRect().height : 0
+  const top = el.getBoundingClientRect().top + window.scrollY - offset
+  window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
 }
 
-function initials(title) {
-  const letters = (title ?? '')
-    .split(/[\s&-]+/)
-    .filter((word) => word.length > 2 || /^[A-ZÀ-Ý]/.test(word))
-    .map((word) => word[0])
-    .join('')
-  return (letters || title?.[0] || '•').slice(0, 2).toUpperCase()
+// Vrai si la date de l'événement est passée (une date absente compte comme à venir).
+function eventIsPast(eventDateTime) {
+  const time = eventDateTime ? new Date(eventDateTime).getTime() : NaN
+  return Number.isFinite(time) && time < Date.now()
 }
 
 function Placeholder({ children }) {
@@ -643,6 +646,13 @@ function renderBlockBody({ block, content, data, editable, editor, fullPage, ani
               animate={animate}
             />
           )}
+          {photos.length === 0 && !editable && (
+            <p className="mx-auto max-w-xl text-center text-sm leading-relaxed text-muted">
+              {eventIsPast(data.eventDateTime)
+                ? 'Aucune photo pour l’instant : soyez le premier à partager vos souvenirs de la fête !'
+                : 'Les plus beaux moments de la fête arriveront ici. Pendant l’événement, partagez vos photos !'}
+            </p>
+          )}
           {guestUploads && <GuestPhotoUpload slug={data.slug} />}
         </>
       )
@@ -757,12 +767,19 @@ function renderBlockBody({ block, content, data, editable, editor, fullPage, ani
       return (
         <div className="mx-auto max-w-xl">
           <RsvpModule
+            practical={{
+              calendar: data.eventDateTime && Number.isFinite(new Date(data.eventDateTime).getTime())
+                ? { title: data.title || 'Événement', start: new Date(data.eventDateTime), location: data.locationAddress, url: data.slug ? eventShareUrl(data.slug) : undefined, uid: data.slug }
+                : null,
+              address: data.locationAddress,
+            }}
             editable={editable}
             invitation={data.invitation}
             invitationLoading={data.invitationLoading}
             invitationError={data.invitationError}
             onInvitationChange={data.onInvitationChange}
             submitOpenRsvp={data.submitOpenRsvp}
+            linkedAnswer={data.linkedAnswer}
             body={body}
             eventTitle={data.title}
             submitRsvp={data.submitRsvp}
@@ -990,11 +1007,51 @@ function renderBlockBody({ block, content, data, editable, editor, fullPage, ani
 }
 
 
+// Billet de l'invité en plein écran (bouton « Mon pass ») : à l'accueil, plus besoin
+// de faire défiler la page pour retrouver le QR code.
+function PassDialog({ onClose, children }) {
+  useEffect(() => {
+    const onKey = (e) => e.key === 'Escape' && onClose()
+    window.addEventListener('keydown', onKey)
+    const overflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = overflow
+    }
+  }, [onClose])
+
+  return createPortal(
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Mon pass d'entrée"
+      className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div className="relative w-full max-w-md py-10" onClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Fermer"
+          className="absolute top-0 right-0 rounded-full bg-white/15 p-2 text-white transition hover:bg-white/25"
+        >
+          <X className="h-5 w-5" />
+        </button>
+        {children}
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
 // Barre de navigation du site public : transparente sur le Hero, opaque dès qu'on
 // fait défiler ; la section visible est mise en avant ; menu déroulant sur mobile.
-function SiteNav({ title, links, cta, onHero }) {
+function SiteNav({ title, logoSrc, monogram, links, cta, answered, onOpenPass, onHero }) {
   const [scrolled, setScrolled] = useState(() => window.scrollY > 24)
   const [menuOpen, setMenuOpen] = useState(false)
+  // Barre d'action mobile : masquée quand la section visée est déjà à l'écran.
+  const [ctaInView, setCtaInView] = useState(false)
   const [active, setActive] = useState(null)
   const progressRef = useRef(null)
 
@@ -1036,12 +1093,41 @@ function SiteNav({ title, links, cta, onHero }) {
     return () => observer.disconnect()
   }, [linkKey])
 
+  const ctaBlock = cta?.block
+  useEffect(() => {
+    if (!ctaBlock) return
+    const el = document.getElementById(siteBlockDomId(ctaBlock))
+    if (!el) return
+    const observer = new IntersectionObserver(
+      ([entry]) => setCtaInView(entry.isIntersecting),
+      { rootMargin: '0px 0px -15% 0px' },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [ctaBlock])
+
+  const showBar = Boolean(cta) && !answered && scrolled && !ctaInView && !menuOpen
+  // Les pastilles flottantes (langue, « Modifier ma page ») remontent au-dessus de la barre.
+  useEffect(() => {
+    const root = document.documentElement
+    if (showBar) root.style.setProperty('--site-bottom-bar', '4.5rem')
+    else root.style.removeProperty('--site-bottom-bar')
+    return () => root.style.removeProperty('--site-bottom-bar')
+  }, [showBar])
+
   const solid = scrolled || menuOpen
   const light = onHero && !solid
   const go = (block) => (e) => {
     e.preventDefault()
     setMenuOpen(false)
     scrollToBlock(block)
+  }
+  // « Mon pass » ouvre le billet ; sinon le bouton mène à la section visée.
+  const ctaClick = (e) => {
+    if (!cta?.pass) return go(cta.block)(e)
+    e.preventDefault()
+    setMenuOpen(false)
+    onOpenPass?.()
   }
 
   useEffect(() => {
@@ -1054,9 +1140,10 @@ function SiteNav({ title, links, cta, onHero }) {
   return (
     <>
     <header
+      data-site-nav
       className={`fixed inset-x-0 top-0 z-30 transition-all duration-300 ${
         solid
-          ? 'border-b border-border-soft bg-bg/90 shadow-[0_10px_30px_-20px_rgba(0,0,0,0.5)] backdrop-blur-md'
+          ? 'border-b border-border-soft bg-bg/95 shadow-[0_1px_8px_-4px_rgba(0,0,0,0.12)] backdrop-blur-md'
           : 'bg-transparent'
       }`}
     >
@@ -1066,12 +1153,20 @@ function SiteNav({ title, links, cta, onHero }) {
           onClick={go('Hero')}
           className="flex min-w-0 items-center gap-3"
         >
-          <span
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-            style={{ backgroundColor: 'var(--color-brand-purple)' }}
-          >
-            {initials(title)}
-          </span>
+          {logoSrc ? (
+            <img
+              src={logoSrc}
+              alt=""
+              className="h-9 max-w-24 shrink-0 rounded-md object-contain"
+            />
+          ) : (
+            <span
+              className="flex h-9 min-w-9 shrink-0 items-center justify-center rounded-full px-2 text-xs font-bold text-white"
+              style={{ backgroundColor: 'var(--color-brand-purple)' }}
+            >
+              {monogram}
+            </span>
+          )}
           <span
             className={`truncate text-base font-bold sm:text-lg ${light ? 'text-white' : 'text-ink'}`}
             style={{ fontFamily: 'var(--site-heading-font)' }}
@@ -1104,7 +1199,7 @@ function SiteNav({ title, links, cta, onHero }) {
         {cta && (
           <a
             href={`#${siteBlockDomId(cta.block)}`}
-            onClick={go(cta.block)}
+            onClick={ctaClick}
             className="ml-auto hidden rounded-full px-5 py-2 text-sm font-semibold whitespace-nowrap text-white shadow-lg transition hover:opacity-90 sm:inline-flex lg:ml-0"
             style={{ backgroundColor: 'var(--color-brand-purple)' }}
           >
@@ -1145,7 +1240,7 @@ function SiteNav({ title, links, cta, onHero }) {
             {cta && (
               <a
                 href={`#${siteBlockDomId(cta.block)}`}
-                onClick={go(cta.block)}
+                onClick={ctaClick}
                 className="mt-2 rounded-full px-5 py-3 text-center text-sm font-semibold text-white"
                 style={{ backgroundColor: 'var(--color-brand-purple)' }}
               >
@@ -1164,6 +1259,24 @@ function SiteNav({ title, links, cta, onHero }) {
       />
     </header>
 
+    {cta && (
+      <div
+        aria-hidden={!showBar}
+        className={`fixed inset-x-0 bottom-0 z-40 border-t border-border-soft bg-bg/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur-md transition-transform duration-300 sm:hidden ${
+          showBar ? 'translate-y-0' : 'pointer-events-none translate-y-full'
+        }`}
+      >
+        <a
+          href={`#${siteBlockDomId(cta.block)}`}
+          onClick={ctaClick}
+          tabIndex={showBar ? 0 : -1}
+          className="flex w-full items-center justify-center rounded-full py-3 text-sm font-semibold text-white shadow-lg transition active:scale-[0.98]"
+          style={{ backgroundColor: 'var(--color-brand-purple)' }}
+        >
+          {cta.label}
+        </a>
+      </div>
+    )}
     </>
   )
 }
@@ -1239,6 +1352,7 @@ function ClassicSitePage({
   const selectedBlock = editor?.selectedBlock ?? null
   const heroBgRef = useRef(null)
   const heroContentRef = useRef(null)
+  const [passOpen, setPassOpen] = useState(false)
 
   // Parallaxe : le fond du Hero défile plus lentement et le texte s'estompe.
   useEffect(() => {
@@ -1277,6 +1391,11 @@ function ClassicSitePage({
   const onImage = Boolean(coverPath)
   // Logo de l'organisateur (aperçu de l'assistant : logoSrc ; site publié : logoUrl).
   const organizerLogo = data.organizer?.logoSrc || mediaUrl(data.organizer?.logoUrl)
+  // Pastille de la barre : logo propre à l'événement (Builder), sinon celui de
+  // l'organisateur, sinon monogramme choisi ou déduit du titre (« 20 », « G&J »).
+  const navLogo = mediaUrl(safeBlockImagePath(heroStyle.logoUrl)) || organizerLogo
+  const navMonogram =
+    customMonogram(heroStyle.monogram) || monogramOf(parseTitle(heroStyle.title, 'big'))
 
   const selectableProps = (block) =>
     editable
@@ -1309,7 +1428,11 @@ function ClassicSitePage({
     .filter(({ block }) => SECTION_META[block]?.nav)
     .map(({ block }) => ({ block, label: SECTION_META[block].nav }))
   const has = (block) => visible.some((b) => b.block === block)
-  const cta = has('RSVP')
+  // Invité confirmé : le bouton de la barre devient « Mon pass » (billet en fenêtre).
+  const hasPass = fullPage && !editable && Boolean(data.invitation?.rsvpConfirmed)
+  const cta = hasPass && has('RSVP')
+    ? { block: 'RSVP', label: 'Mon pass', pass: true }
+    : has('RSVP')
     ? { block: 'RSVP', label: blockContent.RSVP?.cta?.trim() || 'Confirmer ma présence' }
     : has('Billetterie')
       ? { block: 'Billetterie', label: 'Réserver' }
@@ -1326,7 +1449,30 @@ function ClassicSitePage({
       data-template={template?.name ?? 'custom'}
     >
       {fullPage && (
-        <SiteNav title={heroStyle.title} links={navLinks} cta={cta} onHero={onImage} />
+        <SiteNav
+          title={heroStyle.title}
+          logoSrc={navLogo}
+          monogram={navMonogram}
+          links={navLinks}
+          cta={cta}
+          answered={
+            !cta?.pass &&
+            cta?.block === 'RSVP' &&
+            (data.invitation?.rsvpConfirmed != null || Boolean(data.linkedAnswer))
+          }
+          onOpenPass={() => setPassOpen(true)}
+          onHero={onImage}
+        />
+      )}
+      {passOpen && hasPass && (
+        <PassDialog onClose={() => setPassOpen(false)}>
+          <GuestPass
+            invitation={data.invitation}
+            eventTitle={data.title}
+            onInvitationChange={data.onInvitationChange}
+            watch={!data.submitRsvp}
+          />
+        </PassDialog>
       )}
 
       {/* Les variantes responsive (@xl:, @3xl:...) suivent la largeur de ce conteneur, pas

@@ -1,10 +1,11 @@
-import { Check, Copy, Gift, MapPin, Search, Ticket } from 'lucide-react'
+import { CalendarPlus, Check, Copy, Gift, MapPin, Navigation, Search, Ticket } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { submitPublicRsvp } from '../../../api/guests'
 import { findPublicSeat, uploadGuestPhoto } from '../../../api/publicEvents'
 import { DEFAULT_SIDE_LABEL, usableSides } from '../../../data/rsvpSides'
 import { initialsOf } from '../../../utils/blockLists'
+import { googleCalendarUrl, handleAddToCalendar } from '../../../utils/calendar'
 import { deadlineLabel, deadlinePassed, rsvpRules } from '../../../utils/rsvpRules'
 import { findTemplate } from '../../../utils/templateTheme'
 import { resolveTicketStyle } from '../../../utils/ticketStyles'
@@ -349,6 +350,16 @@ function CopyButton({ value, className }) {
 export function GiftModule({ content, gifts = [], slug, themed, editable }) {
   const c = cls(themed)
   const accounts = usableAccounts(content.accounts)
+  // Ni cagnotte ni liste : une seule carte chaleureuse plutôt que deux cartes vides.
+  if (!editable && !accounts.length && !gifts.length) {
+    return (
+      <div className={themed ? 'card rv narrow' : `${c.card} mx-auto max-w-xl`} style={{ textAlign: 'center' }}>
+        <Gift style={{ width: 28, height: 28, margin: '0 auto', color: 'var(--accent, var(--color-brand-purple))' }} />
+        <p className={c.title} style={{ margin: '.8rem 0 0' }}>Votre présence est notre plus beau cadeau</p>
+        {content.body?.trim() && <p className={c.muted} style={{ margin: '.6rem 0 0' }}>{content.body}</p>}
+      </div>
+    )
+  }
   return (
     <div>
       {content.body?.trim() && <p className={themed ? 'lead-text narrow rv' : 'mx-auto mb-6 max-w-2xl text-center text-muted'} style={{ marginBottom: '2rem' }}>{content.body}</p>}
@@ -544,7 +555,55 @@ export function GuestPass({ invitation, eventTitle, ticket = {}, onInvitationCha
 
 // sideLabel / sides : question « côté » propre au modèle (famille, pronostic, département…),
 // réglée dans le bloc RSVP ; posée seulement à ceux qui confirment leur présence.
-export function RsvpModule({ invitation, onInvitationChange, body, themed, editable, eventTitle, ticket, onCelebrate, submitRsvp, submitOpenRsvp, sideLabel, sides: rawSides, rules: rawRules, invitationLoading, invitationError, t = identity }) {
+// Après la confirmation : agenda et itinéraire réunis sous le pass d'entrée.
+function DayActions({ practical, themed, t }) {
+  const c = cls(themed)
+  const calendar = practical?.calendar
+  const address = practical?.address?.trim()
+  if (!calendar && !address) return null
+  const icon = { width: 16, height: 16 }
+  return (
+    <div style={{ marginTop: '1.5rem' }}>
+      <p className={c.kicker}>{t('Pour le jour J')}</p>
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '.6rem', marginTop: '.7rem' }}>
+        {calendar && (
+          <a
+            href={googleCalendarUrl(calendar)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={c.ghost}
+            onClick={(e) => {
+              stop(e)
+              handleAddToCalendar(e, calendar)
+            }}
+          >
+            <CalendarPlus style={icon} aria-hidden="true" />
+            {t('Ajouter à mon agenda')}
+          </a>
+        )}
+        {address && (
+          <a
+            href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={c.ghost}
+            onClick={stop}
+          >
+            <Navigation style={icon} aria-hidden="true" />
+            {t('Itinéraire')}
+          </a>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Réponse rattachée à un invité de la liste : son pass reste dans son lien personnel.
+const linkedMessage = (confirmed) => confirmed
+  ? 'Merci, votre réponse est enregistrée ! Votre pass d’entrée se trouve dans le lien personnel envoyé par l’organisateur.'
+  : 'Merci, votre réponse est enregistrée.'
+
+export function RsvpModule({ practical, linkedAnswer, invitation, onInvitationChange, body, themed, editable, eventTitle, ticket, onCelebrate, submitRsvp, submitOpenRsvp, sideLabel, sides: rawSides, rules: rawRules, invitationLoading, invitationError, t = identity }) {
   const c = cls(themed)
   const sides = usableSides(rawSides)
   const rules = rsvpRules(rawRules)
@@ -592,9 +651,7 @@ export function RsvpModule({ invitation, onInvitationChange, body, themed, edita
         extra: confirmed && rules.extraLabel ? extra : null,
       })
       if (result?.linkedToGuestList) {
-        setLinkedNotice(confirmed
-          ? 'Merci, votre réponse est enregistrée ! Votre pass d’entrée se trouve dans le lien personnel envoyé par l’organisateur.'
-          : 'Merci, votre réponse est enregistrée.')
+        setLinkedNotice(linkedMessage(confirmed))
       } else {
         onInvitationChange?.(result)
       }
@@ -607,11 +664,13 @@ export function RsvpModule({ invitation, onInvitationChange, body, themed, edita
   }
 
   // L'aperçu éditeur montre le formulaire réel sans envoyer de réponse.
-  if (!invitation && linkedNotice) {
+  // Réponse déjà donnée sur cet appareil lors d'une visite précédente (lien général).
+  const notice = linkedNotice || (linkedAnswer && !editable ? linkedMessage(linkedAnswer === 'oui') : '')
+  if (!invitation && notice) {
     return (
       <div className={c.card} style={{ textAlign: 'center' }} role="status">
         <p className={c.title}>{t('Réponse enregistrée')}</p>
-        <p className={c.muted}>{linkedNotice}</p>
+        <p className={c.muted}>{notice}</p>
       </div>
     )
   }
@@ -776,6 +835,7 @@ export function RsvpModule({ invitation, onInvitationChange, body, themed, edita
         {invitation.rsvpConfirmed && (
           <GuestPass invitation={invitation} eventTitle={eventTitle} ticket={ticket} onInvitationChange={onInvitationChange} watch={!submitRsvp} />
         )}
+        {invitation.rsvpConfirmed && !editable && <DayActions practical={practical} themed={themed} t={t} />}
         {!closed && (
           <button type="button" className={c.ghost} style={{ marginTop: '1.2rem' }} onClick={(e) => { e.stopPropagation(); setAttending(maybe ? 'peut-etre' : invitation.rsvpConfirmed ? 'oui' : 'non'); setEditing(true) }}>
             {t('Modifier ma réponse')}

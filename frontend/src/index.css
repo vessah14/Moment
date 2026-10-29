@@ -174,6 +174,12 @@
   height: 2.5rem;
 }
 
+.invitation-loader-logo {
+  max-width: 3rem;
+  max-height: 3rem;
+  object-fit: contain;
+}
+
 .invitation-loader-eyebrow {
   margin: 0 0 0.6rem;
   color: var(--color-muted);

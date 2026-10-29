@@ -26,3 +26,9 @@ export function monogramOf({ big, names }) {
     .join('')
   return (letters || names[0][0] || '•').slice(0, 2).toUpperCase()
 }
+
+// Monogramme choisi par l'organisateur dans le Builder : 1 à 3 caractères, sinon null.
+export function customMonogram(value) {
+  const clean = (value ?? '').trim().slice(0, 3)
+  return clean ? clean.toUpperCase() : null
+}

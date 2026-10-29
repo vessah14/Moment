@@ -1,5 +1,8 @@
 import { useState } from 'react'
-import { Check } from 'lucide-react'
+import { Check, ImagePlus, Trash2 } from 'lucide-react'
+import { mediaUrl } from '../../api/client'
+import { safeBlockImagePath } from '../../utils/sitePage'
+import { customMonogram, monogramOf, parseTitle } from '../site/themes/titleParts'
 import TemplatePreview from '../templates/TemplatePreview'
 import { getSiteTheme } from '../site/themes/themeDefs'
 import FaqEditor from './FaqEditor'
@@ -15,6 +18,8 @@ export default function StylePanel({
   palette,
   heroStyle,
   onChangeHeroStyle,
+  uploading = false,
+  onUploadSiteLogo,
   selectedBlock,
   blockContent,
   onChangeBlockContent,
@@ -64,6 +69,10 @@ export default function StylePanel({
           paletteId={heroStyle?.palette}
           motif={heroStyle?.motif}
         />
+      )}
+
+      {tab === 'Style' && (
+        <SiteLogoFields heroStyle={heroStyle} onChange={update} uploading={uploading} onUpload={onUploadSiteLogo} />
       )}
 
       {tab === 'Style' && premiumTheme && (
@@ -342,6 +351,75 @@ export default function StylePanel({
 }
 
 // Onglet « Billet » : le modèle de billet que reçoit chaque invité (écran, PDF, image WhatsApp).
+// Pastille en haut à gauche du site : logo de l'événement ou monogramme.
+function SiteLogoFields({ heroStyle, onChange, uploading, onUpload }) {
+  const logoSrc = mediaUrl(safeBlockImagePath(heroStyle.logoUrl))
+  const autoMonogram = monogramOf(parseTitle(heroStyle.title, 'big'))
+  const monogram = customMonogram(heroStyle.monogram) || autoMonogram
+
+  return (
+    <div className="mt-6 rounded-xl border border-border-soft p-4">
+      <p className="text-sm font-medium text-ink">Logo du site</p>
+      <p className="mt-1 text-xs text-faint">
+        Affiché en haut à gauche de la page de l'événement.
+      </p>
+      <div className="mt-3 flex items-center gap-3">
+        {logoSrc ? (
+          <img src={logoSrc} alt="" className="h-12 w-12 shrink-0 rounded-lg border border-border-soft bg-surface object-contain" />
+        ) : (
+          <span
+            className="flex h-12 min-w-12 shrink-0 items-center justify-center rounded-full px-2 text-sm font-bold text-white"
+            style={{ backgroundColor: heroStyle.color || 'var(--color-brand-purple)' }}
+          >
+            {monogram}
+          </span>
+        )}
+        <div className="flex flex-wrap gap-2">
+          {onUpload && (
+            <label className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-xs font-medium text-ink transition hover:border-brand-purple ${uploading ? 'pointer-events-none opacity-60' : ''}`}>
+              <ImagePlus className="h-4 w-4" />
+              {uploading ? 'Envoi…' : logoSrc ? 'Changer' : 'Ajouter un logo'}
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="sr-only"
+                disabled={uploading}
+                onChange={(e) => {
+                  onUpload(e.target.files?.[0])
+                  e.target.value = ''
+                }}
+              />
+            </label>
+          )}
+          {logoSrc && (
+            <button
+              type="button"
+              onClick={() => onChange({ logoUrl: '' })}
+              className="inline-flex items-center gap-1.5 rounded-lg px-2 py-2 text-xs text-faint transition hover:text-ink"
+            >
+              <Trash2 className="h-4 w-4" />
+              Retirer
+            </button>
+          )}
+        </div>
+      </div>
+      {!logoSrc && (
+        <label className="mt-4 block">
+          <span className="text-xs font-medium text-muted">Monogramme (3 caractères max.)</span>
+          <input
+            type="text"
+            maxLength={3}
+            value={heroStyle.monogram ?? ''}
+            placeholder={autoMonogram}
+            onChange={(e) => onChange({ monogram: e.target.value })}
+            className="mt-1.5 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-brand-purple"
+          />
+        </label>
+      )}
+    </div>
+  )
+}
+
 function TicketTab({ ticket, recommended, onChange, event, accent, themeId, paletteId, motif }) {
   const current = ticket.style || recommended
   return (

@@ -41,7 +41,7 @@ import { burst, createMusic, createParticles } from './effects'
 import { motifStyle } from './motifs'
 import { loadThemeFonts } from './themeFonts'
 import { getSiteTheme, themeMotif, themePalette } from './themeDefs'
-import { monogramOf, parseTitle } from './titleParts'
+import { customMonogram, monogramOf, parseTitle } from './titleParts'
 import { invitationGreeting, invitationParagraphs, invitationWords } from '../../../utils/invitationText'
 import { ILLUS } from '../../../utils/illus'
 import { invitationFor } from '../../../data/invitations'
@@ -480,7 +480,7 @@ export default function ThemedSitePage({
   useFonts(theme)
 
   const titleInfo = parseTitle(heroStyle.title, theme.hero, theme.joiner)
-  const monogram = monogramOf(titleInfo)
+  const monogram = customMonogram(heroStyle.monogram) || monogramOf(titleInfo)
   // Habillage du billet de l'invité : celui de la page (surtitre, noms, palette, motif).
   const passTicket = {
     kicker: heroStyle.kicker || theme.kicker,
@@ -495,7 +495,11 @@ export default function ThemedSitePage({
   // Organisateur : « Organisé par … » sous le héros, et son logo à la place du monogramme
   // (barre du haut, sceau d'ouverture). Le logo n'est fourni qu'aux offres qui l'incluent.
   const organizerName = data.organizer?.name?.trim() || ''
-  const logoSrc = data.organizer?.logoSrc || mediaUrl(data.organizer?.logoUrl)
+  // Logo propre à l'événement (Builder) prioritaire sur celui de l'organisateur.
+  const logoSrc =
+    mediaUrl(safeBlockImagePath(heroStyle.logoUrl)) ||
+    data.organizer?.logoSrc ||
+    mediaUrl(data.organizer?.logoUrl)
   const mark = logoSrc ? <img className="org-mark" src={logoSrc} alt="" /> : monogram
   // Illustration du modèle (utils/illus.js), aux couleurs de la palette : à côté de
   // l'invitation et dans la galerie tant qu'elle n'a pas de photos.
@@ -1047,6 +1051,12 @@ export default function ThemedSitePage({
           <div className="narrow">
             {headFor(block, { ...content, heading: content.heading || 'Serez-vous des nôtres ?' })}
             <RsvpModule
+              practical={{
+                calendar: validStart
+                  ? { title: heroStyle.title, start: validStart, location: data.locationAddress, url: data.slug ? eventShareUrl(data.slug) : undefined, uid: data.slug }
+                  : null,
+                address: data.locationAddress,
+              }}
               t={t}
               themed
               editable={editable}
@@ -1055,6 +1065,7 @@ export default function ThemedSitePage({
               invitationError={data.invitationError}
               onInvitationChange={data.onInvitationChange}
               submitOpenRsvp={data.submitOpenRsvp}
+              linkedAnswer={data.linkedAnswer}
               body={body}
               eventTitle={heroStyle.title}
               sideLabel={content.sideLabel}
