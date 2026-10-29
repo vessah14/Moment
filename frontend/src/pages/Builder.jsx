@@ -1,4 +1,4 @@
-import { ArrowLeft, Eye, LayoutPanelLeft, Monitor, Save, SlidersHorizontal, Smartphone, X } from 'lucide-react'
+import { ArrowLeft, Eye, LayoutPanelLeft, Monitor, RotateCcw, Save, SlidersHorizontal, Smartphone, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import BlockLibrary from '../components/builder/BlockLibrary'
@@ -34,6 +34,7 @@ import { formatEventDate } from '../utils/eventStatus'
 import { displayNameFromTitle, eventRequiresAge, formatEventDisplayTitle } from '../utils/eventTitle'
 import {
   defaultFontForTemplate,
+  ensureRsvpBlock,
   normalizeBlockType,
   newEventPageBlocks,
   reconcileTemplateLayout,
@@ -46,6 +47,8 @@ import { useSeo } from '../utils/seo'
 import { defaultTicketStyle, ticketFromCustomFields } from '../utils/ticketStyles'
 import { ticketEventInfo } from '../components/tickets/TicketCard'
 
+// Identifiant de l'invité fictif de l'aperçu (jamais envoyé au serveur).
+const PREVIEW_GUEST_ID = '00000000-0000-4000-8000-000000000002'
 const PALETTE = ['#6549e8', '#ec4ec2', '#ff7a3d', '#f6c945', '#c026d3']
 
 function heroTitleFromName(name) {
@@ -88,6 +91,8 @@ export default function Builder() {
   const [publishing, setPublishing] = useState(false)
   const [justPublished, setJustPublished] = useState(false)
   const [previewMode, setPreviewMode] = useState(false)
+  // « Aperçu invité » : invité fictif, tout reste dans le navigateur (rien n'est envoyé).
+  const [previewGuest, setPreviewGuest] = useState(null)
   const [blockContent, setBlockContent] = useState(BLOCK_CONTENT_DEFAULTS)
   const [heroStyle, setHeroStyle] = useState({
     color: PALETTE[0],
@@ -593,15 +598,81 @@ export default function Builder() {
     )
   }
 
+  const baseCanvasData = {
+    eventDateTime: event.eventDate
+      ? `${event.eventDate}T${event.startTime ?? '00:00:00'}`
+      : '',
+    coverPath: event.coverImageUrl,
+    description: eventDescription,
+    locationLabel: siteData.location?.label,
+    locationAddress: siteData.location?.address,
+    programItems: siteData.programItems,
+    galleryPhotos,
+    guestBookEntries: siteData.guestBookEntries,
+    ticketTypes: siteData.ticketTypes,
+    gifts: siteData.gifts,
+    seatingTables: siteData.seatingTables,
+  }
+  // Comme sur le site publié, la section de réponse est toujours présente pour l'invité.
+  const canvasBlocks = previewMode ? ensureRsvpBlock(pageBlocks) : pageBlocks
+  const canvasData = previewMode && previewGuest
+    ? {
+        ...baseCanvasData,
+        invitation: previewGuest,
+        onInvitationChange: setPreviewGuest,
+        submitRsvp: async (_id, dto) => ({
+          ...previewGuest,
+          rsvpConfirmed: dto.maybe ? null : dto.confirmed,
+          rsvpMaybe: Boolean(dto.maybe),
+          rsvpAccompanyingCount: dto.accompanyingCount,
+          rsvpSide: dto.side,
+          rsvpExtra: dto.extra,
+        }),
+      }
+    : baseCanvasData
+  const startGuestPreview = () => {
+    setPreviewGuest({
+      guestId: PREVIEW_GUEST_ID,
+      guestFullName: 'Invité Exemple',
+      eventName: event.name,
+      eventSlug: event.slug,
+      eventDate: event.eventDate,
+      eventStartTime: event.startTime,
+      template: template?.name,
+      themeColor: displayedHeroStyle.color,
+      ticketStyle: ticket.style,
+      ticketNote: ticket.note,
+      locationLabel: siteData.location?.label,
+      locationAddress: siteData.location?.address,
+      rsvpConfirmed: null,
+      rsvpAccompanyingCount: 0,
+      rsvpClosed: false,
+    })
+    setPreviewMode(true)
+  }
+
   return (
     <div className="flex h-dvh min-h-0 flex-col">
       <div className="flex shrink-0 items-center gap-2 border-b border-border-soft/60 px-3 py-2.5 sm:gap-4 sm:px-6 sm:py-3">
         {previewMode ? (
           <>
-            <span className="font-semibold text-ink">Aperçu invité</span>
+            <div className="min-w-0">
+              <span className="font-semibold text-ink">Aperçu invité</span>
+              <span className="ml-2 hidden text-xs text-faint sm:inline">
+                Vous voyez la page comme « Invité Exemple » : répondez pour voir le pass. Rien n'est envoyé.
+              </span>
+            </div>
             <Button
               variant="outline"
               className="ml-auto"
+              onClick={startGuestPreview}
+              title="Effacer la réponse de l'invité fictif"
+            >
+              <RotateCcw className="h-4 w-4" />
+              <span className="hidden sm:inline">Recommencer</span>
+            </Button>
+            <Button
+              variant="outline"
               onClick={() => setPreviewMode(false)}
             >
               <X className="h-4 w-4" />
@@ -657,13 +728,23 @@ export default function Builder() {
 
               <div className="hidden items-center gap-4 lg:flex">
                 <Toggle label="Publié" checked={published} onChange={handlePublishClick} />
-                <Button variant="outline" onClick={() => setPreviewMode(true)}>
-                  Prévisualiser
+                <Button variant="outline" onClick={startGuestPreview}>
+                  <Eye className="h-4 w-4" />
+                  Voir comme un invité
                 </Button>
                 <Button variant="outline" disabled={saving} onClick={handleSave} className="disabled:opacity-70">
                   {saving ? 'Enregistrement...' : 'Enregistrer'}
                 </Button>
               </div>
+              <Button
+                variant="outline"
+                onClick={startGuestPreview}
+                aria-label="Voir comme un invité"
+                title="Voir comme un invité"
+                className="h-10 px-3 lg:hidden"
+              >
+                <Eye className="h-4 w-4" />
+              </Button>
               <Button
                 variant="outline"
                 disabled={saving}
@@ -735,7 +816,7 @@ export default function Builder() {
         )}
         <BuilderCanvas
           slug={slug}
-          blocks={pageBlocks}
+          blocks={canvasBlocks}
           blockContent={blockContent}
           selectedBlock={previewMode ? null : selectedBlock}
           onSelectBlock={handleSelectBlock}
@@ -745,21 +826,7 @@ export default function Builder() {
           device={device}
           heroStyle={displayedHeroStyle}
           template={template}
-          data={{
-            eventDateTime: event.eventDate
-              ? `${event.eventDate}T${event.startTime ?? '00:00:00'}`
-              : '',
-            coverPath: event.coverImageUrl,
-            description: eventDescription,
-            locationLabel: siteData.location?.label,
-            locationAddress: siteData.location?.address,
-            programItems: siteData.programItems,
-            galleryPhotos,
-            guestBookEntries: siteData.guestBookEntries,
-            ticketTypes: siteData.ticketTypes,
-            gifts: siteData.gifts,
-            seatingTables: siteData.seatingTables,
-          }}
+          data={canvasData}
           uploading={uploading}
           onUploadBlockImage={handleUploadBlockImage}
           onUploadGalleryPhotos={handleUploadGalleryPhotos}
@@ -792,7 +859,7 @@ export default function Builder() {
         {previewMode ? (
           <BuilderCanvas
             slug={slug}
-            blocks={pageBlocks}
+            blocks={canvasBlocks}
             blockContent={blockContent}
             selectedBlock={null}
             onSelectBlock={handleSelectBlock}
@@ -802,21 +869,7 @@ export default function Builder() {
             device="mobile"
             heroStyle={displayedHeroStyle}
             template={template}
-            data={{
-              eventDateTime: event.eventDate
-                ? `${event.eventDate}T${event.startTime ?? '00:00:00'}`
-                : '',
-              coverPath: event.coverImageUrl,
-              description: eventDescription,
-              locationLabel: siteData.location?.label,
-              locationAddress: siteData.location?.address,
-              programItems: siteData.programItems,
-              galleryPhotos,
-              guestBookEntries: siteData.guestBookEntries,
-              ticketTypes: siteData.ticketTypes,
-              gifts: siteData.gifts,
-              seatingTables: siteData.seatingTables,
-            }}
+            data={canvasData}
             uploading={uploading}
             onUploadBlockImage={handleUploadBlockImage}
             onUploadGalleryPhotos={handleUploadGalleryPhotos}
@@ -855,7 +908,7 @@ export default function Builder() {
         ) : (
           <BuilderCanvas
             slug={slug}
-            blocks={pageBlocks}
+            blocks={canvasBlocks}
             blockContent={blockContent}
             selectedBlock={selectedBlock}
             onSelectBlock={handleSelectBlock}
@@ -865,21 +918,7 @@ export default function Builder() {
             device="mobile"
             heroStyle={displayedHeroStyle}
             template={template}
-            data={{
-              eventDateTime: event.eventDate
-                ? `${event.eventDate}T${event.startTime ?? '00:00:00'}`
-                : '',
-              coverPath: event.coverImageUrl,
-              description: eventDescription,
-              locationLabel: siteData.location?.label,
-              locationAddress: siteData.location?.address,
-              programItems: siteData.programItems,
-              galleryPhotos,
-              guestBookEntries: siteData.guestBookEntries,
-              ticketTypes: siteData.ticketTypes,
-              gifts: siteData.gifts,
-              seatingTables: siteData.seatingTables,
-            }}
+            data={canvasData}
             uploading={uploading}
             onUploadBlockImage={handleUploadBlockImage}
             onUploadGalleryPhotos={handleUploadGalleryPhotos}
