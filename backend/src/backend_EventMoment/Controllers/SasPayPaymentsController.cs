@@ -77,9 +77,11 @@ public sealed class SasPayPaymentsController : ControllerBase
         if (dto.Data == null || string.IsNullOrWhiteSpace(dto.Data.Id) || dto.Data.Amount is not > 0)
             return BadRequest();
 
-        // 404 : SasPay réessaiera (30 s, 5 min…) si le paiement n'est pas encore rattachable.
-        return await _payments.HandleTransactionSuccessAsync(dto.Data.Id, dto.Data.Amount.Value, dto.Data.Currency ?? string.Empty)
-            ? Ok() : NotFound();
+        // Toujours 200 une fois la signature validée : une transaction non rattachée est soit
+        // déjà traitée (webhook rejoué), soit étrangère au site (lien de paiement…). La session
+        // étant enregistrée avant la redirection, un nouvel essai de SasPay n'apporterait rien.
+        await _payments.HandleTransactionSuccessAsync(dto.Data.Id, dto.Data.Amount.Value, dto.Data.Currency ?? string.Empty);
+        return Ok();
     }
 
     private bool TryGetOrganizerId(out Guid organizerId)

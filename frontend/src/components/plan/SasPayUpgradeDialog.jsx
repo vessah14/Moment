@@ -68,6 +68,9 @@ export default function SasPayUpgradeDialog ({
       const checkout = await createSasPayCheckout(selectedId, idempotencyKey)
       window.location.assign(checkout.checkoutUrl)
     } catch (err) {
+      // Échec : le prochain clic repart avec une nouvelle clé. Au pire une session SasPay
+      // reste inutilisée ; aucun argent ne bouge tant qu'une session n'est pas payée.
+      idempotencyKeysRef.current.delete(selectedId)
       setError(err.message || 'Impossible de démarrer le paiement.')
       setState('idle')
     }

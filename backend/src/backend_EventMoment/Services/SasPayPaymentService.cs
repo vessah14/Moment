@@ -248,8 +248,22 @@ public sealed class SasPayPaymentService : ISasPayPaymentService
             });
             payment.PaidAt = now;
         }
-        await _context.SaveChangesAsync();
-        await transaction.CommitAsync();
+        try
+        {
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+        catch (DbUpdateException) when (status == "SUCCESSFUL")
+        {
+            // Webhook et retour du client au même instant : l'index unique sur le paiement
+            // a laissé passer une seule activation. Si c'est l'autre requête qui l'a faite,
+            // le résultat est le même.
+            await transaction.RollbackAsync();
+            _context.ChangeTracker.Clear();
+            var stored = await _context.SubscriptionPayments.IgnoreQueryFilters().AsNoTracking()
+                .Where(x => x.Id == payment.Id).Select(x => x.Status).FirstOrDefaultAsync();
+            if (stored != "SUCCESSFUL") throw;
+        }
     }
 
     // Toutes les réponses SasPay ont la forme { success, code, data | error }.
