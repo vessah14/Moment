@@ -73,6 +73,8 @@ export default function SasPayUpgradeDialog ({
     }
   }
 
+  const selectedPlan = plans.find(p => p.id === selectedId)
+
   const details = label =>
     PRICING_PLANS.find(p => p.name.toLowerCase() === label.toLowerCase())
 
@@ -196,7 +198,11 @@ export default function SasPayUpgradeDialog ({
               disabled={!selectedId || state === 'sending'}
               className='rounded-xl bg-[linear-gradient(100deg,#FF7A3D_0%,#E2337E_50%,#6C4BF4_100%)] px-5 py-2.5 text-sm font-semibold text-white shadow-md disabled:opacity-50'
             >
-              {state === 'sending' ? 'Redirection…' : 'Payer avec SasPay'}
+              {state === 'sending'
+                ? 'Redirection vers SasPay…'
+                : selectedPlan
+                  ? `Payer ${formatFcfa(selectedPlan.priceCents)} avec SasPay`
+                  : 'Payer avec SasPay'}
             </button>
           </div>
         </form>

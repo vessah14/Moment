@@ -146,7 +146,10 @@ export default function Pricing() {
           </p>
           {selectedOffer && (
             <p role="status" className="mx-auto mt-4 max-w-xl rounded-lg border border-brand-purple/25 bg-brand-purple/10 px-4 py-3 text-sm text-ink">
-              Vous avez choisi l’offre <b>{selectedOffer.name}</b>. Elle est mise en évidence ci-dessous ; sélectionnez-la pour continuer.
+              Vous avez choisi l’offre <b>{selectedOffer.name}</b>.{' '}
+              {selectedOfferCode === 'free'
+                ? 'Elle est mise en évidence ci-dessous ; sélectionnez-la pour continuer.'
+                : 'Finalisez le paiement pour l’activer, ou sélectionnez-la ci-dessous.'}
             </p>
           )}
 
