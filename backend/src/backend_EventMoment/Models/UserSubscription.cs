@@ -44,7 +44,7 @@ namespace backend_EventMoment.Models
         public DateTimeOffset? EndsAt { get; set; }
 
         [Column("kpay_payment_id")]
-        public Guid? KPayPaymentId { get; set; }
+        public Guid? PaymentId { get; set; }
 
         // Navigation
         public SubscriptionPlan Plan { get; set; } = null!;

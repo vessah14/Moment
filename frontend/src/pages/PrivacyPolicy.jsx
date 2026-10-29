@@ -18,7 +18,7 @@ export default function PrivacyPolicy () {
       <H2>En bref</H2>
       <ul className='list-disc space-y-1 pl-5'>
         <li>Nous ne vendons aucune donnée et il n’y a pas de publicité sur les pages d’événement.</li>
-        <li>Nous ne voyons jamais vos codes Mobile Money : le paiement passe par KPay.</li>
+        <li>Nous ne voyons jamais vos codes Mobile Money : le paiement passe par SasPay.</li>
         <li>Les données de vos invités ne servent qu’à votre événement.</li>
         <li>Vous pouvez à tout moment demander l’accès à vos données, leur correction ou leur effacement : <Mail />.</li>
       </ul>
@@ -99,7 +99,7 @@ export default function PrivacyPolicy () {
       </p>
       <ul className='list-disc space-y-1 pl-5'>
         <li><strong>L’organisateur</strong> de l’événement, pour les réponses et les entrées de ses invités ;</li>
-        <li><strong>KPay</strong>, pour le paiement des abonnements ;</li>
+        <li><strong>SasPay</strong>, pour le paiement des abonnements ;</li>
         <li><strong>Brevo</strong>, pour l’envoi des e-mails (confirmation, invitations, rappels) ;</li>
         <li><strong>Cloudinary</strong>, pour le stockage des photos et logos ;</li>
         <li><strong>Google</strong>, uniquement si vous l’utilisez pour vous connecter ;</li>

@@ -45,7 +45,7 @@ builder.Host.UseSerilog((context, _, logger) =>
     }
 });
 
-AdminDbContext.KPayEnabled = builder.Configuration.GetValue("Payments:KPay:Enabled", false);
+AdminDbContext.SasPayEnabled = builder.Configuration.GetValue("Payments:SasPay:Enabled", false);
 
 // Taille maximale d'une requête : 1 Mo (Kestrel autorise 30 Mo par défaut). Évite qu'un
 // client remplisse la base avec des champs texte géants. Les endpoints de téléversement
@@ -273,7 +273,7 @@ builder.Services.AddScoped<IRsvpService, RsvpService>();
 builder.Services.AddScoped<ISubscriptionPlanService, SubscriptionPlanService>();
 builder.Services.AddScoped<IUserSubscriptionService, UserSubscriptionService>();
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IKPayPaymentService, KPayPaymentService>();
+builder.Services.AddScoped<ISasPayPaymentService, SasPayPaymentService>();
 builder.Services.AddScoped<IFacebookAuthService, FacebookAuthService>();
 builder.Services.AddScoped<IGoogleAuthService, GoogleAuthService>();
 builder.Services.AddHttpClient<BrevoEmailSender>();

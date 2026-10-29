@@ -7,7 +7,7 @@ namespace backend_EventMoment.Services;
 
 // Console superadmin : courbes d'activité de la plateforme, fiche détaillée d'une
 // organisation, et attribution manuelle d'une offre (geste commercial, paiement reçu hors
-// KPay). Toutes les lectures ignorent les filtres organisateur : vue transverse.
+// SasPay). Toutes les lectures ignorent les filtres organisateur : vue transverse.
 public sealed class AdminInsightsService
 {
     public const int MinDays = 7;
@@ -48,8 +48,8 @@ public sealed class AdminInsightsService
             .GroupBy(s => s.StatDate)
             .Select(g => new { Date = g.Key, Visits = g.Sum(s => s.VisitsCount), Shares = g.Sum(s => s.SharesCount) })
             .ToListAsync(cancellationToken);
-        var payments = AdminDbContext.KPayEnabled
-            ? await _context.KPayPayments.IgnoreQueryFilters().AsNoTracking()
+        var payments = AdminDbContext.SasPayEnabled
+            ? await _context.SubscriptionPayments.IgnoreQueryFilters().AsNoTracking()
                 .Where(p => p.PaidAt != null && p.PaidAt >= since)
                 .Select(p => new { PaidAt = p.PaidAt!.Value, p.Amount })
                 .ToListAsync(cancellationToken)
@@ -115,8 +115,8 @@ public sealed class AdminInsightsService
         var current = subscriptions.FirstOrDefault(s =>
             (s.Status == SubscriptionStatus.Actif || s.Status == SubscriptionStatus.Essai) && (s.EndsAt == null || s.EndsAt > now));
 
-        var payments = AdminDbContext.KPayEnabled
-            ? await _context.KPayPayments.IgnoreQueryFilters().AsNoTracking()
+        var payments = AdminDbContext.SasPayEnabled
+            ? await _context.SubscriptionPayments.IgnoreQueryFilters().AsNoTracking()
                 .Include(p => p.Plan)
                 .Where(p => p.OrganizerId == organizerId)
                 .OrderByDescending(p => p.CreatedAt)
@@ -157,7 +157,7 @@ public sealed class AdminInsightsService
                 Status = s.Status.ToString(),
                 StartedAt = s.StartedAt,
                 EndsAt = s.EndsAt,
-                Paid = s.KPayPaymentId != null,
+                Paid = s.PaymentId != null,
             }).ToList(),
             AvailablePlans = plans,
         };

@@ -44,7 +44,7 @@ export default function LegalNotice () {
       <H2>3. Paiements</H2>
       <p>
         Les paiements Mobile Money (Orange Money, MTN Mobile Money) des abonnements sont traités
-        par <strong>KPay</strong>, prestataire de paiement. TBF Moment ne voit et ne
+        par <strong>SasPay</strong>, prestataire de paiement. TBF Moment ne voit et ne
         conserve jamais vos codes secrets.
       </p>
 

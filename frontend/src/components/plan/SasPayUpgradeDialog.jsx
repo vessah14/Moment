@@ -2,7 +2,7 @@ import { Check, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
-  createKPayCheckout,
+  createSasPayCheckout,
   listSubscriptionPlans
 } from '../../api/subscriptions'
 import { PRICING_PLANS } from '../../data/pricingPlans'
@@ -10,7 +10,7 @@ import { PRICING_PLANS } from '../../data/pricingPlans'
 const formatFcfa = cents =>
   `${Math.round(cents / 100).toLocaleString('fr-FR')} FCFA`
 
-export default function KPayUpgradeDialog ({
+export default function SasPayUpgradeDialog ({
   open,
   onClose,
   plan,
@@ -65,7 +65,7 @@ export default function KPayUpgradeDialog ({
         idempotencyKey = crypto.randomUUID()
         idempotencyKeysRef.current.set(selectedId, idempotencyKey)
       }
-      const checkout = await createKPayCheckout(selectedId, idempotencyKey)
+      const checkout = await createSasPayCheckout(selectedId, idempotencyKey)
       window.location.assign(checkout.checkoutUrl)
     } catch (err) {
       setError(err.message || 'Impossible de démarrer le paiement.')
@@ -173,7 +173,7 @@ export default function KPayUpgradeDialog ({
           </fieldset>
 
           <p className='text-sm text-muted'>
-            Le paiement sécurisé s’effectue sur KPay via sa page de paiement.
+            Le paiement sécurisé s’effectue sur SasPay via sa page de paiement.
             Votre formule sera activée après confirmation du paiement.
           </p>
 
@@ -196,7 +196,7 @@ export default function KPayUpgradeDialog ({
               disabled={!selectedId || state === 'sending'}
               className='rounded-xl bg-[linear-gradient(100deg,#FF7A3D_0%,#E2337E_50%,#6C4BF4_100%)] px-5 py-2.5 text-sm font-semibold text-white shadow-md disabled:opacity-50'
             >
-              {state === 'sending' ? 'Redirection…' : 'Payer avec KPay'}
+              {state === 'sending' ? 'Redirection…' : 'Payer avec SasPay'}
             </button>
           </div>
         </form>

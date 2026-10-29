@@ -10,7 +10,7 @@ public sealed class AdminDashboardDto
     public int ModerationAlerts { get; set; }
     public int ErrorsLast24Hours { get; set; }
     public int FailedPayments { get; set; }
-    public bool KPayEnabled { get; set; }
+    public bool PaymentsEnabled { get; set; }
     public List<AdminFunnelStepDto> Funnel { get; set; } = [];
     public AdminDashboardTrendDto Trends { get; set; } = new();
     public List<AdminUpcomingEventDto> UpcomingEvents { get; set; } = [];

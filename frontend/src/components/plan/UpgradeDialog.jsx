@@ -6,12 +6,12 @@ import { getCurrentUser } from '../../api/client'
 import { listSubscriptionPlans } from '../../api/subscriptions'
 import { PRICING_PLANS } from '../../data/pricingPlans'
 import { notifyPlanChanged } from '../../utils/usePlan'
-import KPayUpgradeDialog from './KPayUpgradeDialog'
+import SasPayUpgradeDialog from './SasPayUpgradeDialog'
 
-// Paiement KPay désactivé par défaut. VITE_KPAY_ENABLED=true pour l'activer.
-const KPAY_ENABLED = import.meta.env.VITE_KPAY_ENABLED === 'true'
+// Paiement SasPay désactivé par défaut. VITE_SASPAY_ENABLED=true pour l'activer.
+const SASPAY_ENABLED = import.meta.env.VITE_SASPAY_ENABLED === 'true'
 
-// Quand KPay est désactivé, l'organisateur choisit une offre et l'équipe TBF le contacte.
+// Quand SasPay est désactivé, l'organisateur choisit une offre et l'équipe TBF le contacte.
 
 const formatFcfa = cents =>
   `${Math.round(cents / 100).toLocaleString('fr-FR')} FCFA`
@@ -19,8 +19,8 @@ const inputClass =
   'mt-1.5 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-ink placeholder:text-faint outline-none focus:border-brand-purple focus:ring-3 focus:ring-brand-purple/30'
 
 export default function UpgradeDialog (props) {
-  return KPAY_ENABLED ? (
-    <KPayUpgradeDialog {...props} />
+  return SASPAY_ENABLED ? (
+    <SasPayUpgradeDialog {...props} />
   ) : (
     <RequestUpgradeDialog {...props} />
   )

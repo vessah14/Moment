@@ -33,7 +33,7 @@ function byWeek(rows) {
 }
 
 // Activité de la plateforme jour par jour, sur la période choisie (heure du Cameroun).
-export default function ActivityCharts({ kPayEnabled }) {
+export default function ActivityCharts({ paymentsEnabled }) {
   const [days, setDays] = useState(30)
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
@@ -142,8 +142,8 @@ export default function ActivityCharts({ kPayEnabled }) {
               { key: 'shares', label: 'Partages', color: orange },
             ]}
           />
-          {kPayEnabled && (
-            <TrendChart title="Revenus encaissés" subtitle="Paiements KPay confirmés, en FCFA" data={shown} bucket={weekly ? 'week' : 'day'} kind="bar" format={fcfa} series={[{ key: 'revenue', label: 'Revenus', color: blue }]} />
+          {paymentsEnabled && (
+            <TrendChart title="Revenus encaissés" subtitle="Paiements SasPay confirmés, en FCFA" data={shown} bucket={weekly ? 'week' : 'day'} kind="bar" format={fcfa} series={[{ key: 'revenue', label: 'Revenus', color: blue }]} />
           )}
         </div>
       )}

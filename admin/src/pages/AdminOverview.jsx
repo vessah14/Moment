@@ -55,7 +55,7 @@ export default function AdminOverview() {
         {
           label: 'Alertes à traiter',
           value: String(dashboard.moderationAlerts + dashboard.failedPayments),
-          hint: `${dashboard.moderationAlerts} modération · ${dashboard.kPayEnabled ? `${dashboard.failedPayments} paiement(s) échoué(s)` : 'KPay désactivé'}`,
+          hint: `${dashboard.moderationAlerts} modération · ${dashboard.paymentsEnabled ? `${dashboard.failedPayments} paiement(s) échoué(s)` : 'SasPay désactivé'}`,
         },
       ]
     : []
@@ -96,7 +96,7 @@ export default function AdminOverview() {
                   {dashboard.moderationAlerts} signalement(s)
                 </Link>
               )}
-              {dashboard.kPayEnabled && dashboard.failedPayments > 0 && (
+              {dashboard.paymentsEnabled && dashboard.failedPayments > 0 && (
                 <Link to="/admin/facturation" className="text-danger hover:underline">
                   {dashboard.failedPayments} paiement(s) échoué(s)
                 </Link>
@@ -114,7 +114,7 @@ export default function AdminOverview() {
           : stats.map((stat) => <StatCard key={stat.label} {...stat} />)}
       </div>
 
-      <ActivityCharts kPayEnabled={dashboard?.kPayEnabled} />
+      <ActivityCharts paymentsEnabled={dashboard?.paymentsEnabled} />
 
       {dashboard && (
         <>

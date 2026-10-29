@@ -44,7 +44,7 @@ const COMPARISON_SECTIONS = [
       { name: 'Invités ou billets par événement', values: ['50', '500', '2 000', 'Illimité', 'Sur mesure'] },
       { name: 'Photos dans la galerie', values: ['20', '200', '1 000', '5 000', 'Illimité'] },
       { name: 'Postes d’accueil (scanner)', values: ['—', '1', '5', 'Illimité', 'Illimité'] },
-      { name: 'Commission billetterie (hors frais KPay)', values: ['—', '—', '5 %', '3 %', 'Négociée'] },
+      { name: 'Commission billetterie (hors frais SasPay)', values: ['—', '—', '5 %', '3 %', 'Négociée'] },
     ],
   },
   {

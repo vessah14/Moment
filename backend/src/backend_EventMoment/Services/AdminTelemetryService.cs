@@ -87,11 +87,11 @@ public sealed class AdminTelemetryService : IAdminTelemetryService
                     .CountAsync(p => p.Status == GalleryPhotoStatus.EnAttente, cancellationToken),
             ErrorsLast24Hours = await _context.TechnicalErrorLogs
                 .CountAsync(e => e.CreatedAt >= now.AddHours(-24), cancellationToken),
-            FailedPayments = AdminDbContext.KPayEnabled
-                ? await _context.KPayPayments.IgnoreQueryFilters()
+            FailedPayments = AdminDbContext.SasPayEnabled
+                ? await _context.SubscriptionPayments.IgnoreQueryFilters()
                     .CountAsync(payment => payment.Status == "FAILED", cancellationToken)
                 : 0,
-            KPayEnabled = AdminDbContext.KPayEnabled,
+            PaymentsEnabled = AdminDbContext.SasPayEnabled,
             Funnel = funnel,
             Trends = new AdminDashboardTrendDto
             {

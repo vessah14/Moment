@@ -148,7 +148,7 @@ export default function AdminOrganizationDetail() {
                 </button>
               )}
             </div>
-            <p className="mt-2 text-xs text-faint">Pour un mois offert, ou un paiement reçu hors KPay (espèces, virement).</p>
+            <p className="mt-2 text-xs text-faint">Pour un mois offert, ou un paiement reçu hors SasPay (espèces, virement).</p>
           </section>
 
           {/* Événements de l'organisation, avec suspension directe. */}

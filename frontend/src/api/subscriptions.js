@@ -12,16 +12,16 @@ export function subscribeToPlan(planId) {
   return apiFetch(`/user-subscriptions/subscribe/${planId}`, { method: 'POST', body: { planId } })
 }
 
-export function createKPayCheckout(planId, idempotencyKey) {
-  return apiFetch('/payments/kpay/checkout', {
+export function createSasPayCheckout(planId, idempotencyKey) {
+  return apiFetch('/payments/saspay/checkout', {
     method: 'POST',
     headers: { 'Idempotency-Key': idempotencyKey },
     body: { planId }
   })
 }
 
-export function getKPayPaymentStatus(paymentId) {
-  return apiFetch(`/payments/kpay/${paymentId}`)
+export function getSasPayPaymentStatus(paymentId) {
+  return apiFetch(`/payments/saspay/${paymentId}`)
 }
 
 export function cancelSubscription(id, reason) {

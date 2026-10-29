@@ -41,7 +41,7 @@ namespace backend_EventMoment.Services
     // Les limites viennent de subscription_plans.features :
     //   {"maxEvents": 3, "maxGuests": 50, "maxPhotos": 20, "seating": false, …}
     // Nombre absent ou null = illimité ; fonction absente = autorisée (offres créées avant ces
-    // clés). Une demande de passage à une offre payante est validée par l'admin ou via KPay.
+    // clés). Une demande de passage à une offre payante est validée par l'admin ou via SasPay.
     public class PlanService : IPlanService
     {
         public const string FreePlanCode = "free";

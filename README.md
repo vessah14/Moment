@@ -33,7 +33,7 @@ Pour démarrer l'ensemble du projet dans des conteneurs Docker de test, voir [DO
 | Tests API | `backend` | `dotnet test` | — |
 | Tests site | `frontend` | `npx vitest run` | — |
 
-Les secrets (base de données, clé JWT, Brevo, Cloudinary, Google, Facebook, KPay)
+Les secrets (base de données, clé JWT, Brevo, Cloudinary, Google, Facebook, SasPay)
 ne sont jamais dans le dépôt : en local ils sont dans `dotnet user-secrets`
 (projet `backend/src/backend_EventMoment`), en production dans des variables
 d'environnement. Les fichiers `.env` des parties React ne contiennent que des valeurs
@@ -51,7 +51,7 @@ Les migrations de `database/migrations/` se lancent **avec le compte postgres** 
 & "C:\Program Files\PostgreSQL\18\bin\psql.exe" -U postgres -d eventsaas -f "database\migrations\<fichier>.sql"
 ```
 
-Pour les bases existantes, applique aussi `20261024_kpay_only.sql` après les migrations KPay déjà jouées. Elle renomme les tables et colonnes historiques sans supprimer les paiements ni les abonnements existants. Les anciennes migrations portant les noms du précédent fournisseur restent dans l'historique pour assurer la compatibilité des bases déjà installées ; l'application et les nouvelles bases utilisent uniquement KPay.
+Le passage de KPay à SasPay ne demande aucune migration : les paiements restent dans la table `kpay_payments` (nom historique). Pour les bases existantes, applique aussi `20261024_kpay_only.sql` après les migrations KPay déjà jouées. Elle renomme les tables et colonnes historiques sans supprimer les paiements ni les abonnements existants. Les anciennes migrations portant les noms du précédent fournisseur restent dans l'historique pour assurer la compatibilité des bases déjà installées ; l'application et les nouvelles bases utilisent uniquement KPay.
 
 Toute nouvelle table doit aussi être ajoutée à `20261011_row_level_security.sql`
 (politiques RLS) et donner ses droits à `app_admin`.

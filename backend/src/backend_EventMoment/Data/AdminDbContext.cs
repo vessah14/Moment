@@ -10,7 +10,7 @@ namespace backend_EventMoment.Data
         private readonly IHttpContextAccessor _httpContextAccessor;
 
         // Le fournisseur de paiement est lu au démarrage avant la construction du modèle EF.
-        public static bool KPayEnabled { get; set; }
+        public static bool SasPayEnabled { get; set; }
 
         public AdminDbContext(DbContextOptions<AdminDbContext> options, IHttpContextAccessor httpContextAccessor) : base(options)
         {
@@ -42,7 +42,7 @@ namespace backend_EventMoment.Data
 
         // Abonnements
         public DbSet<UserSubscription> OrganizerSubscriptions { get; set; }
-        public DbSet<KPayPayment> KPayPayments { get; set; }
+        public DbSet<SubscriptionPayment> SubscriptionPayments { get; set; }
 
         // Livre d'or
         public DbSet<GuestBookEntry> GuestBookEntries { get; set; }
@@ -294,13 +294,13 @@ namespace backend_EventMoment.Data
                 .HasColumnType("subscription_status");
 
             // Base en mémoire (tests) : pas de colonnes à respecter, le modèle complet est gardé.
-            if (KPayEnabled || !Database.IsNpgsql())
+            if (SasPayEnabled || !Database.IsNpgsql())
             {
                 modelBuilder.Entity<UserSubscription>()
-                    .HasIndex(s => s.KPayPaymentId)
+                    .HasIndex(s => s.PaymentId)
                     .IsUnique()
                     .HasFilter("kpay_payment_id IS NOT NULL");
-                modelBuilder.Entity<KPayPayment>()
+                modelBuilder.Entity<SubscriptionPayment>()
                     .HasIndex(p => new { p.OrganizerId, p.IdempotencyKey })
                     .IsUnique()
                     .HasFilter("idempotency_key IS NOT NULL");
@@ -308,8 +308,8 @@ namespace backend_EventMoment.Data
             else
             {
                 // Le paiement en ligne est désactivé : sa migration peut ne pas exister en base.
-                modelBuilder.Entity<UserSubscription>().Ignore(s => s.KPayPaymentId);
-                modelBuilder.Ignore<KPayPayment>();
+                modelBuilder.Entity<UserSubscription>().Ignore(s => s.PaymentId);
+                modelBuilder.Ignore<SubscriptionPayment>();
             }
 
             modelBuilder.Entity<UserSubscription>()

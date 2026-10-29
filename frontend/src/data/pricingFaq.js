@@ -7,7 +7,7 @@ export const PRICING_FAQ = [
   },
   {
     q: 'Comment je paie ?',
-    a: "Par Mobile Money ou carte, sur la page de paiement sécurisée de KPay. Votre offre s'active dès que le paiement est confirmé.",
+    a: "Par Mobile Money ou carte, sur la page de paiement sécurisée de SasPay. Votre offre s'active dès que le paiement est confirmé.",
   },
   {
     q: "Et si j'ai plus d'invités que prévu ?",

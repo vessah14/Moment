@@ -2,18 +2,18 @@ import { formatCents } from '../../utils/formatCurrency'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
-  getKPayPaymentStatus,
+  getSasPayPaymentStatus,
   listMySubscriptions
 } from '../../api/subscriptions'
 import { notifyPlanChanged } from '../../utils/usePlan'
 
-const KPAY_ENABLED = import.meta.env.VITE_KPAY_ENABLED === 'true'
+const SASPAY_ENABLED = import.meta.env.VITE_SASPAY_ENABLED === 'true'
 
 export default function BillingTab () {
   const [subscriptions, setSubscriptions] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchParams] = useSearchParams()
-  const paymentId = KPAY_ENABLED ? searchParams.get('paymentId') : null
+  const paymentId = SASPAY_ENABLED ? searchParams.get('paymentId') : null
   const [payment, setPayment] = useState(null)
   const [paymentError, setPaymentError] = useState('')
   const [refreshKey, setRefreshKey] = useState(0)
@@ -33,7 +33,7 @@ export default function BillingTab () {
     const checkStatus = async () => {
       checks += 1
       try {
-        const result = await getKPayPaymentStatus(paymentId)
+        const result = await getSasPayPaymentStatus(paymentId)
         if (!mounted) return
         setPayment(result)
         setPaymentError('')
@@ -77,8 +77,8 @@ export default function BillingTab () {
     <div className='rounded-2xl border border-border-soft bg-surface p-6'>
       <h2 className='text-xl font-bold text-ink'>Facturation</h2>
       <p className='mt-1 text-sm text-muted'>
-        {KPAY_ENABLED
-          ? 'Les paiements d’abonnement sont traités de manière sécurisée par KPay.'
+        {SASPAY_ENABLED
+          ? 'Les paiements d’abonnement sont traités de manière sécurisée par SasPay.'
           : 'Les offres payantes s’activent sur demande : choisissez votre offre avec « Passer en Premium », puis réglez par Mobile Money ; nous activons l’offre dès réception.'}
       </p>
 
@@ -103,7 +103,7 @@ export default function BillingTab () {
               ? 'Le paiement n’a pas été accepté. Vous pouvez relancer la souscription depuis la page Tarifs.'
               : payment?.status === 'EXPIRED'
               ? 'Le lien de paiement a expiré. Relancez la souscription depuis la page Tarifs.'
-              : 'Le statut sera actualisé automatiquement après la confirmation de KPay.'}
+              : 'Le statut sera actualisé automatiquement après la confirmation de SasPay.'}
           </p>
           {payment &&
             payment.status !== 'SUCCESSFUL' &&

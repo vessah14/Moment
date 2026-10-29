@@ -15,7 +15,7 @@ namespace backend_EventMoment.Services
             _context = context;
         }
 
-        // Les plans payants doivent passer par le checkout KPay ou l'activation administrateur,
+        // Les plans payants doivent passer par le checkout SasPay ou l'activation administrateur,
         // jamais par cet endpoint qui permettrait de les obtenir gratuitement.
         private async Task<SubscriptionPlan> GetSelfServicePlanAsync(Guid planId)
         {
@@ -24,7 +24,7 @@ namespace backend_EventMoment.Services
 
             if (plan.PriceCents > 0)
                 throw new InvalidOperationException(
-                    "Les offres payantes doivent être réglées via KPay ou activées sur demande depuis votre tableau de bord.");
+                    "Les offres payantes doivent être réglées via SasPay ou activées sur demande depuis votre tableau de bord.");
 
             return plan;
         }

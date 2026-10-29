@@ -79,7 +79,7 @@ export default function TermsOfService () {
         <li>L'offre Free est gratuite, sans limite de durée, dans les limites indiquées.</li>
         <li>
           Les offres payantes sont réglées par Mobile Money (MTN Mobile Money, Orange Money) sur la
-          page de paiement sécurisée de KPay. L'offre est activée dès la confirmation du
+          page de paiement sécurisée de SasPay. L'offre est activée dès la confirmation du
           paiement, pour un mois.
         </li>
         <li>
