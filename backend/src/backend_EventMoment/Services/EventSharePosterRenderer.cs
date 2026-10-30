@@ -24,7 +24,7 @@ public static class EventSharePosterRenderer
     private static readonly SKColor Background = new(15, 16, 42);
     // À incrémenter quand le dessin change : l'adresse versionnée de l'affiche (mise en cache
     // 7 jours par WhatsApp et les navigateurs) change alors aussi.
-    private const string DrawingRevision = "2";
+    private const string DrawingRevision = "3";
 
     public static string GetVersion(PublicEventDto evt)
     {
@@ -292,8 +292,10 @@ public static class EventSharePosterRenderer
         {
             var dateText = date.ToDateTime(TimeOnly.MinValue)
                 .ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR"));
+            // Même écriture que les affiches carrée et verticale : « Mardi 27 octobre 2026 · 08h48 ».
+            dateText = char.ToUpper(dateText[0], CultureInfo.GetCultureInfo("fr-FR")) + dateText[1..];
             if (evt.StartTime is TimeOnly time)
-                dateText += " · " + time.ToString("HH:mm", CultureInfo.InvariantCulture);
+                dateText += " · " + time.ToString("HH'h'mm", CultureInfo.InvariantCulture);
             details.Add(dateText);
         }
 
