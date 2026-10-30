@@ -12,7 +12,7 @@ export default function PrivacyPolicy () {
     <InfoPage title='Politique de confidentialité'
       path='/confidentialite'>
       <p className='text-xs text-faint'>
-        Dernière mise à jour : 21 octobre 2026
+        Dernière mise à jour : 29 octobre 2026
       </p>
 
       <H2>En bref</H2>
@@ -68,6 +68,12 @@ export default function PrivacyPolicy () {
           sécurité (limitation des tentatives de connexion, lutte contre les abus) et la correction
           des pannes.
         </li>
+        <li>
+          <strong>Données du navigateur</strong> : le jeton de connexion et certaines informations
+          de compte, préférences, réponses ou données temporaires de fonctionnement peuvent être
+          enregistrés dans le stockage local ou de session de votre navigateur. Ce stockage n’est
+          pas un cookie.
+        </li>
       </ul>
       <p>
         Nous ne collectons pas de données sensibles. Certaines pages en laissent toutefois deviner
@@ -87,7 +93,7 @@ export default function PrivacyPolicy () {
       <H2>5. Base légale</H2>
       <ul className='list-disc space-y-1 pl-5'>
         <li><strong>Le contrat</strong> : fournir le service à l’organisateur.</li>
-        <li><strong>Le consentement</strong> : pour les cookies optionnels et les messages que vous acceptez de recevoir.</li>
+        <li><strong>Votre action et vos choix</strong> : par exemple, lorsque vous demandez la traduction d’une page par Google Traduction.</li>
         <li><strong>L’obligation légale</strong> : conserver les pièces comptables.</li>
         <li><strong>L’intérêt légitime</strong> : sécuriser la plateforme et prévenir la fraude.</li>
       </ul>
@@ -99,11 +105,19 @@ export default function PrivacyPolicy () {
       </p>
       <ul className='list-disc space-y-1 pl-5'>
         <li><strong>L’organisateur</strong> de l’événement, pour les réponses et les entrées de ses invités ;</li>
-        <li><strong>SasPay</strong>, pour le paiement des abonnements ;</li>
-        <li><strong>Brevo</strong>, pour l’envoi des e-mails (confirmation, invitations, rappels) ;</li>
-        <li><strong>Cloudinary</strong>, pour le stockage des photos et logos ;</li>
+        <li>
+          <strong>SasPay</strong>, pour le paiement des abonnements. Lors de la création d’un
+          paiement, les informations nécessaires au checkout (notamment nom, e-mail, montant,
+          devise et description de l’offre) lui sont transmises ; nous ne recevons pas vos codes
+          Mobile Money ni les données complètes de votre carte ;
+        </li>
+        <li><strong>Brevo</strong>, pour l'envoi des e-mails (confirmation, invitations, rappels) ;</li>
+        <li>
+          <strong>Cloudflare R2</strong> et, pour certains contenus historiques ou configurations,
+          <strong> Cloudinary</strong>, pour le stockage et la diffusion des photos et logos ;
+        </li>
         <li><strong>Google</strong>, uniquement si vous l’utilisez pour vous connecter ;</li>
-        <li><strong>Google Traduction</strong>, uniquement si un visiteur utilise le bouton de traduction ;</li>
+        <li><strong>Google Traduction</strong>, uniquement si un visiteur demande la traduction ; Google peut alors recevoir le contenu de la page à traduire et des informations techniques ;</li>
         <li>nos hébergeurs (serveurs et base de données) ;</li>
         <li>les autorités, seulement sur demande légale.</li>
       </ul>
@@ -162,9 +176,15 @@ export default function PrivacyPolicy () {
         peut demander le retrait d’une photo de son enfant à tout moment.
       </p>
 
-      <H2>12. Cookies</H2>
+      <H2>12. Cookies et stockage du navigateur</H2>
       <p>
-        Les cookies et le stockage local utilisés sont décrits dans notre{' '}
+        L’authentification de l’espace organisateur utilise un jeton stocké dans le localStorage du
+        navigateur et envoyé à l’API avec les requêtes ; ce jeton n’est pas un cookie. Le site
+        utilise aussi des stockages locaux ou temporaires pour des préférences et certaines
+        fonctions. Le cookie <strong>googtrans</strong> n’est utilisé que si vous choisissez une
+        autre langue que le français ; le script de Google Traduction est alors chargé. Aucun outil
+        de mesure d’audience ou de publicité n’est actuellement intégré. Les détails et les moyens
+        de gérer ces données figurent dans notre{' '}
         <a href='/cookies' className='text-brand-purple hover:underline'>politique cookies</a>.
       </p>
 

@@ -1,119 +1,86 @@
 import InfoPage from '../components/layout/InfoPage'
-import { useState } from 'react'
-import {
-  readCookieConsent,
-  saveCookieConsent
-} from '../components/layout/CookieConsent'
 
 export default function CookiesPolicy () {
-  const [consent, setConsent] = useState(readCookieConsent)
-
-  function updateConsent (choice) {
-    saveCookieConsent(choice)
-    setConsent(choice)
-  }
-
   return (
     <InfoPage title='Politique relative aux cookies'
       path='/cookies'>
       <p className='text-xs text-faint'>
-        Dernière mise à jour : 3 octobre 2026
+        Dernière mise à jour : 29 octobre 2026
       </p>
 
       <h2 className='mt-6 text-lg font-semibold text-ink'>
         1. Qu’est-ce qu’un cookie ?
       </h2>
       <p>
-        Les cookies sont de petits fichiers texte enregistrés sur votre
-        navigateur lors de votre visite d’un site. Ils permettent de mémoriser
-        certaines informations pour améliorer votre expérience, sécuriser votre
-        session et analyser l’utilisation du service.
+        Un cookie est une petite donnée enregistrée par un site dans votre
+        navigateur. Le stockage local (localStorage) et le stockage de session
+        (sessionStorage) sont des mécanismes distincts des cookies, également
+        utilisés par le site pour mémoriser des informations sur votre appareil.
       </p>
 
       <h2 className='mt-6 text-lg font-semibold text-ink'>
-        2. Cookies utilisés par TBF Moment
+        2. Cookies et stockages utilisés
       </h2>
-      <p>TBF Moment utilise des cookies pour les finalités suivantes :</p>
       <ul className='list-disc space-y-1 pl-5'>
-        <li>maintenir votre session de connexion active</li>
-        <li>mémoriser votre langue préférée sur le site</li>
-        <li>assurer la sécurité et la stabilité de la plateforme</li>
         <li>
-          comprendre comment les visiteurs utilisent les pages publiques et les
-          outils d’événement
+          <strong>googtrans (cookie)</strong> : mémorise la langue choisie quand
+          vous demandez volontairement la traduction d’une page. Il n’est pas
+          créé lorsque vous restez en français. Il est supprimé lorsque vous
+          revenez au français ; sans date d’expiration définie par le site, il
+          reste normalement jusqu’à la fermeture du navigateur. Le script de
+          traduction est fourni par Google et ne se charge qu’après votre choix
+          d’une autre langue.
+        </li>
+        <li>
+          <strong>Préférences, compte et fonctionnalités (localStorage)</strong> :
+          le site conserve notamment votre choix relatif aux cookies, votre
+          langue, ainsi que les informations nécessaires à l’espace organisateur.
+          Le jeton de session est conservé dans ce stockage et transmis à l’API
+          pour authentifier les requêtes ; il ne s’agit pas d’un cookie.
+        </li>
+        <li>
+          <strong>Informations temporaires (sessionStorage)</strong> : certaines
+          fonctions conservent temporairement des données utiles pendant
+          l’onglet ouvert, par exemple la destination de retour après une
+          connexion ou l’état d’une action en cours.
         </li>
       </ul>
-
-      <h2 className='mt-6 text-lg font-semibold text-ink'>
-        3. Cookies strictement nécessaires
-      </h2>
       <p>
-        Ces cookies sont essentiels au bon fonctionnement de la plateforme. Sans
-        eux, certaines fonctions comme l’authentification, la création de compte
-        ou la navigation dans votre tableau de bord ne seraient pas garanties.
+        Le site n’intègre actuellement aucun outil de mesure d’audience ni
+        cookie publicitaire. Le bandeau d’information ne recueille pas un
+        consentement à du suivi statistique. Si la traduction Google est
+        utilisée, Google peut traiter des informations techniques et le contenu
+        de la page à traduire selon ses propres conditions.
       </p>
 
       <h2 className='mt-6 text-lg font-semibold text-ink'>
-        4. Cookies de préférences
+        3. Données nécessaires au fonctionnement
       </h2>
       <p>
-        Nous utilisons des cookies de préférences pour retenir la langue
-        sélectionnée sur le site, ainsi que le thème ou les options de
-        navigation que vous avez choisies. Ces cookies ne sont pas utilisés à
-        des fins publicitaires.
+        Le stockage du jeton et des informations de compte permet de vous
+        authentifier et d’utiliser votre espace. D’autres stockages locaux
+        peuvent mémoriser les réponses ou préférences nécessaires à certaines
+        fonctions. Les bloquer ou les effacer peut vous déconnecter, réinitialiser
+        une préférence ou empêcher une fonction de reprendre son état.
       </p>
 
       <h2 className='mt-6 text-lg font-semibold text-ink'>
-        5. Cookies d’analyse
+        4. Gestion de vos préférences
       </h2>
       <p>
-        Nous pouvons utiliser des outils d’analyse pour mesurer la fréquentation
-        et optimiser les parcours utilisateurs. Ces données sont agrégées et ne
-        servent pas à identifier directement une personne sans son consentement
-        explicite, lorsque la réglementation l’exige.
+        Le bandeau d’information peut être fermé avec le bouton « Compris » ;
+        cette préférence est mémorisée dans le localStorage de votre navigateur.
+        Elle ne constitue pas un consentement à des cookies de mesure d’audience
+        ou de publicité, qui ne sont actuellement pas utilisés.
       </p>
-
-      <h2 className='mt-6 text-lg font-semibold text-ink'>
-        6. Gestion de vos préférences
-      </h2>
-      <p>
-        Les cookies nécessaires au fonctionnement du service restent actifs.
-        Vous pouvez accepter ou refuser les cookies optionnels ci-dessous, puis
-        modifier votre choix à tout moment depuis cette page.
-      </p>
-      <div className='mt-4 flex flex-wrap items-center gap-3'>
-        <button
-          type='button'
-          onClick={() => updateConsent('refused')}
-          className='rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-panel'
-        >
-          Refuser les cookies optionnels
-        </button>
-        <button
-          type='button'
-          onClick={() => updateConsent('accepted')}
-          className='rounded-lg bg-brand-purple px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90'
-        >
-          Accepter les cookies optionnels
-        </button>
-        {consent && (
-          <p role='status' className='text-sm text-muted'>
-            Préférence enregistrée :{' '}
-            {consent === 'accepted' ? 'acceptés' : 'refusés'}.
-          </p>
-        )}
-      </div>
       <p className='mt-4'>
-        Vous pouvez également supprimer les cookies depuis les paramètres de
-        votre navigateur ou configurer celui-ci pour les bloquer.
-      </p>
-      <p>
-        Attention : si vous bloquez les cookies techniques, certaines
-        fonctionnalités de la plateforme peuvent être désactivées ou devenir
-        instables.
+        Vous pouvez également supprimer les cookies et les données de site dans
+        les paramètres de votre navigateur. La suppression du stockage local
+        efface notamment la préférence enregistrée et peut fermer votre session.
+        Pour ne pas utiliser la traduction Google, gardez le français sélectionné.
       </p>
 
-      <h2 className='mt-6 text-lg font-semibold text-ink'>7. Contact</h2>
+      <h2 className='mt-6 text-lg font-semibold text-ink'>5. Contact</h2>
       <p>
         Pour toute question relative aux cookies, vous pouvez écrire à{' '}
         <a

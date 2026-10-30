@@ -42,26 +42,22 @@ export default function CookieConsent () {
             Vos préférences de cookies
           </h2>
           <p className='mt-1 text-sm leading-relaxed text-muted'>
-            Les cookies nécessaires assurent le fonctionnement du site.
-            Choisissez si vous autorisez les cookies optionnels de mesure
-            d’audience. Vous pourrez modifier votre choix à tout moment depuis
-            la page Cookies.
+            Nous utilisons un cookie de langue uniquement si vous demandez une
+            traduction par Google. L’authentification utilise le stockage de
+            votre navigateur, pas un cookie. Aucun cookie publicitaire ou de
+            mesure d’audience n’est actuellement utilisé. Consultez la{' '}
+            <a href='/cookies' className='font-semibold text-brand-purple hover:underline'>
+              politique cookies
+            </a>.
           </p>
         </div>
         <div className='flex shrink-0 flex-col gap-2 sm:flex-row'>
           <button
             type='button'
-            onClick={() => saveCookieConsent('refused')}
-            className='rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-panel'
-          >
-            Refuser les cookies optionnels
-          </button>
-          <button
-            type='button'
-            onClick={() => saveCookieConsent('accepted')}
+            onClick={() => saveCookieConsent('acknowledged')}
             className='rounded-lg bg-brand-purple px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90'
           >
-            Accepter les cookies optionnels
+            Compris
           </button>
         </div>
       </div>

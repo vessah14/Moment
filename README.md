@@ -51,7 +51,9 @@ Les migrations de `database/migrations/` se lancent **avec le compte postgres** 
 & "C:\Program Files\PostgreSQL\18\bin\psql.exe" -U postgres -d eventsaas -f "database\migrations\<fichier>.sql"
 ```
 
-Le passage de KPay à SasPay ne demande aucune migration : les paiements restent dans la table `kpay_payments` (nom historique). Pour les bases existantes, applique aussi `20261024_kpay_only.sql` après les migrations KPay déjà jouées. Elle renomme les tables et colonnes historiques sans supprimer les paiements ni les abonnements existants. Les anciennes migrations portant les noms du précédent fournisseur restent dans l'historique pour assurer la compatibilité des bases déjà installées ; l'application et les nouvelles bases utilisent uniquement KPay.
+SasPay est le fournisseur utilisé par l'application pour les paiements d'abonnement. Le schéma conserve des noms historiques (`kpay_payments` et `kpay_payment_id`) : ils ne signifient pas que KPay est encore actif. Pour une base existante issue de l'ancien fournisseur, applique `20261024_kpay_only.sql` après les migrations antérieures concernées ; ce script renomme les objets de l'ancien fournisseur en noms historiques KPay sans supprimer les paiements ni les abonnements. Les nouvelles bases utilisent directement le schéma présent dans `database/docker/01-schema.sql`. Ne rejoue pas les migrations déjà appliquées ; vérifie l'historique de la base avant toute mise à jour.
+
+La configuration SasPay se fait côté backend avec les paramètres `Payments:SasPay:Enabled`, `SasPay:SecretKey`, `SasPay:WebhookSecret` et `SasPay:AllowLive`. Les secrets ne doivent jamais être placés dans les variables `VITE_*` du frontend. En production, configure également l'URL publique du frontend et déclare auprès de SasPay l'URL webhook `https://<domaine-api>/api/payments/saspay/webhook`. Le paiement en ligne reste désactivé si son indicateur backend ou celui du frontend n'est pas activé.
 
 Toute nouvelle table doit aussi être ajoutée à `20261011_row_level_security.sql`
 (politiques RLS) et donner ses droits à `app_admin`.
@@ -87,4 +89,6 @@ origines du site dans la politique CORS du bucket.
 ## Documentation
 
 - `frontend/README.md` : architecture du site, routes, modèles de sites.
+- Politique de confidentialité : `/confidentialite` (`frontend/src/pages/PrivacyPolicy.jsx`).
+- Politique relative aux cookies : `/cookies` (`frontend/src/pages/CookiesPolicy.jsx`).
 - `docs/historique-depot-site.md` : ancien README du dépôt du site (logos, historique).
