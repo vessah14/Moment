@@ -5,6 +5,8 @@
 // QUE si une langue autre que le français est active — un visiteur qui reste en
 // français n'envoie rien à Google.
 
+import { isGuestPath } from './eventLook'
+
 export const SOURCE_LANGUAGE = 'fr'
 
 export const LANGUAGES = [
@@ -107,7 +109,7 @@ export function initTranslation() {
   if (language === SOURCE_LANGUAGE) return
   // Pages des invités (site, invitation, cadeaux) : toujours dans la langue de
   // l'organisateur, sans bouton de traduction ni script Google.
-  if (/^\/(e|invitation|cadeaux)\//.test(window.location.pathname)) return
+  if (isGuestPath(window.location.pathname)) return
   patchDomForTranslation()
   loadGoogleTranslate()
 }

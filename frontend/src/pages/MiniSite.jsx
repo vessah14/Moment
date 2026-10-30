@@ -9,7 +9,8 @@ import { getPublicSeating, getPublicSite, submitPublicEventRsvp, trackPublicEven
 import logoMark from '../assets/logo-mark.png'
 import SitePage from '../components/site/SitePage'
 import InvitationLoader from '../components/site/InvitationLoader'
-import SiteLoader from '../components/site/SiteLoader'
+import EventLoader from '../components/site/EventLoader'
+import { saveEventLook } from '../utils/eventLook'
 import { formatEventDate } from '../utils/eventStatus'
 import { isInviteCode } from '../utils/mobileMoney'
 import { absoluteUrl, useSeo } from '../utils/seo'
@@ -219,6 +220,15 @@ export default function MiniSite () {
       .then(data => {
         setSite(data)
         setError('')
+        // Apparence mémorisée pour l'écran de chargement des prochaines visites.
+        const hero = parseContent(data.blocks?.find(b => b.blockType === 'Hero')?.content)
+        const lookTitle = hero.title || data.event?.name || ''
+        saveEventLook(slug, {
+          title: lookTitle,
+          accent: hero.color || data.event?.themeColor || '',
+          logo: mediaUrl(safeBlockImagePath(hero.logoUrl)) || mediaUrl(data.organizerLogoUrl) || '',
+          monogram: customMonogram(hero.monogram) || monogramOf(parseTitle(lookTitle, 'big'))
+        })
         trackPublicEvent(slug, 'visit')
         const types = new Set(data.blocks.map(b => b.blockType))
         if (types.has('Cadeaux'))
@@ -266,7 +276,7 @@ export default function MiniSite () {
         />
       )
     }
-    return <SiteLoader />
+    return <EventLoader slug={slug} />
   }
 
   if (invitationLoading) {

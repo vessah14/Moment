@@ -1,11 +1,13 @@
 import { lazy, Suspense } from 'react'
-import { Route, Routes } from 'react-router-dom'
+import { Route, Routes, useLocation } from 'react-router-dom'
 import CookieConsent from './components/layout/CookieConsent'
 import Footer from './components/layout/Footer'
 import Header from './components/layout/Header'
 import RequireAuth from './components/auth/RequireAuth'
 import ErrorBoundary from './components/ErrorBoundary'
 import BrandLoader from './components/ui/BrandLoader'
+import EventLoader from './components/site/EventLoader'
+import { eventSlugFromPath, isGuestPath } from './utils/eventLook'
 import PageAnimations from './components/PageAnimations'
 import ScrollToTop from './components/ScrollToTop'
 import BackToTop from './components/layout/BackToTop'
@@ -62,8 +64,15 @@ function SiteLayout ({ children }) {
   )
 }
 
+// Pages des invités : chargement aux couleurs de l'événement, sans la marque TBF Moment.
 function RouteLoader ({ children }) {
-  return <Suspense fallback={<BrandLoader />}>{children}</Suspense>
+  const { pathname } = useLocation()
+  const guestPage = isGuestPath(pathname)
+  return (
+    <Suspense fallback={guestPage ? <EventLoader slug={eventSlugFromPath(pathname)} /> : <BrandLoader />}>
+      {children}
+    </Suspense>
+  )
 }
 
 function App () {
