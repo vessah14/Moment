@@ -43,6 +43,10 @@ describe('share message', () => {
   })
 
   it('encodes the WhatsApp link', () => {
-    expect(whatsappShareUrl('a & b')).toBe('https://wa.me/?text=a%20%26%20b')
+    expect(whatsappShareUrl('a & b')).toBe('https://api.whatsapp.com/send?text=a%20%26%20b')
+  })
+
+  it('keeps emojis intact in the WhatsApp link', () => {
+    expect(decodeURIComponent(whatsappShareUrl('✨ 📅 📍 👉').split('text=')[1])).toBe('✨ 📅 📍 👉')
   })
 })

@@ -2,6 +2,7 @@ import { Copy, Download, MessageCircle, Share2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { API_ORIGIN, eventPosterUrl, eventShareUrl, mediaUrl } from '../../api/client'
 import { getPublicSite, trackPublicEvent } from '../../api/publicEvents'
+import { isMobileDevice } from '../../utils/calendar'
 import { rsvpRules } from '../../utils/rsvpRules'
 import { buildShareMessage, whatsappShareUrl } from '../../utils/shareMessage'
 import { safeCoverPath } from '../../utils/sitePage'
@@ -154,7 +155,15 @@ export default function ShareKit({ slug, title, date, time, location, intro }) {
         href={whatsappShareUrl(message)}
         target="_blank"
         rel="noopener noreferrer"
-        onClick={() => trackPublicEvent(slug, 'share')}
+        onClick={(e) => {
+          trackPublicEvent(slug, 'share')
+          // Téléphone : menu de partage avec le texte seul (emojis intacts, carte d'aperçu
+          // créée par WhatsApp). Ordinateur : lien api.whatsapp.com.
+          if (isMobileDevice() && navigator.canShare?.({ text: message })) {
+            e.preventDefault()
+            navigator.share({ text: message }).catch(() => {})
+          }
+        }}
         className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#25D366] px-5 py-3 text-sm font-semibold text-white hover:opacity-90"
       >
         <MessageCircle className="h-4 w-4" aria-hidden="true" />

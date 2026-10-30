@@ -1315,7 +1315,7 @@ export default function ThemedSitePage({
                 className="btn ghost"
                 target="_blank"
                 rel="noopener noreferrer"
-                href={`https://wa.me/?text=${encodeURIComponent(`${heroStyle.title}${dateLong ? ` · ${dateLong}` : ''}. Toutes les infos : ${eventShareUrl(data.slug)}`)}`}
+                href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`${heroStyle.title}${dateLong ? ` · ${dateLong}` : ''}. Toutes les infos : ${eventShareUrl(data.slug)}`)}`}
               >
                 <Share2 />
                 {t('Partager sur WhatsApp')}
