@@ -127,7 +127,7 @@ export default function ShareKit({ slug, title, date, time, location, intro }) {
             setEdited(true)
             setMessage(e.target.value)
           }}
-          rows={6}
+          rows={11}
           className="w-full rounded-xl border border-border bg-surface px-3.5 py-3 text-sm text-ink outline-none focus:border-brand-purple"
         />
       </label>

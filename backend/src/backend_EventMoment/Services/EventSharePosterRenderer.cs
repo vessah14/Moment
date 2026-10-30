@@ -135,9 +135,13 @@ public static class EventSharePosterRenderer
         // Bloc central : (texte, police, peinture, espace après la ligne).
         var lines = new List<(string Text, SKFont Font, SKPaint Paint, float After)>();
         using var kickerFont = new SKFont(boldTypeface, 30);
-        var kicker = Clean(evt.HeroKicker, 48);
+        var kicker = Clean(WithoutDate(evt.HeroKicker, evt), 80);
         if (kicker != null)
-            lines.Add((kicker.ToUpper(fr), kickerFont, accentTextPaint, 30));
+        {
+            var kickerLines = Wrap(kicker.ToUpper(fr), kickerFont, accentTextPaint, maxWidth).Take(2).ToList();
+            for (var i = 0; i < kickerLines.Count; i++)
+                lines.Add((kickerLines[i], kickerFont, accentTextPaint, i == kickerLines.Count - 1 ? 30 : 8));
+        }
 
         var title = Clean(evt.HeroTitle, 180) ?? Clean(evt.Name, 180) ?? "Événement";
         using var titleFont = new SKFont(boldTypeface, 108);
@@ -154,7 +158,7 @@ public static class EventSharePosterRenderer
             lines.Add((titleLines[i], titleFont, titlePaint, i == titleLines.Count - 1 ? 40 : titleFont.Size * 0.18f));
 
         using var taglineFont = new SKFont(regularTypeface, 40);
-        var tagline = Clean(evt.HeroSubtitle, 120) ?? Clean(evt.Tagline, 120);
+        var tagline = Clean(WithoutDate(evt.HeroSubtitle, evt), 120) ?? Clean(WithoutDate(evt.Tagline, evt), 120);
         if (tagline != null)
         {
             var taglineLines = Wrap(tagline, taglineFont, taglinePaint, maxWidth).Take(2).ToList();
@@ -212,6 +216,23 @@ public static class EventSharePosterRenderer
         }
     }
 
+    public static string? WithoutDate(string? text, PublicEventDto evt)
+    {
+        if (string.IsNullOrWhiteSpace(text) || evt.EventDate is not DateOnly date)
+            return text;
+        var year = date.Year.ToString(CultureInfo.InvariantCulture);
+        var time = evt.StartTime is TimeOnly start ? start : (TimeOnly?)null;
+        bool RepeatsDate(string part) =>
+            part.Contains(year, StringComparison.Ordinal)
+            || (time is TimeOnly t
+                && (part.Contains(t.ToString("HH:mm", CultureInfo.InvariantCulture), StringComparison.Ordinal)
+                    || part.Contains(t.ToString("HH'h'mm", CultureInfo.InvariantCulture), StringComparison.OrdinalIgnoreCase)));
+        var kept = text.Split('·', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Where(part => !RepeatsDate(part))
+            .ToList();
+        return kept.Count == 0 ? null : string.Join(" · ", kept);
+    }
+
     private static void DrawContent(SKCanvas canvas, PublicEventDto evt)
     {
         using var accentPaint = new SKPaint { IsAntialias = true, Color = ParseAccent(evt.HeroColor ?? evt.ThemeColor) };
@@ -232,7 +253,7 @@ public static class EventSharePosterRenderer
         canvas.DrawCircle(centerX - 112, 91, 7, accentPaint);
         canvas.DrawText("TBF MOMENT", centerX - 92, 99, SKTextAlign.Left, brandFont, brandPaint);
 
-        var kicker = Clean(evt.HeroKicker, 48);
+        var kicker = Clean(WithoutDate(evt.HeroKicker, evt), 80);
         if (!string.IsNullOrWhiteSpace(kicker))
         {
             using var kickerFont = new SKFont(boldTypeface, 18);
@@ -254,7 +275,7 @@ public static class EventSharePosterRenderer
         for (var index = 0; index < titleLines.Count; index++)
             DrawCentered(canvas, titleLines[index], centerX, titleTop + index * titleLineHeight, titleFont, titlePaint);
 
-        var tagline = Clean(evt.HeroSubtitle, 100) ?? Clean(evt.Tagline, 100);
+        var tagline = Clean(WithoutDate(evt.HeroSubtitle, evt), 100) ?? Clean(WithoutDate(evt.Tagline, evt), 100);
         var detailsY = titleTop + titleLines.Count * titleLineHeight + 24;
         if (!string.IsNullOrWhiteSpace(tagline))
         {

@@ -25,6 +25,25 @@ public class EventSharePosterRendererTests
         Assert.NotEqual(first, second);
     }
 
+    [Fact]
+    public void WithoutDate_DropsPartsRepeatingTheDateOrTime()
+    {
+        var evt = new PublicEventDto
+        {
+            Name = "Conférence",
+            EventDate = new DateOnly(2026, 10, 27),
+            StartTime = new TimeOnly(8, 48),
+        };
+
+        Assert.Equal("Conférence, séminaire et atelier",
+            EventSharePosterRenderer.WithoutDate("Conférence, séminaire et atelier · 27 octobre 2026", evt));
+        Assert.Null(EventSharePosterRenderer.WithoutDate("27 oct. 2026 · 08:48", evt));
+        Assert.Equal("Thème : le recyclage",
+            EventSharePosterRenderer.WithoutDate("Thème : le recyclage", evt));
+        Assert.Equal("27 octobre 2026",
+            EventSharePosterRenderer.WithoutDate("27 octobre 2026", new PublicEventDto { Name = "Sans date" }));
+    }
+
     [Theory]
     [InlineData(SharePosterFormat.Link, 1200, 630)]
     [InlineData(SharePosterFormat.Square, 1080, 1080)]
