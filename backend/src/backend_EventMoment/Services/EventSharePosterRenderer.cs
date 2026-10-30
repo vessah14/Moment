@@ -22,10 +22,14 @@ public static class EventSharePosterRenderer
     private const int Height = 630;
     private static readonly SKColor DefaultAccent = new(202, 112, 255);
     private static readonly SKColor Background = new(15, 16, 42);
+    // À incrémenter quand le dessin change : l'adresse versionnée de l'affiche (mise en cache
+    // 7 jours par WhatsApp et les navigateurs) change alors aussi.
+    private const string DrawingRevision = "2";
 
     public static string GetVersion(PublicEventDto evt)
     {
         var versionData = string.Join('\n',
+            DrawingRevision,
             evt.Name,
             evt.HeroTitle,
             evt.HeroSubtitle,
