@@ -7,7 +7,7 @@ import { buildShareMessage, whatsappShareUrl } from '../../utils/shareMessage'
 import { useToast } from '../../utils/useToast'
 
 const POSTERS = [
-  { format: 'square', label: 'Affiche carrée', hint: 'Pour un groupe ou une discussion, en plus du message', ratio: 'aspect-square' },
+  { format: 'square', label: 'Affiche carrée', hint: 'L’image avec votre message en légende', ratio: 'aspect-square' },
   { format: 'story', label: 'Affiche pour le Statut', hint: 'Verticale, l’adresse est écrite dessus', ratio: 'aspect-[9/16]' },
 ]
 
@@ -90,11 +90,19 @@ export default function ShareKit({ slug, title, date, time, location, intro }) {
       window.open(imageUrl, '_blank', 'noopener')
       return
     }
-    // L'affiche seule : jointe au message, WhatsApp couperait l'invitation en deux bulles.
-    if (navigator.canShare?.({ files: [file] })) {
+    // L'affiche avec le message : WhatsApp sur téléphone le met en légende (une seule bulle).
+    // Le message est aussi copié, pour le coller en légende là où il n'est pas repris
+    // (WhatsApp sur ordinateur, certaines versions). La copie n'est pas attendue : sur
+    // iPhone, le menu de partage doit s'ouvrir dans la foulée du toucher.
+    navigator.clipboard?.writeText(message).catch(() => {})
+    const withText = navigator.canShare?.({ files: [file], text: message })
+    if (withText || navigator.canShare?.({ files: [file] })) {
       navigator
-        .share({ files: [file] })
-        .then(() => trackPublicEvent(slug, 'share'))
+        .share(withText ? { files: [file], text: message } : { files: [file] })
+        .then(() => {
+          trackPublicEvent(slug, 'share')
+          toast('Message copié : si WhatsApp ne l’a pas ajouté sous l’image, collez-le en légende.')
+        })
         .catch((err) => {
           // Partage annulé par l'utilisateur : rien à signaler.
           if (err?.name !== 'AbortError') toast('Partage impossible ici : l’image s’ouvre, enregistrez-la par un appui long.', { variant: 'error' })
