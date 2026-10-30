@@ -93,6 +93,16 @@ namespace backend_EventMoment.Controllers
         [HttpGet("share/e/{slug}/poster.png")]
         public async Task<IActionResult> Poster(string slug)
         {
+            // Adresse versionnée déjà dessinée : servie directement, sans relire la base, pour
+            // que la carte d'aperçu WhatsApp arrive le plus vite possible.
+            var requested = Request.Query["v"].ToString();
+            if (IsValidSlug(slug) && requested.Length is > 0 and <= 64
+                && _cache.TryGetValue($"share-poster:{slug}:link:{requested}", out byte[]? cached) && cached != null)
+            {
+                Response.Headers.CacheControl = "public, max-age=604800, immutable";
+                return File(cached, "image/png");
+            }
+
             var evt = IsValidSlug(slug) ? await _events.GetPublicEventAsync(slug) : null;
             if (evt == null)
                 return NotFound();
