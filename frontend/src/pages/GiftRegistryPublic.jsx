@@ -3,7 +3,6 @@ import { useParams } from 'react-router-dom'
 import GiftCard from '../components/gifts/GiftCard'
 import Button from '../components/ui/Button'
 import { getPublicEvent, getPublicGifts, reservePublicGift } from '../api/giftRegistry'
-import LanguageSwitcher from '../components/ui/LanguageSwitcher'
 import { useSeo } from '../utils/seo'
 import { findTemplate, resolveSiteStyle, siteRootStyle } from '../utils/templateTheme'
 
@@ -80,7 +79,6 @@ export default function GiftRegistryPublic() {
       style={siteRootStyle(template, siteStyle)}
       data-template={template?.name ?? 'custom'}
     >
-      <LanguageSwitcher floating />
       <div className="mx-auto max-w-4xl">
         <div className="text-center">
           <span className="inline-flex items-center rounded-full border border-border px-4 py-1.5 text-xs font-semibold tracking-widest text-brand-purple uppercase">

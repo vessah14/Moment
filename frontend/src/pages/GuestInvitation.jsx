@@ -6,7 +6,6 @@ import logoMark from '../assets/logo-mark.png'
 import InvitationLoader from '../components/site/InvitationLoader'
 import TicketCard, { ticketEventInfo } from '../components/tickets/TicketCard'
 import Button from '../components/ui/Button'
-import LanguageSwitcher from '../components/ui/LanguageSwitcher'
 import { useSeo } from '../utils/seo'
 import { findTemplate, resolveSiteStyle, siteRootStyle } from '../utils/templateTheme'
 import { resolveTicketStyle } from '../utils/ticketStyles'
@@ -175,7 +174,6 @@ export default function GuestInvitation() {
       style={siteRootStyle(template, siteStyle)}
       data-template={template?.name ?? 'custom'}
     >
-      <LanguageSwitcher floating />
       <div
         className="w-full max-w-md overflow-hidden rounded-2xl border border-border-soft bg-surface"
         style={{ borderRadius: 'var(--site-panel-radius)' }}

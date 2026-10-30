@@ -3,6 +3,7 @@ import { Check, ImagePlus, Trash2 } from 'lucide-react'
 import { mediaUrl } from '../../api/client'
 import { safeBlockImagePath } from '../../utils/sitePage'
 import { customMonogram, monogramOf, parseTitle } from '../site/themes/titleParts'
+import { MUSIC_STYLES, NO_MUSIC } from '../../utils/eventMusic'
 import TemplatePreview from '../templates/TemplatePreview'
 import { getSiteTheme } from '../site/themes/themeDefs'
 import FaqEditor from './FaqEditor'
@@ -73,6 +74,26 @@ export default function StylePanel({
 
       {tab === 'Style' && (
         <SiteLogoFields heroStyle={heroStyle} onChange={update} uploading={uploading} onUpload={onUploadSiteLogo} />
+      )}
+
+      {tab === 'Style' && (
+        <label className="mt-4 block rounded-xl border border-border-soft p-4">
+          <span className="text-sm font-medium text-ink">Musique d’ambiance</span>
+          <span className="mt-1 block text-xs text-faint">
+            Jouée sur la page de l’événement ; l’invité peut la couper à tout moment.
+          </span>
+          <select
+            value={heroStyle.music ?? ''}
+            onChange={(e) => update({ music: e.target.value })}
+            className="mt-2 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-brand-purple"
+          >
+            <option value="">Automatique (selon le modèle et l’événement)</option>
+            {MUSIC_STYLES.map((style) => (
+              <option key={style.id} value={style.id}>{style.label}</option>
+            ))}
+            <option value={NO_MUSIC}>Aucune musique</option>
+          </select>
+        </label>
       )}
 
       {tab === 'Style' && premiumTheme && (

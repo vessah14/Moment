@@ -8,9 +8,11 @@ import {
   Images,
   MapPin,
   Menu,
+  Music,
   Navigation,
   Quote,
   Ticket,
+  VolumeX,
   X,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -34,6 +36,7 @@ import { usableColors } from '../../utils/mobileMoney'
 import ThemedSitePage from './themes/ThemedSitePage'
 import { invitationGreeting, invitationParagraphs } from '../../utils/invitationText'
 import { getSiteTheme } from './themes/themeDefs'
+import { createMusic } from './themes/effects'
 import { customMonogram, monogramOf, parseTitle } from './themes/titleParts'
 
 // Rendu unique du site d'un événement : le Builder (mode édition / aperçu) et le
@@ -1007,6 +1010,53 @@ function renderBlockBody({ block, content, data, editable, editor, fullPage, ani
 }
 
 
+// Musique d'ambiance des modèles classiques (générée en direct, aucun fichier audio). Les
+// navigateurs n'autorisent le son qu'après un geste : elle démarre au premier toucher ou clic
+// sur la page, et ce bouton la coupe ou la relance.
+function SiteMusicButton({ styleId }) {
+  const [playing, setPlaying] = useState(false)
+  const musicRef = useRef(null)
+
+  useEffect(() => {
+    const music = createMusic(styleId, setPlaying)
+    musicRef.current = music
+    let started = false
+    const startOnce = (e) => {
+      if (started) return
+      started = true
+      // Le clic sur le bouton lui-même est traité par le bouton.
+      if (!e.target.closest?.('[data-site-music]')) music.play()
+      window.removeEventListener('pointerdown', startOnce)
+      window.removeEventListener('keydown', startOnce)
+    }
+    window.addEventListener('pointerdown', startOnce)
+    window.addEventListener('keydown', startOnce)
+    return () => {
+      window.removeEventListener('pointerdown', startOnce)
+      window.removeEventListener('keydown', startOnce)
+      music.destroy()
+    }
+  }, [styleId])
+
+  return (
+    <button
+      type="button"
+      data-site-music
+      onClick={() => musicRef.current?.toggle()}
+      aria-pressed={playing}
+      aria-label={playing ? 'Couper la musique' : 'Lancer la musique'}
+      title={playing ? 'Couper la musique' : 'Lancer la musique'}
+      className="fixed bottom-[calc(1rem+var(--site-bottom-bar,0px))] left-4 z-50 flex h-11 w-11 items-center justify-center rounded-full border border-border-soft bg-surface/90 text-ink shadow-lg backdrop-blur transition-[bottom] duration-300 hover:border-brand-purple sm:bottom-4"
+    >
+      {playing ? (
+        <Music className="h-5 w-5 animate-pulse motion-reduce:animate-none" style={{ color: 'var(--color-brand-purple)' }} />
+      ) : (
+        <VolumeX className="h-5 w-5" />
+      )}
+    </button>
+  )
+}
+
 // Billet de l'invité en plein écran (bouton « Mon pass ») : à l'accueil, plus besoin
 // de faire défiler la page pour retrouver le QR code.
 function PassDialog({ onClose, children }) {
@@ -1464,6 +1514,7 @@ function ClassicSitePage({
           onHero={onImage}
         />
       )}
+      {fullPage && !editable && heroStyle.musicStyle && <SiteMusicButton styleId={heroStyle.musicStyle} />}
       {passOpen && hasPass && (
         <PassDialog onClose={() => setPassOpen(false)}>
           <GuestPass

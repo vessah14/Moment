@@ -433,6 +433,8 @@ export default function ThemedSitePage({
   const motion = fullPage && !reduced
   const palette = themePalette(theme, heroStyle.palette)
   const motif = themeMotif(theme, heroStyle.motif)
+  // Musique de l'événement (utils/eventMusic.js) ; sans réglage, celle du modèle.
+  const musicStyle = heroStyle.musicStyle !== undefined ? heroStyle.musicStyle : theme.music
   const [hashGuest] = useState(() => (fullPage ? guestFromHash() : ''))
   // Bouton FR | EN (modèles qui ont une traduction) : textes du modèle traduits, ceux de
   // l'organisateur laissés tels quels.
@@ -573,7 +575,7 @@ export default function ThemedSitePage({
   // Musique (créée à la demande, coupée en quittant la page).
   useEffect(() => () => musicRef.current?.destroy(), [])
   const music = () => {
-    if (!musicRef.current) musicRef.current = createMusic(theme.music, setMusicOn)
+    if (!musicRef.current) musicRef.current = createMusic(musicStyle, setMusicOn)
     return musicRef.current
   }
 
@@ -635,7 +637,7 @@ export default function ThemedSitePage({
       ? { envelope: 1700, curtain: 1250, gift: 900, bloom: 1150, iris: 1300, ticket: 1100, candle: 1800, badge: 1100 }[theme.intro]
       : 0
     setIntro('opening')
-    if (withMusic && theme.music) music().play()
+    if (withMusic && musicStyle) music().play()
     if (theme.intro === 'gift' && motion && fxRef.current) {
       const r = e.currentTarget.getBoundingClientRect()
       burst(fxRef.current, r.left + r.width / 2, r.top + r.height / 3, 'confetti', palette.particleColors)
@@ -1379,7 +1381,7 @@ export default function ThemedSitePage({
       {label}
     </button>
   )
-  const musicToggle = theme.music ? (
+  const musicToggle = musicStyle ? (
     <label className="intro-music">
       <input type="checkbox" checked={withMusic} onChange={(e) => setWithMusic(e.target.checked)} />
       <Music />
@@ -1623,7 +1625,7 @@ export default function ThemedSitePage({
         </PassModal>,
         document.body,
       )}
-      {!embedded && theme.music && opened && (
+      {!embedded && musicStyle && opened && (
         <button
           type="button"
           className={`music-btn ${musicOn ? 'on' : ''}`}

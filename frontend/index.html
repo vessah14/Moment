@@ -163,8 +163,8 @@
         var path = window.location.pathname;
         var isInvitation =
           path.indexOf('/invitation/') === 0 ||
-          (path.indexOf('/e/') === 0 &&
-            new URLSearchParams(window.location.search).has('invite'));
+          path.indexOf('/e/') === 0 ||
+          path.indexOf('/cadeaux/') === 0;
         if (isInvitation) {
           splash.remove();
           return;

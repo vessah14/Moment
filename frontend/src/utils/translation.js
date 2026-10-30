@@ -105,6 +105,9 @@ export function initTranslation() {
   // Pas de bascule en droite-à-gauche pour l'arabe : les mises en page ne sont pas
   // conçues pour, le texte traduit reste lisible dans la mise en page actuelle.
   if (language === SOURCE_LANGUAGE) return
+  // Pages des invités (site, invitation, cadeaux) : toujours dans la langue de
+  // l'organisateur, sans bouton de traduction ni script Google.
+  if (/^\/(e|invitation|cadeaux)\//.test(window.location.pathname)) return
   patchDomForTranslation()
   loadGoogleTranslate()
 }

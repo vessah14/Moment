@@ -110,6 +110,8 @@ export default function Builder() {
     // Pastille de la barre du site : logo envoyé ou monogramme (vide = automatique).
     logoUrl: '',
     monogram: '',
+    // Musique d'ambiance : '' = automatique, 'none' = aucune, sinon un style (utils/eventMusic).
+    music: '',
   })
 
   // Photos publiées de la galerie : ce sont elles que le bloc Galerie affiche en ligne.
@@ -214,6 +216,7 @@ export default function Builder() {
           kicker: heroContent.kicker ?? '',
           logoUrl: heroContent.logoUrl ?? '',
           monogram: heroContent.monogram ?? '',
+          music: heroContent.music ?? '',
           blockHeight: heroContent.blockHeight ?? 72,
           darkOverlay: heroContent.darkOverlay ?? true,
           entryAnimation: heroContent.entryAnimation ?? false,
@@ -533,6 +536,7 @@ export default function Builder() {
         kicker: heroStyle.kicker,
         logoUrl: heroStyle.logoUrl,
         monogram: heroStyle.monogram,
+        music: heroStyle.music,
       })
       // Toute la page en un seul appel, tout ou rien (l'ancienne suite d'appels bloc par
       // bloc pouvait laisser la page à moitié enregistrée : « Conflit de données »).

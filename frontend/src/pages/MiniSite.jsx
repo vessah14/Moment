@@ -10,12 +10,13 @@ import logoMark from '../assets/logo-mark.png'
 import SitePage from '../components/site/SitePage'
 import InvitationLoader from '../components/site/InvitationLoader'
 import SiteLoader from '../components/site/SiteLoader'
-import LanguageSwitcher from '../components/ui/LanguageSwitcher'
 import { formatEventDate } from '../utils/eventStatus'
 import { isInviteCode } from '../utils/mobileMoney'
 import { absoluteUrl, useSeo } from '../utils/seo'
 import { safeBlockImagePath, safeCoverPath } from '../utils/sitePage'
 import { monogramFavicon, useFavicon } from '../utils/favicon'
+import { resolveEventMusic } from '../utils/eventMusic'
+import { getSiteTheme } from '../components/site/themes/themeDefs'
 import { customMonogram, monogramOf, parseTitle } from '../components/site/themes/titleParts'
 import { displayNameFromTitle, eventRequiresAge, formatEventDisplayTitle } from '../utils/eventTitle'
 import {
@@ -317,20 +318,25 @@ export default function MiniSite () {
     pageBlocks.push(type)
   }
   const publicPageBlocks = ensureRsvpBlock(pageBlocks)
+  const premiumTheme = getSiteTheme(template?.theme)
+  const musicStyle = resolveEventMusic({
+    choice: heroContent.music,
+    themeMusic: premiumTheme?.music,
+    eventType: eventTypeId
+  })
 
   return (
     <>
       {ownEventId && (
         <Link
           to={`/builder/${ownEventId}`}
-          className='fixed bottom-[calc(1rem+var(--site-bottom-bar,0px))] left-4 z-50 inline-flex transition-[bottom] duration-300 sm:bottom-4 items-center gap-1.5 rounded-full border border-border-soft bg-surface/90 px-3.5 py-2 text-xs font-semibold text-ink shadow-lg backdrop-blur transition hover:border-brand-purple'
+          className={`fixed bottom-[calc(1rem+var(--site-bottom-bar,0px))] ${musicStyle && !premiumTheme ? 'left-[4.25rem]' : 'left-4'} z-50 inline-flex transition-[bottom] duration-300 sm:bottom-4 items-center gap-1.5 rounded-full border border-border-soft bg-surface/90 px-3.5 py-2 text-xs font-semibold text-ink shadow-lg backdrop-blur transition hover:border-brand-purple`}
           title='Visible uniquement par vous'
         >
           <PencilLine className='h-4 w-4' />
           Modifier ma page
         </Link>
       )}
-      <LanguageSwitcher floating />
       <SitePage
         fullPage
         template={template}
@@ -343,6 +349,7 @@ export default function MiniSite () {
           kicker: heroContent.kicker,
           logoUrl: heroContent.logoUrl,
           monogram: heroContent.monogram,
+          musicStyle,
           title: heroTitle,
           subtitle:
             heroContent.subtitle || event.tagline || defaultSubtitle(event)
