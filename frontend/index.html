@@ -53,9 +53,17 @@
                 ? 'dark'
                 : 'dark';
         document.documentElement.setAttribute('data-theme', resolved);
+        // Pages des invités (site, invitation, cadeaux) : pas d'écran d'accueil TBF Moment,
+        // masqué avant le premier affichage pour qu'il n'apparaisse même pas un instant.
+        if (/^\/(e|invitation|cadeaux)\//.test(window.location.pathname)) {
+          document.documentElement.setAttribute('data-guest-page', '');
+        }
       })();
     </script>
     <style>
+      [data-guest-page] #startup-splash {
+        display: none !important;
+      }
       #startup-splash {
         position: fixed;
         inset: 0;
