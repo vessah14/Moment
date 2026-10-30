@@ -1,6 +1,6 @@
 import { Copy, Download, MessageCircle, Share2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { eventPosterUrl, eventShareUrl } from '../../api/client'
+import { API_ORIGIN, eventPosterUrl, eventShareUrl } from '../../api/client'
 import { getPublicSite, trackPublicEvent } from '../../api/publicEvents'
 import { rsvpRules } from '../../utils/rsvpRules'
 import { buildShareMessage, whatsappShareUrl } from '../../utils/shareMessage'
@@ -63,6 +63,11 @@ export default function ShareKit({ slug, title, date, time, location, intro }) {
   // que si l'appel suit immédiatement le toucher, sans téléchargement entre les deux.
   const [files, setFiles] = useState({})
   useEffect(() => {
+    // Préchauffage de l'aperçu WhatsApp : réveille le serveur et prépare l'affiche du lien
+    // avant que le message soit collé ; WhatsApp abandonne la carte si la réponse tarde.
+    for (const path of ['', '/poster.png']) {
+      fetch(`${API_ORIGIN}/share/e/${encodeURIComponent(slug)}${path}`, { mode: 'no-cors' }).catch(() => {})
+    }
     let cancelled = false
     for (const { format } of POSTERS) {
       fetch(eventPosterUrl(slug, format))

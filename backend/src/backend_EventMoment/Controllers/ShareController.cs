@@ -6,6 +6,7 @@ using backend_EventMoment.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace backend_EventMoment.Controllers
 {
@@ -24,6 +25,16 @@ namespace backend_EventMoment.Controllers
         private readonly IConfiguration _config;
         private readonly IEventStatsService _stats;
         private readonly ILogger<ShareController> _logger;
+        private readonly IMemoryCache _cache;
+
+        // Une affiche se dessine en 1 à 3 s : trop lent pour WhatsApp, qui abandonne la carte
+        // d'aperçu si l'image tarde. Elle est gardée en mémoire, la version de l'événement
+        // (titre, date, lieu, couleur) faisant partie de la clé.
+        private static readonly MemoryCacheEntryOptions PosterCacheOptions = new()
+        {
+            SlidingExpiration = TimeSpan.FromHours(12),
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(3),
+        };
 
         // Robots qui lisent l'aperçu quand le lien est collé dans une conversation ou une
         // publication : chaque passage correspond à un partage du lien.
@@ -34,8 +45,9 @@ namespace backend_EventMoment.Controllers
         };
 
         public ShareController(IGiftRegistryService events, IUploadStorage uploads, IConfiguration config,
-            IEventStatsService stats, ILogger<ShareController> logger)
+            IEventStatsService stats, ILogger<ShareController> logger, IMemoryCache cache)
         {
+            _cache = cache;
             _events = events;
             _uploads = uploads;
             _config = config;
@@ -60,7 +72,8 @@ namespace backend_EventMoment.Controllers
             // Le site renvoie les robots d'aperçu ici (frontend/vercel.json) : l'adresse lisible
             // de l'événement sert donc aussi d'og:url.
             var shareUrl = eventUrl;
-            var image = CoverUrl(evt.CoverImageUrl) ?? PosterUrl(evt);
+            var cover = CoverUrl(evt.CoverImageUrl);
+            var image = cover ?? PosterUrl(evt);
 
             var details = new List<string>();
             if (evt.EventDate is DateOnly date)
@@ -74,7 +87,7 @@ namespace backend_EventMoment.Controllers
                 ?? $"Retrouvez toutes les informations de « {evt.Name} » sur son site.";
 
             var title = Clean(evt.HeroTitle) ?? evt.Name;
-            return Html(200, RedirectPage(title, description, eventUrl, shareUrl, image, eventUrl));
+            return Html(200, RedirectPage(title, description, eventUrl, shareUrl, image, eventUrl, posterImage: cover == null));
         }
 
         [HttpGet("share/e/{slug}/poster.png")]
@@ -84,8 +97,17 @@ namespace backend_EventMoment.Controllers
             if (evt == null)
                 return NotFound();
 
-            Response.Headers.CacheControl = "public, max-age=300";
-            return File(EventSharePosterRenderer.Render(evt), "image/png");
+            // Adresse versionnée (?v=…, celle des balises d'aperçu) : son contenu ne change jamais.
+            var version = EventSharePosterRenderer.GetVersion(evt);
+            Response.Headers.CacheControl = Request.Query["v"] == version
+                ? "public, max-age=604800, immutable"
+                : "public, max-age=300";
+            var png = _cache.GetOrCreate($"share-poster:{evt.Slug}:link:{version}", entry =>
+            {
+                entry.SetOptions(PosterCacheOptions);
+                return EventSharePosterRenderer.Render(evt);
+            })!;
+            return File(png, "image/png");
         }
 
         // Kit de partage : image carrée (discussions WhatsApp) ou verticale (Statut), avec
@@ -106,7 +128,13 @@ namespace backend_EventMoment.Controllers
             var site = (_config["Frontend:BaseUrl"] ?? "http://localhost:5173").TrimEnd('/');
             var displayUrl = $"{new Uri(site).Host}/e/{evt.Slug}";
             Response.Headers.CacheControl = "public, max-age=300";
-            return File(EventSharePosterRenderer.Render(evt, kind!.Value, displayUrl), "image/png", $"{evt.Slug}-{format}.png");
+            var png = _cache.GetOrCreate(
+                $"share-poster:{evt.Slug}:{format}:{EventSharePosterRenderer.GetVersion(evt)}:{displayUrl}", entry =>
+                {
+                    entry.SetOptions(PosterCacheOptions);
+                    return EventSharePosterRenderer.Render(evt, kind!.Value, displayUrl);
+                })!;
+            return File(png, "image/png", $"{evt.Slug}-{format}.png");
         }
 
         private static bool IsValidSlug(string slug) =>
@@ -158,7 +186,8 @@ namespace backend_EventMoment.Controllers
             return new ContentResult { StatusCode = status, ContentType = "text/html; charset=utf-8", Content = html };
         }
 
-        private static string RedirectPage(string title, string description, string target, string? shareUrl, string? image, string canonical)
+        private static string RedirectPage(string title, string description, string target, string? shareUrl, string? image, string canonical,
+            bool posterImage = false)
         {
             // Seuls les caractères spéciaux HTML sont encodés : les accents restent lisibles.
             string E(string value) => value.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;").Replace("'", "&#39;");
@@ -176,7 +205,12 @@ namespace backend_EventMoment.Controllers
             if (shareUrl != null) html.Append($"<meta property=\"og:url\" content=\"{E(shareUrl)}\">");
             if (image != null)
             {
-                html.Append($"<meta property=\"og:image\" content=\"{E(image)}\"><meta name=\"twitter:image\" content=\"{E(image)}\">");
+                html.Append($"<meta property=\"og:image\" content=\"{E(image)}\"><meta property=\"og:image:secure_url\" content=\"{E(image)}\">");
+                html.Append($"<meta property=\"og:image:alt\" content=\"{E(title)}\"><meta name=\"twitter:image\" content=\"{E(image)}\">");
+                // Dimensions connues pour l'affiche générée : WhatsApp et Facebook construisent
+                // la carte d'aperçu sans attendre la fin du téléchargement de l'image.
+                if (posterImage)
+                    html.Append("<meta property=\"og:image:type\" content=\"image/png\"><meta property=\"og:image:width\" content=\"1200\"><meta property=\"og:image:height\" content=\"630\">");
             }
             html.Append($"<meta name=\"twitter:card\" content=\"summary_large_image\"><meta name=\"twitter:title\" content=\"{E(title)}\"><meta name=\"twitter:description\" content=\"{E(description)}\">");
             html.Append($"<meta http-equiv=\"refresh\" content=\"0;url={E(target)}\">");
