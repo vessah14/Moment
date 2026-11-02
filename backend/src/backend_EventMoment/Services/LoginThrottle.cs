@@ -50,6 +50,27 @@ namespace backend_EventMoment.Services
             }
         }
 
+        public bool TryRecordAttempt(string scope, string email)
+        {
+            var key = Key(scope, email);
+            lock (_gate)
+            {
+                if (_cache.TryGetValue(key + ":lock", out _))
+                    return false;
+
+                var attempts = (_cache.TryGetValue(key, out int count) ? count : 0) + 1;
+                if (attempts >= _maxFailures)
+                {
+                    _cache.Set(key + ":lock", true, _window);
+                    _cache.Remove(key);
+                    return false;
+                }
+
+                _cache.Set(key, attempts, _window);
+                return true;
+            }
+        }
+
         public void Reset(string scope, string email) => _cache.Remove(Key(scope, email));
     }
 }

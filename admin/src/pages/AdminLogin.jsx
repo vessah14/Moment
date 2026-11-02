@@ -2,7 +2,7 @@ import { Check, Copy, Eye, EyeOff, KeyRound, ShieldAlert } from 'lucide-react'
 import QRCode from 'qrcode'
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { login, verifyMfa } from '../api/auth'
+import { login, requestMfaRecovery, verifyMfa } from '../api/auth'
 import logoMark from '../assets/logo-mark.png'
 import Button from '../components/ui/Button'
 
@@ -18,6 +18,20 @@ export default function AdminLogin() {
   const [mfa, setMfa] = useState(null)
   const [code, setCode] = useState('')
   const [secretCopied, setSecretCopied] = useState(false)
+  const [recoveryRequested, setRecoveryRequested] = useState(false)
+
+  const handleRecoveryRequest = async () => {
+    setSubmitting(true)
+    setError('')
+    try {
+      await requestMfaRecovery(email)
+      setRecoveryRequested(true)
+    } catch (err) {
+      setError(err.message || 'Impossible de demander le lien de récupération.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -141,8 +155,24 @@ export default function AdminLogin() {
               {submitting ? 'Vérification...' : mfa.setup ? 'Activer et accéder à la console' : 'Accéder à la console'}
             </Button>
             <p className="text-center text-xs text-muted">
-              Téléphone perdu ou application inaccessible ? Demandez à un autre superadmin de réinitialiser votre MFA. Vous devrez la reconfigurer à la prochaine connexion.
+              Téléphone perdu ou application inaccessible ?
             </p>
+            {!mfa.setup && (
+              recoveryRequested ? (
+                <p role="status" className="text-center text-sm text-success">
+                  Si un compte admin actif avec MFA correspond à cette adresse, un lien de récupération a été envoyé.
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={handleRecoveryRequest}
+                  className="w-full text-center text-sm font-medium text-brand-purple hover:underline disabled:opacity-60"
+                >
+                  {submitting ? 'Envoi en cours…' : 'Recevoir un lien de récupération par e-mail'}
+                </button>
+              )
+            )}
             <button
               type="button"
               onClick={() => { setMfa(null); setCode(''); setError(''); setSecretCopied(false) }}

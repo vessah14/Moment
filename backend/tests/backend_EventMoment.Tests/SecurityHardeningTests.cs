@@ -3,11 +3,13 @@ using backend_EventMoment.Data;
 using backend_EventMoment.Dtos.User;
 using backend_EventMoment.Models;
 using backend_EventMoment.Services;
+using backend_EventMoment.Services.Email;
 using backend_EventMoment.Services.Exceptions;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace backend_EventMoment.Tests;
 
@@ -20,6 +22,7 @@ public class SecurityHardeningTests
         ["Jwt:Issuer"] = "backend_EventMoment",
         ["Jwt:Audience"] = "backend_EventMoment_users",
         ["Jwt:ExpiresInMinutes"] = "30",
+        ["Frontend:AdminUrl"] = "https://admin.example.com",
     }).Build();
 
     [Fact]
@@ -44,10 +47,12 @@ public class SecurityHardeningTests
         Assert.Null(Totp.Verify(secret, "12345", 0, now));
     }
 
-    private static (AdminAccountService service, AdminDbContext context, AdminAccount admin, IDataProtectionProvider dataProtection) AdminSetup()
+    private static (AdminAccountService service, AdminDbContext context, AdminAccount admin, IDataProtectionProvider dataProtection, FakeEmailSender email) AdminSetup()
     {
         var context = TestDbContextFactory.CreateAdminContext();
         var dataProtection = new EphemeralDataProtectionProvider();
+        var email = new FakeEmailSender();
+        var config = Config();
         var admin = new AdminAccount
         {
             Id = Guid.NewGuid(), Email = "boss@tbfmoment.com", FullName = "Boss", Role = AdminRole.Superadmin,
@@ -58,16 +63,19 @@ public class SecurityHardeningTests
         context.SaveChanges();
         var service = new AdminAccountService(
             context,
-            new JwtService(Config()),
+            new JwtService(config),
             dataProtection,
+            email,
+            config,
+            NullLogger<AdminAccountService>.Instance,
             new LoginThrottle(new MemoryCache(new MemoryCacheOptions())));
-        return (service, context, admin, dataProtection);
+        return (service, context, admin, dataProtection, email);
     }
 
     [Fact]
     public async Task AdminLogin_RequiresValidMfaBeforeIssuingAdminSession()
     {
-        var (service, context, admin, dataProtection) = AdminSetup();
+        var (service, context, admin, dataProtection, _) = AdminSetup();
         const string secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
         context.AdminMfas.Add(new AdminMfa
         {
@@ -107,7 +115,7 @@ public class SecurityHardeningTests
     [Fact]
     public async Task AdminLogin_RequiresFirstTotpCodeToEnableMfa()
     {
-        var (service, context, admin, _) = AdminSetup();
+        var (service, context, admin, _, _) = AdminSetup();
 
         var challenge = await service.LoginAsync(new LoginDto { Email = admin.Email, Password = "AdminPass123" });
 
@@ -129,9 +137,52 @@ public class SecurityHardeningTests
     }
 
     [Fact]
+    public async Task MfaRecovery_SendsSingleUseEmailLinkAndResetsMfa()
+    {
+        var (service, context, admin, dataProtection, email) = AdminSetup();
+        context.AdminMfas.Add(new AdminMfa
+        {
+            AdminId = admin.Id,
+            SecretProtected = dataProtection.CreateProtector("AdminMfa.Secret.v1")
+                .Protect(Totp.GenerateSecret()),
+            EnabledAt = DateTimeOffset.UtcNow,
+        });
+        await context.SaveChangesAsync();
+
+        await service.RequestMfaRecoveryAsync(admin.Email);
+
+        var sent = Assert.Single(email.Sent);
+        Assert.Equal(admin.Email, sent.To);
+        Assert.Contains("/admin/recuperation-mfa#token=", sent.Body);
+        var token = System.Text.RegularExpressions.Regex.Match(sent.Body, @"#token=([^""&]+)").Groups[1].Value;
+        Assert.False(string.IsNullOrWhiteSpace(token));
+        var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+        Assert.Equal("admin_mfa_recovery", handler.ReadJwtToken(Uri.UnescapeDataString(token)).Claims
+            .First(c => c.Type == "type").Value);
+
+        await service.CompleteMfaRecoveryAsync(new AdminMfaRecoveryDto { Token = Uri.UnescapeDataString(token) });
+
+        Assert.Null(await context.AdminMfas.FindAsync(admin.Id));
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.CompleteMfaRecoveryAsync(new AdminMfaRecoveryDto { Token = Uri.UnescapeDataString(token) }));
+    }
+
+    [Fact]
+    public async Task MfaRecovery_DoesNotSendEmailForUnknownOrUnconfiguredAccounts()
+    {
+        var (service, context, admin, _, email) = AdminSetup();
+
+        await service.RequestMfaRecoveryAsync("unknown@example.com");
+        await service.RequestMfaRecoveryAsync(admin.Email);
+
+        Assert.Empty(email.Sent);
+        Assert.Empty(await context.AdminMfas.ToListAsync());
+    }
+
+    [Fact]
     public async Task AdminLogin_RejectsInvalidPassword()
     {
-        var (service, _, _, _) = AdminSetup();
+        var (service, _, _, _, _) = AdminSetup();
         await Assert.ThrowsAsync<InvalidCredentialsException>(() =>
             service.LoginAsync(new LoginDto { Email = "boss@tbfmoment.com", Password = "WrongPassword123" }));
     }

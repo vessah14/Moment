@@ -194,6 +194,24 @@ namespace backend_EventMoment.Services
                 && long.TryParse(principal.FindFirst("session_version")?.Value, out sessionVersion);
         }
 
+        public (string Token, DateTimeOffset Expiration) GenerateAdminMfaRecoveryToken(AdminAccount admin) =>
+            GenerateToken(new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, admin.Id.ToString()),
+                new Claim("type", "admin_mfa_recovery"),
+                new Claim("session_version", admin.UpdatedAt.ToUnixTimeMilliseconds().ToString())
+            }, TimeSpan.FromMinutes(20));
+
+        public bool TryValidateAdminMfaRecoveryToken(string token, out Guid adminId, out long sessionVersion)
+        {
+            adminId = Guid.Empty;
+            sessionVersion = 0;
+            var principal = ValidateTypedToken(token, "admin_mfa_recovery");
+            return principal != null
+                && Guid.TryParse(principal.FindFirst(ClaimTypes.NameIdentifier)?.Value, out adminId)
+                && long.TryParse(principal.FindFirst("session_version")?.Value, out sessionVersion);
+        }
+
         private (string Token, DateTimeOffset Expiration) GenerateToken(Claim[] claims, TimeSpan? lifetime = null)
         {
             var keyValue = _config["Jwt:Key"];

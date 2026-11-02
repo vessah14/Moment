@@ -6,6 +6,7 @@ using backend_EventMoment.Dtos;
 using backend_EventMoment.Dtos.User;
 using backend_EventMoment.Interfaces;
 using backend_EventMoment.Models;
+using backend_EventMoment.Services.Email;
 using backend_EventMoment.Services.Exceptions;
 
 namespace backend_EventMoment.Services
@@ -17,17 +18,26 @@ namespace backend_EventMoment.Services
 
         private readonly LoginThrottle? _throttle;
         private readonly IDataProtector _mfaProtector;
+        private readonly IEmailSender _emailSender;
+        private readonly IConfiguration _configuration;
+        private readonly ILogger<AdminAccountService> _logger;
 
         public AdminAccountService(
             AdminDbContext context,
             JwtService jwtService,
             IDataProtectionProvider dataProtection,
+            IEmailSender emailSender,
+            IConfiguration configuration,
+            ILogger<AdminAccountService> logger,
             LoginThrottle? throttle = null)
         {
             _context = context;
             _jwtService = jwtService;
             _throttle = throttle;
             _mfaProtector = dataProtection.CreateProtector("AdminMfa.Secret.v1");
+            _emailSender = emailSender;
+            _configuration = configuration;
+            _logger = logger;
         }
 
         public async Task<AdminAccountDto> CreateAsync(CreateAdminAccountDto dto, Guid currentAdminId)
@@ -214,6 +224,78 @@ namespace backend_EventMoment.Services
             };
         }
 
+        public async Task RequestMfaRecoveryAsync(string email)
+        {
+            if (_throttle != null && !_throttle.TryRecordAttempt("admin-mfa-recovery", email))
+                return;
+
+            var admin = await _context.AdminAccounts.AsNoTracking()
+                .FirstOrDefaultAsync(a => a.Email == email && a.IsActive);
+            if (admin == null || !await _context.AdminMfas.AnyAsync(m => m.AdminId == admin.Id && m.EnabledAt != null))
+                return;
+
+            var (token, _) = _jwtService.GenerateAdminMfaRecoveryToken(admin);
+            var adminUrl = _configuration["Frontend:AdminUrl"]?.TrimEnd('/');
+            if (string.IsNullOrWhiteSpace(adminUrl))
+            {
+                _logger.LogError("Frontend:AdminUrl n'est pas configurée : récupération MFA impossible pour l'administrateur {AdminId}", admin.Id);
+                return;
+            }
+
+            var recoveryUrl = $"{adminUrl}/admin/recuperation-mfa#token={Uri.EscapeDataString(token)}";
+            var html = EmailLayout.Render(new EmailMessage
+            {
+                Preheader = "Lien de récupération MFA valable 20 minutes.",
+                Kicker = "Sécurité du compte",
+                Title = "Récupération de votre accès admin",
+                BodyHtml = EmailLayout.P("Une demande de réinitialisation de la double authentification de votre compte administrateur a été reçue.")
+                    + EmailLayout.P("Si vous êtes à l'origine de cette demande, utilisez le bouton ci-dessous. Vous devrez ensuite vous reconnecter avec votre mot de passe et configurer une nouvelle application d'authentification.")
+                    + EmailLayout.P("Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail : votre MFA reste active."),
+                ButtonText = "Réinitialiser mon MFA",
+                ButtonUrl = recoveryUrl,
+                NoteHtml = "Ce lien expire dans 20 minutes et ne peut servir qu'une seule fois.",
+                FooterReason = "Vous recevez cet e-mail suite à une demande de récupération MFA pour votre compte administrateur TBF MOMENT.",
+            });
+
+            try
+            {
+                if (!await _emailSender.SendAsync(admin.Email, "Récupération MFA de votre compte admin TBF MOMENT", html))
+                    _logger.LogWarning("E-mail de récupération MFA non envoyé pour l'administrateur {AdminId}", admin.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Échec de l'envoi de l'e-mail de récupération MFA pour l'administrateur {AdminId}", admin.Id);
+            }
+        }
+
+        public async Task CompleteMfaRecoveryAsync(AdminMfaRecoveryDto dto)
+        {
+            if (!_jwtService.TryValidateAdminMfaRecoveryToken(dto.Token, out var adminId, out var version))
+                throw new InvalidOperationException("Lien de récupération invalide ou expiré.");
+
+            var admin = await _context.AdminAccounts.FirstOrDefaultAsync(a => a.Id == adminId && a.IsActive);
+            if (admin == null || admin.UpdatedAt.ToUnixTimeMilliseconds() != version)
+                throw new InvalidOperationException("Lien de récupération invalide ou expiré.");
+
+            var mfa = await _context.AdminMfas.FirstOrDefaultAsync(m => m.AdminId == admin.Id && m.EnabledAt != null);
+            if (mfa == null)
+                throw new InvalidOperationException("Lien de récupération invalide ou expiré.");
+
+            _context.AdminMfas.Remove(mfa);
+            var now = DateTimeOffset.UtcNow;
+            admin.UpdatedAt = now.ToUnixTimeMilliseconds() <= version
+                ? DateTimeOffset.FromUnixTimeMilliseconds(version + 1)
+                : now;
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                throw new InvalidOperationException("Lien de récupération invalide ou expiré.");
+            }
+        }
+
         // Permet de supprimer les données d'une ancienne configuration MFA.
         public async Task<bool> ResetMfaAsync(Guid adminId, Guid currentAdminId)
         {
@@ -222,6 +304,14 @@ namespace backend_EventMoment.Services
             var mfa = await _context.AdminMfas.FirstOrDefaultAsync(m => m.AdminId == adminId);
             if (mfa == null) return false;
             _context.AdminMfas.Remove(mfa);
+            var admin = await _context.AdminAccounts.FirstOrDefaultAsync(a => a.Id == adminId);
+            if (admin != null)
+            {
+                var now = DateTimeOffset.UtcNow;
+                admin.UpdatedAt = now.ToUnixTimeMilliseconds() <= admin.UpdatedAt.ToUnixTimeMilliseconds()
+                    ? DateTimeOffset.FromUnixTimeMilliseconds(admin.UpdatedAt.ToUnixTimeMilliseconds() + 1)
+                    : now;
+            }
             await _context.SaveChangesAsync();
             return true;
         }

@@ -19,6 +19,22 @@ export async function verifyMfa({ mfaToken, code }) {
   return result
 }
 
+export function requestMfaRecovery(email) {
+  return apiFetch('/admin/accounts/mfa/recovery/request', {
+    method: 'POST',
+    auth: false,
+    body: { email },
+  })
+}
+
+export function completeMfaRecovery(token) {
+  return apiFetch('/admin/accounts/mfa/recovery/complete', {
+    method: 'POST',
+    auth: false,
+    body: { token },
+  })
+}
+
 // Déconnexion : le serveur révoque la session tout de suite (le jeton ne peut plus
 // servir, même copié). Envoi sans attendre la réponse : la déconnexion locale est immédiate.
 export function logout() {

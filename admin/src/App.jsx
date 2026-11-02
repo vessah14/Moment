@@ -3,6 +3,7 @@ import RequireAdmin from './components/admin/RequireAdmin'
 import AdminBilling from './pages/AdminBilling'
 import AdminEvents from './pages/AdminEvents'
 import AdminLogin from './pages/AdminLogin'
+import AdminMfaRecovery from './pages/AdminMfaRecovery'
 import AdminModeration from './pages/AdminModeration'
 import AdminOrganizations from './pages/AdminOrganizations'
 import AdminOrganizationDetail from './pages/AdminOrganizationDetail'
@@ -23,6 +24,7 @@ function App () {
     <ScrollToTop />
     <Routes>
       <Route path='/admin/connexion' element={<AdminLogin />} />
+      <Route path='/admin/recuperation-mfa' element={<AdminMfaRecovery />} />
       <Route
         path='/admin'
         element={

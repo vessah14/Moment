@@ -36,6 +36,18 @@ namespace backend_EventMoment.Dtos.User
         public string Code { get; set; } = string.Empty;
     }
 
+    public class AdminMfaRecoveryRequestDto
+    {
+        [Required, EmailAddress, MaxLength(254)]
+        public string Email { get; set; } = string.Empty;
+    }
+
+    public class AdminMfaRecoveryDto
+    {
+        [Required, MaxLength(2048)]
+        public string Token { get; set; } = string.Empty;
+    }
+
     public class SignupDto
     {
         [Required, EmailAddress]

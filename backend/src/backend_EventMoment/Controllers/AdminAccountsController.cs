@@ -47,6 +47,27 @@ namespace backend_EventMoment.Controllers
         public async Task<IActionResult> LoginMfa([FromBody] AdminMfaLoginDto dto) =>
             Ok(await _service.CompleteMfaLoginAsync(dto));
 
+        [HttpPost("mfa/recovery/request")]
+        [AllowAnonymous]
+        [EnableRateLimiting("login")]
+        public async Task<IActionResult> RequestMfaRecovery([FromBody] AdminMfaRecoveryRequestDto dto)
+        {
+            await _service.RequestMfaRecoveryAsync(dto.Email);
+            return Ok(new
+            {
+                message = "Si un compte admin actif avec MFA correspond à cette adresse, un lien de récupération a été envoyé.",
+            });
+        }
+
+        [HttpPost("mfa/recovery/complete")]
+        [AllowAnonymous]
+        [EnableRateLimiting("login")]
+        public async Task<IActionResult> CompleteMfaRecovery([FromBody] AdminMfaRecoveryDto dto)
+        {
+            await _service.CompleteMfaRecoveryAsync(dto);
+            return NoContent();
+        }
+
         [HttpPost]
         [Authorize(Policy = "SuperadminOnly")]
         public async Task<IActionResult> Create(CreateAdminAccountDto dto)

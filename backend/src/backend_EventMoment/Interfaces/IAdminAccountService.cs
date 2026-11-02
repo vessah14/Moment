@@ -11,6 +11,8 @@ namespace backend_EventMoment.Interfaces
         Task<bool> DeactivateAsync(Guid id, Guid currentAdminId);
         Task<AdminLoginResponseDto> LoginAsync(LoginDto dto);
         Task<LoginResponseDto> CompleteMfaLoginAsync(AdminMfaLoginDto dto);
+        Task RequestMfaRecoveryAsync(string email);
+        Task CompleteMfaRecoveryAsync(AdminMfaRecoveryDto dto);
         Task<bool> ResetMfaAsync(Guid adminId, Guid currentAdminId);
     }
 }
