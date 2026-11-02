@@ -1,4 +1,4 @@
-import { Eye, EyeOff, KeyRound, ShieldAlert } from 'lucide-react'
+import { Check, Copy, Eye, EyeOff, KeyRound, ShieldAlert } from 'lucide-react'
 import QRCode from 'qrcode'
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -17,6 +17,7 @@ export default function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false)
   const [mfa, setMfa] = useState(null)
   const [code, setCode] = useState('')
+  const [secretCopied, setSecretCopied] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -62,6 +63,16 @@ export default function AdminLogin() {
     }
   }
 
+  const copySecret = async () => {
+    try {
+      await navigator.clipboard.writeText(mfa.secret)
+      setSecretCopied(true)
+      setError('')
+    } catch {
+      setError('Copie impossible : sélectionnez la clé affichée pour la copier.')
+    }
+  }
+
   if (mfa) {
     return (
       <div className="flex min-h-svh items-center justify-center bg-bg px-6 py-12">
@@ -86,6 +97,14 @@ export default function AdminLogin() {
                 <img src={mfa.qr} alt="QR code à scanner" className="mx-auto mt-5 h-48 w-48 rounded-lg bg-white p-2" />
               )}
               <p className="mt-3 break-all text-center font-mono text-xs text-faint select-all">{mfa.secret}</p>
+              <button
+                type="button"
+                onClick={copySecret}
+                className="mx-auto mt-2 flex items-center gap-2 text-sm font-medium text-muted hover:text-ink"
+              >
+                {secretCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {secretCopied ? 'Clé copiée' : 'Copier la clé de configuration'}
+              </button>
             </>
           ) : (
             <>
@@ -103,12 +122,16 @@ export default function AdminLogin() {
               autoFocus
               required
               maxLength={7}
-              placeholder="123 456"
-              value={code}
-              onChange={(e) => setCode(e.target.value.replace(/[^\d ]/g, ''))}
+              placeholder="••• •••"
+              value={code.length > 3 ? `${code.slice(0, 3)} ${code.slice(3)}` : code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
               aria-label="Code à 6 chiffres"
+              aria-describedby="mfa-code-help"
               className="w-full rounded-lg border border-border bg-surface px-4 py-3 text-center font-mono text-2xl tracking-[0.4em] text-ink outline-none focus:border-danger focus:ring-3 focus:ring-danger/30"
             />
+            <p id="mfa-code-help" className="text-center text-xs text-faint">
+              Le code change régulièrement. S’il est refusé, attendez le suivant puis réessayez.
+            </p>
             {error && <p className="text-sm text-danger">{error}</p>}
             <Button
               type="submit"
@@ -117,9 +140,12 @@ export default function AdminLogin() {
             >
               {submitting ? 'Vérification...' : mfa.setup ? 'Activer et accéder à la console' : 'Accéder à la console'}
             </Button>
+            <p className="text-center text-xs text-muted">
+              Téléphone perdu ou application inaccessible ? Demandez à un autre superadmin de réinitialiser votre MFA. Vous devrez la reconfigurer à la prochaine connexion.
+            </p>
             <button
               type="button"
-              onClick={() => { setMfa(null); setCode(''); setError('') }}
+              onClick={() => { setMfa(null); setCode(''); setError(''); setSecretCopied(false) }}
               className="w-full text-center text-sm text-muted hover:text-ink"
             >
               ← Revenir au mot de passe
