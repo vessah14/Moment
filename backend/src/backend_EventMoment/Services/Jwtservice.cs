@@ -176,6 +176,24 @@ namespace backend_EventMoment.Services
             return GenerateToken(claims);
         }
 
+        public (string Token, DateTimeOffset Expiration) GenerateAdminMfaToken(AdminAccount admin) =>
+            GenerateToken(new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, admin.Id.ToString()),
+                new Claim("type", "admin_mfa"),
+                new Claim("session_version", admin.UpdatedAt.ToUnixTimeMilliseconds().ToString())
+            }, TimeSpan.FromMinutes(5));
+
+        public bool TryValidateAdminMfaToken(string token, out Guid adminId, out long sessionVersion)
+        {
+            adminId = Guid.Empty;
+            sessionVersion = 0;
+            var principal = ValidateTypedToken(token, "admin_mfa");
+            return principal != null
+                && Guid.TryParse(principal.FindFirst(ClaimTypes.NameIdentifier)?.Value, out adminId)
+                && long.TryParse(principal.FindFirst("session_version")?.Value, out sessionVersion);
+        }
+
         private (string Token, DateTimeOffset Expiration) GenerateToken(Claim[] claims, TimeSpan? lifetime = null)
         {
             var keyValue = _config["Jwt:Key"];

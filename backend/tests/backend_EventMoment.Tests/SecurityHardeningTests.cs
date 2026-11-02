@@ -4,6 +4,7 @@ using backend_EventMoment.Dtos.User;
 using backend_EventMoment.Models;
 using backend_EventMoment.Services;
 using backend_EventMoment.Services.Exceptions;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
@@ -43,9 +44,10 @@ public class SecurityHardeningTests
         Assert.Null(Totp.Verify(secret, "12345", 0, now));
     }
 
-    private static (AdminAccountService service, AdminDbContext context, AdminAccount admin) AdminSetup()
+    private static (AdminAccountService service, AdminDbContext context, AdminAccount admin, IDataProtectionProvider dataProtection) AdminSetup()
     {
         var context = TestDbContextFactory.CreateAdminContext();
+        var dataProtection = new EphemeralDataProtectionProvider();
         var admin = new AdminAccount
         {
             Id = Guid.NewGuid(), Email = "boss@tbfmoment.com", FullName = "Boss", Role = AdminRole.Superadmin,
@@ -54,35 +56,82 @@ public class SecurityHardeningTests
         };
         context.AdminAccounts.Add(admin);
         context.SaveChanges();
-        var service = new AdminAccountService(context, new JwtService(Config()), new LoginThrottle(new MemoryCache(new MemoryCacheOptions())));
-        return (service, context, admin);
+        var service = new AdminAccountService(
+            context,
+            new JwtService(Config()),
+            dataProtection,
+            new LoginThrottle(new MemoryCache(new MemoryCacheOptions())));
+        return (service, context, admin, dataProtection);
     }
 
     [Fact]
-    public async Task AdminLogin_ReturnsSessionDirectly_EvenWhenLegacyMfaIsEnabled()
+    public async Task AdminLogin_RequiresValidMfaBeforeIssuingAdminSession()
     {
-        var (service, context, admin) = AdminSetup();
+        var (service, context, admin, dataProtection) = AdminSetup();
+        const string secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
         context.AdminMfas.Add(new AdminMfa
         {
             AdminId = admin.Id,
-            SecretProtected = "legacy-secret",
+            SecretProtected = dataProtection.CreateProtector("AdminMfa.Secret.v1").Protect(secret),
             EnabledAt = DateTimeOffset.UtcNow,
         });
         await context.SaveChangesAsync();
 
-        var session = await service.LoginAsync(new LoginDto { Email = "boss@tbfmoment.com", Password = "AdminPass123" });
+        var challenge = await service.LoginAsync(new LoginDto { Email = "boss@tbfmoment.com", Password = "AdminPass123" });
+
+        Assert.True(challenge.MfaRequired);
+        Assert.False(challenge.MfaSetupRequired);
+        Assert.False(string.IsNullOrWhiteSpace(challenge.MfaToken));
+        var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+        var challengeClaims = handler.ReadJwtToken(challenge.MfaToken).Claims;
+        Assert.Contains(challengeClaims, claim => claim.Type == "type" && claim.Value == "admin_mfa");
+        Assert.DoesNotContain(challengeClaims, claim => claim.Type == ClaimTypes.Email);
+
+        var code = Totp.Code(secret, Totp.CurrentStep(DateTimeOffset.UtcNow));
+        var session = await service.CompleteMfaLoginAsync(new AdminMfaLoginDto
+        {
+            MfaToken = challenge.MfaToken!,
+            Code = code,
+        });
 
         Assert.False(string.IsNullOrWhiteSpace(session.Token));
         Assert.True(session.Expiration > DateTimeOffset.UtcNow);
-        var claims = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler().ReadJwtToken(session.Token).Claims;
+        var claims = handler.ReadJwtToken(session.Token).Claims;
         Assert.Contains(claims, claim => claim.Type == "type" && claim.Value == "admin");
         Assert.Contains(claims, claim => claim.Type == ClaimTypes.Email && claim.Value == admin.Email);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.CompleteMfaLoginAsync(new AdminMfaLoginDto { MfaToken = challenge.MfaToken!, Code = code }));
+    }
+
+    [Fact]
+    public async Task AdminLogin_RequiresFirstTotpCodeToEnableMfa()
+    {
+        var (service, context, admin, _) = AdminSetup();
+
+        var challenge = await service.LoginAsync(new LoginDto { Email = admin.Email, Password = "AdminPass123" });
+
+        Assert.True(challenge.MfaRequired);
+        Assert.True(challenge.MfaSetupRequired);
+        Assert.NotNull(challenge.OtpAuthUri);
+        Assert.False(string.IsNullOrWhiteSpace(challenge.MfaSecret));
+        Assert.Null((await context.AdminMfas.FindAsync(admin.Id))!.EnabledAt);
+
+        var code = Totp.Code(challenge.MfaSecret!, Totp.CurrentStep(DateTimeOffset.UtcNow));
+        var session = await service.CompleteMfaLoginAsync(new AdminMfaLoginDto
+        {
+            MfaToken = challenge.MfaToken!,
+            Code = code,
+        });
+
+        Assert.False(string.IsNullOrWhiteSpace(session.Token));
+        Assert.NotNull((await context.AdminMfas.FindAsync(admin.Id))!.EnabledAt);
     }
 
     [Fact]
     public async Task AdminLogin_RejectsInvalidPassword()
     {
-        var (service, _, _) = AdminSetup();
+        var (service, _, _, _) = AdminSetup();
         await Assert.ThrowsAsync<InvalidCredentialsException>(() =>
             service.LoginAsync(new LoginDto { Email = "boss@tbfmoment.com", Password = "WrongPassword123" }));
     }

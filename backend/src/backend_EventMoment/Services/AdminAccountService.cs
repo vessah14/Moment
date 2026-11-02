@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using backend_EventMoment.Data;
 using backend_EventMoment.Dtos;
@@ -14,12 +16,18 @@ namespace backend_EventMoment.Services
         private readonly JwtService _jwtService;
 
         private readonly LoginThrottle? _throttle;
+        private readonly IDataProtector _mfaProtector;
 
-        public AdminAccountService(AdminDbContext context, JwtService jwtService, LoginThrottle? throttle = null)
+        public AdminAccountService(
+            AdminDbContext context,
+            JwtService jwtService,
+            IDataProtectionProvider dataProtection,
+            LoginThrottle? throttle = null)
         {
             _context = context;
             _jwtService = jwtService;
             _throttle = throttle;
+            _mfaProtector = dataProtection.CreateProtector("AdminMfa.Secret.v1");
         }
 
         public async Task<AdminAccountDto> CreateAsync(CreateAdminAccountDto dto, Guid currentAdminId)
@@ -87,7 +95,7 @@ namespace backend_EventMoment.Services
             return true;
         }
 
-        public async Task<LoginResponseDto> LoginAsync(LoginDto dto)
+        public async Task<AdminLoginResponseDto> LoginAsync(LoginDto dto)
         {
             _throttle?.EnsureNotLocked("admin", dto.Email);
 
@@ -107,6 +115,96 @@ namespace backend_EventMoment.Services
             if (!admin.IsActive)
                 throw new AccountInactiveException();
 
+            var mfa = await _context.AdminMfas.FirstOrDefaultAsync(m => m.AdminId == admin.Id);
+            var (mfaToken, _) = _jwtService.GenerateAdminMfaToken(admin);
+            if (mfa?.EnabledAt != null)
+                return new AdminLoginResponseDto
+                {
+                    MfaRequired = true,
+                    MfaToken = mfaToken,
+                };
+
+            string secret;
+            if (mfa == null)
+            {
+                secret = Totp.GenerateSecret();
+                mfa = new AdminMfa
+                {
+                    AdminId = admin.Id,
+                    SecretProtected = _mfaProtector.Protect(secret),
+                };
+                _context.AdminMfas.Add(mfa);
+            }
+            else
+            {
+                try
+                {
+                    secret = _mfaProtector.Unprotect(mfa.SecretProtected);
+                }
+                catch (CryptographicException)
+                {
+                    secret = Totp.GenerateSecret();
+                    mfa.SecretProtected = _mfaProtector.Protect(secret);
+                    mfa.LastUsedStep = 0;
+                }
+            }
+            await _context.SaveChangesAsync();
+
+            return new AdminLoginResponseDto
+            {
+                MfaRequired = true,
+                MfaSetupRequired = true,
+                MfaToken = mfaToken,
+                MfaSecret = secret,
+                OtpAuthUri = Totp.ProvisioningUri(admin.Email, secret),
+            };
+        }
+
+        public async Task<LoginResponseDto> CompleteMfaLoginAsync(AdminMfaLoginDto dto)
+        {
+            const string invalid = "Code invalide ou expiré.";
+            if (!_jwtService.TryValidateAdminMfaToken(dto.MfaToken, out var adminId, out var version))
+                throw new InvalidOperationException("Étape expirée : reconnectez-vous.");
+
+            var admin = await _context.AdminAccounts.FirstOrDefaultAsync(a => a.Id == adminId && a.IsActive);
+            if (admin == null || admin.UpdatedAt.ToUnixTimeMilliseconds() != version)
+                throw new InvalidOperationException("Étape expirée : reconnectez-vous.");
+
+            _throttle?.EnsureNotLocked("admin-mfa", admin.Email);
+            var mfa = await _context.AdminMfas.FirstOrDefaultAsync(m => m.AdminId == admin.Id)
+                ?? throw new InvalidOperationException("Étape expirée : reconnectez-vous.");
+
+            string secret;
+            try
+            {
+                secret = _mfaProtector.Unprotect(mfa.SecretProtected);
+            }
+            catch (CryptographicException)
+            {
+                throw new InvalidOperationException(
+                    "La double authentification doit être réinitialisée par un autre superadmin.");
+            }
+
+            var step = Totp.Verify(secret, dto.Code, mfa.LastUsedStep, DateTimeOffset.UtcNow);
+            if (step == null)
+            {
+                _throttle?.RecordFailure("admin-mfa", admin.Email);
+                throw new InvalidOperationException(invalid);
+            }
+
+            mfa.LastUsedStep = step.Value;
+            mfa.EnabledAt ??= DateTimeOffset.UtcNow;
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                _throttle?.RecordFailure("admin-mfa", admin.Email);
+                throw new InvalidOperationException(invalid);
+            }
+
+            _throttle?.Reset("admin-mfa", admin.Email);
             var (token, expiration) = _jwtService.GenerateAdminToken(admin);
             return new LoginResponseDto
             {

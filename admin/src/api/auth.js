@@ -1,10 +1,18 @@
 import { apiFetch, clearCurrentAdmin, clearToken, setCurrentAdmin, setToken, getToken } from './client'
 
 export async function login({ email, password }) {
-  const result = await apiFetch('/admin/accounts/login', {
+  return apiFetch('/admin/accounts/login', {
     method: 'POST',
     auth: false,
     body: { email, password },
+  })
+}
+
+export async function verifyMfa({ mfaToken, code }) {
+  const result = await apiFetch('/admin/accounts/login/mfa', {
+    method: 'POST',
+    auth: false,
+    body: { mfaToken, code },
   })
   setToken(result.token)
   setCurrentAdmin(result.utilisateur)

@@ -41,6 +41,12 @@ namespace backend_EventMoment.Controllers
             }
         }
 
+        [HttpPost("login/mfa")]
+        [AllowAnonymous]
+        [EnableRateLimiting("login")]
+        public async Task<IActionResult> LoginMfa([FromBody] AdminMfaLoginDto dto) =>
+            Ok(await _service.CompleteMfaLoginAsync(dto));
+
         [HttpPost]
         [Authorize(Policy = "SuperadminOnly")]
         public async Task<IActionResult> Create(CreateAdminAccountDto dto)

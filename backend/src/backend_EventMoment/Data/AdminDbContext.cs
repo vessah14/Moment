@@ -88,6 +88,10 @@ namespace backend_EventMoment.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<AdminMfa>()
+                .Property(m => m.LastUsedStep)
+                .IsConcurrencyToken();
+
             // -----------------------------------------------------------
             // Enums PostgreSQL
             // -----------------------------------------------------------

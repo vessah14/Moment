@@ -18,6 +18,24 @@ namespace backend_EventMoment.Dtos.User
         public object Utilisateur { get; set; } = null!;
     }
 
+    public class AdminLoginResponseDto
+    {
+        public bool MfaRequired { get; set; }
+        public bool MfaSetupRequired { get; set; }
+        public string? MfaToken { get; set; }
+        public string? OtpAuthUri { get; set; }
+        public string? MfaSecret { get; set; }
+    }
+
+    public class AdminMfaLoginDto
+    {
+        [Required, MaxLength(2048)]
+        public string MfaToken { get; set; } = string.Empty;
+
+        [Required, MaxLength(12)]
+        public string Code { get; set; } = string.Empty;
+    }
+
     public class SignupDto
     {
         [Required, EmailAddress]
