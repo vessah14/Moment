@@ -110,7 +110,7 @@ export default function ActivityCharts({ paymentsEnabled }) {
 
       {!data ? (
         <div className="mt-4 grid gap-6 lg:grid-cols-2" aria-hidden="true">
-          {[0, 1, 2, 3].map((i) => <div key={i} className="h-72 animate-pulse rounded-2xl border border-border-soft bg-surface" />)}
+          {[0, 1, 2, 3].map((i) => <div key={i} className="h-72 min-w-0 animate-pulse rounded-2xl border border-border-soft bg-surface" />)}
         </div>
       ) : (
         <div className="mt-4 grid gap-6 lg:grid-cols-2">

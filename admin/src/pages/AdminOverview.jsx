@@ -119,7 +119,7 @@ export default function AdminOverview() {
       {dashboard && (
         <>
           <div className="mt-8 grid gap-6 lg:grid-cols-2">
-            <section className="rounded-2xl border border-border-soft bg-surface p-5">
+            <section className="min-w-0 rounded-2xl border border-border-soft bg-surface p-5">
               <h2 className="font-semibold text-ink">Parcours des organisations</h2>
               <p className="mt-1 text-xs text-faint">Étapes cumulées depuis l’inscription.</p>
               <div className="mt-5 space-y-4">
@@ -141,7 +141,7 @@ export default function AdminOverview() {
               </div>
             </section>
 
-            <section className="rounded-2xl border border-border-soft bg-surface p-5">
+            <section className="min-w-0 rounded-2xl border border-border-soft bg-surface p-5">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="font-semibold text-ink">Événements des 7 prochains jours</h2>
@@ -193,8 +193,8 @@ export default function AdminOverview() {
         </>
       )}
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[2fr_1fr]">
-        <div className="rounded-2xl border border-border-soft bg-surface">
+      <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <div className="min-w-0 rounded-2xl border border-border-soft bg-surface">
           <div className="flex items-center justify-between px-6 py-5">
             <h2 className="font-semibold text-ink">Dernières organisations</h2>
             <Link to="/admin/organisations" className="text-sm text-brand-purple hover:underline">
@@ -231,7 +231,7 @@ export default function AdminOverview() {
           </div>
         </div>
 
-        <section className="rounded-2xl border border-danger/30 bg-surface p-5">
+        <section className="min-w-0 rounded-2xl border border-danger/30 bg-surface p-5">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-ink">Alertes de modération</h2>
             <Link to="/admin/moderation" className="text-sm text-brand-purple hover:underline">Tout voir</Link>

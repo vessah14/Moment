@@ -63,7 +63,7 @@ export default function TrendChart({ title, subtitle, data, series, kind = 'line
   const hx = hover != null ? (kind === 'bar' ? xBar(hover) + band / 2 : x(hover)) : 0
 
   return (
-    <section className="rounded-2xl border border-border-soft bg-surface p-5">
+    <section className="min-w-0 rounded-2xl border border-border-soft bg-surface p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="font-semibold text-ink">{title}</h3>
@@ -81,7 +81,7 @@ export default function TrendChart({ title, subtitle, data, series, kind = 'line
         </div>
       </div>
 
-      <div ref={ref} className="relative mt-3">
+      <div ref={ref} className="relative mt-3 min-w-0">
         <svg
           width={width}
           height={HEIGHT}

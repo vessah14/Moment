@@ -94,7 +94,7 @@ export default function AdminBilling () {
       </p>
 
       <div className='mt-8 grid gap-6 lg:grid-cols-[1fr_1fr]'>
-        <div className='rounded-2xl border border-border-soft bg-surface p-5'>
+        <div className='min-w-0 rounded-2xl border border-border-soft bg-surface p-5'>
           <h2 className='font-semibold text-ink'>Répartition par plan</h2>
           <div className='mt-4 space-y-3'>
             {loading && <p className='text-sm text-faint'>Chargement…</p>}
@@ -113,7 +113,7 @@ export default function AdminBilling () {
           </div>
         </div>
 
-        <div className='rounded-2xl border border-border-soft bg-surface'>
+        <div className='min-w-0 rounded-2xl border border-border-soft bg-surface'>
           <h2 className='px-5 pt-5 font-semibold text-ink'>
             Dernières transactions
           </h2>
