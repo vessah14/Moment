@@ -1,10 +1,11 @@
 import { Copy, Download, MessageCircle, Share2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { API_ORIGIN, eventPosterUrl, eventShareUrl } from '../../api/client'
+import { API_ORIGIN, eventPosterUrl, eventShareUrl, mediaUrl } from '../../api/client'
 import { getPublicSite, trackPublicEvent } from '../../api/publicEvents'
 import { isMobileDevice } from '../../utils/calendar'
 import { rsvpRules } from '../../utils/rsvpRules'
 import { buildShareMessage, whatsappShareUrl } from '../../utils/shareMessage'
+import { safeCoverPath } from '../../utils/sitePage'
 import { useToast } from '../../utils/useToast'
 
 const POSTERS = [
@@ -32,12 +33,11 @@ function WhatsAppText({ text }) {
 export default function ShareKit({ slug, title, date, time, location, intro }) {
   const toast = useToast()
   const url = eventShareUrl(slug)
-  const coverPreviewUrl = `${API_ORIGIN}/share/e/${encodeURIComponent(slug)}/cover.jpg`
   const posterPreviewUrl = `${API_ORIGIN}/share/e/${encodeURIComponent(slug)}/poster.png`
   const [message, setMessage] = useState(() => buildShareMessage({ title, date, time, location, url, intro }))
-  // L'API sert la couverture choisie, ou l'affiche si l'événement n'a pas de couverture.
+  // L'affiche sert de repli pendant le chargement ou si aucune couverture n'existe.
   const [card, setCard] = useState({
-    image: coverPreviewUrl,
+    image: posterPreviewUrl,
     title,
     description: '',
   })
@@ -49,13 +49,18 @@ export default function ShareKit({ slug, title, date, time, location, intro }) {
   useEffect(() => {
     setPreviewImageLoaded(false)
     setPreviewImageFailed(false)
-    setCard((prev) => ({ ...prev, image: coverPreviewUrl }))
+    setCard((prev) => ({ ...prev, image: posterPreviewUrl }))
     let cancelled = false
     getPublicSite(slug)
       .then((site) => {
         if (cancelled || !site?.event) return
         const { event } = site
+        const cover = safeCoverPath(event.coverImageUrl)
+        const image = cover ? mediaUrl(cover) : posterPreviewUrl
+        setPreviewImageLoaded(false)
+        setPreviewImageFailed(false)
         setCard((prev) => ({
+          image,
           title: event.heroTitle?.trim() || event.name || prev.title,
           description: (event.description || event.heroSubtitle || event.tagline || '').trim(),
         }))
@@ -91,7 +96,7 @@ export default function ShareKit({ slug, title, date, time, location, intro }) {
   useEffect(() => {
     // Préchauffage de l'aperçu WhatsApp : réveille le serveur et prépare l'affiche du lien
     // avant que le message soit collé ; WhatsApp abandonne la carte si la réponse tarde.
-    for (const path of ['', '/poster.png', '/cover.jpg']) {
+    for (const path of ['', '/poster.png']) {
       fetch(`${API_ORIGIN}/share/e/${encodeURIComponent(slug)}${path}`, { mode: 'no-cors' }).catch(() => {})
     }
     let cancelled = false
@@ -152,6 +157,7 @@ export default function ShareKit({ slug, title, date, time, location, intro }) {
                 />
               )}
               <img
+                key={card.image}
                 src={card.image}
                 alt=""
                 fetchPriority="high"
@@ -161,7 +167,7 @@ export default function ShareKit({ slug, title, date, time, location, intro }) {
                   setPreviewImageFailed(false)
                 }}
                 onError={() => {
-                  if (card.image === coverPreviewUrl) {
+                  if (card.image !== posterPreviewUrl) {
                     setPreviewImageLoaded(false)
                     setCard((prev) => ({ ...prev, image: posterPreviewUrl }))
                   } else {
