@@ -1,11 +1,10 @@
 import { Copy, Download, MessageCircle, Share2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { API_ORIGIN, eventPosterUrl, eventShareUrl, mediaUrl } from '../../api/client'
+import { API_ORIGIN, eventPosterUrl, eventShareUrl } from '../../api/client'
 import { getPublicSite, trackPublicEvent } from '../../api/publicEvents'
 import { isMobileDevice } from '../../utils/calendar'
 import { rsvpRules } from '../../utils/rsvpRules'
 import { buildShareMessage, whatsappShareUrl } from '../../utils/shareMessage'
-import { safeCoverPath } from '../../utils/sitePage'
 import { useToast } from '../../utils/useToast'
 
 const POSTERS = [
@@ -34,9 +33,9 @@ export default function ShareKit({ slug, title, date, time, location, intro }) {
   const toast = useToast()
   const url = eventShareUrl(slug)
   const [message, setMessage] = useState(() => buildShareMessage({ title, date, time, location, url, intro }))
-  // Carte d'aperçu attendue (mêmes règles que ShareController côté API : couverture, sinon affiche).
+  // L'API sert la couverture choisie, ou l'affiche si l'événement n'a pas de couverture.
   const [card, setCard] = useState({
-    image: `${API_ORIGIN}/share/e/${encodeURIComponent(slug)}/poster.png`,
+    image: `${API_ORIGIN}/share/e/${encodeURIComponent(slug)}/cover.jpg`,
     title,
     description: '',
   })
@@ -49,9 +48,7 @@ export default function ShareKit({ slug, title, date, time, location, intro }) {
       .then((site) => {
         if (cancelled || !site?.event) return
         const { event } = site
-        const cover = safeCoverPath(event.coverImageUrl)
         setCard((prev) => ({
-          image: cover ? mediaUrl(cover) : prev.image,
           title: event.heroTitle?.trim() || event.name || prev.title,
           description: (event.description || event.heroSubtitle || event.tagline || '').trim(),
         }))
