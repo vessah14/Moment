@@ -32,17 +32,24 @@ function WhatsAppText({ text }) {
 export default function ShareKit({ slug, title, date, time, location, intro }) {
   const toast = useToast()
   const url = eventShareUrl(slug)
+  const coverPreviewUrl = `${API_ORIGIN}/share/e/${encodeURIComponent(slug)}/cover.jpg`
+  const posterPreviewUrl = `${API_ORIGIN}/share/e/${encodeURIComponent(slug)}/poster.png`
   const [message, setMessage] = useState(() => buildShareMessage({ title, date, time, location, url, intro }))
   // L'API sert la couverture choisie, ou l'affiche si l'événement n'a pas de couverture.
   const [card, setCard] = useState({
-    image: `${API_ORIGIN}/share/e/${encodeURIComponent(slug)}/cover.jpg`,
+    image: coverPreviewUrl,
     title,
     description: '',
   })
+  const [previewImageLoaded, setPreviewImageLoaded] = useState(false)
+  const [previewImageFailed, setPreviewImageFailed] = useState(false)
   // Tant que l'organisateur n'a pas retouché le message, il est complété avec le lieu et la
   // date limite de réponse lus sur la page publiée.
   const [edited, setEdited] = useState(false)
   useEffect(() => {
+    setPreviewImageLoaded(false)
+    setPreviewImageFailed(false)
+    setCard((prev) => ({ ...prev, image: coverPreviewUrl }))
     let cancelled = false
     getPublicSite(slug)
       .then((site) => {
@@ -84,7 +91,7 @@ export default function ShareKit({ slug, title, date, time, location, intro }) {
   useEffect(() => {
     // Préchauffage de l'aperçu WhatsApp : réveille le serveur et prépare l'affiche du lien
     // avant que le message soit collé ; WhatsApp abandonne la carte si la réponse tarde.
-    for (const path of ['', '/poster.png']) {
+    for (const path of ['', '/poster.png', '/cover.jpg']) {
       fetch(`${API_ORIGIN}/share/e/${encodeURIComponent(slug)}${path}`, { mode: 'no-cors' }).catch(() => {})
     }
     let cancelled = false
@@ -135,7 +142,37 @@ export default function ShareKit({ slug, title, date, time, location, intro }) {
         {/* Bulle WhatsApp simulée : carte d'aperçu en haut, puis le message. */}
         <div className="rounded-2xl bg-[#e7f8d5] p-1.5 text-[#111b21] shadow-sm">
           <div className="overflow-hidden rounded-xl bg-black/5">
-            <img src={card.image} alt="" className="aspect-[1200/630] w-full bg-black/10 object-cover" />
+            <div className="relative aspect-[1200/630] bg-black/10">
+              {!previewImageLoaded && (
+                <div
+                  aria-hidden="true"
+                  className={`absolute inset-0 bg-gradient-to-r from-black/5 via-white/20 to-black/5 ${
+                    previewImageFailed ? '' : 'animate-pulse'
+                  }`}
+                />
+              )}
+              <img
+                src={card.image}
+                alt=""
+                fetchPriority="high"
+                decoding="async"
+                onLoad={() => {
+                  setPreviewImageLoaded(true)
+                  setPreviewImageFailed(false)
+                }}
+                onError={() => {
+                  if (card.image === coverPreviewUrl) {
+                    setPreviewImageLoaded(false)
+                    setCard((prev) => ({ ...prev, image: posterPreviewUrl }))
+                  } else {
+                    setPreviewImageFailed(true)
+                  }
+                }}
+                className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${
+                  previewImageLoaded && !previewImageFailed ? 'opacity-100' : 'opacity-0'
+                }`}
+              />
+            </div>
             <div className="px-3 py-2">
               <p className="line-clamp-1 text-sm font-semibold">{card.title}</p>
               {card.description && <p className="line-clamp-2 text-xs opacity-75">{card.description}</p>}
