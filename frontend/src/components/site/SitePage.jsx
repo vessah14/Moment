@@ -536,8 +536,10 @@ function renderBlockBody({ block, content, data, editable, editor, fullPage, ani
     case 'Histoire': {
       const imagePath = safeBlockImagePath(content.imageUrl)
       if (!editable) {
-        if (!bodyText && !imagePath) return null
-        const image = imagePath && <FramedImage src={mediaUrl(imagePath)} />
+        // imageSrc : photo choisie dans l'assistant, pas encore envoyée (aperçu seulement).
+        const imageSrc = content.imageSrc || (imagePath ? mediaUrl(imagePath) : '')
+        if (!bodyText && !imageSrc) return null
+        const image = imageSrc && <FramedImage src={imageSrc} />
         return bodyText && image ? (
           <div className={`grid items-center @xl:grid-cols-2 ${fullPage ? 'gap-10 @5xl:gap-16' : 'gap-6'}`}>
             <Reveal enabled={animate} variant="left">
@@ -1437,8 +1439,10 @@ function ClassicSitePage({
       : { className: '', style: undefined }
   const data = { ...rawData, title: heroStyle.title }
   const coverPath = safeCoverPath(data.coverPath)
+  // coverSrc : photo choisie dans l'assistant, pas encore envoyée (aperçu seulement).
+  const coverSrc = data.coverSrc || (coverPath ? mediaUrl(coverPath) : '')
   const heroAlign = template?.presentation?.heroAlign ?? 'center'
-  const onImage = Boolean(coverPath)
+  const onImage = Boolean(coverSrc)
   // Logo de l'organisateur (aperçu de l'assistant : logoSrc ; site publié : logoUrl).
   const organizerLogo = data.organizer?.logoSrc || mediaUrl(data.organizer?.logoUrl)
   // Pastille de la barre : logo propre à l'événement (Builder), sinon celui de
@@ -1544,14 +1548,14 @@ function ClassicSitePage({
           aria-hidden="true"
           className="absolute inset-0 -z-20 will-change-transform"
           style={{
-            background: coverPath
-              ? `linear-gradient(180deg, rgba(11,16,32,0.45), rgba(11,16,32,0.25) 40%, rgba(11,16,32,0.85)), url(${mediaUrl(coverPath)}) center / cover`
+            background: coverSrc
+              ? `linear-gradient(180deg, rgba(11,16,32,0.45), rgba(11,16,32,0.25) 40%, rgba(11,16,32,0.85)), url(${coverSrc}) center / cover`
               : heroStyle.darkOverlay
                 ? `linear-gradient(160deg, ${heroStyle.color}40, var(--color-bg) 70%)`
                 : 'var(--color-surface)',
           }}
         />
-        {!coverPath && (
+        {!coverSrc && (
           <>
             <span
               className={`pointer-events-none absolute -top-24 -right-24 -z-10 h-72 w-72 rounded-full opacity-30 blur-3xl ${

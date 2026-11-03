@@ -113,6 +113,7 @@ function ClassicScreen({ template, draft }) {
         blockContent={blockContent}
         data={{
           slug: null,
+          coverSrc: draft.coverSrc,
           eventDateTime: draft.eventDateTime,
           description: draft.description,
           locationLabel: draft.locationLabel,

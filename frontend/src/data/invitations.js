@@ -220,6 +220,11 @@ export const INVITATIONS = {
 
 export const invitationFor = (theme) => INVITATIONS[theme] ?? null
 
+// L'illustration à côté de l'invitation peut être remplacée par une photo (bloc Invitation,
+// imageUrl). Envol présente l'invitation en carton nominatif (invitationCard), sans image.
+const CARD_INVITATIONS = new Set(['envol'])
+export const invitationHasPicture = (theme) => Boolean(INVITATIONS[theme]?.illus) && !CARD_INVITATIONS.has(theme)
+
 // Texte de départ d'un modèle classique (sans thème) : sobre, valable pour tout événement.
 export const DEFAULT_INVITATION = {
   greeting: 'Chère famille, chers amis,',

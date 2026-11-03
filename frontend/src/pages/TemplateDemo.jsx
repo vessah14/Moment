@@ -136,6 +136,7 @@ function Demo({ theme }) {
     countdownTarget: minuitDemo ? minuitDemoTarget : undefined,
     countdownDemo: minuitDemo,
     coverPath: null,
+    coverSrc: draft?.coverSrc || '',
     description: draft?.description || demo.description,
     locationLabel: draft?.locationLabel || demo.locationLabel,
     locationAddress: draft?.locationAddress || demo.locationAddress,
@@ -272,7 +273,17 @@ function useWizardDraft(enabled) {
         if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).slice(0, 30).map(([key, item]) => [key.slice(0, 80), bound(item, depth + 1)]))
         return undefined
       }
+      // Photos choisies dans l'assistant : seulement des blob: créés par cette origine.
+      const localImage = (v) => {
+        const s = str(v, 200)
+        return s.startsWith(`blob:${window.location.origin}/`) ? s : ''
+      }
+      const blockContent = bound(d.blockContent) ?? {}
+      for (const value of Object.values(blockContent)) {
+        if (value && typeof value === 'object' && 'imageSrc' in value) value.imageSrc = localImage(value.imageSrc)
+      }
       setDraft({
+        coverSrc: localImage(d.coverSrc),
         title: str(d.title, 150),
         kicker: str(d.kicker, 150),
         description: str(d.description, 600),
@@ -283,7 +294,7 @@ function useWizardDraft(enabled) {
           d.organizer && (d.organizer.name || logo)
             ? { name: str(d.organizer.name, 80), logoSrc: logo.startsWith('data:image/png;base64,') ? logo : '' }
             : null,
-        blockContent: bound(d.blockContent) ?? {},
+        blockContent,
       })
     }
     window.addEventListener('message', onMessage)

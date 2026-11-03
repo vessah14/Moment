@@ -191,6 +191,16 @@
 .tbft.motion .inv-art.rv.in { transform: none }
 .tbft.motion .inv-art.in svg { animation: tbft-artfloat 9s ease-in-out infinite }
 @keyframes tbft-artfloat { 50% { transform: scale(1.035) translateY(-6px) } }
+/* Photo de l'organisateur à la place de l'illustration, dans le même cadre. */
+.tbft .inv-art.inv-photo img { display: block; width: 100%; height: 100%; object-fit: cover }
+/* Builder : la photo (ou l'illustration) se remplace d'un clic. */
+.tbft .inv-visual { display: grid; justify-items: center; gap: .6rem }
+.tbft .inv-pick { position: relative; display: block; width: 100%; cursor: pointer }
+.tbft .inv-pick input { position: absolute; inset: 0; opacity: 0; cursor: pointer; z-index: 3 }
+.tbft .inv-pick-label { position: absolute; left: 50%; bottom: 18px; z-index: 2; transform: translateX(-50%); display: inline-flex; align-items: center; gap: .4rem; padding: .5rem .9rem; border-radius: 999px; background: rgb(0 0 0 / .62); color: #fff; font-size: .8rem; font-weight: 700; white-space: nowrap; pointer-events: none }
+.tbft .inv-pick-label svg { width: 1rem; height: 1rem }
+.tbft .inv-pick:focus-within .inv-pick-label { outline: 2px solid var(--accent); outline-offset: 2px }
+.tbft .inv-unpick { font-size: .78rem; color: var(--muted); text-decoration: underline; background: none; border: 0; cursor: pointer }
 @container tbft (min-width: 760px) {
   .tbft .inv-grid { grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: clamp(2rem, 6cqi, 5rem) }
   .tbft .inv-art { width: 100% }

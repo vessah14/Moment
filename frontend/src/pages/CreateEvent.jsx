@@ -1,9 +1,10 @@
 import { ArrowRight, MailCheck } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { createEvent, getEvent, updateEvent as updateEventApi, uploadEventBlockImage } from '../api/events'
+import { createEvent, getEvent, updateEvent as updateEventApi, uploadEventBlockImage, uploadEventCoverImage } from '../api/events'
 import { getCurrentUser, mediaUrl } from '../api/client'
 import { listEventCategories } from '../api/eventCategories'
+import { uploadGalleryPhoto } from '../api/gallery'
 import { createEventLocation, deleteEventLocation, listEventLocations, updateEventLocation } from '../api/eventLocations'
 import { createEventBlock, listEventBlocks, updateEventBlock } from '../api/eventBlocks'
 import DashboardLayout from '../components/layout/DashboardLayout'
@@ -15,9 +16,10 @@ import ContentStep from '../components/wizard/ContentStep'
 import CreatedStep from '../components/wizard/CreatedStep'
 import LivePreview from '../components/wizard/LivePreview'
 import ModelStep, { modelsForType } from '../components/wizard/ModelStep'
+import { releasePhoto } from '../components/wizard/PhotoSlot'
 import { BLOCK_CONTENT_DEFAULTS } from '../data/blockDefaults'
 import { EVENT_TYPES, eventType, eventTypeFor, nextFixedDate } from '../data/eventTypes'
-import { invitationStarter } from '../data/invitations'
+import { invitationHasPicture, invitationStarter } from '../data/invitations'
 import { rsvpSidesStarter } from '../data/rsvpSides'
 import { displayNameFromTitle, eventRequiresAge, formatEventDisplayTitle } from '../utils/eventTitle'
 import { isEventLimitReached, notifyPlanChanged, usePlan } from '../utils/usePlan'
@@ -27,6 +29,7 @@ import {
   FREE_TEMPLATES,
   findTemplate,
   missingEventPageBlocks,
+  newEventPageBlocks,
   normalizeBlockType,
   templateBlockContent,
   templateBlockHeading,
@@ -43,6 +46,8 @@ const STEPS = ['Univers', 'Type', 'Informations', 'Contenu', 'Modèle']
 // Sections ajoutées à une nouvelle page si le modèle ne les a pas (réponse et programme).
 const DEFAULT_OPTIONS = { checkin: true, program: true, gallery: false, ticketing: false, guestbook: false, searchable: false }
 const DEFAULT_TIMEZONE = 'Africa/Douala (GMT+1)'
+const NO_PHOTOS = { cover: null, invitation: null, story: null, gallery: [] }
+const hasPhotos = (p) => Boolean(p.cover || p.invitation || p.story || p.gallery.length)
 
 const EMPTY_FORM = {
   univers: null,
@@ -143,6 +148,15 @@ export default function CreateEvent() {
 
   const [publishing, setPublishing] = useState('')
   const [created, setCreated] = useState(null)
+  // Photos choisies à l'étape Contenu (création seulement) : aperçus locaux, envoyés une
+  // fois l'événement créé. Non gardées dans le brouillon (fichiers trop lourds).
+  const [photos, setPhotos] = useState(NO_PHOTOS)
+  const photosRef = useRef(photos)
+  photosRef.current = photos
+  useEffect(() => () => {
+    const { cover, invitation, story, gallery } = photosRef.current
+    for (const photo of [cover, invitation, story, ...gallery]) releasePhoto(photo)
+  }, [])
   const [publishError, setPublishError] = useState('')
   const toast = useToast()
 
@@ -166,14 +180,18 @@ export default function CreateEvent() {
   // Sauvegarde continue de la saisie (création uniquement), effacée une fois l'événement créé.
   useEffect(() => {
     if (isEditMode || created) return
-    writeWizardDraft(userId, { form, pageContent, step, templatePicked })
-  }, [isEditMode, created, userId, form, pageContent, step, templatePicked])
+    writeWizardDraft(userId, { form, pageContent, step, templatePicked, hadPhotos: hasPhotos(photos) })
+  }, [isEditMode, created, userId, form, pageContent, step, templatePicked, photos])
 
   const startOver = () => {
     clearWizardDraft(userId)
     setRestored(null)
     setForm(EMPTY_FORM)
     setPageContent(templateBlockDefaults(null))
+    setPhotos((prev) => {
+      for (const photo of [prev.cover, prev.invitation, prev.story, ...prev.gallery]) releasePhoto(photo)
+      return NO_PHOTOS
+    })
     setTemplatePicked(false)
     setErrors({})
     setPublishError('')
@@ -268,6 +286,15 @@ export default function CreateEvent() {
     }),
     [form, type],
   )
+  // Aperçu en direct : les photos choisies (pas encore envoyées) à leur place sur la page.
+  const previewDraft = useMemo(() => {
+    const withPhoto = (type, photo) => (photo ? { [type]: { ...(pageContent[type] ?? {}), imageSrc: photo.preview } } : {})
+    return {
+      ...draft,
+      coverSrc: photos.cover?.preview ?? '',
+      blockContent: { ...pageContent, ...withPhoto('Invitation', photos.invitation), ...withPhoto('Histoire', photos.story) },
+    }
+  }, [draft, pageContent, photos])
 
   const maxReachable = maxReachableFor(form)
 
@@ -420,8 +447,38 @@ export default function CreateEvent() {
         }
       }
 
+      // Photos de l'étape Contenu, envoyées maintenant que l'événement existe. Une photo
+      // envoyée garde son adresse : un nouvel essai après un échec ne la renvoie pas.
+      const pageBlocks = new Set(newEventPageBlocks(template))
+      const sendPhoto = async (key, upload, failure) => {
+        const photo = photos[key]
+        if (isEditMode || !photo) return null
+        if (photo.url) return photo.url
+        try {
+          const { url } = await upload(photo.file)
+          setPhotos((prev) => (prev[key] === photo ? { ...prev, [key]: { ...photo, url } } : prev))
+          return url
+        } catch {
+          warnings.push(failure)
+          return null
+        }
+      }
+      const coverUrl = await sendPhoto('cover', (file) => uploadEventCoverImage(targetId, file), "La photo de couverture n'a pas pu être envoyée.")
+      const invitationUrl = pageBlocks.has('Invitation') && invitationHasPicture(template?.theme)
+        ? await sendPhoto('invitation', (file) => uploadEventBlockImage(targetId, file), "La photo de l'invitation n'a pas pu être envoyée.")
+        : null
+      const storyUrl = pageBlocks.has('Histoire')
+        ? await sendPhoto('story', (file) => uploadEventBlockImage(targetId, file), "La photo de l'histoire n'a pas pu être envoyée.")
+        : null
+      const contentWithPhotos = {
+        ...pageContent,
+        ...(invitationUrl && { Invitation: { ...(pageContent.Invitation ?? {}), imageUrl: invitationUrl } }),
+        ...(storyUrl && { Histoire: { ...(pageContent.Histoire ?? {}), imageUrl: storyUrl } }),
+      }
+
       await updateEventApi(targetId, {
         ...dto,
+        coverImageUrl: coverUrl ?? dto.coverImageUrl,
         customFields: customFields(logoUrl),
         status: status === 'publish' ? 'Publie' : 'Brouillon',
       })
@@ -440,9 +497,27 @@ export default function CreateEvent() {
       }
 
       try {
-        await composePage({ targetId, blocks: current.blocks, template, eventTypeId: type.id, hero, title: displayTitleFor(form, type), kicker: kickerFor(type, form.date), pageContent })
+        await composePage({ targetId, blocks: current.blocks, template, eventTypeId: type.id, hero, title: displayTitleFor(form, type), kicker: kickerFor(type, form.date), pageContent: contentWithPhotos })
       } catch {
         warnings.push("Les sections de la page n'ont pas pu être toutes mises à jour.")
+      }
+
+      // Premières photos de la galerie (publiées d'office) ; la limite de l'offre est
+      // vérifiée par l'API, sa raison est reprise telle quelle.
+      if (!isEditMode && pageBlocks.has('Galerie')) {
+        let failed = 0
+        let reason = ''
+        for (const photo of photos.gallery) {
+          if (photo.url) continue
+          try {
+            const saved = await uploadGalleryPhoto(photo.file, targetId)
+            setPhotos((prev) => ({ ...prev, gallery: prev.gallery.map((p) => (p === photo ? { ...p, url: saved?.url ?? 'envoyée' } : p)) }))
+          } catch (err) {
+            failed += 1
+            reason ||= err.message
+          }
+        }
+        if (failed) warnings.push(`${failed} photo${failed > 1 ? 's' : ''} de la galerie non envoyée${failed > 1 ? 's' : ''}.${reason ? ` ${reason}` : ''}`)
       }
 
       if (!isEditMode) notifyPlanChanged()
@@ -533,6 +608,8 @@ export default function CreateEvent() {
         content={pageContent}
         onChange={(block, patch) => setPageContent((prev) => ({ ...prev, [block]: { ...(prev[block] ?? {}), ...patch } }))}
         onSkip={() => goTo(4)}
+        photos={isEditMode ? null : photos}
+        onPhotos={setPhotos}
       />
     ) : step === 4 && type ? (
       <ModelStep
@@ -552,7 +629,15 @@ export default function CreateEvent() {
         <div role="status" className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-purple/30 bg-brand-purple/10 px-4 py-3">
           <p className="min-w-0 flex-1 basis-56 text-sm text-ink">
             <b>Nous avons repris l’événement que vous aviez commencé.</b>
-            {restored.hadLogo && <span className="block text-muted">Ajoutez à nouveau votre logo à l’étape « Informations ».</span>}
+            {(restored.hadLogo || restored.hadPhotos) && (
+              <span className="block text-muted">
+                Les fichiers ne sont pas gardés : ajoutez à nouveau{' '}
+                {[restored.hadLogo && 'votre logo (étape « Informations »)', restored.hadPhotos && 'vos photos (étape « Contenu »)']
+                  .filter(Boolean)
+                  .join(' et ')}
+                .
+              </span>
+            )}
           </p>
           <span className="flex gap-2">
             <Button variant="ghost" onClick={startOver} className="px-4 py-2">
@@ -677,7 +762,7 @@ export default function CreateEvent() {
         </div>
 
         <div id="wizard-preview" className="contents">
-      <LivePreview template={template} draft={{ ...draft, blockContent: pageContent }} shown={showPreview} />
+      <LivePreview template={template} draft={previewDraft} shown={showPreview} />
         </div>
       </div>
     </DashboardLayout>

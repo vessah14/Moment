@@ -1,4 +1,6 @@
 import { StepTitle } from './EventKindSteps'
+import { GalleryPicker, PhotoSlot, WIZARD_GALLERY_MAX } from './PhotoSlot'
+import { invitationHasPicture } from '../../data/invitations'
 import { newEventPageBlocks } from '../../utils/templateTheme'
 import {
   AdditionalVenuesEditor,
@@ -28,10 +30,14 @@ function Panel({ title, children }) {
 }
 
 // onSkip : tout est facultatif ici ; on peut passer au modèle sans faire défiler l'étape.
-export default function ContentStep({ template, content, onChange, onSkip }) {
+// photos / onPhotos : photos choisies sur l'appareil (création seulement), envoyées à la
+// création de l'événement ; elles se modifient ensuite dans le Builder et dans Galerie.
+export default function ContentStep({ template, content, onChange, onSkip, photos, onPhotos }) {
   const blocks = new Set(newEventPageBlocks(template))
   const edit = (type, patch) => onChange(type, patch)
   const value = (type) => content[type] ?? {}
+  const setPhoto = (key) => (photo) => onPhotos((prev) => ({ ...prev, [key]: photo }))
+  const invitationPicture = blocks.has('Invitation') && invitationHasPicture(template?.theme)
 
   return (
     <div className="grid gap-5">
@@ -47,8 +53,55 @@ export default function ContentStep({ template, content, onChange, onSkip }) {
         )}
       </div>
 
+      {photos && (
+        <Panel title="Vos photos">
+          <p className="-mt-2 text-xs text-muted">Facultatif. Vous pourrez les changer ensuite dans « Personnaliser » et dans « Galerie ».</p>
+          <div className={`grid gap-4 ${invitationPicture ? 'sm:grid-cols-2' : ''}`}>
+            <PhotoSlot
+              id="photo-cover"
+              label="Photo de couverture"
+              hint="En haut de votre page et dans l’aperçu WhatsApp."
+              photo={photos.cover}
+              onChange={setPhoto('cover')}
+              wide
+            />
+            {invitationPicture && (
+              <PhotoSlot
+                id="photo-invitation"
+                label="Photo de l’invitation"
+                hint="À côté de votre message, à la place de l’illustration du modèle."
+                photo={photos.invitation}
+                onChange={setPhoto('invitation')}
+              />
+            )}
+          </div>
+          {blocks.has('Galerie') && (
+            <div className="grid gap-2">
+              <div>
+                <p className="text-sm font-semibold text-ink">Premières photos de la galerie</p>
+                <p className="text-xs text-muted">Jusqu’à {WIZARD_GALLERY_MAX} ici. Ajoutez-en d’autres ou masquez-les ensuite dans « Galerie ».</p>
+              </div>
+              <GalleryPicker photos={photos.gallery} onChange={setPhoto('gallery')} />
+            </div>
+          )}
+        </Panel>
+      )}
+
       {blocks.has('Invitation') && <Panel title="Message d’invitation"><InvitationEditor content={value('Invitation')} onChange={(patch) => edit('Invitation', patch)} /></Panel>}
-      {blocks.has('Histoire') && <Panel title="Votre histoire"><Field label="Texte de présentation" multiline value={value('Histoire').body} onChange={(body) => edit('Histoire', { body })} placeholder="Racontez votre événement ou son histoire…" /></Panel>}
+      {blocks.has('Histoire') && (
+        <Panel title="Votre histoire">
+          <Field label="Texte de présentation" multiline value={value('Histoire').body} onChange={(body) => edit('Histoire', { body })} placeholder="Racontez votre événement ou son histoire…" />
+          {photos && (
+            <PhotoSlot
+              id="photo-story"
+              label="Photo de l’histoire"
+              hint="Affichée à côté de votre texte."
+              photo={photos.story}
+              onChange={setPhoto('story')}
+            />
+          )}
+        </Panel>
+      )}
       {blocks.has('Familles') && <Panel title="Les familles"><FamiliesEditor content={value('Familles')} onChange={(patch) => edit('Familles', patch)} /></Panel>}
       {blocks.has('Dress code') && <Panel title="Tenue et couleurs"><DressCodeEditor content={value('Dress code')} onChange={(patch) => edit('Dress code', patch)} /></Panel>}
       {blocks.has('Localisation') && <Panel title="Autres lieux"><AdditionalVenuesEditor content={value('Localisation')} onChange={(patch) => edit('Localisation', patch)} /></Panel>}

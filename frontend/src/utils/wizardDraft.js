@@ -18,14 +18,15 @@ export function readWizardDraft(userId, storage = globalThis.localStorage, now =
   }
 }
 
-export function writeWizardDraft(userId, { form, pageContent, step, templatePicked }, storage = globalThis.localStorage) {
+// hadPhotos : des photos étaient choisies (fichiers non gardés) ; on le rappellera.
+export function writeWizardDraft(userId, { form, pageContent, step, templatePicked, hadPhotos = false }, storage = globalThis.localStorage) {
   // Rien de choisi : pas de brouillon à proposer plus tard.
   if (!form?.univers) return
   try {
     const { logo, ...rest } = form
     storage?.setItem(
       key(userId),
-      JSON.stringify({ form: rest, hadLogo: Boolean(logo), pageContent, step, templatePicked, savedAt: new Date().toISOString() }),
+      JSON.stringify({ form: rest, hadLogo: Boolean(logo), hadPhotos, pageContent, step, templatePicked, savedAt: new Date().toISOString() }),
     )
   } catch {
     // Stockage plein ou indisponible : l'assistant fonctionne sans brouillon.

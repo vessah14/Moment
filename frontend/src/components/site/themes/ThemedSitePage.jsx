@@ -509,6 +509,8 @@ export default function ThemedSitePage({
   const artSvg = useMemo(() => (art ? ILLUS.svg(art.illus) : ''), [art])
   const artTiles = useMemo(() => (art ? Array.from({ length: 6 }, (_, i) => ILLUS.tile(art.illus, i)) : []), [art])
   const coverPath = safeCoverPath(data.coverPath)
+  // coverSrc : photo choisie dans l'assistant, pas encore envoyée (aperçu seulement).
+  const coverSrc = data.coverSrc || (coverPath ? mediaUrl(coverPath) : '')
   const start = data.eventDateTime
     ? theme.eventTimeZone
       ? parseDateTimeInTimeZone(data.eventDateTime, theme.eventTimeZone)
@@ -755,13 +757,49 @@ export default function ThemedSitePage({
         const greeting = invitationGreeting(content, guest)
         const signature = (content.signature ?? '').trim()
         if (!editable && !paragraphs.length && !greeting) return null
+        // Photo de l'organisateur à la place de l'illustration du modèle (imageSrc : photo
+        // choisie dans l'assistant, pas encore envoyée — aperçu seulement).
+        const invPath = safeBlockImagePath(content.imageUrl)
+        const invPhoto = content.imageSrc || (invPath ? mediaUrl(invPath) : '')
+        const invVisual = invPhoto ? (
+          <figure className={`inv-art inv-photo rv frame-${art?.frame ?? 'round'}`}>
+            <img src={invPhoto} alt="" />
+          </figure>
+        ) : artSvg ? (
+          // SVG produit par utils/illus.js (dessins du modèle), sans aucune saisie.
+          <figure className={`inv-art rv frame-${art.frame}`} aria-hidden="true" dangerouslySetInnerHTML={{ __html: artSvg }} />
+        ) : null
         return sectionShell(
           block,
           index,
-          <div className={`invitation ${artSvg ? 'inv-grid' : 'narrow'}`}>
-            {artSvg && (
-              // SVG produit par utils/illus.js (dessins du modèle), sans aucune saisie.
-              <figure className={`inv-art rv frame-${art.frame}`} aria-hidden="true" dangerouslySetInnerHTML={{ __html: artSvg }} />
+          <div className={`invitation ${invVisual ? 'inv-grid' : 'narrow'}`}>
+            {editable && invVisual ? (
+              <div className="inv-visual" onClick={(e) => e.stopPropagation()}>
+                <label className="inv-pick">
+                  {invVisual}
+                  <span className="inv-pick-label">
+                    <ImagePlus />
+                    {editor.uploading ? 'Envoi en cours…' : invPhoto ? 'Changer la photo' : 'Mettre une photo à la place'}
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    disabled={editor.uploading}
+                    aria-label="Photo à côté de l’invitation"
+                    onChange={(e) => {
+                      editor.onUploadBlockImage?.(block, e.target.files?.[0])
+                      e.target.value = ''
+                    }}
+                  />
+                </label>
+                {invPath && artSvg && (
+                  <button type="button" className="inv-unpick" onClick={() => editor.onChangeBlockContent?.(block, { imageUrl: null })}>
+                    Remettre l’illustration du modèle
+                  </button>
+                )}
+              </div>
+            ) : (
+              invVisual
             )}
             <div className="inv-text">
             {content.showHeading && headFor(block, content)}
@@ -793,8 +831,10 @@ export default function ThemedSitePage({
 
       case 'Histoire': {
         const imagePath = safeBlockImagePath(content.imageUrl)
+        // imageSrc : photo choisie dans l'assistant, pas encore envoyée (aperçu seulement).
+        const storySrc = content.imageSrc || (imagePath ? mediaUrl(imagePath) : '')
         const hostMessage = theme.id === 'minuit' ? body || t('Nous avons hâte de fêter la nouvelle année avec vous.') : body
-        if (!editable && !hostMessage && !imagePath && theme.id !== 'minuit') return null
+        if (!editable && !hostMessage && !storySrc && theme.id !== 'minuit') return null
         const photo = editable ? (
           <label className="photo-pick rv" onClick={(e) => e.stopPropagation()}>
             {imagePath ? <img src={mediaUrl(imagePath)} alt="" /> : (
@@ -813,8 +853,8 @@ export default function ThemedSitePage({
               }}
             />
           </label>
-        ) : imagePath ? (
-          <img className={`rv ${theme.id === 'minuit' ? 'minuit-host-photo' : ''}`} src={mediaUrl(imagePath)} alt="" />
+        ) : storySrc ? (
+          <img className={`rv ${theme.id === 'minuit' ? 'minuit-host-photo' : ''}`} src={storySrc} alt="" />
         ) : theme.id === 'minuit' ? (
           <div className="minuit-host-placeholder rv" aria-hidden="true">
             <span>{(organizerName || heroStyle.title).split(/\s+/).map((part) => part[0]).slice(0, 2).join('')}</span>
@@ -1432,7 +1472,7 @@ export default function ThemedSitePage({
         <header
           id={siteBlockDomId('Hero')}
           data-block="Hero"
-          className={`hero ${coverPath ? 'has-cover' : ''} ${heroSel.className}`}
+          className={`hero ${coverSrc ? 'has-cover' : ''} ${heroSel.className}`}
           onClick={heroSel.onClick}
           onPointerMove={
             embedded
@@ -1444,8 +1484,8 @@ export default function ThemedSitePage({
                 }
           }
         >
-          {coverPath && (
-            <div className="hero-cover" ref={coverRef} aria-hidden="true" style={{ backgroundImage: `url(${mediaUrl(coverPath)})` }} />
+          {coverSrc && (
+            <div className="hero-cover" ref={coverRef} aria-hidden="true" style={{ backgroundImage: `url(${coverSrc})` }} />
           )}
           <div className="hero-glow" aria-hidden="true" />
           <div className="hero-frame" aria-hidden="true" dangerouslySetInnerHTML={{ __html: theme.frame }} />
