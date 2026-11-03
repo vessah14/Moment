@@ -26,6 +26,32 @@ public class EventSharePosterRendererTests
     }
 
     [Fact]
+    public void RenderCoverPreview_ShrinksALargePhotoToALightLinkPreview()
+    {
+        // Grande photo en hauteur, bruitée pour peser lourd comme une vraie photo.
+        var random = new Random(7);
+        using var bitmap = new SkiaSharp.SKBitmap(3000, 4000);
+        for (var y = 0; y < bitmap.Height; y += 4)
+            for (var x = 0; x < bitmap.Width; x += 4)
+                bitmap.SetPixel(x, y, new SkiaSharp.SKColor((byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256)));
+        using var source = bitmap.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 95);
+
+        var preview = EventSharePosterRenderer.RenderCoverPreview(source.ToArray());
+
+        Assert.NotNull(preview);
+        using var decoded = SkiaSharp.SKBitmap.Decode(preview);
+        Assert.Equal(1200, decoded.Width);
+        Assert.Equal(630, decoded.Height);
+        Assert.True(preview!.Length < 600 * 1024, $"{preview.Length} octets");
+    }
+
+    [Fact]
+    public void RenderCoverPreview_ReturnsNullForAnUnreadableFile()
+    {
+        Assert.Null(EventSharePosterRenderer.RenderCoverPreview(new byte[] { 1, 2, 3, 4 }));
+    }
+
+    [Fact]
     public void WithoutDate_DropsPartsRepeatingTheDateOrTime()
     {
         var evt = new PublicEventDto

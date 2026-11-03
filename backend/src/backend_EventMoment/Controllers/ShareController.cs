@@ -26,6 +26,10 @@ namespace backend_EventMoment.Controllers
         private readonly IEventStatsService _stats;
         private readonly ILogger<ShareController> _logger;
         private readonly IMemoryCache _cache;
+        private readonly IHttpClientFactory _http;
+
+        // Couverture téléversée telle quelle (jusqu'à 10 Mo) : au-delà, on renonce à l'alléger.
+        private const int MaxCoverBytes = 15 * 1024 * 1024;
 
         // Une affiche se dessine en 1 à 3 s : trop lent pour WhatsApp, qui abandonne la carte
         // d'aperçu si l'image tarde. Elle est gardée en mémoire, la version de l'événement
@@ -45,8 +49,9 @@ namespace backend_EventMoment.Controllers
         };
 
         public ShareController(IGiftRegistryService events, IUploadStorage uploads, IConfiguration config,
-            IEventStatsService stats, ILogger<ShareController> logger, IMemoryCache cache)
+            IEventStatsService stats, ILogger<ShareController> logger, IMemoryCache cache, IHttpClientFactory http)
         {
+            _http = http;
             _cache = cache;
             _events = events;
             _uploads = uploads;
@@ -73,7 +78,11 @@ namespace backend_EventMoment.Controllers
             // de l'événement sert donc aussi d'og:url.
             var shareUrl = eventUrl;
             var cover = CoverUrl(evt.CoverImageUrl);
-            var image = cover ?? PosterUrl(evt);
+            // Couverture : sa version allégée commence à se préparer dès maintenant, pour être
+            // prête quand le robot vient chercher l'image juste après cette page.
+            if (cover != null)
+                _ = CoverPreviewAsync(evt.Slug, cover);
+            var image = cover != null ? CoverPreviewUrl(evt.Slug, cover) : PosterUrl(evt);
 
             var details = new List<string>();
             if (evt.EventDate is DateOnly date)
@@ -87,7 +96,26 @@ namespace backend_EventMoment.Controllers
                 ?? $"Retrouvez toutes les informations de « {evt.Name} » sur son site.";
 
             var title = Clean(evt.HeroTitle) ?? evt.Name;
-            return Html(200, RedirectPage(title, description, eventUrl, shareUrl, image, eventUrl, posterImage: cover == null));
+            return Html(200, RedirectPage(title, description, eventUrl, shareUrl, image, eventUrl, imageType: cover == null ? "image/png" : "image/jpeg"));
+        }
+
+        // Couverture allégée (1200 × 630, JPEG) servie aux robots d'aperçu à la place de la
+        // photo d'origine. Couverture illisible ou injoignable : l'affiche générée la remplace.
+        [HttpGet("share/e/{slug}/cover.jpg")]
+        public async Task<IActionResult> CoverPreview(string slug)
+        {
+            var evt = IsValidSlug(slug) ? await _events.GetPublicEventAsync(slug) : null;
+            if (evt == null)
+                return NotFound();
+            var cover = CoverUrl(evt.CoverImageUrl);
+            var jpeg = cover != null ? await CoverPreviewAsync(evt.Slug, cover) : null;
+            if (jpeg == null)
+                return await Poster(slug);
+
+            Response.Headers.CacheControl = Request.Query["v"] == CoverVersion(cover!)
+                ? "public, max-age=604800, immutable"
+                : "public, max-age=300";
+            return File(jpeg, "image/jpeg");
         }
 
         [HttpGet("share/e/{slug}/poster.png")]
@@ -147,6 +175,54 @@ namespace backend_EventMoment.Controllers
             return File(png, "image/png", $"{evt.Slug}-{format}.png");
         }
 
+        private static string CoverVersion(string cover) =>
+            Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(cover)))[..16].ToLowerInvariant();
+
+        private string CoverPreviewUrl(string slug, string cover) =>
+            $"{Request.Scheme}://{Request.Host}{Request.PathBase}/share/e/{Uri.EscapeDataString(slug)}/cover.jpg?v={CoverVersion(cover)}";
+
+        // Une seule préparation par couverture, partagée entre la page d'aperçu et l'image.
+        // Échec : rien n'est gardé, la prochaine demande réessaiera.
+        private Task<byte[]?> CoverPreviewAsync(string slug, string cover)
+        {
+            var key = $"share-cover:{slug}:{CoverVersion(cover)}";
+            var task = _cache.GetOrCreate(key, entry =>
+            {
+                entry.SetOptions(PosterCacheOptions);
+                return DownloadCoverPreviewAsync(cover);
+            })!;
+            _ = task.ContinueWith(t => { if (t.Result == null) _cache.Remove(key); }, TaskScheduler.Default);
+            return task;
+        }
+
+        private async Task<byte[]?> DownloadCoverPreviewAsync(string cover)
+        {
+            try
+            {
+                using var client = _http.CreateClient();
+                client.Timeout = TimeSpan.FromSeconds(8);
+                using var response = await client.GetAsync(cover, HttpCompletionOption.ResponseHeadersRead);
+                if (!response.IsSuccessStatusCode || response.Content.Headers.ContentLength > MaxCoverBytes)
+                    return null;
+                await using var stream = await response.Content.ReadAsStreamAsync();
+                using var buffer = new MemoryStream();
+                var chunk = new byte[81920];
+                int read;
+                while ((read = await stream.ReadAsync(chunk)) > 0)
+                {
+                    if (buffer.Length + read > MaxCoverBytes)
+                        return null;
+                    buffer.Write(chunk, 0, read);
+                }
+                return EventSharePosterRenderer.RenderCoverPreview(buffer.ToArray());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Couverture d'aperçu non préparée pour {Cover}", cover);
+                return null;
+            }
+        }
+
         private static bool IsValidSlug(string slug) =>
             slug.Length <= 200 && slug.All(c => char.IsAsciiLetterLower(c) || char.IsAsciiDigit(c) || c == '-');
 
@@ -197,7 +273,7 @@ namespace backend_EventMoment.Controllers
         }
 
         private static string RedirectPage(string title, string description, string target, string? shareUrl, string? image, string canonical,
-            bool posterImage = false)
+            string? imageType = null)
         {
             // Seuls les caractères spéciaux HTML sont encodés : les accents restent lisibles.
             string E(string value) => value.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;").Replace("'", "&#39;");
@@ -217,10 +293,10 @@ namespace backend_EventMoment.Controllers
             {
                 html.Append($"<meta property=\"og:image\" content=\"{E(image)}\"><meta property=\"og:image:secure_url\" content=\"{E(image)}\">");
                 html.Append($"<meta property=\"og:image:alt\" content=\"{E(title)}\"><meta name=\"twitter:image\" content=\"{E(image)}\">");
-                // Dimensions connues pour l'affiche générée : WhatsApp et Facebook construisent
-                // la carte d'aperçu sans attendre la fin du téléchargement de l'image.
-                if (posterImage)
-                    html.Append("<meta property=\"og:image:type\" content=\"image/png\"><meta property=\"og:image:width\" content=\"1200\"><meta property=\"og:image:height\" content=\"630\">");
+                // Dimensions connues (affiche ou couverture recadrée) : WhatsApp et Facebook
+                // construisent la carte d'aperçu sans attendre la fin du téléchargement de l'image.
+                if (imageType != null)
+                    html.Append($"<meta property=\"og:image:type\" content=\"{imageType}\"><meta property=\"og:image:width\" content=\"1200\"><meta property=\"og:image:height\" content=\"630\">");
             }
             html.Append($"<meta name=\"twitter:card\" content=\"summary_large_image\"><meta name=\"twitter:title\" content=\"{E(title)}\"><meta name=\"twitter:description\" content=\"{E(description)}\">");
             html.Append($"<meta http-equiv=\"refresh\" content=\"0;url={E(target)}\">");

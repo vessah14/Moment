@@ -537,6 +537,69 @@ public static class EventSharePosterRenderer
         return DefaultAccent;
     }
 
+    // Couverture allégée pour l'aperçu des liens : WhatsApp n'affiche la grande image que si
+    // le fichier est léger (quelques centaines de Ko), alors qu'une photo de téléphone en
+    // pèse plusieurs Mo. Recadrée en 1200 × 630, redressée (orientation EXIF), en JPEG.
+    // Null si l'image est illisible.
+    public static byte[]? RenderCoverPreview(byte[] source)
+    {
+        using var stream = new SKMemoryStream(source);
+        using var codec = SKCodec.Create(stream);
+        if (codec == null)
+            return null;
+
+        var degrees = codec.EncodedOrigin switch
+        {
+            SKEncodedOrigin.BottomRight or SKEncodedOrigin.BottomLeft => 180,
+            SKEncodedOrigin.RightTop or SKEncodedOrigin.LeftTop => 90,
+            SKEncodedOrigin.LeftBottom or SKEncodedOrigin.RightBottom => 270,
+            _ => 0,
+        };
+        var sideways = degrees is 90 or 270;
+        var (shownWidth, shownHeight) = sideways
+            ? (codec.Info.Height, codec.Info.Width)
+            : (codec.Info.Width, codec.Info.Height);
+        if (shownWidth <= 0 || shownHeight <= 0)
+            return null;
+
+        // Décodage directement à taille réduite (JPEG : 1/2, 1/4, 1/8) : une photo de
+        // 24 Mpx n'occupe pas 100 Mo de mémoire pour une vignette.
+        var needed = Math.Max((float)Width / shownWidth, (float)Height / shownHeight);
+        var size = codec.GetScaledDimensions(Math.Min(1f, needed));
+        var info = new SKImageInfo(size.Width, size.Height, SKColorType.Rgba8888, SKAlphaType.Premul);
+        using var bitmap = new SKBitmap(info);
+        var result = codec.GetPixels(info, bitmap.GetPixels());
+        if (result is not (SKCodecResult.Success or SKCodecResult.IncompleteInput))
+            return null;
+
+        // Recadrage plein cadre ; une photo en hauteur garde plutôt son haut (les visages).
+        var (bitmapWidth, bitmapHeight) = sideways ? (bitmap.Height, bitmap.Width) : (bitmap.Width, bitmap.Height);
+        var scale = Math.Max((float)Width / bitmapWidth, (float)Height / bitmapHeight);
+        var w = bitmapWidth * scale;
+        var h = bitmapHeight * scale;
+        var x = (Width - w) / 2f;
+        var y = (Height - h) / 3f;
+
+        using var surface = SKSurface.Create(new SKImageInfo(Width, Height));
+        var canvas = surface.Canvas;
+        canvas.Clear(Background);
+        switch (degrees)
+        {
+            case 90: canvas.Translate(x + w, y); break;
+            case 180: canvas.Translate(x + w, y + h); break;
+            case 270: canvas.Translate(x, y + h); break;
+            default: canvas.Translate(x, y); break;
+        }
+        canvas.RotateDegrees(degrees);
+        using var image = SKImage.FromBitmap(bitmap);
+        var target = sideways ? SKRect.Create(0, 0, h, w) : SKRect.Create(0, 0, w, h);
+        canvas.DrawImage(image, target, new SKSamplingOptions(SKCubicResampler.Mitchell));
+
+        using var snapshot = surface.Snapshot();
+        using var jpeg = snapshot.Encode(SKEncodedImageFormat.Jpeg, 82);
+        return jpeg?.ToArray();
+    }
+
     private static SKColor Blend(SKColor start, SKColor end, float amount) => new(
         (byte)(start.Red + (end.Red - start.Red) * amount),
         (byte)(start.Green + (end.Green - start.Green) * amount),
