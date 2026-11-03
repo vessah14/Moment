@@ -24,7 +24,31 @@ public static class EventSharePosterRenderer
     private static readonly SKColor Background = new(15, 16, 42);
     // À incrémenter quand le dessin change : l'adresse versionnée de l'affiche (mise en cache
     // 7 jours par WhatsApp et les navigateurs) change alors aussi.
-    private const string DrawingRevision = "3";
+    private const string DrawingRevision = "4";
+
+    // Style des affiches carrée et verticale selon le type d'événement.
+    private enum Mood
+    {
+        Default,
+        Celebration, // anniversaire, soirée, remise de diplômes… : confettis
+        Wedding,     // mariage : double filet doré, titre à empattements
+        Spiritual,   // baptême, cérémonie religieuse : filet doux, titre à empattements
+        Mourning,    // obsèques, retrait de deuil : sobre, photo en noir et blanc
+        Pro,         // conférence, entreprise, école, sport, concert : bandeaux de couleur
+    }
+
+    private static Mood MoodOf(string? categoryCode) => categoryCode switch
+    {
+        "anniversaire" or "soiree_privee" or "graduation" or "fetes_saisons" or "baby_shower" or "reunion_familiale" => Mood.Celebration,
+        "mariage" => Mood.Wedding,
+        "bapteme" or "evenement_religieux" => Mood.Spiritual,
+        "obseques" or "retrait_deuil" => Mood.Mourning,
+        "conference" or "evenement_entreprise" or "evenement_scolaire" or "competition_sportive" or "concert" => Mood.Pro,
+        _ => Mood.Default,
+    };
+
+    private static readonly SKColor Gold = new(245, 196, 81);
+    private static readonly SKColor MourningAccent = new(200, 204, 216);
 
     public static string GetVersion(PublicEventDto evt)
     {
@@ -42,7 +66,8 @@ public static class EventSharePosterRenderer
             evt.Tagline,
             evt.LocationLabel,
             evt.LocationAddress,
-            evt.Template);
+            evt.Template,
+            evt.CategoryCode);
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(versionData)))[..16].ToLowerInvariant();
     }
 
@@ -54,7 +79,9 @@ public static class EventSharePosterRenderer
     };
 
     // displayUrl : adresse écrite sur les formats carré et vertical (ex. tbfmoment.com/e/slug).
-    public static byte[] Render(PublicEventDto evt, SharePosterFormat format = SharePosterFormat.Link, string? displayUrl = null)
+    // photo : couverture de l'événement, mise en grand sur les formats carré et vertical.
+    public static byte[] Render(PublicEventDto evt, SharePosterFormat format = SharePosterFormat.Link, string? displayUrl = null,
+        byte[]? photo = null)
     {
         var (width, height) = SizeOf(format);
         using var surface = SKSurface.Create(new SKImageInfo(width, height));
@@ -68,20 +95,34 @@ public static class EventSharePosterRenderer
             return envolPng.ToArray();
         }
         canvas.Clear(Background);
-        DrawBackground(canvas, ParseAccent(evt.HeroColor ?? evt.ThemeColor), width, height);
         if (format == SharePosterFormat.Link)
+        {
+            DrawBackground(canvas, ParseAccent(evt.HeroColor ?? evt.ThemeColor), width, height);
             DrawContent(canvas, evt);
+        }
         else
-            DrawPortraitContent(canvas, evt, width, height, format == SharePosterFormat.Story, displayUrl);
+        {
+            var story = format == SharePosterFormat.Story;
+            var mood = MoodOf(evt.CategoryCode);
+            var accent = mood == Mood.Mourning ? MourningAccent : ParseAccent(evt.HeroColor ?? evt.ThemeColor);
+            using var picture = photo != null ? DecodeUpright(photo, Math.Max(width, height)) : null;
+            float? textTop = null;
+            if (picture != null)
+                textTop = DrawPhotoBackground(canvas, picture, accent, width, height, story, mood);
+            else
+                DrawBackground(canvas, accent, width, height, frame: false, glow: mood != Mood.Mourning);
+            DrawDecor(canvas, mood, accent, width, height, evt.Slug, picture != null);
+            DrawPortraitContent(canvas, evt, width, height, story, displayUrl, mood, accent, textTop);
+        }
 
         using var image = surface.Snapshot();
         using var encoded = image.Encode(SKEncodedImageFormat.Png, 95);
         return encoded.ToArray();
     }
 
-    private static void DrawBackground(SKCanvas canvas, SKColor accent, int width, int height)
+    private static void DrawBackground(SKCanvas canvas, SKColor accent, int width, int height, bool frame = true, bool glow = true)
     {
-        var glow = Math.Max(width, height) / (float)Width;
+        var glowScale = Math.Max(width, height) / (float)Width;
         using var backgroundPaint = new SKPaint
         {
             Shader = SKShader.CreateLinearGradient(
@@ -93,14 +134,19 @@ public static class EventSharePosterRenderer
         };
         canvas.DrawRect(new SKRect(0, 0, width, height), backgroundPaint);
 
-        using var glowPaint = new SKPaint
+        if (glow)
         {
-            IsAntialias = true,
-            Color = new SKColor(accent.Red, accent.Green, accent.Blue, 34),
-        };
-        canvas.DrawCircle(width - 160, 90, 230 * glow, glowPaint);
-        canvas.DrawCircle(105, height - 10, 205 * glow, glowPaint);
+            using var glowPaint = new SKPaint
+            {
+                IsAntialias = true,
+                Color = new SKColor(accent.Red, accent.Green, accent.Blue, 34),
+            };
+            canvas.DrawCircle(width - 160, 90, 230 * glowScale, glowPaint);
+            canvas.DrawCircle(105, height - 10, 205 * glowScale, glowPaint);
+        }
 
+        if (!frame)
+            return;
         using var linePaint = new SKPaint
         {
             IsAntialias = true,
@@ -113,14 +159,19 @@ public static class EventSharePosterRenderer
 
     // Carré et vertical : marque en haut, bloc de texte centré, adresse de la page en bas.
     // Le vertical laisse le bas libre (barre de réponse du Statut).
-    private static void DrawPortraitContent(SKCanvas canvas, PublicEventDto evt, int width, int height, bool story, string? displayUrl)
+    // textTop : haut de la zone de texte quand une photo occupe le haut de l'affiche.
+    private static void DrawPortraitContent(SKCanvas canvas, PublicEventDto evt, int width, int height, bool story, string? displayUrl,
+        Mood mood, SKColor accent, float? textTop)
     {
-        var accent = ParseAccent(evt.HeroColor ?? evt.ThemeColor);
         var fr = CultureInfo.GetCultureInfo("fr-FR");
         var centerX = width / 2f;
         var maxWidth = width - 170f;
         using var boldTypeface = SKTypeface.FromFamilyName("DejaVu Sans", SKFontStyle.Bold);
         using var regularTypeface = SKTypeface.FromFamilyName("DejaVu Sans", SKFontStyle.Normal);
+        // Mariage, cérémonies et deuil : titre à empattements, plus solennel.
+        using var titleTypeface = mood is Mood.Wedding or Mood.Spiritual or Mood.Mourning
+            ? SKTypeface.FromFamilyName("DejaVu Serif", SKFontStyle.Bold)
+            : SKTypeface.FromFamilyName("DejaVu Sans", SKFontStyle.Bold);
         using var accentPaint = new SKPaint { IsAntialias = true, Color = accent };
         using var brandPaint = TextPaint(new SKColor(232, 222, 251));
         using var titlePaint = TextPaint(SKColors.White);
@@ -129,17 +180,35 @@ public static class EventSharePosterRenderer
         using var accentTextPaint = TextPaint(accent);
 
         var brandY = story ? 230f : 130f;
-        using var brandFont = new SKFont(boldTypeface, 32);
-        var brandWidth = brandFont.MeasureText("TBF MOMENT", brandPaint);
-        canvas.DrawCircle(centerX - brandWidth / 2 - 22, brandY - 11, 9, accentPaint);
-        DrawCentered(canvas, "TBF MOMENT", centerX, brandY, brandFont, brandPaint);
-        using (var dividerPaint = new SKPaint { IsAntialias = true, Color = accent.WithAlpha(190), StrokeWidth = 4, StrokeCap = SKStrokeCap.Round })
+        if (textTop != null)
+        {
+            // Sur la photo : marque discrète dans une pastille, et texte ombré pour rester lisible.
+            brandY = story ? 150f : 110f;
+            using var shadow = SKImageFilter.CreateDropShadow(0, 2, 5, 5, SKColors.Black.WithAlpha(150));
+            foreach (var paint in new[] { titlePaint, detailPaint, taglinePaint, accentTextPaint })
+                paint.ImageFilter = shadow;
+            using var pillFont = new SKFont(boldTypeface, 24);
+            var pillWidth = pillFont.MeasureText("TBF MOMENT", brandPaint) + 70;
+            using var pillPaint = new SKPaint { IsAntialias = true, Color = Background.WithAlpha(165) };
+            canvas.DrawRoundRect(SKRect.Create(centerX - pillWidth / 2, brandY - 33, pillWidth, 46), 23, 23, pillPaint);
+            canvas.DrawCircle(centerX - pillWidth / 2 + 24, brandY - 10, 7, accentPaint);
+            DrawCentered(canvas, "TBF MOMENT", centerX + 10, brandY, pillFont, brandPaint);
+        }
+        else
+        {
+            using var brandFont = new SKFont(boldTypeface, 32);
+            var brandWidth = brandFont.MeasureText("TBF MOMENT", brandPaint);
+            canvas.DrawCircle(centerX - brandWidth / 2 - 22, brandY - 11, 9, accentPaint);
+            DrawCentered(canvas, "TBF MOMENT", centerX, brandY, brandFont, brandPaint);
+            using var dividerPaint = new SKPaint { IsAntialias = true, Color = accent.WithAlpha(190), StrokeWidth = 4, StrokeCap = SKStrokeCap.Round };
             canvas.DrawLine(centerX - 60, brandY + 50, centerX + 60, brandY + 50, dividerPaint);
+        }
 
         // Bloc central : (texte, police, peinture, espace après la ligne).
         var lines = new List<(string Text, SKFont Font, SKPaint Paint, float After)>();
         using var kickerFont = new SKFont(boldTypeface, 30);
-        var kicker = Clean(WithoutDate(evt.HeroKicker, evt), 80);
+        var kicker = Clean(WithoutDate(evt.HeroKicker, evt), 80)
+            ?? (mood is Mood.Celebration or Mood.Wedding or Mood.Spiritual ? "Vous êtes invité·e" : null);
         if (kicker != null)
         {
             var kickerLines = Wrap(kicker.ToUpper(fr), kickerFont, accentTextPaint, maxWidth).Take(2).ToList();
@@ -148,16 +217,19 @@ public static class EventSharePosterRenderer
         }
 
         var title = Clean(evt.HeroTitle, 180) ?? Clean(evt.Name, 180) ?? "Événement";
-        using var titleFont = new SKFont(boldTypeface, 108);
+        using var titleFont = new SKFont(titleTypeface, 108);
         var titleLines = new List<string>();
-        foreach (var size in new[] { 108f, 94f, 82f, 72f })
+        // Avec photo, le texte n'a que le bas de l'affiche : titre plus petit, moins de lignes.
+        var sizes = textTop == null ? new[] { 108f, 94f, 82f, 72f } : story ? new[] { 96f, 84f, 72f, 62f } : new[] { 80f, 68f, 58f, 50f };
+        var fitLines = textTop == null || story ? 3 : 2;
+        foreach (var size in sizes)
         {
             titleFont.Size = size;
             titleLines = Wrap(title, titleFont, titlePaint, maxWidth).ToList();
-            if (titleLines.Count <= 3)
+            if (titleLines.Count <= fitLines)
                 break;
         }
-        titleLines = titleLines.Take(story ? 5 : 4).ToList();
+        titleLines = titleLines.Take(textTop == null ? (story ? 5 : 4) : fitLines + 1).ToList();
         for (var i = 0; i < titleLines.Count; i++)
             lines.Add((titleLines[i], titleFont, titlePaint, i == titleLines.Count - 1 ? 40 : titleFont.Size * 0.18f));
 
@@ -195,10 +267,12 @@ public static class EventSharePosterRenderer
                 lines.Add((line, detailFont, detailPaint, 10));
 
         var footerTop = story ? height - 420f : height - 190f;
-        var regionTop = brandY + 110;
-        // Trop long : le sous-titre cède sa place à la date et au lieu, plus utiles.
+        var regionTop = textTop ?? brandY + 110;
+        // Trop long : le sous-titre puis le surtitre cèdent leur place à la date et au lieu.
         if (lines.Sum(l => l.Font.Size + l.After) > footerTop - 40 - regionTop)
             lines.RemoveAll(l => l.Font == taglineFont);
+        if (lines.Sum(l => l.Font.Size + l.After) > footerTop - 40 - regionTop)
+            lines.RemoveAll(l => l.Font == kickerFont);
         var blockHeight = lines.Sum(l => l.Font.Size + l.After);
         var y = regionTop + Math.Max(0, (footerTop - 40 - regionTop - blockHeight) / 2);
         foreach (var (text, font, paint, after) in lines)
@@ -539,13 +613,45 @@ public static class EventSharePosterRenderer
 
     // Couverture allégée pour l'aperçu des liens : WhatsApp n'affiche la grande image que si
     // le fichier est léger (quelques centaines de Ko), alors qu'une photo de téléphone en
-    // pèse plusieurs Mo. Recadrée en 1200 × 630, redressée (orientation EXIF), en JPEG.
-    // Null si l'image est illisible.
+    // pèse plusieurs Mo. Recadrée en 1200 × 630, en JPEG. Null si l'image est illisible.
     public static byte[]? RenderCoverPreview(byte[] source)
+    {
+        using var picture = DecodeUpright(source, Width);
+        if (picture == null)
+            return null;
+        using var surface = SKSurface.Create(new SKImageInfo(Width, Height));
+        surface.Canvas.Clear(Background);
+        DrawPhoto(surface.Canvas, picture, SKRect.Create(0, 0, Width, Height));
+        return EncodeJpeg(surface, 82);
+    }
+
+    // Photo téléversée ramenée à 1600 px au plus, redressée : c'est elle qui est gardée en
+    // mémoire pour l'aperçu du lien et les affiches. Null si l'image est illisible.
+    public static byte[]? NormalizePhoto(byte[] source)
+    {
+        using var picture = DecodeUpright(source, 1600);
+        if (picture == null)
+            return null;
+        using var surface = SKSurface.Create(new SKImageInfo(picture.Width, picture.Height));
+        surface.Canvas.DrawImage(picture, 0, 0);
+        return EncodeJpeg(surface, 88);
+    }
+
+    private static byte[]? EncodeJpeg(SKSurface surface, int quality)
+    {
+        using var snapshot = surface.Snapshot();
+        using var jpeg = snapshot.Encode(SKEncodedImageFormat.Jpeg, quality);
+        return jpeg?.ToArray();
+    }
+
+    // Décode une photo redressée (orientation EXIF), directement à taille réduite quand le
+    // format le permet (JPEG : 1/2, 1/4, 1/8) : une photo de 24 Mpx n'occupe pas 100 Mo de
+    // mémoire pour une affiche. maxSide : plus grand côté utile.
+    private static SKImage? DecodeUpright(byte[] source, int maxSide)
     {
         using var stream = new SKMemoryStream(source);
         using var codec = SKCodec.Create(stream);
-        if (codec == null)
+        if (codec == null || codec.Info.Width <= 0 || codec.Info.Height <= 0)
             return null;
 
         var degrees = codec.EncodedOrigin switch
@@ -555,49 +661,169 @@ public static class EventSharePosterRenderer
             SKEncodedOrigin.LeftBottom or SKEncodedOrigin.RightBottom => 270,
             _ => 0,
         };
-        var sideways = degrees is 90 or 270;
-        var (shownWidth, shownHeight) = sideways
-            ? (codec.Info.Height, codec.Info.Width)
-            : (codec.Info.Width, codec.Info.Height);
-        if (shownWidth <= 0 || shownHeight <= 0)
-            return null;
 
-        // Décodage directement à taille réduite (JPEG : 1/2, 1/4, 1/8) : une photo de
-        // 24 Mpx n'occupe pas 100 Mo de mémoire pour une vignette.
-        var needed = Math.Max((float)Width / shownWidth, (float)Height / shownHeight);
-        var size = codec.GetScaledDimensions(Math.Min(1f, needed));
+        var size = codec.GetScaledDimensions(Math.Min(1f, (float)maxSide / Math.Max(codec.Info.Width, codec.Info.Height)));
         var info = new SKImageInfo(size.Width, size.Height, SKColorType.Rgba8888, SKAlphaType.Premul);
         using var bitmap = new SKBitmap(info);
         var result = codec.GetPixels(info, bitmap.GetPixels());
         if (result is not (SKCodecResult.Success or SKCodecResult.IncompleteInput))
             return null;
 
-        // Recadrage plein cadre ; une photo en hauteur garde plutôt son haut (les visages).
-        var (bitmapWidth, bitmapHeight) = sideways ? (bitmap.Height, bitmap.Width) : (bitmap.Width, bitmap.Height);
-        var scale = Math.Max((float)Width / bitmapWidth, (float)Height / bitmapHeight);
-        var w = bitmapWidth * scale;
-        var h = bitmapHeight * scale;
-        var x = (Width - w) / 2f;
-        var y = (Height - h) / 3f;
-
-        using var surface = SKSurface.Create(new SKImageInfo(Width, Height));
+        // Réduction finale au besoin (formats décodés en taille réelle : PNG, WebP…).
+        var scale = Math.Min(1f, (float)maxSide / Math.Max(bitmap.Width, bitmap.Height));
+        var w = Math.Max(1, (int)Math.Round(bitmap.Width * scale));
+        var h = Math.Max(1, (int)Math.Round(bitmap.Height * scale));
+        var sideways = degrees is 90 or 270;
+        using var surface = SKSurface.Create(new SKImageInfo(sideways ? h : w, sideways ? w : h));
         var canvas = surface.Canvas;
-        canvas.Clear(Background);
         switch (degrees)
         {
-            case 90: canvas.Translate(x + w, y); break;
-            case 180: canvas.Translate(x + w, y + h); break;
-            case 270: canvas.Translate(x, y + h); break;
-            default: canvas.Translate(x, y); break;
+            case 90: canvas.Translate(h, 0); break;
+            case 180: canvas.Translate(w, h); break;
+            case 270: canvas.Translate(0, w); break;
         }
         canvas.RotateDegrees(degrees);
         using var image = SKImage.FromBitmap(bitmap);
-        var target = sideways ? SKRect.Create(0, 0, h, w) : SKRect.Create(0, 0, w, h);
-        canvas.DrawImage(image, target, new SKSamplingOptions(SKCubicResampler.Mitchell));
+        canvas.DrawImage(image, SKRect.Create(0, 0, w, h), new SKSamplingOptions(SKCubicResampler.Mitchell));
+        return surface.Snapshot();
+    }
 
-        using var snapshot = surface.Snapshot();
-        using var jpeg = snapshot.Encode(SKEncodedImageFormat.Jpeg, 82);
-        return jpeg?.ToArray();
+    // Photo en plein cadre dans target ; une photo en hauteur garde plutôt son haut (visages).
+    private static void DrawPhoto(SKCanvas canvas, SKImage picture, SKRect target, SKPaint? paint = null)
+    {
+        var scale = Math.Max(target.Width / picture.Width, target.Height / picture.Height);
+        var w = picture.Width * scale;
+        var h = picture.Height * scale;
+        canvas.Save();
+        canvas.ClipRect(target);
+        canvas.DrawImage(picture,
+            SKRect.Create(target.Left + (target.Width - w) / 2f, target.Top + (target.Height - h) / 3f, w, h),
+            new SKSamplingOptions(SKCubicResampler.Mitchell), paint);
+        canvas.Restore();
+    }
+
+    // Affiche avec photo : la photo occupe le haut (vertical) ou tout le fond (carré) et se
+    // fond dans la couleur de l'événement sous le texte. Renvoie le haut de la zone de texte.
+    private static float DrawPhotoBackground(SKCanvas canvas, SKImage picture, SKColor accent, int width, int height, bool story, Mood mood)
+    {
+        var ground = Blend(Background, accent, mood == Mood.Mourning ? 0.06f : 0.16f);
+        canvas.Clear(ground);
+        var photoBottom = story ? height * 0.60f : height;
+        // Deuil : photo en noir et blanc.
+        using var gray = mood == Mood.Mourning
+            ? new SKPaint
+            {
+                ColorFilter = SKColorFilter.CreateColorMatrix(new[]
+                {
+                    0.30f, 0.59f, 0.11f, 0, 0,
+                    0.30f, 0.59f, 0.11f, 0, 0,
+                    0.30f, 0.59f, 0.11f, 0, 0,
+                    0, 0, 0, 1, 0,
+                }),
+            }
+            : null;
+        DrawPhoto(canvas, picture, SKRect.Create(0, 0, width, photoBottom), gray);
+
+        // Haut assombri pour la marque, bas fondu dans la couleur de fond pour le texte.
+        using var top = new SKPaint
+        {
+            Shader = SKShader.CreateLinearGradient(new SKPoint(0, 0), new SKPoint(0, height * 0.16f),
+                new[] { SKColors.Black.WithAlpha(150), SKColors.Black.WithAlpha(0) }, SKShaderTileMode.Clamp),
+        };
+        canvas.DrawRect(0, 0, width, height * 0.16f, top);
+        var fadeStart = story ? height * 0.34f : height * 0.28f;
+        var fadeEnd = story ? photoBottom : height * 0.60f;
+        using var fade = new SKPaint
+        {
+            Shader = SKShader.CreateLinearGradient(new SKPoint(0, fadeStart), new SKPoint(0, fadeEnd),
+                new[] { ground.WithAlpha(0), ground.WithAlpha(story ? (byte)255 : (byte)240) }, SKShaderTileMode.Clamp),
+        };
+        canvas.DrawRect(0, fadeStart, width, height - fadeStart, fade);
+        return height * 0.50f;
+    }
+
+    // Décor propre au type d'événement, par-dessus le fond (avec ou sans photo).
+    private static void DrawDecor(SKCanvas canvas, Mood mood, SKColor accent, int width, int height, string seed, bool withPhoto)
+    {
+        using var line = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke };
+        switch (mood)
+        {
+            case Mood.Celebration:
+            {
+                line.StrokeWidth = 2;
+                line.Color = accent.WithAlpha(125);
+                canvas.DrawRoundRect(new SKRect(34, 34, width - 34, height - 34), 30, 30, line);
+                // Confettis sur les bords, toujours les mêmes pour un même événement.
+                var random = new Random(StableHash(seed));
+                var colors = new[] { accent, Gold, new SKColor(226, 51, 126), SKColors.White };
+                using var confetti = new SKPaint { IsAntialias = true };
+                for (var i = 0; i < (withPhoto ? 22 : 34); i++)
+                {
+                    var x = random.NextSingle() < 0.5f
+                        ? random.NextSingle() * width * 0.17f
+                        : width * (0.83f + random.NextSingle() * 0.17f);
+                    var y = height * 0.04f + random.NextSingle() * height * (withPhoto ? 0.5f : 0.9f);
+                    confetti.Color = colors[random.Next(colors.Length)].WithAlpha((byte)random.Next(150, 240));
+                    canvas.Save();
+                    canvas.Translate(x, y);
+                    canvas.RotateDegrees(random.Next(0, 180));
+                    if (random.Next(3) == 0)
+                        canvas.DrawCircle(0, 0, 6 + random.NextSingle() * 5, confetti);
+                    else
+                        canvas.DrawRoundRect(new SKRect(-14, -5, 14, 5), 3, 3, confetti);
+                    canvas.Restore();
+                }
+                break;
+            }
+            case Mood.Wedding:
+            {
+                line.Color = Gold.WithAlpha(210);
+                line.StrokeWidth = 2;
+                canvas.DrawRect(new SKRect(34, 34, width - 34, height - 34), line);
+                line.StrokeWidth = 1.2f;
+                canvas.DrawRect(new SKRect(48, 48, width - 48, height - 48), line);
+                using var fill = new SKPaint { IsAntialias = true, Color = Gold };
+                foreach (var (x, y) in new[] { (41f, 41f), (width - 41f, 41f), (41f, height - 41f), (width - 41f, height - 41f) })
+                {
+                    canvas.Save();
+                    canvas.Translate(x, y);
+                    canvas.RotateDegrees(45);
+                    canvas.DrawRect(new SKRect(-8, -8, 8, 8), fill);
+                    canvas.Restore();
+                }
+                break;
+            }
+            case Mood.Spiritual:
+                line.Color = Gold.WithAlpha(170);
+                line.StrokeWidth = 1.6f;
+                canvas.DrawRoundRect(new SKRect(40, 40, width - 40, height - 40), 60, 60, line);
+                break;
+            case Mood.Mourning:
+                line.Color = MourningAccent.WithAlpha(150);
+                line.StrokeWidth = 1.4f;
+                canvas.DrawRect(new SKRect(40, 40, width - 40, height - 40), line);
+                break;
+            case Mood.Pro:
+            {
+                using var band = new SKPaint { IsAntialias = true, Color = accent };
+                canvas.DrawRect(0, 0, width, 16, band);
+                canvas.DrawRect(0, height - 16, width, 16, band);
+                break;
+            }
+            default:
+                line.StrokeWidth = 2;
+                line.Color = accent.WithAlpha(125);
+                canvas.DrawRoundRect(new SKRect(34, 34, width - 34, height - 34), 30, 30, line);
+                break;
+        }
+    }
+
+    private static int StableHash(string value)
+    {
+        var hash = 17;
+        foreach (var c in value)
+            hash = unchecked(hash * 31 + c);
+        return hash;
     }
 
     private static SKColor Blend(SKColor start, SKColor end, float amount) => new(
@@ -605,9 +831,16 @@ public static class EventSharePosterRenderer
         (byte)(start.Green + (end.Green - start.Green) * amount),
         (byte)(start.Blue + (end.Blue - start.Blue) * amount));
 
+    private static readonly SKTypeface TextTypeface = SKTypeface.FromFamilyName("DejaVu Sans");
+
+    // Emoji et symboles absents de la police (🦋, 😍…) : retirés, sinon ils s'affichent en
+    // carrés vides sur l'affiche.
     private static string? Clean(string? value, int maxLength)
     {
-        var withoutControls = string.Concat((value ?? string.Empty).Where(character => !char.IsControl(character)));
+        var withoutControls = string.Concat((value ?? string.Empty).EnumerateRunes()
+            .Where(rune => !Rune.IsControl(rune)
+                && (rune.Value < 0x2000 || TextTypeface.ContainsGlyph(rune.Value)))
+            .Select(rune => rune.ToString()));
         var clean = string.Join(' ', withoutControls.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
         if (clean.Length == 0)
             return null;

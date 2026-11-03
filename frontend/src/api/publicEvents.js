@@ -8,6 +8,11 @@ export function getPublicSite(slug) {
   return apiFetch(`/public/events/${slug}/site`, { auth: false })
 }
 
+// Messages du livre d'or validés, actualisés pendant qu'un invité consulte l'événement.
+export function getPublicGuestBookEntries(slug) {
+  return apiFetch(`/public/events/${encodeURIComponent(slug)}/guest-book`, { auth: false })
+}
+
 // Mur du jour J : dernières photos et derniers messages validés.
 export function getPublicWall(slug) {
   return apiFetch(`/public/events/${encodeURIComponent(slug)}/wall`, { auth: false })

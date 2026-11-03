@@ -78,7 +78,12 @@ namespace backend_EventMoment.Services
                 .Select(block => block.Content)
                 .FirstOrDefaultAsync();
 
-            return PublicEventMapper.Map(entity, location, heroContent);
+            var dto = PublicEventMapper.Map(entity, location, heroContent);
+            dto.CategoryCode = await _context.EventCategories.IgnoreQueryFilters().AsNoTracking()
+                .Where(category => category.Id == entity.CategoryId)
+                .Select(category => category.Code)
+                .FirstOrDefaultAsync();
+            return dto;
         }
 
         public async Task<List<GiftItemDto>> GetPublicGiftsAsync(string slug)

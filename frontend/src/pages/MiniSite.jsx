@@ -5,7 +5,7 @@ import { isAuthenticated, mediaUrl } from '../api/client'
 import { listEvents } from '../api/events'
 import { getPublicGifts } from '../api/giftRegistry'
 import { getPublicInvitation } from '../api/guests'
-import { getPublicSeating, getPublicSite, submitPublicEventRsvp, trackPublicEvent } from '../api/publicEvents'
+import { getPublicGuestBookEntries, getPublicSeating, getPublicSite, submitPublicEventRsvp, trackPublicEvent } from '../api/publicEvents'
 import logoMark from '../assets/logo-mark.png'
 import SitePage from '../components/site/SitePage'
 import InvitationLoader from '../components/site/InvitationLoader'
@@ -44,6 +44,8 @@ function defaultSubtitle (event) {
     .filter(Boolean)
     .join(' · ')
 }
+
+const GUEST_BOOK_REFRESH_MS = 15000
 
 // Balises SEO / partage d'un site d'événement. Indexé seulement si l'organisateur a
 // activé « Visible sur Google » (event.searchable) : un mariage ou des obsèques ne
@@ -245,6 +247,29 @@ export default function MiniSite () {
       )
       .finally(() => setLoading(false))
   }, [slug])
+
+  const hasGuestBook = site?.blocks?.some(block => block.blockType === "Livre d'or") ?? false
+  useEffect(() => {
+    if (!hasGuestBook) return undefined
+
+    let cancelled = false
+    const timer = setInterval(() => {
+      getPublicGuestBookEntries(slug)
+        .then(entries => {
+          if (!cancelled) {
+            setSite(current => current ? { ...current, guestBookEntries: entries } : current)
+          }
+        })
+        .catch(error => {
+          if (!cancelled) console.warn('Impossible d’actualiser le livre d’or public.', error)
+        })
+    }, GUEST_BOOK_REFRESH_MS)
+
+    return () => {
+      cancelled = true
+      clearInterval(timer)
+    }
+  }, [slug, hasGuestBook])
 
   const loaderHero = site?.blocks?.find(block => block.blockType === 'Hero')
   const loaderHeroContent = loaderHero ? parseContent(loaderHero.content) : {}

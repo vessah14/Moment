@@ -165,12 +165,16 @@ namespace backend_EventMoment.Controllers
 
             var site = (_config["Frontend:BaseUrl"] ?? "http://localhost:5173").TrimEnd('/');
             var displayUrl = $"{new Uri(site).Host}/e/{evt.Slug}";
+            // Couverture de l'événement mise en grand sur l'affiche ; sans elle (absente ou
+            // injoignable), l'affiche garde son fond de couleur.
+            var cover = CoverUrl(evt.CoverImageUrl);
+            var photo = cover != null ? await CoverPhotoAsync(evt.Slug, cover) : null;
             Response.Headers.CacheControl = "public, max-age=300";
             var png = _cache.GetOrCreate(
-                $"share-poster:{evt.Slug}:{format}:{EventSharePosterRenderer.GetVersion(evt)}:{displayUrl}", entry =>
+                $"share-poster:{evt.Slug}:{format}:{EventSharePosterRenderer.GetVersion(evt)}:{displayUrl}:{photo != null}", entry =>
                 {
                     entry.SetOptions(PosterCacheOptions);
-                    return EventSharePosterRenderer.Render(evt, kind!.Value, displayUrl);
+                    return EventSharePosterRenderer.Render(evt, kind!.Value, displayUrl, photo);
                 })!;
             return File(png, "image/png", $"{evt.Slug}-{format}.png");
         }
@@ -181,21 +185,34 @@ namespace backend_EventMoment.Controllers
         private string CoverPreviewUrl(string slug, string cover) =>
             $"{Request.Scheme}://{Request.Host}{Request.PathBase}/share/e/{Uri.EscapeDataString(slug)}/cover.jpg?v={CoverVersion(cover)}";
 
-        // Une seule préparation par couverture, partagée entre la page d'aperçu et l'image.
-        // Échec : rien n'est gardé, la prochaine demande réessaiera.
-        private Task<byte[]?> CoverPreviewAsync(string slug, string cover)
+        // Couverture recadrée pour l'aperçu du lien, tirée de la photo gardée en mémoire.
+        private async Task<byte[]?> CoverPreviewAsync(string slug, string cover)
         {
-            var key = $"share-cover:{slug}:{CoverVersion(cover)}";
+            var photo = await CoverPhotoAsync(slug, cover);
+            if (photo == null)
+                return null;
+            return _cache.GetOrCreate($"share-cover:{slug}:{CoverVersion(cover)}", entry =>
+            {
+                entry.SetOptions(PosterCacheOptions);
+                return EventSharePosterRenderer.RenderCoverPreview(photo);
+            });
+        }
+
+        // Couverture téléchargée une seule fois, ramenée à 1600 px, partagée entre l'aperçu du
+        // lien et les affiches. Échec : rien n'est gardé, la prochaine demande réessaiera.
+        private Task<byte[]?> CoverPhotoAsync(string slug, string cover)
+        {
+            var key = $"share-photo:{slug}:{CoverVersion(cover)}";
             var task = _cache.GetOrCreate(key, entry =>
             {
                 entry.SetOptions(PosterCacheOptions);
-                return DownloadCoverPreviewAsync(cover);
+                return DownloadCoverPhotoAsync(cover);
             })!;
             _ = task.ContinueWith(t => { if (t.Result == null) _cache.Remove(key); }, TaskScheduler.Default);
             return task;
         }
 
-        private async Task<byte[]?> DownloadCoverPreviewAsync(string cover)
+        private async Task<byte[]?> DownloadCoverPhotoAsync(string cover)
         {
             try
             {
@@ -214,7 +231,7 @@ namespace backend_EventMoment.Controllers
                         return null;
                     buffer.Write(chunk, 0, read);
                 }
-                return EventSharePosterRenderer.RenderCoverPreview(buffer.ToArray());
+                return EventSharePosterRenderer.NormalizePhoto(buffer.ToArray());
             }
             catch (Exception ex)
             {

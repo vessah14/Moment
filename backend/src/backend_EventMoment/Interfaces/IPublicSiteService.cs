@@ -5,6 +5,7 @@ namespace backend_EventMoment.Interfaces
     public interface IPublicSiteService
     {
         Task<PublicSiteDto?> GetPublicSiteAsync(string slug);
+        Task<List<PublicGuestBookEntryDto>?> GetPublicGuestBookEntriesAsync(string slug);
         Task<PublicWallDto?> GetWallAsync(string slug);
 
         // Sites publiés, non suspendus, dont l'organisateur a activé « Visible sur Google ».

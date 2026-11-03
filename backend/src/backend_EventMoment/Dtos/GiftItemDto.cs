@@ -58,5 +58,7 @@ namespace backend_EventMoment.Dtos
         // Option « Visible sur Google » de l'assistant (CustomFields.options.searchable) :
         // sans elle, le site public demande aux moteurs de ne pas l'indexer.
         public bool Searchable { get; set; }
+        // Type d'événement (mariage, anniversaire, obseques…) : style des affiches de partage.
+        public string? CategoryCode { get; set; }
     }
 }

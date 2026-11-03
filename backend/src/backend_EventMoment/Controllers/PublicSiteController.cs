@@ -57,5 +57,14 @@ namespace backend_EventMoment.Controllers
             var result = await _service.GetPublicSiteAsync(slug);
             return result == null ? NotFound() : Ok(result);
         }
+
+        [HttpGet("api/public/events/{slug}/guest-book")]
+        [AllowAnonymous]
+        [EnableRateLimiting("public-browse")]
+        public async Task<IActionResult> GetPublicGuestBookEntries(string slug)
+        {
+            var result = await _service.GetPublicGuestBookEntriesAsync(slug);
+            return result == null ? NotFound() : Ok(result);
+        }
     }
 }

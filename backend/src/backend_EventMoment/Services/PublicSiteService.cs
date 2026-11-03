@@ -51,6 +51,7 @@ namespace backend_EventMoment.Services
         }
 
         public const int WallItems = 60;
+        private const int PublicGuestBookItems = 20;
 
         // Mur du jour J : ne dépend pas des sections affichées sur la page (Galerie, Livre
         // d'or) ; seuls les photos et messages publiés (validés par l'organisateur) y passent.
@@ -171,19 +172,7 @@ namespace backend_EventMoment.Services
                 : new List<GalleryPhotoDto>();
 
             var guestBookEntries = blockTypes.Contains("Livre d'or")
-                ? await _context.GuestBookEntries.IgnoreQueryFilters().AsNoTracking()
-                    .Where(g => g.EventId == eventEntity.Id && g.Status == GuestBookStatus.Publie)
-                    .OrderByDescending(g => g.CreatedAt)
-                    .Take(20)
-                    .Select(g => new PublicGuestBookEntryDto
-                    {
-                        AuthorName = g.AuthorName,
-                        Message = g.Message,
-                        Reply = g.Reply,
-                        Service = g.Service,
-                        CreatedAt = g.CreatedAt,
-                    })
-                    .ToListAsync()
+                ? await GetPublishedGuestBookEntriesAsync(eventEntity.Id)
                 : new List<PublicGuestBookEntryDto>();
 
             var ticketTypes = blockTypes.Contains("Billetterie")
@@ -222,5 +211,34 @@ namespace backend_EventMoment.Services
                 OrganizerLogoUrl = organizer.LogoUrl,
             };
         }
+
+        public async Task<List<PublicGuestBookEntryDto>?> GetPublicGuestBookEntriesAsync(string slug)
+        {
+            var eventEntity = await _context.Events.IgnoreQueryFilters().AsNoTracking()
+                .FirstOrDefaultAsync(e => e.Slug == slug && e.Status == EventStatus.Publie
+                    && !_context.EventModerations.Any(m => m.EventId == e.Id));
+            if (eventEntity == null) return null;
+
+            var guestBookIsVisible = await _context.EventBlocks.IgnoreQueryFilters().AsNoTracking()
+                .AnyAsync(b => b.EventId == eventEntity.Id && b.IsVisible && b.BlockType == "Livre d'or");
+            if (!guestBookIsVisible) return new List<PublicGuestBookEntryDto>();
+
+            return await GetPublishedGuestBookEntriesAsync(eventEntity.Id);
+        }
+
+        private Task<List<PublicGuestBookEntryDto>> GetPublishedGuestBookEntriesAsync(Guid eventId) =>
+            _context.GuestBookEntries.IgnoreQueryFilters().AsNoTracking()
+                .Where(g => g.EventId == eventId && g.Status == GuestBookStatus.Publie)
+                .OrderByDescending(g => g.CreatedAt)
+                .Take(PublicGuestBookItems)
+                .Select(g => new PublicGuestBookEntryDto
+                {
+                    AuthorName = g.AuthorName,
+                    Message = g.Message,
+                    Reply = g.Reply,
+                    Service = g.Service,
+                    CreatedAt = g.CreatedAt,
+                })
+                .ToListAsync();
     }
 }

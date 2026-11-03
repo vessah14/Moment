@@ -46,6 +46,27 @@ public class EventSharePosterRendererTests
     }
 
     [Fact]
+    public void Render_PutsTheCoverPhotoOnSquareAndStoryPosters()
+    {
+        using var bitmap = new SkiaSharp.SKBitmap(800, 1000);
+        bitmap.Erase(new SkiaSharp.SKColor(230, 60, 40));
+        using var source = bitmap.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 90);
+        var photo = EventSharePosterRenderer.NormalizePhoto(source.ToArray())!;
+        var evt = new PublicEventDto { Name = "Les 20 ans de Shanice 🦋", Slug = "shanice", CategoryCode = "anniversaire" };
+
+        foreach (var format in new[] { SharePosterFormat.Square, SharePosterFormat.Story })
+        {
+            using var plain = SkiaSharp.SKBitmap.Decode(EventSharePosterRenderer.Render(evt, format, "tbfmoment.com/e/shanice"));
+            using var withPhoto = SkiaSharp.SKBitmap.Decode(EventSharePosterRenderer.Render(evt, format, "tbfmoment.com/e/shanice", photo));
+            Assert.Equal(EventSharePosterRenderer.SizeOf(format), (withPhoto.Width, withPhoto.Height));
+            // Le haut de l'affiche montre la photo (rouge), pas le fond de couleur.
+            var pixel = withPhoto.GetPixel(withPhoto.Width / 2, withPhoto.Height / 3);
+            Assert.True(pixel.Red > 150 && pixel.Blue < 100, pixel.ToString());
+            Assert.NotEqual(plain.GetPixel(plain.Width / 2, plain.Height / 3), pixel);
+        }
+    }
+
+    [Fact]
     public void RenderCoverPreview_ReturnsNullForAnUnreadableFile()
     {
         Assert.Null(EventSharePosterRenderer.RenderCoverPreview(new byte[] { 1, 2, 3, 4 }));

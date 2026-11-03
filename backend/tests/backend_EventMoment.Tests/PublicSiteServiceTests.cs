@@ -56,6 +56,83 @@ public class PublicSiteServiceTests
     }
 
     [Fact]
+    public async Task GetPublicSiteAsync_ShowsOnlyPublishedGuestBookMessagesInVisibleSection()
+    {
+        var context = TestDbContextFactory.CreateAdminContext();
+        var evt = CreateEvent(Guid.NewGuid(), Guid.NewGuid(), "guestbook-event", "{}", DateTimeOffset.UtcNow);
+        context.Events.Add(evt);
+        context.EventBlocks.Add(new EventBlock
+        {
+            Id = Guid.NewGuid(),
+            EventId = evt.Id,
+            BlockType = "Livre d'or",
+            Position = 1,
+            IsVisible = true,
+            Content = "{}",
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow,
+        });
+        context.GuestBookEntries.AddRange(
+            new GuestBookEntry
+            {
+                Id = Guid.NewGuid(),
+                EventId = evt.Id,
+                AuthorName = "Marie",
+                Message = "Félicitations !",
+                Status = GuestBookStatus.Publie,
+                CreatedAt = DateTimeOffset.UtcNow,
+            },
+            new GuestBookEntry
+            {
+                Id = Guid.NewGuid(),
+                EventId = evt.Id,
+                AuthorName = "Paul",
+                Message = "En attente",
+                Status = GuestBookStatus.EnAttente,
+                CreatedAt = DateTimeOffset.UtcNow,
+            });
+        await context.SaveChangesAsync();
+
+        var result = await new PublicSiteService(context).GetPublicSiteAsync(evt.Slug);
+
+        Assert.Equal("Félicitations !", Assert.Single(result!.GuestBookEntries).Message);
+    }
+
+    [Fact]
+    public async Task GetPublicGuestBookEntriesAsync_HidesMessagesWhenSectionIsNotVisible()
+    {
+        var context = TestDbContextFactory.CreateAdminContext();
+        var evt = CreateEvent(Guid.NewGuid(), Guid.NewGuid(), "hidden-guestbook", "{}", DateTimeOffset.UtcNow);
+        context.Events.Add(evt);
+        context.EventBlocks.Add(new EventBlock
+        {
+            Id = Guid.NewGuid(),
+            EventId = evt.Id,
+            BlockType = "Livre d'or",
+            Position = 1,
+            IsVisible = false,
+            Content = "{}",
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow,
+        });
+        context.GuestBookEntries.Add(new GuestBookEntry
+        {
+            Id = Guid.NewGuid(),
+            EventId = evt.Id,
+            AuthorName = "Marie",
+            Message = "Félicitations !",
+            Status = GuestBookStatus.Publie,
+            CreatedAt = DateTimeOffset.UtcNow,
+        });
+        await context.SaveChangesAsync();
+
+        var entries = await new PublicSiteService(context).GetPublicGuestBookEntriesAsync(evt.Slug);
+
+        Assert.Empty(entries!);
+        Assert.Null(await new PublicSiteService(context).GetPublicGuestBookEntriesAsync("unknown"));
+    }
+
+    [Fact]
     public async Task GetPublicSiteAsync_ShowsOrganizerLogo_OnTheFreePlan()
     {
         var context = TestDbContextFactory.CreateAdminContext();
