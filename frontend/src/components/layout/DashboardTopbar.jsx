@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { logout } from '../../api/auth'
 import { CURRENT_USER_UPDATED_EVENT, getCurrentUser, mediaUrl } from '../../api/client'
+import { PhotoOr } from '../ui/Avatar'
 import { listEvents } from '../../api/events'
 import { listGuests } from '../../api/guests'
 import { buildDashboardSearchIndex } from '../../data/dashboardSearchIndex'
@@ -113,9 +114,7 @@ export default function DashboardTopbar({ onMenuClick }) {
             aria-expanded={profileOpen}
             className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-purple/20 text-sm font-semibold text-brand-purple"
           >
-              {user?.photoUrl
-                ? <img src={mediaUrl(user.photoUrl)} alt="" className="h-full w-full object-cover" />
-                : initials(user?.fullName)}
+              <PhotoOr src={mediaUrl(user?.photoUrl)}>{initials(user?.fullName)}</PhotoOr>
           </button>
 
           {profileOpen && (

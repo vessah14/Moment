@@ -10,8 +10,9 @@ const R2_PUBLIC_BASE_URL = (() => {
   }
 })()
 
+// Mêmes dossiers que l'API (CloudflareR2UploadStorage), photos de profil comprises.
 const R2_IMAGE_PATH =
-  /^\/(?:[A-Za-z0-9_-]+\/)+(?:covers|blocks|gallery)\/[0-9a-fA-F-]{36}\/[0-9a-fA-F-]{36}\.(?:jpg|jpeg|png|webp|gif)$/
+  /^\/(?:[A-Za-z0-9_-]+\/)+(?:covers|blocks|gallery|avatars)\/[0-9a-fA-F-]{36}\/[0-9a-fA-F-]{36}\.(?:jpg|jpeg|png|webp|gif)$/
 
 export function isR2MediaUrl(value) {
   if (!R2_PUBLIC_BASE_URL || typeof value !== 'string') return false

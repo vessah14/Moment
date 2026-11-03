@@ -27,6 +27,10 @@ describe('isR2MediaUrl', () => {
     expect(mediaUrl(`https://media.example.com/tbf-moment/gallery/${eventId}/${fileId}.jpg`)).toBe(
       `https://media.example.com/tbf-moment/gallery/${eventId}/${fileId}.jpg`,
     )
+    // Photo de profil de l'organisateur (dossier avatars, rangé sous l'id du compte).
+    expect(mediaUrl(`https://media.example.com/tbf-moment/avatars/${eventId}/${fileId}.png`)).toBe(
+      `https://media.example.com/tbf-moment/avatars/${eventId}/${fileId}.png`,
+    )
     expect(isR2MediaUrl(`http://media.example.com/tbf-moment/gallery/${eventId}/${fileId}.jpg`)).toBe(false)
     expect(isR2MediaUrl(`https://attacker.example/tbf-moment/gallery/${eventId}/${fileId}.jpg`)).toBe(false)
     expect(isR2MediaUrl(`https://media.example.com/tbf-moment/gallery/${eventId}/${fileId}.jpg?track=1`)).toBe(false)
