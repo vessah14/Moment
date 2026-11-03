@@ -18,6 +18,7 @@ namespace backend_EventMoment.Services
         private readonly IFacebookAuthService _facebookAuthService;
         private readonly IGoogleAuthService? _googleAuthService;
         private readonly LoginThrottle? _loginThrottle;
+        private readonly IUploadStorage? _uploadStorage;
 
         public UserService(
             AdminDbContext adminContext,
@@ -27,9 +28,11 @@ namespace backend_EventMoment.Services
             IConfiguration config,
             IFacebookAuthService facebookAuthService,
             IGoogleAuthService? googleAuthService = null,
-            LoginThrottle? loginThrottle = null)
+            LoginThrottle? loginThrottle = null,
+            IUploadStorage? uploadStorage = null)
         {
             _loginThrottle = loginThrottle;
+            _uploadStorage = uploadStorage;
             _adminContext = adminContext;
             _signupContext = signupContext;
             _jwtService = jwtService;
@@ -173,6 +176,35 @@ namespace backend_EventMoment.Services
             // invalider la session en cours. Voir ChangePasswordAsync/DeactivateAsync
             // pour les changements qui doivent réellement révoquer les jetons actifs.
             await _adminContext.SaveChangesAsync();
+            return ToDto(entity, await IsEmailVerifiedAsync(entity.Id));
+        }
+
+        public async Task<UtilisateurDtos> UpdateProfilePhotoAsync(Guid id, IFormFile file)
+        {
+            if (_uploadStorage == null)
+                throw new InvalidOperationException("Le stockage d’images n’est pas disponible.");
+
+            var entity = await _adminContext.Organizers.FirstOrDefaultAsync(u => u.Id == id);
+            if (entity == null)
+                throw new KeyNotFoundException($"Utilisateur {id} introuvable.");
+
+            var extension = Path.GetExtension(file.FileName);
+            var photoUrl = await _uploadStorage.SaveImageAsync(file, UploadFolder.Avatars, id, extension);
+            var previousPhotoUrl = entity.PhotoUrl;
+            entity.PhotoUrl = photoUrl;
+            try
+            {
+                await _adminContext.SaveChangesAsync();
+            }
+            catch
+            {
+                await _uploadStorage.DeleteFileAsync(photoUrl);
+                throw;
+            }
+
+            if (!string.IsNullOrEmpty(previousPhotoUrl))
+                await _uploadStorage.DeleteFileAsync(previousPhotoUrl);
+
             return ToDto(entity, await IsEmailVerifiedAsync(entity.Id));
         }
 
@@ -597,6 +629,7 @@ namespace backend_EventMoment.Services
             Email = utilisateur.Email,
             FullName = utilisateur.FullName,
             Phone = utilisateur.Phone,
+            PhotoUrl = utilisateur.PhotoUrl,
             IsActive = utilisateur.IsActive,
             CreatedAt = utilisateur.CreatedAt
         };

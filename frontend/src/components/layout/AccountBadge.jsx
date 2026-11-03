@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { mediaUrl } from '../../api/client'
 
 function initials(fullName) {
   if (!fullName) return '?'
@@ -21,8 +22,10 @@ export default function AccountBadge({ user, className = '', onClick }) {
       title="Aller à mon tableau de bord"
       className={`group inline-flex items-center gap-2.5 rounded-full border border-border-soft bg-surface/70 py-1 pr-1 pl-1 transition hover:border-brand-purple/60 hover:bg-surface xl:pr-4 ${className}`}
     >
-      <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-gradient text-xs font-bold text-white">
-        {initials(user?.fullName)}
+      <span className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-gradient text-xs font-bold text-white">
+        {user?.photoUrl
+          ? <img src={mediaUrl(user.photoUrl)} alt="" className="h-full w-full object-cover" />
+          : initials(user?.fullName)}
         <span aria-hidden="true" className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-bg bg-success" />
       </span>
       <span className="hidden max-w-40 truncate text-sm font-semibold whitespace-nowrap text-ink xl:inline">

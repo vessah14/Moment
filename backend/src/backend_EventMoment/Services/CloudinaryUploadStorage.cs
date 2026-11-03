@@ -61,7 +61,7 @@ namespace backend_EventMoment.Services
             // https://res.cloudinary.com/{cloud}/image/upload/v{version}/{folder}/{kind}/{event}/{file}.{ext}
             var prefix = $@"^https://res\.cloudinary\.com/{Regex.Escape(options.CloudName)}/image/upload/v\d+/{Regex.Escape(options.Folder)}/";
             const string guid = "[0-9a-fA-F-]{36}";
-            _fileUrlPattern = new Regex(prefix + $@"(?<kind>covers|blocks|gallery)/(?<event>{guid})/(?<file>{guid})\.(jpg|jpeg|png|webp|gif)$");
+            _fileUrlPattern = new Regex(prefix + $@"(?<kind>covers|blocks|gallery|avatars)/(?<event>{guid})/(?<file>{guid})\.(jpg|jpeg|png|webp|gif)$");
             _coverUrlPattern = new Regex(prefix + $@"covers/{guid}/{guid}\.(jpg|jpeg|png|webp)$");
         }
 

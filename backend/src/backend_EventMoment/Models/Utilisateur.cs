@@ -26,6 +26,9 @@ namespace backend_EventMoment.Models
         [Column("phone")]
         public string? Phone { get; set; }
 
+        [Column("photo_url")]
+        public string? PhotoUrl { get; set; }
+
         [Required]
         [Column("is_active")]
         public bool IsActive { get; set; } = true;

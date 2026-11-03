@@ -34,7 +34,8 @@ namespace backend_EventMoment.Services
     {
         Covers,
         Blocks,
-        Gallery
+        Gallery,
+        Avatars
     }
 
     public static class UploadPaths
@@ -44,6 +45,7 @@ namespace backend_EventMoment.Services
             UploadFolder.Covers => "covers",
             UploadFolder.Blocks => "blocks",
             UploadFolder.Gallery => "gallery",
+            UploadFolder.Avatars => "avatars",
             _ => throw new ArgumentOutOfRangeException(nameof(folder))
         };
 
@@ -58,7 +60,7 @@ namespace backend_EventMoment.Services
     public class LocalUploadStorage : IUploadStorage
     {
         private static readonly Regex FileUrlPattern =
-            new(@"^/uploads/(?<kind>covers|blocks|gallery)/(?<event>[0-9a-fA-F-]{36})/(?<file>[0-9a-fA-F-]{36}\.(jpg|jpeg|png|webp|gif))$");
+            new(@"^/uploads/(?<kind>covers|blocks|gallery|avatars)/(?<event>[0-9a-fA-F-]{36})/(?<file>[0-9a-fA-F-]{36}\.(jpg|jpeg|png|webp|gif))$");
         private static readonly Regex CoverUrlPattern =
             new(@"^/uploads/covers/(?<event>[0-9a-fA-F-]{36})/(?<file>[0-9a-fA-F-]{36}\.(jpg|jpeg|png|webp))$");
 

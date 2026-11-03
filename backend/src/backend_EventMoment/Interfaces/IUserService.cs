@@ -9,6 +9,7 @@ namespace backend_EventMoment.Interfaces
         Task<UtilisateurDtos?> GetByIdAsync(Guid id);
         Task<List<UtilisateurDtos>> GetAllAsync();
         Task<UtilisateurDtos> UpdateAsync(Guid id, UpdateUtilisateurDtos dto);
+        Task<UtilisateurDtos> UpdateProfilePhotoAsync(Guid id, IFormFile file);
         Task ChangePasswordAsync(Guid id, ChangePasswordDto dto);
         Task<bool> DeactivateAsync(Guid id);
         Task<LoginResponseDto> LoginAsync(LoginDto dto);

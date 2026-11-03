@@ -56,7 +56,7 @@ namespace backend_EventMoment.Services
     public sealed class CloudflareR2UploadStorage : IUploadStorage, IDisposable
     {
         private static readonly Regex FilePathPattern = new(
-            @"^/(?<folder>[A-Za-z0-9_-]+(?:/[A-Za-z0-9_-]+)*)/(?<kind>covers|blocks|gallery)/(?<event>[0-9a-fA-F-]{36})/(?<file>[0-9a-fA-F-]{36}\.(jpg|jpeg|png|webp|gif))$");
+            @"^/(?<folder>[A-Za-z0-9_-]+(?:/[A-Za-z0-9_-]+)*)/(?<kind>covers|blocks|gallery|avatars)/(?<event>[0-9a-fA-F-]{36})/(?<file>[0-9a-fA-F-]{36}\.(jpg|jpeg|png|webp|gif))$");
         private static readonly Regex CoverPathPattern = new(
             @"^/(?<folder>[A-Za-z0-9_-]+(?:/[A-Za-z0-9_-]+)*)/covers/(?<event>[0-9a-fA-F-]{36})/(?<file>[0-9a-fA-F-]{36}\.(jpg|jpeg|png|webp))$");
 

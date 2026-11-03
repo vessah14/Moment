@@ -1,21 +1,48 @@
-import { useState } from 'react'
+import { Camera } from 'lucide-react'
+import { useRef, useState } from 'react'
 import Avatar from '../ui/Avatar'
 import Button from '../ui/Button'
 import PhoneInput from '../ui/PhoneInput'
 import StatusBadge from '../ui/StatusBadge'
-import { getCurrentUser } from '../../api/client'
-import { resendVerificationEmail, updateProfile } from '../../api/users'
+import { getCurrentUser, mediaUrl } from '../../api/client'
+import { resendVerificationEmail, updateProfile, uploadProfilePhoto } from '../../api/users'
 import { useToast } from '../../utils/useToast'
 
 export default function ProfileTab() {
   const user = getCurrentUser()
+  const photoInput = useRef(null)
   const toast = useToast()
   const [resending, setResending] = useState(false)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const [photoUrl, setPhotoUrl] = useState(user?.photoUrl ?? null)
   const [fullName, setFullName] = useState(user?.fullName ?? '')
   const [phone, setPhone] = useState(user?.phone ?? '')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
+
+  const handlePhotoChange = async (event) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file || !user) return
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('La photo ne peut pas dépasser 5 Mo.')
+      return
+    }
+
+    setUploadingPhoto(true)
+    setError('')
+    try {
+      const updatedUser = await uploadProfilePhoto(user.id, file)
+      setPhotoUrl(updatedUser.photoUrl)
+      toast('Photo de profil mise à jour.')
+    } catch (err) {
+      setError(err.message || "L’envoi de la photo a échoué.")
+    } finally {
+      setUploadingPhoto(false)
+    }
+  }
 
   const handleSave = async () => {
     if (!user) return
@@ -67,10 +94,27 @@ export default function ProfileTab() {
       )}
 
       <div className="mt-6 flex items-center gap-4">
-        <Avatar name={fullName || '—'} size="md" />
+        <Avatar name={fullName || '—'} size="md" src={mediaUrl(photoUrl)} />
         <div>
           <p className="text-sm font-medium text-ink">Photo de profil</p>
-          <p className="text-xs text-faint">Bientôt disponible</p>
+          <p className="mt-0.5 text-xs text-faint">JPG, PNG ou WebP · 5 Mo maximum</p>
+          <button
+            type="button"
+            onClick={() => photoInput.current?.click()}
+            disabled={uploadingPhoto}
+            className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-brand-purple hover:underline disabled:opacity-50"
+          >
+            <Camera className="h-4 w-4" />
+            {uploadingPhoto ? 'Envoi…' : photoUrl ? 'Changer ma photo' : 'Ajouter une photo'}
+          </button>
+          <input
+            ref={photoInput}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={handlePhotoChange}
+            className="sr-only"
+            aria-label="Choisir une photo de profil"
+          />
         </div>
       </div>
 

@@ -4,6 +4,7 @@ import { isR2MediaUrl } from '../utils/r2Media'
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5146/api'
 const TOKEN_KEY = 'tbf_auth_token'
 const USER_KEY = 'tbf_auth_user'
+export const CURRENT_USER_UPDATED_EVENT = 'tbf:current-user-updated'
 
 function decodeTokenPayload(token) {
   const encoded = token.split('.')[1]
@@ -106,6 +107,8 @@ export function setCurrentUser(user) {
   } catch {
     // localStorage indisponible
   }
+  if (typeof window !== 'undefined')
+    window.dispatchEvent(new Event(CURRENT_USER_UPDATED_EVENT))
 }
 
 export function clearCurrentUser() {

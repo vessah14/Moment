@@ -15,6 +15,11 @@ namespace backend_EventMoment.Controllers
     [Authorize]
     public class UsersController : ControllerBase
     {
+        private const long MaxProfilePhotoSizeBytes = 5 * 1024 * 1024;
+        private static readonly HashSet<string> AllowedProfilePhotoExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".jpg", ".jpeg", ".png", ".webp"
+        };
         private readonly IUserService _service;
         private readonly INotificationSettingsService _notificationSettings;
 
@@ -148,6 +153,29 @@ namespace backend_EventMoment.Controllers
             if (!IsSelfOrSuperadmin(id)) return Forbid();
 
             var result = await _service.UpdateAsync(id, dto);
+            return Ok(result);
+        }
+
+        [HttpPost("{id:guid}/profile-photo")]
+        [RequestSizeLimit(MaxProfilePhotoSizeBytes + 64 * 1024)]
+        public async Task<IActionResult> UpdateProfilePhoto(Guid id, [FromForm] IFormFile file)
+        {
+            if (!IsSelfOrSuperadmin(id)) return Forbid();
+            if (file == null || file.Length == 0)
+                return BadRequest(new { error = "Aucun fichier fourni." });
+
+            if (file.Length > MaxProfilePhotoSizeBytes)
+                return BadRequest(new { error = "La photo ne peut pas dépasser 5 Mo." });
+
+            var extension = Path.GetExtension(file.FileName);
+            if (!AllowedProfilePhotoExtensions.Contains(extension))
+                return BadRequest(new { error = "Format non supporté (JPG, PNG, WebP uniquement)." });
+
+            if (!await ImageFileValidator.HasValidSignatureAsync(file, extension))
+                return BadRequest(new { error = "Le contenu du fichier ne correspond pas à une image valide." });
+
+            file = await ImageMetadataStripper.StripAsync(file, extension);
+            var result = await _service.UpdateProfilePhotoAsync(id, file);
             return Ok(result);
         }
 

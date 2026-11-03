@@ -1,5 +1,6 @@
 using backend_EventMoment.Services;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -55,6 +56,24 @@ public class UploadStorageTests : IDisposable
         await CreateStorage().DeleteUnusedCoversAsync(eventId, new[] { "/uploads/covers/../../../appsettings.json" });
 
         Assert.True(File.Exists(secret));
+    }
+
+    [Fact]
+    public async Task SaveImage_AvatarCanBeStoredAndDeleted()
+    {
+        var organizerId = Guid.NewGuid();
+        var content = new byte[] { 1, 2, 3 };
+        var file = new FormFile(new MemoryStream(content), 0, content.Length, "file", "avatar.png");
+        var storage = CreateStorage();
+
+        var url = await storage.SaveImageAsync(file, UploadFolder.Avatars, organizerId, ".png");
+
+        Assert.StartsWith($"/uploads/avatars/{organizerId}/", url);
+        Assert.True(File.Exists(Path.Combine(_root, "wwwroot", url.TrimStart('/').Replace('/', Path.DirectorySeparatorChar))));
+
+        await storage.DeleteFileAsync(url);
+
+        Assert.False(File.Exists(Path.Combine(_root, "wwwroot", url.TrimStart('/').Replace('/', Path.DirectorySeparatorChar))));
     }
 
     [Fact]

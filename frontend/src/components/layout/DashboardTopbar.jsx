@@ -2,7 +2,7 @@ import { Bell, LogOut, Menu, Settings } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { logout } from '../../api/auth'
-import { getCurrentUser } from '../../api/client'
+import { CURRENT_USER_UPDATED_EVENT, getCurrentUser, mediaUrl } from '../../api/client'
 import { listEvents } from '../../api/events'
 import { listGuests } from '../../api/guests'
 import { buildDashboardSearchIndex } from '../../data/dashboardSearchIndex'
@@ -27,12 +27,15 @@ export default function DashboardTopbar({ onMenuClick }) {
   const [notifOpen, setNotifOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [searchData, setSearchData] = useState({ events: [], guests: [] })
-  const user = getCurrentUser()
+  const [user, setUser] = useState(getCurrentUser)
 
   useEffect(() => {
+    const updateUser = () => setUser(getCurrentUser())
+    window.addEventListener(CURRENT_USER_UPDATED_EVENT, updateUser)
     Promise.all([listEvents(), listGuests()])
       .then(([events, guests]) => setSearchData({ events: events ?? [], guests: guests ?? [] }))
       .catch(() => setSearchData({ events: [], guests: [] }))
+    return () => window.removeEventListener(CURRENT_USER_UPDATED_EVENT, updateUser)
   }, [])
 
   const handleLogout = () => {
@@ -108,9 +111,11 @@ export default function DashboardTopbar({ onMenuClick }) {
             onClick={() => setProfileOpen((v) => !v)}
             aria-label={`Menu du compte${user?.fullName ? ` de ${user.fullName}` : ''}`}
             aria-expanded={profileOpen}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-purple/20 text-sm font-semibold text-brand-purple"
+            className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-purple/20 text-sm font-semibold text-brand-purple"
           >
-            {initials(user?.fullName)}
+              {user?.photoUrl
+                ? <img src={mediaUrl(user.photoUrl)} alt="" className="h-full w-full object-cover" />
+                : initials(user?.fullName)}
           </button>
 
           {profileOpen && (

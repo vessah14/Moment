@@ -6,6 +6,17 @@ export async function updateProfile(id, dto) {
   return result
 }
 
+export async function uploadProfilePhoto(id, file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  const result = await apiFetch(`/users/${id}/profile-photo`, {
+    method: 'POST',
+    body: formData,
+  })
+  setCurrentUser(result)
+  return result
+}
+
 // Relit le compte connecté (ex. adresse confirmée depuis un autre appareil).
 export async function refreshCurrentUser(id) {
   const result = await apiFetch(`/users/${id}`)

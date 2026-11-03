@@ -33,6 +33,7 @@ namespace backend_EventMoment.Dtos.User
         public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string? Phone { get; set; }
+        public string? PhotoUrl { get; set; }
         public bool IsActive { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
         public bool EmailVerified { get; set; }
