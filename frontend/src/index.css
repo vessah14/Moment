@@ -306,6 +306,33 @@ body {
   min-height: 100svh;
 }
 
+/* Garde-fous responsive : un <select> ne s'élargit plus au nom d'événement le plus long,
+   et un enfant de grille ou de flex peut rétrécir sous la largeur de son contenu (tableaux
+   défilants, longs titres). En couche base, les utilitaires Tailwind gardent la priorité. */
+@layer base {
+  input,
+  textarea {
+    max-width: 100%;
+  }
+
+  /* Plafond en vw : il borne aussi la taille intrinsèque dans des flex imbriqués (sélecteur
+     d'événement à côté des boutons), ce qu'un pourcentage, même dans min(), ne fait pas. */
+  select {
+    max-width: calc(100vw - 2rem);
+    text-overflow: ellipsis;
+  }
+
+  .grid > * {
+    min-width: 0;
+  }
+
+  h1,
+  h2,
+  h3 {
+    overflow-wrap: break-word;
+  }
+}
+
 h1,
 h2,
 h3 {

@@ -265,7 +265,7 @@ export default function Pricing() {
             <table className="w-full min-w-[900px] border-collapse text-left text-sm">
               <thead>
                 <tr className="bg-surface-2">
-                  <th scope="col" className="sticky left-0 z-10 min-w-64 bg-surface-2 px-4 py-4">
+                  <th scope="col" className="sticky left-0 z-10 w-36 min-w-36 bg-surface-2 px-3 py-4 sm:w-auto sm:min-w-64 sm:px-4">
                     Offre
                   </th>
                   {PLANS.map((plan) => {
@@ -299,7 +299,7 @@ export default function Pricing() {
                     </tr>
                     {section.rows.map((row) => (
                       <tr key={row.name} className="border-t border-border-soft">
-                        <th scope="row" className="sticky left-0 z-10 bg-surface px-4 py-3 text-left font-medium text-ink">
+                        <th scope="row" className="sticky left-0 z-10 bg-surface px-3 py-3 text-left text-xs font-medium text-ink sm:px-4 sm:text-sm">
                           {row.name}
                         </th>
                         {row.values.map((value, index) => (

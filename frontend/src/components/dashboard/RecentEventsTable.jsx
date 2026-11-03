@@ -45,14 +45,14 @@ export default function RecentEventsTable({ events, loading }) {
               <tr key={event.id} className="border-b border-border-soft last:border-b-0">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-lg bg-surface-2" />
+                    <div className="h-9 w-9 shrink-0 rounded-lg bg-surface-2" />
                     <div>
                       <p className="font-medium text-ink">{event.name}</p>
                       <p className="text-xs text-faint">{event.category}</p>
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 text-muted">{formatEventDate(event.date)}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-muted">{formatEventDate(event.date)}</td>
                 <td className="px-6 py-4">
                   <p className="font-mono text-ink">
                     {event.total ? `${event.confirmed}/${event.total}` : '—'}

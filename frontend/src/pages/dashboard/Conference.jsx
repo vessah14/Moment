@@ -189,13 +189,13 @@ export default function Conference() {
         </p>
       )}
 
-      <div className="mt-6 flex gap-1 rounded-lg bg-surface p-1 text-sm sm:w-fit">
+      <div className="mt-6 flex gap-1 overflow-x-auto rounded-lg bg-surface p-1 text-sm sm:w-fit">
         {TABS.map((t) => (
           <button
             key={t}
             type="button"
             onClick={() => setTab(t)}
-            className={`flex-1 rounded-md px-4 py-2 font-medium transition sm:flex-none ${
+            className={`flex-1 rounded-md px-3 py-2 font-medium whitespace-nowrap transition sm:flex-none sm:px-4 ${
               tab === t ? 'bg-surface-2 text-ink' : 'text-faint hover:text-muted'
             }`}
           >

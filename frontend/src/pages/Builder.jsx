@@ -696,17 +696,17 @@ export default function Builder() {
               <ArrowLeft className="h-4 w-4" />
               <span className="hidden sm:inline">Tableau de bord</span>
             </Link>
-            <div className="min-w-0">
+            <div className="flex min-w-0 items-center">
               <span className="truncate font-semibold text-ink">
                 {eventTitle}
               </span>
               {savedJustNow && !dirty && (
-                <span className="ml-2 hidden text-xs text-success sm:inline">
+                <span className="ml-2 hidden shrink-0 text-xs text-success sm:inline">
                   Enregistré
                 </span>
               )}
               {dirty && !saving && (
-                <span className="ml-2 text-xs text-brand-orange" title="Gardé sur cet appareil ; cliquez sur Enregistrer pour mettre la page en ligne.">
+                <span className="ml-2 shrink-0 text-xs whitespace-nowrap text-brand-orange" title="Gardé sur cet appareil ; cliquez sur Enregistrer pour mettre la page en ligne.">
                   Non enregistré
                 </span>
               )}

@@ -173,12 +173,12 @@ export default function Dashboard() {
           <span className="grid h-11 w-11 flex-none place-items-center rounded-xl bg-brand-gradient text-white">
             <step.icon className="h-5 w-5" aria-hidden="true" />
           </span>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 basis-56">
             <p className="text-xs font-semibold tracking-wider text-brand-purple uppercase">Prochaine étape</p>
             <p className="mt-0.5 font-semibold text-ink">{step.title}</p>
             <p className="text-sm text-muted">{step.text}</p>
           </div>
-          <Button as={Link} to={step.to} variant="gradient">
+          <Button as={Link} to={step.to} variant="gradient" className="w-full sm:w-auto">
             {step.cta}
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Button>
