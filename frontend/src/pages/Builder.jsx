@@ -349,11 +349,13 @@ export default function Builder() {
     ? { ...heroStyle, title: celebrationTitle }
     : heroStyle
   // Les modèles suivent le type exact choisi à la création (anniversaire, noces, concert…).
-  const categoryTemplates = templatesForEventType(
+  // Un modèle gratuit d'une autre catégorie, choisi à la création, reste dans la liste.
+  const typeTemplates = templatesForEventType(
     customFieldOf(event, 'eventType'),
     category?.code,
     category?.label,
   )
+  const categoryTemplates = template && !typeTemplates.includes(template) ? [...typeTemplates, template] : typeTemplates
 
   // Billet choisi pour l'événement, rangé dans customFields.ticket (enregistré avec l'événement).
   const ticket = ticketFromCustomFields(event?.customFields)

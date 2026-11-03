@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { consumeReturnPath, loginPathForReturnPath, requestedReturnPath } from '../../utils/returnPath'
 import { login } from '../../api/auth'
+import { goHomeAfterLogin } from '../../utils/firstEvent'
 import logoMark from '../../assets/logo-mark.png'
 import Button from '../ui/Button'
 import GoogleSignInButton from './GoogleSignInButton'
@@ -12,7 +13,9 @@ const GOOGLE_ENABLED = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID)
 export default function LoginForm() {
   const navigate = useNavigate()
   const location = useLocation()
-  const [email, setEmail] = useState('')
+  // Retour de « nouveau mot de passe » : l'adresse est préremplie et un message confirme.
+  const [email, setEmail] = useState(() => location.state?.email ?? '')
+  const passwordReset = Boolean(location.state?.passwordReset)
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -28,7 +31,8 @@ export default function LoginForm() {
       // Retour à la page demandée avant la connexion ("Utiliser ce modèle") ou à celle
       // où la session a expiré.
       const storedReturnPath = consumeReturnPath()
-      navigate(returnPath ?? storedReturnPath ?? '/dashboard', { replace: true })
+      if (returnPath ?? storedReturnPath) navigate(returnPath ?? storedReturnPath, { replace: true })
+      else await goHomeAfterLogin(navigate)
     } catch (err) {
       setError(err.message || 'Connexion impossible.')
     } finally {
@@ -91,6 +95,11 @@ export default function LoginForm() {
           </div>
         </label>
 
+        {passwordReset && (
+          <p role="status" className="rounded-lg border border-success/30 bg-success/10 px-4 py-2.5 text-sm text-success">
+            Mot de passe mis à jour. Connectez-vous avec le nouveau.
+          </p>
+        )}
         {error && (
           <p className="rounded-lg border border-danger/30 bg-danger/10 px-4 py-2.5 text-sm text-danger">
             {error}
@@ -106,7 +115,7 @@ export default function LoginForm() {
             Se souvenir de moi
           </label>
           <Link
-            to="/mot-de-passe-oublie"
+            to={email.trim() ? `/mot-de-passe-oublie?email=${encodeURIComponent(email.trim())}` : '/mot-de-passe-oublie'}
             className="text-brand-purple hover:underline"
           >
             Mot de passe oublié ?
@@ -132,6 +141,12 @@ export default function LoginForm() {
           </div>
           <div className="flex flex-col items-center gap-3">
             <GoogleSignInButton onError={setError} />
+            {/* Un premier passage par Google crée le compte : il vaut acceptation des conditions. */}
+            <p className="text-center text-xs text-faint">
+              En continuant avec Google, vous acceptez les{' '}
+              <Link to="/cgu" className="text-brand-purple hover:underline">CGU</Link> et la{' '}
+              <Link to="/confidentialite" className="text-brand-purple hover:underline">politique de confidentialité</Link>.
+            </p>
           </div>
         </>
       )}

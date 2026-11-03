@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cacheGuestList, dequeueCheckin, enqueueCheckin, flushQueue, readGuestList, readQueue, withQueued } from './offlineCheckins'
+import { cacheGuestList, dequeueCheckin, enqueueCheckin, flushQueue, isNetworkError, readGuestList, readQueue, withQueued } from './offlineCheckins'
 
 function memoryStorage() {
   const data = new Map()
@@ -55,5 +55,19 @@ describe('guest list cache', () => {
     expect(saved.guests).toEqual([{ id: 'g1', fullName: 'Paul Ekané', email: '', phone: '', status: 'Present', side: 'Commercial', extra: true, checkedInAt: null }])
     expect(storage.getItem('tbf_checkin_guests_e1')).not.toMatch(/p@x\.cm|677/)
     expect(readGuestList('autre', storage)).toBeNull()
+  })
+})
+
+describe('isNetworkError', () => {
+  const apiError = (status) => Object.assign(new Error('x'), { name: 'ApiError', status })
+
+  it('reconnaît une coupure réseau, brute ou signalée par apiFetch (statut 0)', () => {
+    expect(isNetworkError(new TypeError('Failed to fetch'))).toBe(true)
+    expect(isNetworkError(apiError(0))).toBe(true)
+  })
+
+  it("ne confond pas une réponse d'erreur du serveur avec une coupure", () => {
+    expect(isNetworkError(apiError(404))).toBe(false)
+    expect(isNetworkError(apiError(500))).toBe(false)
   })
 })

@@ -15,12 +15,31 @@ export const initialsOf = (s) =>
     .map((w) => w[0].toUpperCase())
     .join('') || 'TB'
 
+// Nom proposé à partir du texte affiché en grand : « Mariage · Awa & Ibrahim ». Il reste
+// modifiable ; tant qu'il n'a pas été retouché, il suit le texte affiché.
+const NO_PREFIX = new Set(['autre', 'personnalise'])
+export function suggestedEventName(type, display) {
+  const shown = String(display ?? '').trim()
+  if (!type || !shown) return shown
+  if (NO_PREFIX.has(type.id)) return shown
+  const short = type.kicker ?? type.label.split(/,| et /)[0].trim()
+  return `${short} · ${shown}`
+}
+
+const DISPLAY_EXAMPLES = {
+  prives: 'Ex. Awa & Ibrahim',
+  ecoles: 'Ex. IUGET de Bonabéri',
+  entreprises: 'Ex. Wouri Logistics',
+  fetes: 'Ex. Famille Ekambi',
+}
+const NAME_EXAMPLES = { prives: 'Awa & Ibrahim', ecoles: 'IUGET', entreprises: 'Wouri Logistics', fetes: 'Famille Ekambi' }
+
 // Champs obligatoires de l'étape, dans l'ordre d'affichage : { champ: message }.
 export function infoErrors(form, type) {
   if (!type) return {}
   const errors = {}
-  if (!form.name.trim()) errors.name = "Donnez un nom à l'événement."
   if (!form.display.trim()) errors.display = 'Indiquez le texte à afficher en grand.'
+  if (!form.name.trim()) errors.name = "Donnez un nom à l'événement."
   if (eventRequiresAge(type.id)) {
     const age = Number(form.birthdayAge)
     if (!form.birthdayAge || !Number.isInteger(age) || age < 1 || age > 120)
@@ -43,13 +62,15 @@ function Req({ must, children }) {
   )
 }
 
-function Field({ id, label, must, optional, hint, error, children }) {
+// tag : étiquette particulière, ex. la date, facultative pour un brouillon mais requise pour publier.
+function Field({ id, label, must, optional, tag, hint, error, children }) {
   return (
     <div className="grid min-w-0 gap-1.5">
       <label htmlFor={id} className="flex flex-wrap items-center gap-2 text-[0.88rem] font-semibold text-ink">
         {label}
         {must && <Req must>Obligatoire</Req>}
         {optional && <Req>Facultatif</Req>}
+        {tag && <Req must>{tag}</Req>}
       </label>
       {children}
       {hint && <p className="text-[0.8rem] text-muted">{hint}</p>}
@@ -187,6 +208,8 @@ export default function InfoStep({ form, type, onChange, errors = {} }) {
   const orgRequired = type.logo === 'required'
   const needsAge = eventRequiresAge(type.id)
   const isWeddingAnniversary = type.id === 'noces'
+  // Le nom suit le texte affiché tant qu'il est vide ou égal à la proposition.
+  const autoName = !form.name.trim() || form.name === suggestedEventName(type, form.display)
   const text = (key, extra = {}) => ({
     id: `f-${key}`,
     value: form[key],
@@ -205,28 +228,41 @@ export default function InfoStep({ form, type, onChange, errors = {} }) {
       />
       <form onSubmit={(e) => e.preventDefault()} className="grid gap-4" noValidate>
         <Field
-          id="f-name"
-          label="Nom de l'événement"
-          must
-          hint="Le titre affiché en grand est réglé séparément juste en dessous."
-          error={errors.name}
-        >
-          <input type="text" autoComplete="off" placeholder="Ex. Journée culturelle 2027" maxLength={150} {...text('name')} />
-        </Field>
-        <Field
           id="f-display"
           label={needsAge ? (isWeddingAnniversary ? 'Noms du couple' : 'Nom de la personne fêtée') : 'Texte affiché en grand'}
           must
           hint={needsAge
             ? (isWeddingAnniversary ? 'Les années de mariage et les prénoms composeront le titre.' : 'Son âge et son prénom composeront le titre.')
-            : 'Pour un couple, séparez les prénoms par « & ».'}
+            : type.univers === 'prives'
+              ? 'Pour un couple, séparez les prénoms par « & ».'
+              : "Le nom de l'établissement, de l'entreprise ou le titre de l'événement."}
           error={errors.display}
         >
           <input
             type="text"
-            placeholder={needsAge ? (isWeddingAnniversary ? 'Ex. Awa & Ibrahim' : 'Ex. Awa') : 'Ex. Awa & Ibrahim, ou le nom de l’école'}
+            placeholder={needsAge ? (isWeddingAnniversary ? 'Ex. Awa & Ibrahim' : 'Ex. Awa') : DISPLAY_EXAMPLES[type.univers] ?? 'Ex. Awa & Ibrahim'}
             maxLength={120}
-            {...text('display')}
+            {...text('display', {
+              onChange: (e) => {
+                const display = e.target.value
+                onChange(autoName ? { display, name: suggestedEventName(type, display) } : { display })
+              },
+            })}
+          />
+        </Field>
+        <Field
+          id="f-name"
+          label="Nom de l'événement"
+          must
+          hint="Rempli d'après le texte ci-dessus ; modifiez-le si besoin. Il sert dans votre tableau de bord et l'aperçu WhatsApp."
+          error={errors.name}
+        >
+          <input
+            type="text"
+            autoComplete="off"
+            placeholder={`Ex. ${suggestedEventName(type, NAME_EXAMPLES[type.univers] ?? 'Awa & Ibrahim')}`}
+            maxLength={150}
+            {...text('name')}
           />
         </Field>
         {needsAge && (
@@ -264,25 +300,25 @@ export default function InfoStep({ form, type, onChange, errors = {} }) {
 
         <SectionTitle>Date et lieu</SectionTitle>
         <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,180px),1fr))] gap-4">
-          <Field id="f-date" label="Date" optional>
+          <Field id="f-date" label="Date" tag="Requise pour publier" error={errors.date}>
             <input type="date" {...text('date')} />
           </Field>
           <Field id="f-timeStart" label="Début" optional>
             <input type="time" {...text('timeStart')} />
           </Field>
-          <Field id="f-timeEnd" label="Fin">
+          <Field id="f-timeEnd" label="Fin" optional>
             <input type="time" {...text('timeEnd')} />
           </Field>
         </div>
         <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,180px),1fr))] gap-4">
-          <Field id="f-venueName" label="Lieu">
+          <Field id="f-venueName" label="Lieu" optional>
             <input type="text" placeholder="Ex. Amphithéâtre 600" maxLength={120} {...text('venueName')} />
           </Field>
           <Field id="f-venueAddr" label="Quartier et ville" optional>
             <input type="text" placeholder="Ex. Bonabéri · Douala" maxLength={200} {...text('venueAddr')} />
           </Field>
         </div>
-        <Field id="f-description" label="Message d'accueil">
+        <Field id="f-description" label="Message d'accueil" optional>
           <textarea
             placeholder="Une ou deux phrases pour présenter l'événement"
             maxLength={600}

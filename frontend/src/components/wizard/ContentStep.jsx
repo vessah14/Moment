@@ -27,14 +27,25 @@ function Panel({ title, children }) {
   return <section className="grid gap-4 rounded-2xl border border-border-soft bg-surface p-4 sm:p-5"><h3 className="text-base font-bold text-ink">{title}</h3>{children}</section>
 }
 
-export default function ContentStep({ template, content, onChange }) {
+// onSkip : tout est facultatif ici ; on peut passer au modèle sans faire défiler l'étape.
+export default function ContentStep({ template, content, onChange, onSkip }) {
   const blocks = new Set(newEventPageBlocks(template))
   const edit = (type, patch) => onChange(type, patch)
   const value = (type) => content[type] ?? {}
 
   return (
     <div className="grid gap-5">
-      <StepTitle title="Ajoutez les informations de votre événement" lead="Les sections du modèle sont déjà prévues. Renseignez ici ce que vos invités verront ; vous pourrez tout modifier ensuite dans le Builder." />
+      <div>
+        <StepTitle title="Ajoutez les informations de votre événement" lead="Les sections du modèle sont déjà prévues. Renseignez ici ce que vos invités verront ; vous pourrez tout modifier ensuite dans le Builder." />
+        {onSkip && (
+          <p className="-mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-border-soft bg-surface px-4 py-3 text-sm text-muted">
+            Tout est facultatif sur cette étape.
+            <button type="button" onClick={onSkip} className="font-semibold text-brand-purple hover:underline">
+              Passer et choisir le modèle →
+            </button>
+          </p>
+        )}
+      </div>
 
       {blocks.has('Invitation') && <Panel title="Message d’invitation"><InvitationEditor content={value('Invitation')} onChange={(patch) => edit('Invitation', patch)} /></Panel>}
       {blocks.has('Histoire') && <Panel title="Votre histoire"><Field label="Texte de présentation" multiline value={value('Histoire').body} onChange={(body) => edit('Histoire', { body })} placeholder="Racontez votre événement ou son histoire…" /></Panel>}

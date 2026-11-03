@@ -139,8 +139,13 @@ async function extractErrorMessage(response) {
   } catch {
     // corps non-JSON ou vide
   }
+  // Page d'erreur du proxy ou de l'hébergeur (API redémarrée, en maintenance…).
+  if (response.status >= 500) return 'Le service est momentanément indisponible. Réessayez dans un instant.'
+  if (response.status === 429) return 'Trop de tentatives. Patientez une minute avant de réessayer.'
   return `Erreur ${response.status}`
 }
+
+const NETWORK_ERROR = 'Connexion au serveur impossible. Vérifiez votre connexion internet, puis réessayez.'
 
 function tokenExpiresInMs(token) {
   try {
@@ -198,11 +203,19 @@ export async function apiFetch(path, { auth = true, headers, body, ...options } 
     if (token) finalHeaders['Authorization'] = `Bearer ${token}`
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers: finalHeaders,
-    body: finalBody,
-  })
+  let response
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      ...options,
+      headers: finalHeaders,
+      body: finalBody,
+    })
+  } catch (err) {
+    // Requête annulée volontairement : on laisse passer l'AbortError telle quelle.
+    if (err?.name === 'AbortError') throw err
+    // Hors ligne, API injoignable… : « Failed to fetch » ne dit rien à l'utilisateur.
+    throw new ApiError(NETWORK_ERROR, 0)
+  }
 
   if (!response.ok) {
     const message = await extractErrorMessage(response)

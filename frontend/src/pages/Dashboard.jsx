@@ -10,7 +10,7 @@ import RecentEventsTable from '../components/dashboard/RecentEventsTable'
 import StatCard from '../components/dashboard/StatCard'
 import DashboardLayout from '../components/layout/DashboardLayout'
 import Button from '../components/ui/Button'
-import { CREATE_EVENT_PATH, markFirstEventPrompted, wasFirstEventPrompted } from '../utils/firstEvent'
+import { CREATE_EVENT_PATH, FIRST_EVENT_STATE, markFirstEventPrompted, wasFirstEventPrompted } from '../utils/firstEvent'
 
 // Ce que l'organisateur doit faire maintenant pour son prochain événement : une seule
 // action à la fois, pour qu'un nouveau client sache toujours où cliquer.
@@ -111,7 +111,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!noEvents || wasFirstEventPrompted()) return
     markFirstEventPrompted()
-    navigate(CREATE_EVENT_PATH, { replace: true })
+    navigate(CREATE_EVENT_PATH, { replace: true, state: FIRST_EVENT_STATE })
   }, [noEvents, navigate])
 
   const focusEvent = nextEvent ?? recentEvents[0] ?? null

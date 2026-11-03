@@ -1,28 +1,45 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { requestPasswordReset } from '../api/auth'
 import logoMark from '../assets/logo-mark.png'
 import AuthLayout from '../components/layout/AuthLayout'
 import Button from '../components/ui/Button'
 
+// Délai avant de pouvoir redemander un lien (l'API limite aussi les tentatives par IP).
+const RESEND_DELAY_S = 30
+
 export default function ForgotPassword() {
-  const [email, setEmail] = useState('')
+  const [searchParams] = useSearchParams()
+  // Adresse déjà tapée sur la page de connexion (lien « Mot de passe oublié ? »).
+  const [email, setEmail] = useState(() => searchParams.get('email') ?? '')
   const [sent, setSent] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [wait, setWait] = useState(0)
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  useEffect(() => {
+    if (wait <= 0) return undefined
+    const timer = setTimeout(() => setWait((s) => s - 1), 1000)
+    return () => clearTimeout(timer)
+  }, [wait])
+
+  const send = async () => {
     setError('')
     setSubmitting(true)
     try {
-      await requestPasswordReset(email)
+      await requestPasswordReset(email.trim())
       setSent(true)
+      setWait(RESEND_DELAY_S)
     } catch (err) {
       setError(err.message || "L'envoi a échoué.")
     } finally {
       setSubmitting(false)
     }
+  }
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    send()
   }
 
   return (
@@ -33,18 +50,48 @@ export default function ForgotPassword() {
           Mot de passe oublié
         </h1>
         <p className="mt-2 text-center text-sm text-muted">
-          Entrez votre email pour recevoir un lien de réinitialisation.
+          {sent
+            ? 'Consultez votre boîte de réception.'
+            : 'Entrez votre adresse e-mail pour recevoir un lien de réinitialisation.'}
         </p>
 
         {sent ? (
-          <div className="mt-6 space-y-3 rounded-lg border border-success/30 bg-success/10 p-4 text-center text-sm text-success">
-            <p>
-              Si un compte existe pour {email}, un lien de réinitialisation
-              vient de lui être envoyé.
-            </p>
-            <p className="text-xs text-muted">
-              Le lien reste valable 30 minutes.
-            </p>
+          <div className="mt-6 space-y-4">
+            <div role="status" className="space-y-2 rounded-lg border border-success/30 bg-success/10 p-4 text-sm text-ink">
+              <p>
+                Si un compte existe pour <b className="break-all">{email.trim()}</b>, un lien de
+                réinitialisation vient de lui être envoyé.
+              </p>
+              <p className="text-xs text-muted">
+                Le lien reste valable 30 minutes et ne sert qu'une fois. Rien reçu après quelques
+                minutes ? Regardez dans les courriers indésirables.
+              </p>
+            </div>
+
+            {error && (
+              <p className="rounded-lg border border-danger/30 bg-danger/10 px-4 py-2.5 text-sm text-danger">
+                {error}
+              </p>
+            )}
+
+            <Button
+              variant="outline"
+              onClick={send}
+              disabled={submitting || wait > 0}
+              className="w-full disabled:opacity-60"
+            >
+              {submitting ? 'Envoi...' : wait > 0 ? `Renvoyer le lien (${wait} s)` : 'Renvoyer le lien'}
+            </Button>
+            <button
+              type="button"
+              onClick={() => {
+                setSent(false)
+                setError('')
+              }}
+              className="block w-full text-center text-sm text-muted hover:text-ink"
+            >
+              Ce n'est pas la bonne adresse ? Modifier
+            </button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="mt-6 space-y-5">
@@ -55,6 +102,8 @@ export default function ForgotPassword() {
               <input
                 type="email"
                 required
+                autoComplete="email"
+                autoFocus
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="nom@exemple.com"
@@ -82,6 +131,7 @@ export default function ForgotPassword() {
         <p className="mt-6 text-center text-sm">
           <Link
             to="/connexion"
+            state={email.trim() ? { email: email.trim() } : undefined}
             className="font-medium text-brand-purple hover:underline"
           >
             ← Retour à la connexion

@@ -7,7 +7,7 @@ import Button from '../ui/Button'
 import GoogleSignInButton from './GoogleSignInButton'
 import PasswordStrengthBar from './PasswordStrengthBar'
 import { consumeSignupReturnPath, loginPathForReturnPath, rememberSignupReturnPath, requestedReturnPath } from '../../utils/returnPath'
-import { CREATE_EVENT_PATH } from '../../utils/firstEvent'
+import { CREATE_EVENT_PATH, FIRST_EVENT_STATE, markFirstEventPrompted } from '../../utils/firstEvent'
 import { PRICING_PLANS } from '../../data/pricingPlans'
 
 const GOOGLE_ENABLED = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID)
@@ -56,7 +56,12 @@ export default function SignupForm() {
       try {
         await login({ email, password })
         // Nouveau compte : droit à la création du premier événement, pas au tableau de bord.
-        navigate(consumeSignupReturnPath() ?? CREATE_EVENT_PATH, { replace: true })
+        const signupReturn = consumeSignupReturnPath()
+        if (signupReturn) navigate(signupReturn, { replace: true })
+        else {
+          markFirstEventPrompted()
+          navigate(CREATE_EVENT_PATH, { replace: true, state: FIRST_EVENT_STATE })
+        }
         return
       } catch {
         // Adresse déjà inscrite avec un autre mot de passe.
@@ -246,6 +251,12 @@ export default function SignupForm() {
           </div>
           <div className="flex flex-col items-center gap-3">
             <GoogleSignInButton onError={setError} />
+            {/* La case ci-dessus ne s'applique qu'au formulaire : l'inscription Google vaut acceptation. */}
+            <p className="text-center text-xs text-faint">
+              En continuant avec Google, vous acceptez les{' '}
+              <Link to="/cgu" className="text-brand-purple hover:underline">CGU</Link> et la{' '}
+              <Link to="/confidentialite" className="text-brand-purple hover:underline">politique de confidentialité</Link>.
+            </p>
           </div>
         </>
       )}

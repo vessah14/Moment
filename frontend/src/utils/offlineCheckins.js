@@ -31,8 +31,9 @@ export function dequeueCheckin(eventId, guestId, storage = globalThis.localStora
   return writeQueue(eventId, readQueue(eventId, storage).filter((i) => i.guestId !== guestId), storage)
 }
 
-// Une erreur sans réponse du serveur (fetch rejeté) : réseau absent ou coupé.
-export const isNetworkError = (err) => err?.name !== 'ApiError'
+// Une erreur sans réponse du serveur (fetch rejeté) : réseau absent ou coupé. apiFetch la
+// signale par une ApiError de statut 0 (message lisible) ; une erreur brute compte aussi.
+export const isNetworkError = (err) => err?.name !== 'ApiError' || err.status === 0
 
 // Envoie la file dans l'ordre. Le serveur a répondu (même par un refus, ex. invité déjà
 // pointé ailleurs) : l'entrée quitte la file. Réseau toujours absent : on s'arrête là.

@@ -80,9 +80,15 @@ function Choice({ name, value, checked, onChange, icon, title, children }) {
 
 const grid = 'grid grid-cols-[repeat(auto-fill,minmax(min(100%,230px),1fr))] gap-3'
 
-export function UniversStep({ value, onChange }) {
+// greeting : prénom du nouvel inscrit, accueilli sur son premier événement.
+export function UniversStep({ value, onChange, greeting }) {
   return (
     <div>
+      {greeting != null && (
+        <p className="mb-2 text-sm font-semibold text-brand-purple">
+          Bienvenue{greeting ? ` ${greeting}` : ''} ! Votre page est prête en quelques minutes.
+        </p>
+      )}
       <StepTitle
         title="Quel type d'événement organisez-vous ?"
         lead="Choisissez un univers : les types, les modèles et les champs s'adaptent ensuite."

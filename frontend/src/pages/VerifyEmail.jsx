@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { verifyEmail } from '../api/users'
 import { setCurrentUser, setToken } from '../api/client'
+import { goHomeAfterLogin } from '../utils/firstEvent'
 import logoMark from '../assets/logo-mark.png'
 import AuthLayout from '../components/layout/AuthLayout'
 import Button from '../components/ui/Button'
@@ -33,8 +34,9 @@ export default function VerifyEmail() {
         setToken(session.token)
         setCurrentUser(session.utilisateur)
         setState('done')
-        const storedReturnPath = consumeSignupReturnPath() ?? consumeReturnPath()
-        navigate(returnPathFromSearch(window.location.search) ?? storedReturnPath ?? '/dashboard', { replace: true })
+        const target = returnPathFromSearch(window.location.search) ?? consumeSignupReturnPath() ?? consumeReturnPath()
+        if (target) navigate(target, { replace: true })
+        else return goHomeAfterLogin(navigate)
       })
       .catch((err) => {
         setError(err.message || 'La vérification a échoué.')

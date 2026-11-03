@@ -1,4 +1,4 @@
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, MailCheck } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { createEvent, getEvent, updateEvent as updateEventApi, uploadEventBlockImage } from '../api/events'
@@ -12,6 +12,7 @@ import Button from '../components/ui/Button'
 import { TypeStep, UniversStep } from '../components/wizard/EventKindSteps'
 import InfoStep, { infoErrors } from '../components/wizard/InfoStep'
 import ContentStep from '../components/wizard/ContentStep'
+import CreatedStep from '../components/wizard/CreatedStep'
 import LivePreview from '../components/wizard/LivePreview'
 import ModelStep, { modelsForType } from '../components/wizard/ModelStep'
 import { BLOCK_CONTENT_DEFAULTS } from '../data/blockDefaults'
@@ -21,7 +22,9 @@ import { rsvpSidesStarter } from '../data/rsvpSides'
 import { displayNameFromTitle, eventRequiresAge, formatEventDisplayTitle } from '../utils/eventTitle'
 import { isEventLimitReached, notifyPlanChanged, usePlan } from '../utils/usePlan'
 import { useToast } from '../utils/useToast'
+import { clearWizardDraft, readWizardDraft, writeWizardDraft } from '../utils/wizardDraft'
 import {
+  FREE_TEMPLATES,
   findTemplate,
   missingEventPageBlocks,
   normalizeBlockType,
@@ -56,7 +59,6 @@ const EMPTY_FORM = {
   venueName: '',
   venueAddr: '',
   description: '',
-  consent: false,
   searchable: false,
 }
 
@@ -68,6 +70,8 @@ function parseJson(raw) {
   }
 }
 
+const firstNameOf = (user) => user?.fullName?.trim().split(/\s+/)[0] || ''
+
 const dayMonthYear = (iso) =>
   iso
     ? new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(`${iso}T12:00:00`))
@@ -78,6 +82,21 @@ const kickerFor = (type, date) => (type ? [type.kicker ?? type.label, dayMonthYe
 const isGeneratedKicker = (kicker) => !kicker?.trim() || EVENT_TYPES.some((t) => kicker.startsWith(t.kicker ?? t.label))
 const displayTitleFor = (form, type) => {
   return formatEventDisplayTitle(type?.id, form.birthdayAge, form.display, form.name)
+}
+
+// Modèle proposé par défaut : sans l'offre Premium, le premier modèle gratuit, pour ne pas
+// découvrir au moment de publier que le modèle choisi d'office est réservé.
+function defaultModelFor(type, canUsePremium) {
+  const models = modelsForType(type)
+  return (canUsePremium ? models[0] : models.find((t) => !t.premium) ?? FREE_TEMPLATES[0]) ?? null
+}
+
+// Dernière étape accessible : univers, puis type, puis informations obligatoires remplies.
+function maxReachableFor(form) {
+  const type = eventType(form.type)
+  if (!form.univers) return 0
+  if (!type) return 1
+  return Object.keys(infoErrors(form, type)).length ? 2 : 4
 }
 
 // Formulaire de départ : « Utiliser ce modèle » (?modele=) ou l'accueil du tableau de bord.
@@ -100,9 +119,19 @@ export default function CreateEvent() {
   const location = useLocation()
   const [searchParams] = useSearchParams()
   const [presetTemplate] = useState(() => (isEditMode ? null : findTemplate(searchParams.get('modele'))))
-  const [form, setForm] = useState(() => (isEditMode ? EMPTY_FORM : initialForm(presetTemplate, location.state?.onboarding)))
-  const [pageContent, setPageContent] = useState(() => templateBlockDefaults(findTemplate(form.template)))
-  const [step, setStep] = useState(() => (isEditMode || form.type ? 2 : form.univers ? 1 : 0))
+  const userId = getCurrentUser()?.id
+  // Événement commencé puis interrompu (rechargement, « Plus tard »…) : on le reprend, sauf
+  // si l'organisateur arrive avec un choix précis (« Utiliser ce modèle », accueil).
+  const [restored, setRestored] = useState(() =>
+    isEditMode || presetTemplate || location.state?.onboarding ? null : readWizardDraft(userId),
+  )
+  const [form, setForm] = useState(() =>
+    isEditMode ? EMPTY_FORM : restored ? { ...EMPTY_FORM, ...restored.form } : initialForm(presetTemplate, location.state?.onboarding),
+  )
+  const [pageContent, setPageContent] = useState(() => restored?.pageContent ?? templateBlockDefaults(findTemplate(form.template)))
+  const [step, setStep] = useState(() =>
+    restored ? Math.min(restored.step ?? 0, maxReachableFor(form)) : isEditMode || form.type ? 2 : form.univers ? 1 : 0,
+  )
   const [errors, setErrors] = useState({})
   const [nudge, setNudge] = useState('')
   const [showPreview, setShowPreview] = useState(false)
@@ -113,6 +142,7 @@ export default function CreateEvent() {
   const [existing, setExisting] = useState({ custom: {}, location: null, blocks: [], categoryId: null })
 
   const [publishing, setPublishing] = useState('')
+  const [created, setCreated] = useState(null)
   const [publishError, setPublishError] = useState('')
   const toast = useToast()
 
@@ -122,13 +152,51 @@ export default function CreateEvent() {
   const canUsePremium = plan?.features?.premiumTemplates !== false
   // Premier événement : l'assistant s'affiche sans le menu du tableau de bord. Décidé une
   // fois au chargement de l'offre, pour ne pas changer de mise en page en cours de route.
-  const [firstEvent, setFirstEvent] = useState(null)
+  // Arrivée juste après l'inscription ou la connexion (FIRST_EVENT_STATE) : mode « premier
+  // événement » d'emblée, sans montrer le menu du tableau de bord le temps de lire l'offre.
+  const [firstEvent, setFirstEvent] = useState(() => (!isEditMode && location.state?.firstEvent ? true : null))
   if (firstEvent === null && plan) setFirstEvent(!isEditMode && plan.eventsUsed === 0)
   const stepRef = useRef(null)
+  // Modèle choisi explicitement (clic ou lien « Utiliser ce modèle ») : on n'y touche plus.
+  const [templatePicked, setTemplatePicked] = useState(() => isEditMode || Boolean(presetTemplate) || Boolean(restored?.templatePicked))
+  // Événement déjà créé côté serveur lors d'un essai précédent (la suite avait échoué) : un
+  // nouvel essai le complète au lieu d'en créer un second.
+  const createdRef = useRef(null)
+
+  // Sauvegarde continue de la saisie (création uniquement), effacée une fois l'événement créé.
+  useEffect(() => {
+    if (isEditMode || created) return
+    writeWizardDraft(userId, { form, pageContent, step, templatePicked })
+  }, [isEditMode, created, userId, form, pageContent, step, templatePicked])
+
+  const startOver = () => {
+    clearWizardDraft(userId)
+    setRestored(null)
+    setForm(EMPTY_FORM)
+    setPageContent(templateBlockDefaults(null))
+    setTemplatePicked(false)
+    setErrors({})
+    setPublishError('')
+    goTo(0)
+  }
 
   const type = eventType(form.type)
   const template = findTemplate(form.template) ?? (type ? modelsForType(type)[0] : null)
   const update = (patch) => setForm((prev) => ({ ...prev, ...patch }))
+
+  // L'offre arrive après le premier rendu : un modèle premium proposé d'office à un compte
+  // Free est remplacé par le premier modèle gratuit.
+  if (plan && !canUsePremium && type && template?.premium && !templatePicked) {
+    const free = defaultModelFor(type, false)
+    if (free && free.name !== form.template) {
+      setForm((prev) => ({ ...prev, template: free.name }))
+      setPageContent((current) => ({ ...templateBlockDefaults(free), ...current }))
+    }
+  }
+
+  // Adresse pas encore confirmée (cas de tout nouvel inscrit) : l'API refuse la publication,
+  // le bouton final annonce donc un enregistrement plutôt qu'une publication.
+  const emailPending = getCurrentUser()?.emailVerified === false
 
   useEffect(() => {
     listEventCategories()
@@ -174,7 +242,6 @@ export default function CreateEvent() {
           venueName: loc?.label && loc.label !== 'Lieu principal' ? loc.label : '',
           venueAddr: loc?.address ?? '',
           description: custom.description ?? '',
-          consent: true,
           searchable: Boolean(custom.options?.searchable),
         })
         setPageContent({
@@ -202,13 +269,19 @@ export default function CreateEvent() {
     [form, type],
   )
 
-  const infoValid = type && Object.keys(infoErrors(form, type)).length === 0
-  const maxReachable = !form.univers ? 0 : !form.type ? 1 : !infoValid ? 2 : 4
+  const maxReachable = maxReachableFor(form)
 
-  const goTo = (n) => {
+  // focusId : champ à remettre sous les yeux une fois l'étape affichée (ex. la date manquante).
+  const goTo = (n, focusId) => {
     setNudge('')
     setStep(n)
     requestAnimationFrame(() => {
+      const field = focusId && document.getElementById(focusId)
+      if (field) {
+        field.focus({ preventScroll: true })
+        field.scrollIntoView({ block: 'center', behavior: 'smooth' })
+        return
+      }
       stepRef.current?.focus({ preventScroll: true })
       document.querySelector('[aria-current="step"]')?.scrollIntoView({ block: 'nearest', inline: 'center' })
       window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -219,23 +292,31 @@ export default function CreateEvent() {
     setForm((prev) => (prev.univers === univers ? prev : { ...prev, univers, type: null, template: null }))
     goTo(1)
   }
+  // Comme pour l'univers, choisir le type passe à l'étape suivante : sur téléphone, la liste
+  // est longue et le bouton « Continuer » tout en bas.
   const chooseType = (id) => {
     const t = eventType(id)
-    const chosenTemplate = modelsForType(t)[0] ?? null
-    setPageContent(templateBlockDefaults(chosenTemplate))
-    setForm((prev) => ({
-      ...prev,
-      type: id,
-      template: chosenTemplate?.name ?? null,
-      birthdayAge: eventRequiresAge(id) && eventRequiresAge(prev.type) ? prev.birthdayAge : '',
-      // Fête à date fixe (Noël, 20 mai…) : la prochaine date est proposée.
-      date: prev.date || nextFixedDate(t.date),
-    }))
-    setNudge('')
+    const sameType = id === form.type
+    if (!sameType) {
+      // Un modèle choisi est gardé s'il convient au nouveau type ou s'il est gratuit (utilisable partout).
+      const keep = templatePicked && template && (modelsForType(t).includes(template) || !template.premium)
+      const chosenTemplate = keep ? template : defaultModelFor(t, canUsePremium)
+      setPageContent(templateBlockDefaults(chosenTemplate))
+      setForm((prev) => ({
+        ...prev,
+        type: id,
+        template: chosenTemplate?.name ?? null,
+        birthdayAge: eventRequiresAge(id) && eventRequiresAge(prev.type) ? prev.birthdayAge : '',
+        // Fête à date fixe (Noël, 20 mai…) : la prochaine date est proposée.
+        date: prev.date || nextFixedDate(t.date),
+      }))
+    }
+    goTo(2)
   }
 
   const chooseTemplate = (name) => {
     const selected = findTemplate(name)
+    setTemplatePicked(true)
     update({ template: name })
     setPageContent((current) => ({ ...templateBlockDefaults(selected), ...current }))
   }
@@ -270,11 +351,11 @@ export default function CreateEvent() {
     const mustConfirmEmail = requested === 'publish' && getCurrentUser()?.emailVerified === false
     const status = mustConfirmEmail ? 'draft' : requested
     if (status === 'publish' && !form.date) {
-      setPublishError('Ajoutez la date de votre événement avant de le publier. Vous pouvez enregistrer le brouillon sans date.')
-      document.getElementById('f-date')?.focus()
+      // Le champ est à l'étape « Informations » : on y retourne, sur la date.
+      setErrors((prev) => ({ ...prev, date: 'Ajoutez la date pour publier. Sans date, enregistrez un brouillon.' }))
+      goTo(2, 'f-date')
       return
     }
-    if (!form.consent) return setErrors({ consent: 'Cochez la case pour publier votre événement.' })
     if (template?.premium && !canUsePremium)
       return setPublishError('Ce modèle demande l’offre Premium. Activez-la ou choisissez un modèle gratuit.')
     const category = categories.find((c) => c.code === type.categoryCode) ?? categories.find((c) => c.code === 'autre')
@@ -312,7 +393,21 @@ export default function CreateEvent() {
         customFields: customFields(form.logo?.url),
       }
 
-      const targetId = isEditMode ? eventId : (await createEvent(dto)).id
+      let createdEvent = createdRef.current
+      const retrying = !isEditMode && Boolean(createdEvent)
+      if (!isEditMode && !createdEvent) {
+        createdEvent = await createEvent(dto)
+        createdRef.current = createdEvent
+      }
+      const targetId = isEditMode ? eventId : createdEvent.id
+      // Nouvel essai après un échec en cours de route : on relit ce que le premier essai a
+      // déjà enregistré (lieu, sections) pour le compléter sans rien dupliquer.
+      const current = retrying
+        ? {
+            location: (await listEventLocations(targetId).catch(() => []))[0] ?? null,
+            blocks: await listEventBlocks(targetId).catch(() => []),
+          }
+        : existing
 
       let logoUrl = form.logo?.url ?? null
       if (form.logo?.file) {
@@ -333,10 +428,10 @@ export default function CreateEvent() {
 
       try {
         const label = form.venueName.trim() || 'Lieu principal'
-        if (existing.location && !form.venueName.trim() && !form.venueAddr.trim()) {
-          await deleteEventLocation(existing.location.id)
-        } else if (existing.location) {
-          await updateEventLocation(existing.location.id, { label, address: form.venueAddr.trim(), position: existing.location.position })
+        if (current.location && !form.venueName.trim() && !form.venueAddr.trim()) {
+          await deleteEventLocation(current.location.id)
+        } else if (current.location) {
+          await updateEventLocation(current.location.id, { label, address: form.venueAddr.trim(), position: current.location.position })
         } else if (form.venueName.trim() || form.venueAddr.trim()) {
           await createEventLocation({ label, address: form.venueAddr.trim(), position: 0 }, targetId)
         }
@@ -345,7 +440,7 @@ export default function CreateEvent() {
       }
 
       try {
-        await composePage({ targetId, blocks: existing.blocks, template, eventTypeId: type.id, hero, title: displayTitleFor(form, type), kicker: kickerFor(type, form.date), pageContent })
+        await composePage({ targetId, blocks: current.blocks, template, eventTypeId: type.id, hero, title: displayTitleFor(form, type), kicker: kickerFor(type, form.date), pageContent })
       } catch {
         warnings.push("Les sections de la page n'ont pas pu être toutes mises à jour.")
       }
@@ -353,6 +448,27 @@ export default function CreateEvent() {
       if (!isEditMode) notifyPlanChanged()
       const name = form.name.trim()
       const published = status === 'publish'
+      // Création : écran de fin avec la suite (partager, invités…) plutôt que la liste.
+      if (!isEditMode) {
+        clearWizardDraft(userId)
+        for (const warning of warnings.slice(mustConfirmEmail ? 1 : 0)) toast(warning, { variant: 'warning', duration: 10000 })
+        setCreated({
+          published,
+          emailPending: mustConfirmEmail,
+          event: {
+            id: targetId,
+            slug: createdEvent.slug,
+            name,
+            title: displayTitleFor(form, type),
+            date: form.date,
+            time: form.timeStart,
+            location: form.venueName.trim() || form.venueAddr.trim(),
+            intro: type.shareIntro,
+          },
+        })
+        window.scrollTo({ top: 0 })
+        return
+      }
       toast(
         published
           ? isEditMode
@@ -395,9 +511,18 @@ export default function CreateEvent() {
     )
   }
 
+  // Événement créé : le menu du tableau de bord revient (« Plus tard » n'a plus de sens).
+  if (created) {
+    return (
+      <DashboardLayout>
+        <CreatedStep {...created} />
+      </DashboardLayout>
+    )
+  }
+
   const view =
     step === 0 ? (
-      <UniversStep value={form.univers} onChange={chooseUnivers} />
+      <UniversStep value={form.univers} onChange={chooseUnivers} greeting={firstEvent ? firstNameOf(getCurrentUser()) : null} />
     ) : step === 1 ? (
       <TypeStep univers={form.univers} value={form.type} onChange={chooseType} />
     ) : step === 2 && type ? (
@@ -407,6 +532,7 @@ export default function CreateEvent() {
         template={template}
         content={pageContent}
         onChange={(block, patch) => setPageContent((prev) => ({ ...prev, [block]: { ...(prev[block] ?? {}), ...patch } }))}
+        onSkip={() => goTo(4)}
       />
     ) : step === 4 && type ? (
       <ModelStep
@@ -415,9 +541,6 @@ export default function CreateEvent() {
         onSelect={chooseTemplate}
         canUsePremium={canUsePremium}
         onUpgrade={() => setUpgrade('premium')}
-        consent={form.consent}
-        onConsent={(consent) => updateInfo({ consent })}
-        consentError={errors.consent}
         searchable={form.searchable}
         onSearchable={(searchable) => update({ searchable })}
       />
@@ -425,6 +548,22 @@ export default function CreateEvent() {
 
   return (
     <DashboardLayout focus={Boolean(firstEvent)}>
+      {restored && (
+        <div role="status" className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-purple/30 bg-brand-purple/10 px-4 py-3">
+          <p className="min-w-0 flex-1 basis-56 text-sm text-ink">
+            <b>Nous avons repris l’événement que vous aviez commencé.</b>
+            {restored.hadLogo && <span className="block text-muted">Ajoutez à nouveau votre logo à l’étape « Informations ».</span>}
+          </p>
+          <span className="flex gap-2">
+            <Button variant="ghost" onClick={startOver} className="px-4 py-2">
+              Recommencer à zéro
+            </Button>
+            <Button variant="outline" onClick={() => setRestored(null)} className="px-4 py-2">
+              Compris
+            </Button>
+          </span>
+        </div>
+      )}
       {limitReached && (
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-orange/30 bg-brand-orange/10 px-4 py-3">
           <p className="text-sm text-ink">
@@ -441,7 +580,20 @@ export default function CreateEvent() {
       <div className="mx-auto grid max-w-295 items-start gap-10 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0">
           <div className="mb-5 flex items-start gap-3">
-            <ol className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto [scrollbar-width:none]" aria-label="Étapes de création">
+            {/* Téléphone : les cinq libellés ne tiennent pas, on résume l'avancement. */}
+            <div className="min-w-0 flex-1 sm:hidden">
+              <p className="font-mono text-[0.68rem] tracking-[0.06em] text-muted uppercase">
+                Étape {step + 1} sur {STEPS.length}
+              </p>
+              <p className="text-[0.95rem] font-semibold text-ink">{STEPS[step]}</p>
+              <span className="mt-1.5 block h-1 overflow-hidden rounded-full bg-border-soft">
+                <span
+                  className="block h-full rounded-full bg-[linear-gradient(100deg,#FF7A3D_0%,#E2337E_50%,#6C4BF4_100%)] transition-[width]"
+                  style={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
+                />
+              </span>
+            </div>
+            <ol className="hidden min-w-0 flex-1 gap-1.5 overflow-x-auto [scrollbar-width:none] sm:flex" aria-label="Étapes de création">
               {STEPS.map((label, i) => (
                 <li key={label} className="min-w-22 flex-1">
                   <button
@@ -488,18 +640,35 @@ export default function CreateEvent() {
                 {publishError}
               </p>
             )}
+            {step === 4 && emailPending && (
+              <p className="mb-4 flex gap-2.5 rounded-lg border border-brand-orange/30 bg-brand-orange/10 px-4 py-3 text-sm text-ink">
+                <MailCheck className="mt-0.5 h-4 w-4 flex-none text-brand-orange" aria-hidden="true" />
+                <span>
+                  Votre page sera enregistrée maintenant. Pour la mettre en ligne, cliquez sur le lien de confirmation
+                  reçu par e-mail, puis sur « Publier » dans vos événements.
+                </span>
+              </p>
+            )}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <Button variant="outline" onClick={() => goTo(Math.max(0, step - 1))} className={step === 0 ? 'invisible' : ''}>
                 Retour
               </Button>
               <div className="flex flex-wrap items-center gap-3">
-                {step === 4 && (
+                {step === 4 && !emailPending && (
                   <Button variant="ghost" onClick={() => publish('draft')} disabled={Boolean(publishing)}>
                     {publishing === 'draft' ? 'Enregistrement…' : 'Enregistrer en brouillon'}
                   </Button>
                 )}
                 <Button variant="gradient" onClick={next} disabled={Boolean(publishing) || (step === 4 && limitReached)}>
-                  {step === 4 ? (publishing === 'publish' ? 'Publication…' : isEditMode ? 'Enregistrer et publier' : 'Publier') : 'Continuer'}
+                  {step !== 4
+                    ? 'Continuer'
+                    : publishing
+                      ? 'Enregistrement…'
+                      : emailPending
+                        ? 'Enregistrer ma page'
+                        : isEditMode
+                          ? 'Enregistrer et publier'
+                          : 'Publier'}
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </div>

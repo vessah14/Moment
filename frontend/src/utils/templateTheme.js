@@ -40,6 +40,20 @@ export function templatesForCategory(categoryCode, categoryLabel) {
   );
 }
 
+// Modèles utilisables avec l'offre Free, toutes catégories confondues.
+export const FREE_TEMPLATES = TEMPLATES.filter((template) => !template.premium);
+
+// Catégories sans modèle gratuit à elles : on propose les modèles gratuits d'une catégorie
+// proche, pour qu'un compte Free ait toujours un modèle publiable pour son type.
+const FREE_CATEGORY_FALLBACKS = {
+  baby_shower: ["bapteme"],
+  reunion_familiale: ["evenement_familial"],
+  retrait_deuil: ["obseques"],
+  personnalise: ["evenement_personnalise"],
+  autre: ["evenement_personnalise"],
+  fetes_saisons: ["evenement_personnalise"],
+};
+
 export function templatesForEventType(typeId, categoryCode, categoryLabel) {
   const type = EVENT_TYPES.find((candidate) => candidate.id === typeId);
   if (!type) return templatesForCategory(categoryCode, categoryLabel);
@@ -47,10 +61,10 @@ export function templatesForEventType(typeId, categoryCode, categoryLabel) {
   const designed = type.templates
     .map((theme) => TEMPLATES.find((template) => template.theme === theme))
     .filter(Boolean);
-  const free = templatesForCategory(type.categoryCode).filter(
-    (template) => !template.premium && !designed.includes(template),
-  );
-  return [...designed, ...free];
+  const free = [type.categoryCode, ...(FREE_CATEGORY_FALLBACKS[type.categoryCode] ?? [])]
+    .flatMap((code) => templatesForCategory(code))
+    .filter((template) => !template.premium && !designed.includes(template));
+  return [...designed, ...new Set(free)];
 }
 
 function parseHex(hex) {

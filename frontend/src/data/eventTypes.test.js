@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { infoErrors } from '../components/wizard/InfoStep'
+import { infoErrors, suggestedEventName } from '../components/wizard/InfoStep'
 import { modelsForType } from '../components/wizard/ModelStep'
 import { EVENT_TYPES, EVENT_UNIVERSES, eventTypeFor, nextFixedDate } from './eventTypes'
 import { TEMPLATES } from './templates'
@@ -39,6 +39,12 @@ describe("types d'événement de l'assistant", () => {
     expect(anniversaryModels.some((model) => model.theme === 'fiesta')).toBe(false)
   })
 
+  it('proposent au moins un modèle gratuit pour chaque type (offre Free)', () => {
+    for (const t of EVENT_TYPES) {
+      expect(templatesForEventType(t.id, t.categoryCode).some((model) => !model.premium), t.id).toBe(true)
+    }
+  })
+
   it('utilisent tous les modèles premium', () => {
     const used = new Set(EVENT_TYPES.flatMap((t) => t.templates))
     expect(used.size).toBe(TEMPLATES.filter((t) => t.premium).length)
@@ -69,6 +75,14 @@ describe('informations obligatoires', () => {
   it('signale le nom vide, mais permet de compléter les détails pratiques plus tard', () => {
     const errors = infoErrors({ ...base, name: ' ', date: '', venueAddr: '' }, type('mariage'))
     expect(Object.keys(errors)).toEqual(['name'])
+  })
+
+  it('propose un nom à partir du texte affiché en grand', () => {
+    expect(suggestedEventName(type('mariage'), ' Awa & Ibrahim ')).toBe('Mariage · Awa & Ibrahim')
+    expect(suggestedEventName(type('voeux'), 'Wouri Logistics')).toBe('Présentation des vœux · Wouri Logistics')
+    expect(suggestedEventName(type('lancement'), 'Expo')).toBe('Lancement de produit · Expo')
+    expect(suggestedEventName(type('autre'), 'Gala')).toBe('Gala')
+    expect(suggestedEventName(type('mariage'), '')).toBe('')
   })
 
   it('requires a valid age for birthdays and wedding anniversaries only', () => {
