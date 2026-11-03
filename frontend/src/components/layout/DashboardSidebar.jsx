@@ -37,7 +37,6 @@ const NAV_SECTIONS = [
   {
     items: [
       { label: 'Vue globale', to: '/dashboard', icon: BarChart3, end: true },
-      { label: 'Notifications', to: '/dashboard/notifications', icon: Bell, badgeKey: 'notifications' },
       { label: 'Créer un événement', to: '/dashboard/evenements/nouveau', icon: Plus },
       { label: 'Mes événements', to: '/dashboard/evenements', icon: Calendar, end: true },
     ],
@@ -73,6 +72,7 @@ const NAV_SECTIONS = [
     title: 'Compte',
     items: [
       { label: 'Mon avis', to: '/dashboard/avis', icon: Star },
+      { label: 'Notifications', to: '/dashboard/notifications', icon: Bell, badgeKey: 'notifications' },
       { label: 'Paramètres', to: '/dashboard/parametres', icon: Settings },
     ],
   },
