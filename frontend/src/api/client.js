@@ -44,12 +44,31 @@ export function mediaUrl(path) {
   return path.startsWith('/') ? `${API_ORIGIN}${path}` : ''
 }
 
-export function getToken() {
+// Où vit la session : localStorage pour rester connecté (« Se souvenir de moi », 3 jours
+// prolongés à chaque visite), sessionStorage pour une session fermée avec le navigateur
+// (ordinateur partagé). Le compte (USER_KEY) suit toujours le jeton dans le même stockage.
+function safeStorage(name) {
   try {
-    return localStorage.getItem(TOKEN_KEY)
+    return typeof window !== 'undefined' ? window[name] : null
+  } catch {
+    return null // stockage bloqué (navigation privée, réglages du navigateur)
+  }
+}
+
+function read(storage, key) {
+  try {
+    return storage?.getItem(key) ?? null
   } catch {
     return null
   }
+}
+
+function sessionStore() {
+  return read(safeStorage('sessionStorage'), TOKEN_KEY) ? safeStorage('sessionStorage') : safeStorage('localStorage')
+}
+
+export function getToken() {
+  return read(safeStorage('localStorage'), TOKEN_KEY) ?? read(safeStorage('sessionStorage'), TOKEN_KEY)
 }
 
 // Décode le payload d'un JWT sans vérifier sa signature (revalidée de toute
@@ -76,25 +95,38 @@ export function isAuthenticated() {
   return true
 }
 
-export function setToken(token) {
+// persist : true = rester connecté, false = jusqu'à la fermeture du navigateur ; absent
+// (renouvellement du jeton), la session reste là où elle est.
+export function setToken(token, { persist } = {}) {
+  const local = safeStorage('localStorage')
+  const session = safeStorage('sessionStorage')
+  const target = persist === undefined ? sessionStore() : persist ? local : session
+  const other = target === local ? session : local
   try {
-    localStorage.setItem(TOKEN_KEY, token)
+    // Le compte déménage avec le jeton, l'ancien emplacement est vidé.
+    const user = read(other, USER_KEY)
+    other?.removeItem(TOKEN_KEY)
+    other?.removeItem(USER_KEY)
+    target?.setItem(TOKEN_KEY, token)
+    if (user && !read(target, USER_KEY)) target?.setItem(USER_KEY, user)
   } catch {
-    // localStorage indisponible (navigation privée, etc.)
+    // stockage indisponible (navigation privée, etc.)
   }
 }
 
 export function clearToken() {
-  try {
-    localStorage.removeItem(TOKEN_KEY)
-  } catch {
-    // localStorage indisponible
+  for (const storage of [safeStorage('localStorage'), safeStorage('sessionStorage')]) {
+    try {
+      storage?.removeItem(TOKEN_KEY)
+    } catch {
+      // stockage indisponible
+    }
   }
 }
 
 export function getCurrentUser() {
   try {
-    const raw = localStorage.getItem(USER_KEY)
+    const raw = read(sessionStore(), USER_KEY)
     return raw ? JSON.parse(raw) : null
   } catch {
     return null
@@ -103,19 +135,21 @@ export function getCurrentUser() {
 
 export function setCurrentUser(user) {
   try {
-    localStorage.setItem(USER_KEY, JSON.stringify(user))
+    sessionStore()?.setItem(USER_KEY, JSON.stringify(user))
   } catch {
-    // localStorage indisponible
+    // stockage indisponible
   }
   if (typeof window !== 'undefined')
     window.dispatchEvent(new Event(CURRENT_USER_UPDATED_EVENT))
 }
 
 export function clearCurrentUser() {
-  try {
-    localStorage.removeItem(USER_KEY)
-  } catch {
-    // localStorage indisponible
+  for (const storage of [safeStorage('localStorage'), safeStorage('sessionStorage')]) {
+    try {
+      storage?.removeItem(USER_KEY)
+    } catch {
+      // stockage indisponible
+    }
   }
 }
 
@@ -147,26 +181,29 @@ async function extractErrorMessage(response) {
 
 const NETWORK_ERROR = 'Connexion au serveur impossible. Vérifiez votre connexion internet, puis réessayez.'
 
-function tokenExpiresInMs(token) {
+// Renouvellement glissant de la session : le jeton organisateur dure 3 jours. Passé le
+// premier tiers de sa durée (un jour), le premier appel en demande un nouveau : chaque
+// visite repousse la déconnexion de 3 jours, dans la limite fixée par l'API (30 jours
+// après la connexion). Jeton sans date d'émission (iat) : dans ses 10 dernières minutes.
+const LEGACY_REFRESH_WINDOW_MS = 10 * 60 * 1000
+let refreshPromise = null
+// Jeton dont le renouvellement a été refusé (fin de session) : on ne redemande pas à chaque appel.
+let refusedToken = null
+
+export function shouldRefreshToken(token, now = Date.now()) {
   try {
-    const payload = decodeTokenPayload(token)
-    return payload.exp ? payload.exp * 1000 - Date.now() : Infinity
+    const { iat, exp } = decodeTokenPayload(token)
+    if (!exp || now >= exp * 1000) return false
+    if (!iat) return exp * 1000 - now <= LEGACY_REFRESH_WINDOW_MS
+    return now - iat * 1000 >= ((exp - iat) * 1000) / 3
   } catch {
-    return 0
+    return false
   }
 }
 
-// Renouvellement glissant de la session : le jeton dure 30 min. S'il expire dans moins
-// de 10 min, on en demande un nouveau avant l'appel. Un organisateur actif n'est donc
-// plus déconnecté en plein travail ; une session inactive expire toujours normalement.
-const REFRESH_WINDOW_MS = 10 * 60 * 1000
-let refreshPromise = null
-
 async function refreshTokenIfNeeded() {
   const token = getToken()
-  if (!token) return
-  const remaining = tokenExpiresInMs(token)
-  if (remaining <= 0 || remaining > REFRESH_WINDOW_MS) return
+  if (!token || token === refusedToken || !shouldRefreshToken(token)) return
 
   // Un seul renouvellement à la fois, même si plusieurs appels partent ensemble.
   refreshPromise ??= fetch(`${API_URL}/users/refresh-token`, {
@@ -174,6 +211,7 @@ async function refreshTokenIfNeeded() {
     headers: { Authorization: `Bearer ${token}` },
   })
     .then(async (res) => {
+      if (res.status === 401) refusedToken = token
       if (!res.ok) return
       const data = await res.json()
       if (data?.token) setToken(data.token)

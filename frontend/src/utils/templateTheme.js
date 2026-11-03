@@ -272,6 +272,18 @@ export function templateBlockDefaults(template) {
   );
 }
 
+// Contenu de départ des sections pour une nouvelle page. Le texte de l'invitation vient du
+// modèle (invitationStarter, posé à la création) : les valeurs vides par défaut du bloc
+// l'écrasaient et la section Invitation restait vide. Seul ce que l'organisateur saisit le remplace.
+const INVITATION_TEXT_KEYS = ["greeting", "prefix", "body", "signature"];
+export function newEventBlockDefaults(template) {
+  const defaults = templateBlockDefaults(template);
+  if (!defaults.Invitation) return defaults;
+  const invitation = { ...defaults.Invitation };
+  for (const key of INVITATION_TEXT_KEYS) delete invitation[key];
+  return { ...defaults, Invitation: invitation };
+}
+
 // Anciennes données : l'assistant créait un bloc "Rsvp", le Builder utilise "RSVP".
 export function normalizeBlockType(type) {
   return type === "Rsvp" ? "RSVP" : type;

@@ -1,4 +1,4 @@
-import { Check, Copy, ExternalLink, MailCheck, MessageCircle, Palette, UserPlus } from 'lucide-react'
+import { Check, Copy, ExternalLink, MailCheck, MessageCircle, Palette, User, UserPlus, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { eventShareUrl, getCurrentUser } from '../../api/client'
 import { buildShareMessage, whatsappShareUrl } from '../../utils/shareMessage'
@@ -35,7 +35,7 @@ export default function CreatedStep({ event, published, emailPending }) {
       : 'Personnalisez-la, puis publiez-la quand vous êtes prêt.'
 
   return (
-    <div className="mx-auto max-w-xl py-4 text-center sm:py-8">
+    <div className="mx-auto max-w-2xl py-4 text-center sm:py-8">
       <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-brand-gradient text-white">
         {published ? <Check className="h-7 w-7" aria-hidden="true" /> : <MailCheck className="h-7 w-7" aria-hidden="true" />}
       </span>
@@ -46,9 +46,19 @@ export default function CreatedStep({ event, published, emailPending }) {
         <b className="text-ink">{event.name}</b> · {lead}
       </p>
 
+      {/* Deux façons d'envoyer : le même lien à un groupe, ou un lien personnel par invité
+          (prénom dans la salutation, pass d'entrée, suivi de sa réponse). */}
       {published && url && (
-        <div className="mt-7 grid gap-3 text-left">
-          <div className="flex items-center gap-2 rounded-xl border border-border-soft bg-surface p-2 pl-4">
+        <div className="mt-7 grid gap-3 text-left sm:grid-cols-2">
+          <section className="grid content-start gap-3 rounded-2xl border border-border-soft bg-surface p-4">
+            <div>
+              <p className="flex items-center gap-2 font-semibold text-ink">
+                <Users className="h-4 w-4 text-brand-purple" aria-hidden="true" />
+                Dans un groupe
+              </p>
+              <p className="mt-1 text-sm text-muted">Un seul lien pour tous, dans un groupe WhatsApp ou sur Facebook. Chacun ouvre la page et répond.</p>
+            </div>
+          <div className="flex items-center gap-2 rounded-xl border border-border-soft bg-bg p-2 pl-3">
             <span className="min-w-0 flex-1 truncate font-mono text-sm text-ink">{url.replace(/^https?:\/\//, '')}</span>
             <button
               type="button"
@@ -70,6 +80,22 @@ export default function CreatedStep({ event, published, emailPending }) {
             <MessageCircle className="h-4 w-4" aria-hidden="true" />
             Partager sur WhatsApp
           </Button>
+          </section>
+          <section className="grid content-start gap-3 rounded-2xl border border-border-soft bg-surface p-4">
+            <div>
+              <p className="flex items-center gap-2 font-semibold text-ink">
+                <User className="h-4 w-4 text-brand-purple" aria-hidden="true" />
+                À chaque invité
+              </p>
+              <p className="mt-1 text-sm text-muted">
+                Ajoutez vos invités : chacun reçoit son lien personnel, avec son prénom, son pass d'entrée, et vous suivez sa réponse.
+              </p>
+            </div>
+            <Button as={Link} to={guestsPath} variant="outline" className="w-full py-3">
+              <UserPlus className="h-4 w-4" aria-hidden="true" />
+              Ajouter mes invités
+            </Button>
+          </section>
         </div>
       )}
 
@@ -90,16 +116,22 @@ export default function CreatedStep({ event, published, emailPending }) {
       )}
 
       <div className="mt-6 grid gap-3 text-left sm:grid-cols-2">
-        <Link to={guestsPath} className={actionClass}>
-          <UserPlus className="h-5 w-5 flex-none text-brand-purple" aria-hidden="true" />
-          Ajouter mes invités
-        </Link>
+        {/* Page en ligne : l'ajout des invités est proposé juste au-dessus (« À chaque invité »). */}
+        {!published && (
+          <Link to={guestsPath} className={actionClass}>
+            <UserPlus className="h-5 w-5 flex-none text-brand-purple" aria-hidden="true" />
+            <span>
+              Ajouter mes invités
+              <small className="block font-normal text-muted">Vous leur enverrez leur lien personnel une fois la page en ligne.</small>
+            </span>
+          </Link>
+        )}
         <Link to={builderPath} className={actionClass}>
           <Palette className="h-5 w-5 flex-none text-brand-purple" aria-hidden="true" />
           {published ? 'Personnaliser ma page' : 'Voir et personnaliser ma page'}
         </Link>
         {published && event.slug && (
-          <a href={`/e/${encodeURIComponent(event.slug)}`} target="_blank" rel="noopener noreferrer" className={`${actionClass} sm:col-span-2`}>
+          <a href={`/e/${encodeURIComponent(event.slug)}`} target="_blank" rel="noopener noreferrer" className={actionClass}>
             <ExternalLink className="h-5 w-5 flex-none text-brand-purple" aria-hidden="true" />
             Voir ma page comme un invité
           </a>

@@ -33,6 +33,7 @@ import {
   normalizeBlockType,
   templateBlockContent,
   templateBlockHeading,
+  newEventBlockDefaults,
   templateBlockDefaults,
 } from '../utils/templateTheme'
 
@@ -133,7 +134,7 @@ export default function CreateEvent() {
   const [form, setForm] = useState(() =>
     isEditMode ? EMPTY_FORM : restored ? { ...EMPTY_FORM, ...restored.form } : initialForm(presetTemplate, location.state?.onboarding),
   )
-  const [pageContent, setPageContent] = useState(() => restored?.pageContent ?? templateBlockDefaults(findTemplate(form.template)))
+  const [pageContent, setPageContent] = useState(() => restored?.pageContent ?? newEventBlockDefaults(findTemplate(form.template)))
   const [step, setStep] = useState(() =>
     restored ? Math.min(restored.step ?? 0, maxReachableFor(form)) : isEditMode || form.type ? 2 : form.univers ? 1 : 0,
   )
@@ -187,7 +188,7 @@ export default function CreateEvent() {
     clearWizardDraft(userId)
     setRestored(null)
     setForm(EMPTY_FORM)
-    setPageContent(templateBlockDefaults(null))
+    setPageContent(newEventBlockDefaults(null))
     setPhotos((prev) => {
       for (const photo of [prev.cover, prev.invitation, prev.story, ...prev.gallery]) releasePhoto(photo)
       return NO_PHOTOS
@@ -208,7 +209,7 @@ export default function CreateEvent() {
     const free = defaultModelFor(type, false)
     if (free && free.name !== form.template) {
       setForm((prev) => ({ ...prev, template: free.name }))
-      setPageContent((current) => ({ ...templateBlockDefaults(free), ...current }))
+      setPageContent((current) => ({ ...newEventBlockDefaults(free), ...current }))
     }
   }
 
@@ -287,14 +288,25 @@ export default function CreateEvent() {
     [form, type],
   )
   // Aperçu en direct : les photos choisies (pas encore envoyées) à leur place sur la page.
+  // Texte d'invitation que la création posera (modèle, type, signature) : affiché tel quel
+  // dans l'étape Contenu et l'aperçu, pour que l'organisateur voie ce que liront ses invités.
+  // En modification, le bloc existe déjà : seul son contenu enregistré compte.
+  const invitationDefaults = useMemo(
+    () => (isEditMode || !type ? {} : invitationStarter(template, displayTitleFor(form, type), type.id)),
+    [isEditMode, template, form, type],
+  )
   const previewDraft = useMemo(() => {
-    const withPhoto = (type, photo) => (photo ? { [type]: { ...(pageContent[type] ?? {}), imageSrc: photo.preview } } : {})
+    const withPhoto = (photo) => (photo ? { imageSrc: photo.preview } : {})
     return {
       ...draft,
       coverSrc: photos.cover?.preview ?? '',
-      blockContent: { ...pageContent, ...withPhoto('Invitation', photos.invitation), ...withPhoto('Histoire', photos.story) },
+      blockContent: {
+        ...pageContent,
+        Invitation: { ...invitationDefaults, ...(pageContent.Invitation ?? {}), ...withPhoto(photos.invitation) },
+        ...(photos.story && { Histoire: { ...(pageContent.Histoire ?? {}), ...withPhoto(photos.story) } }),
+      },
     }
-  }, [draft, pageContent, photos])
+  }, [draft, pageContent, photos, invitationDefaults])
 
   const maxReachable = maxReachableFor(form)
 
@@ -328,7 +340,7 @@ export default function CreateEvent() {
       // Un modèle choisi est gardé s'il convient au nouveau type ou s'il est gratuit (utilisable partout).
       const keep = templatePicked && template && (modelsForType(t).includes(template) || !template.premium)
       const chosenTemplate = keep ? template : defaultModelFor(t, canUsePremium)
-      setPageContent(templateBlockDefaults(chosenTemplate))
+      setPageContent(newEventBlockDefaults(chosenTemplate))
       setForm((prev) => ({
         ...prev,
         type: id,
@@ -345,7 +357,7 @@ export default function CreateEvent() {
     const selected = findTemplate(name)
     setTemplatePicked(true)
     update({ template: name })
-    setPageContent((current) => ({ ...templateBlockDefaults(selected), ...current }))
+    setPageContent((current) => ({ ...newEventBlockDefaults(selected), ...current }))
   }
 
   const next = () => {
@@ -608,6 +620,7 @@ export default function CreateEvent() {
         content={pageContent}
         onChange={(block, patch) => setPageContent((prev) => ({ ...prev, [block]: { ...(prev[block] ?? {}), ...patch } }))}
         onSkip={() => goTo(4)}
+        invitationDefaults={invitationDefaults}
         photos={isEditMode ? null : photos}
         onPhotos={setPhotos}
       />

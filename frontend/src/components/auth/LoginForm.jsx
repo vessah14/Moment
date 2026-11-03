@@ -20,6 +20,8 @@ export default function LoginForm() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  // Coché : connecté 3 jours (prolongés à chaque visite) ; décoché : jusqu'à la fermeture du navigateur.
+  const [remember, setRemember] = useState(true)
   const returnPath = requestedReturnPath(location)
 
   const handleSubmit = async (e) => {
@@ -27,7 +29,7 @@ export default function LoginForm() {
     setError('')
     setSubmitting(true)
     try {
-      await login({ email, password })
+      await login({ email, password, remember })
       // Retour à la page demandée avant la connexion ("Utiliser ce modèle") ou à celle
       // où la session a expiré.
       const storedReturnPath = consumeReturnPath()
@@ -110,9 +112,11 @@ export default function LoginForm() {
           <label className="flex items-center gap-2 text-muted">
             <input
               type="checkbox"
+              checked={remember}
+              onChange={(e) => setRemember(e.target.checked)}
               className="h-4 w-4 rounded border-border accent-brand-purple"
             />
-            Se souvenir de moi
+            <span title="Décochez sur un ordinateur partagé : la session se fermera avec le navigateur.">Se souvenir de moi</span>
           </label>
           <Link
             to={email.trim() ? `/mot-de-passe-oublie?email=${encodeURIComponent(email.trim())}` : '/mot-de-passe-oublie'}

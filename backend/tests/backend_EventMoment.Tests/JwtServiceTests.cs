@@ -91,6 +91,22 @@ public class JwtServiceTests
         var (_, expiration) = service.GenerateOrganizerToken(organizer);
 
         Assert.True(expiration > DateTimeOffset.UtcNow);
-        Assert.True(expiration <= DateTimeOffset.UtcNow.AddMinutes(31));
+        Assert.True(expiration <= DateTimeOffset.UtcNow.AddHours(72).AddMinutes(1));
+    }
+
+    // Un organisateur reste connecté 3 jours (prolongés à chaque visite), sans dépasser la
+    // durée maximale de session après sa connexion.
+    [Fact]
+    public void GenerateOrganizerToken_LastsThreeDays_CappedBySessionEnd()
+    {
+        var service = CreateService();
+        var organizer = CreateOrganizer();
+
+        var (_, fresh) = service.GenerateOrganizerToken(organizer);
+        Assert.InRange(fresh, DateTimeOffset.UtcNow.AddHours(71.9), DateTimeOffset.UtcNow.AddHours(72).AddMinutes(1));
+
+        // Connexion il y a 29 jours et demi : le jeton s'arrête à la fin des 30 jours.
+        var (_, nearEnd) = service.GenerateOrganizerToken(organizer, DateTimeOffset.UtcNow.AddHours(-708));
+        Assert.True(nearEnd <= DateTimeOffset.UtcNow.AddHours(12).AddMinutes(1));
     }
 }

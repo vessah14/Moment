@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import { BLOCK_CONTENT_DEFAULTS } from "../data/blockDefaults";
 import { TEMPLATE_DEMOS } from "../data/templateDemos";
 import { TEMPLATES } from "../data/templates";
+import { invitationStarter } from "../data/invitations";
 import {
   findTemplate,
   ensureRsvpBlock,
   missingEventPageBlocks,
+  newEventBlockDefaults,
   newEventPageBlocks,
   reconcileTemplateLayout,
   resolveSiteStyle,
@@ -255,5 +257,18 @@ describe("mediaUrl", async () => {
     expect(mediaUrl("javascript:alert(1)")).toBe("");
     expect(mediaUrl("https://evil.example/x.png")).toBe("");
     expect(mediaUrl(null)).toBe("");
+  });
+});
+
+describe("newEventBlockDefaults", () => {
+  // Le contenu de départ ne doit pas écraser le texte d'invitation du modèle (sinon la
+  // section Invitation d'un nouvel événement restait vide).
+  it("laisse le texte d'invitation au modèle, sauf ce que l'organisateur saisit", () => {
+    for (const template of [findTemplate("Noor"), findTemplate("Éclat")]) {
+      const merged = { ...invitationStarter(template, "Awa & Ibrahim", "mariage"), ...newEventBlockDefaults(template).Invitation };
+      expect(merged.body.trim(), template.name).not.toBe("");
+      expect(merged.signature).toBe("Awa & Ibrahim");
+      expect(newEventBlockDefaults(template).Invitation.heading).toBeTruthy();
+    }
   });
 });

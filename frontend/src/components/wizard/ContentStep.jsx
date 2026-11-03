@@ -32,7 +32,8 @@ function Panel({ title, children }) {
 // onSkip : tout est facultatif ici ; on peut passer au modèle sans faire défiler l'étape.
 // photos / onPhotos : photos choisies sur l'appareil (création seulement), envoyées à la
 // création de l'événement ; elles se modifient ensuite dans le Builder et dans Galerie.
-export default function ContentStep({ template, content, onChange, onSkip, photos, onPhotos }) {
+// invitationDefaults : texte d'invitation que la création posera, montré tel quel et modifiable.
+export default function ContentStep({ template, content, onChange, onSkip, photos, onPhotos, invitationDefaults = {} }) {
   const blocks = new Set(newEventPageBlocks(template))
   const edit = (type, patch) => onChange(type, patch)
   const value = (type) => content[type] ?? {}
@@ -87,7 +88,11 @@ export default function ContentStep({ template, content, onChange, onSkip, photo
         </Panel>
       )}
 
-      {blocks.has('Invitation') && <Panel title="Message d’invitation"><InvitationEditor content={value('Invitation')} onChange={(patch) => edit('Invitation', patch)} /></Panel>}
+      {blocks.has('Invitation') && (
+        <Panel title="Message d’invitation">
+          <InvitationEditor content={{ ...invitationDefaults, ...value('Invitation') }} onChange={(patch) => edit('Invitation', patch)} withBody />
+        </Panel>
+      )}
       {blocks.has('Histoire') && (
         <Panel title="Votre histoire">
           <Field label="Texte de présentation" multiline value={value('Histoire').body} onChange={(body) => edit('Histoire', { body })} placeholder="Racontez votre événement ou son histoire…" />

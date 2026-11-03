@@ -272,8 +272,8 @@ public class SecurityFixesTests
         var (service, _, signup, _) = CreateUserService();
         var user = SeedPasswordAccount(signup, "session@example.com", "RightPass1");
 
-        Assert.NotNull(await service.RefreshTokenAsync(user.Id, DateTimeOffset.UtcNow.AddHours(-1)));
-        Assert.Null(await service.RefreshTokenAsync(user.Id, DateTimeOffset.UtcNow.AddHours(-13)));
+        Assert.NotNull(await service.RefreshTokenAsync(user.Id, DateTimeOffset.UtcNow.AddDays(-3)));
+        Assert.Null(await service.RefreshTokenAsync(user.Id, DateTimeOffset.UtcNow.AddDays(-31)));
     }
 
     [Fact]

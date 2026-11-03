@@ -1,4 +1,4 @@
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, User, Users } from 'lucide-react'
 import { MOBILE_MONEY_OPERATORS } from '../../utils/mobileMoney'
 import { MAX_COMPANIONS, rsvpRules } from '../../utils/rsvpRules'
 import { parseVideoUrl } from '../../utils/videoEmbed'
@@ -14,20 +14,81 @@ const addClass =
   'flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border px-3 py-2.5 text-sm font-medium text-muted transition hover:border-brand-purple hover:text-brand-purple disabled:opacity-40'
 const removeClass = 'rounded p-1 text-danger hover:bg-danger/10'
 
-// Section « Invitation » : la salutation générale, le début de la salutation adressée à
-// un invité (« Cher·e Awa, » sur son lien personnel) et la signature.
-export function InvitationEditor({ content, onChange }) {
+// Débuts de salutation proposés pour le lien personnel : un seul vaut pour tous les invités,
+// d'où des formules qui conviennent à chacun (le site ne connaît pas le genre des invités).
+const PERSONAL_PREFIXES = ['Cher·e', 'Bonjour', 'Très cher·e']
+
+// Section « Invitation ». La page s'ouvre de deux façons, et la salutation suit :
+//  - lien du site partagé dans un groupe (WhatsApp, Facebook…) : la même salutation pour tous ;
+//  - lien personnel d'un invité de la liste : « Cher·e Awa, » avec son prénom.
+// withBody : le texte de l'invitation est aussi saisi ici (assistant de création) ; dans le
+// Builder, il a son propre champ juste en dessous.
+export function InvitationEditor({ content, onChange, withBody = false }) {
+  const prefix = (content.prefix ?? '').trim() || 'Cher·e'
+  const greeting = (content.greeting ?? '').trim()
+  const caseClass = 'space-y-2 rounded-lg border border-border-soft bg-surface-2/40 p-3'
   return (
     <div className="space-y-3">
-      <label className={labelClass}>
-        Salutation
-        <input className={`${inputClass} mt-1`} maxLength={80} placeholder="Ex. : Chers parents, chers amis," value={content.greeting ?? ''} onChange={(e) => onChange({ greeting: e.target.value })} />
-      </label>
-      <label className={labelClass}>
-        Sur le lien d'un invité
-        <input className={`${inputClass} mt-1`} maxLength={20} placeholder="Cher·e" value={content.prefix ?? ''} onChange={(e) => onChange({ prefix: e.target.value })} />
-        <span className="mt-1 block text-faint">Suivi du prénom de l'invité : « {(content.prefix ?? '').trim() || 'Cher·e'} Awa, ».</span>
-      </label>
+      <p className="text-xs text-muted">La salutation s'adapte à la façon dont vous envoyez votre invitation :</p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className={caseClass}>
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-ink">
+            <Users className="h-4 w-4 text-brand-purple" aria-hidden="true" />
+            Dans un groupe
+          </p>
+          <p className="text-xs text-faint">Lien partagé dans un groupe WhatsApp, sur Facebook… Tout le monde voit la même salutation.</p>
+          <label className={labelClass}>
+            Salutation
+            <input className={`${inputClass} mt-1`} maxLength={80} placeholder="Ex. : Chers parents, chers amis," value={content.greeting ?? ''} onChange={(e) => onChange({ greeting: e.target.value })} />
+          </label>
+          <p className="text-xs text-muted">
+            Aperçu : <b className="text-ink">{greeting || '(pas de salutation)'}</b>
+          </p>
+        </div>
+        <div className={caseClass}>
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-ink">
+            <User className="h-4 w-4 text-brand-purple" aria-hidden="true" />
+            À une personne
+          </p>
+          <p className="text-xs text-faint">Lien personnel envoyé à un invité de votre liste : il voit son prénom, et son pass d'entrée.</p>
+          <label className={labelClass}>
+            Début de la salutation
+            <input className={`${inputClass} mt-1`} maxLength={20} placeholder="Cher·e" value={content.prefix ?? ''} onChange={(e) => onChange({ prefix: e.target.value })} />
+          </label>
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Formules proposées">
+            {PERSONAL_PREFIXES.map((option) => (
+              <button
+                key={option}
+                type="button"
+                aria-pressed={prefix === option}
+                onClick={() => onChange({ prefix: option })}
+                className={`rounded-full border px-2.5 py-1 text-xs font-medium transition ${
+                  prefix === option ? 'border-brand-purple bg-brand-purple/15 text-ink' : 'border-border text-muted hover:border-brand-purple'
+                }`}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-muted">
+            Aperçu : <b className="text-ink">{prefix} Awa,</b>
+          </p>
+        </div>
+      </div>
+      {withBody && (
+        <label className={labelClass}>
+          Votre message
+          <textarea
+            className={`${inputClass} mt-1 resize-y`}
+            rows={5}
+            maxLength={3000}
+            placeholder="Nous serions heureux de vous compter parmi nous…"
+            value={content.body ?? ''}
+            onChange={(e) => onChange({ body: e.target.value })}
+          />
+          <span className="mt-1 block text-faint">Le même texte pour tous, sous la salutation. Laissez une ligne vide entre deux paragraphes.</span>
+        </label>
+      )}
       <label className={labelClass}>
         Signature
         <input className={`${inputClass} mt-1`} maxLength={120} placeholder="Ex. : Awa & Ibrahim" value={content.signature ?? ''} onChange={(e) => onChange({ signature: e.target.value })} />

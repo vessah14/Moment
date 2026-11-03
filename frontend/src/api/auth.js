@@ -1,12 +1,13 @@
 import { apiFetch, clearCurrentUser, clearToken, setCurrentUser, setToken, getToken } from './client'
 
-export async function login({ email, password }) {
+// remember : « Se souvenir de moi » (par défaut) ; décoché, la session se ferme avec le navigateur.
+export async function login({ email, password, remember = true }) {
   const result = await apiFetch('/users/login', {
     method: 'POST',
     auth: false,
     body: { email, password },
   })
-  setToken(result.token)
+  setToken(result.token, { persist: remember })
   setCurrentUser(result.utilisateur)
   return result
 }
@@ -18,7 +19,7 @@ export async function loginWithGoogle(accessToken) {
     auth: false,
     body: { accessToken },
   })
-  setToken(result.token)
+  setToken(result.token, { persist: true })
   setCurrentUser(result.utilisateur)
   return result
 }

@@ -53,9 +53,13 @@
                 ? 'dark'
                 : 'dark';
         document.documentElement.setAttribute('data-theme', resolved);
-        // Pages des invités (site, invitation, cadeaux) : pas d'écran d'accueil TBF Moment,
-        // masqué avant le premier affichage pour qu'il n'apparaisse même pas un instant.
-        if (/^\/(e|invitation|cadeaux)\//.test(window.location.pathname)) {
+        // Pages des invités (site, invitation, cadeaux) et démo d'un modèle dans le téléphone
+        // d'aperçu (?cadre=1) : pas d'écran d'accueil TBF Moment, masqué avant le premier
+        // affichage pour qu'il n'apparaisse même pas un instant.
+        if (
+          /^\/(e|invitation|cadeaux)\//.test(window.location.pathname) ||
+          /[?&]cadre=1(&|$)/.test(window.location.search)
+        ) {
           document.documentElement.setAttribute('data-guest-page', '');
         }
       })();
@@ -178,8 +182,10 @@
           return;
         }
         try {
-          var token = localStorage.getItem('tbf_auth_token');
-          var user = JSON.parse(localStorage.getItem('tbf_auth_user') || 'null');
+          // Session gardée (localStorage) ou limitée au navigateur ouvert (sessionStorage).
+          var store = sessionStorage.getItem('tbf_auth_token') ? sessionStorage : localStorage;
+          var token = store.getItem('tbf_auth_token');
+          var user = JSON.parse(store.getItem('tbf_auth_user') || 'null');
           if (token && user) {
             var encoded = token.split('.')[1];
             if (encoded) {

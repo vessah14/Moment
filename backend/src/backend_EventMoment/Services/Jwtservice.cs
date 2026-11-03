@@ -20,10 +20,19 @@ namespace backend_EventMoment.Services
         public const string AuthTimeClaim = "auth_time";
 
         public TimeSpan MaxSessionLifetime =>
-            TimeSpan.FromHours(double.TryParse(_config["Jwt:MaxSessionHours"], out var hours) && hours > 0 ? hours : 12);
+            TimeSpan.FromHours(double.TryParse(_config["Jwt:MaxSessionHours"], out var hours) && hours > 0 ? hours : 720);
+
+        // Durée d'un jeton organisateur (Jwt:OrganizerSessionHours, 3 jours par défaut) : on
+        // reste connecté ce temps-là sans rien faire, prolongé à chaque visite (le site le
+        // renouvelle), sans dépasser MaxSessionLifetime après la connexion. Chaque requête
+        // revérifie le compte en base (session_version) : changer de mot de passe ou
+        // désactiver le compte coupe toutes les sessions sans attendre.
+        public TimeSpan OrganizerTokenLifetime =>
+            TimeSpan.FromHours(double.TryParse(_config["Jwt:OrganizerSessionHours"], out var hours) && hours > 0 ? hours : 72);
 
         public (string Token, DateTimeOffset Expiration) GenerateOrganizerToken(Utilisateur organizer, DateTimeOffset? authTime = null)
         {
+            var since = authTime ?? DateTimeOffset.UtcNow;
             var claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, organizer.Id.ToString()),
@@ -31,10 +40,13 @@ namespace backend_EventMoment.Services
                 new Claim("type", "organizer"),
                 new Claim("Utilisateur_id", organizer.Id.ToString()),
                 new Claim("session_version", organizer.UpdatedAt.ToUnixTimeMilliseconds().ToString()),
-                new Claim(AuthTimeClaim, (authTime ?? DateTimeOffset.UtcNow).ToUnixTimeSeconds().ToString())
+                new Claim(AuthTimeClaim, since.ToUnixTimeSeconds().ToString())
             };
 
-            return GenerateToken(claims);
+            // Jamais au-delà de la fin de session (connexion + MaxSessionLifetime).
+            var untilSessionEnd = since + MaxSessionLifetime - DateTimeOffset.UtcNow;
+            var lifetime = untilSessionEnd < OrganizerTokenLifetime ? untilSessionEnd : OrganizerTokenLifetime;
+            return GenerateToken(claims, lifetime > TimeSpan.Zero ? lifetime : TimeSpan.FromMinutes(1));
         }
 
         // Jeton de réinitialisation de mot de passe : courte durée de vie, claim "type"
@@ -219,13 +231,17 @@ namespace backend_EventMoment.Services
                 throw new InvalidOperationException("La clé JWT doit être fournie par une variable d'environnement ou User Secrets.");
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyValue));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            var expiration = DateTimeOffset.UtcNow.Add(lifetime ?? TimeSpan.FromMinutes(double.Parse(_config["Jwt:ExpiresInMinutes"]!)));
+            var issuedAt = DateTimeOffset.UtcNow;
+            var expiration = issuedAt.Add(lifetime ?? TimeSpan.FromMinutes(double.Parse(_config["Jwt:ExpiresInMinutes"]!)));
 
             // Identifiant unique de la session : permet de la révoquer à la déconnexion.
+            // iat : le site s'en sert pour renouveler le jeton au bon rythme (api/client.js).
             var token = new JwtSecurityToken(
                 issuer: _config["Jwt:Issuer"],
                 audience: _config["Jwt:Audience"],
-                claims: claims.Append(new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N"))),
+                claims: claims
+                    .Append(new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")))
+                    .Append(new Claim(JwtRegisteredClaimNames.Iat, issuedAt.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)),
                 expires: expiration.UtcDateTime,
                 signingCredentials: creds
             );
