@@ -27,6 +27,7 @@ const Guests = lazy(() => import('./pages/dashboard/Guests'))
 const Invitations = lazy(() => import('./pages/dashboard/Invitations'))
 const LoadingPage = lazy(() => import('./pages/LoadingPage'))
 const MyEvents = lazy(() => import('./pages/dashboard/MyEvents'))
+const Notifications = lazy(() => import('./pages/dashboard/Notifications'))
 const Program = lazy(() => import('./pages/dashboard/Program'))
 const SeatingPlan = lazy(() => import('./pages/dashboard/SeatingPlan'))
 const Settings = lazy(() => import('./pages/dashboard/Settings'))
@@ -164,6 +165,14 @@ function App () {
             element={
               <RequireAuth>
                 <Invitations />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path='/dashboard/notifications'
+            element={
+              <RequireAuth>
+                <Notifications />
               </RequireAuth>
             }
           />

@@ -10,11 +10,16 @@ namespace backend_EventMoment.Services
     {
         private readonly AdminDbContext _context;
         private readonly IOrganizerNotifier? _notifier;
+        private readonly IInAppNotificationService? _inAppNotifications;
 
-        public GuestBookService(AdminDbContext context, IOrganizerNotifier? notifier = null)
+        public GuestBookService(
+            AdminDbContext context,
+            IOrganizerNotifier? notifier = null,
+            IInAppNotificationService? inAppNotifications = null)
         {
             _context = context;
             _notifier = notifier;
+            _inAppNotifications = inAppNotifications;
         }
 
         public async Task<bool> CreatePublicAsync(string slug, CreateGuestBookEntryDto dto)
@@ -50,6 +55,8 @@ namespace backend_EventMoment.Services
             });
             await _context.SaveChangesAsync();
 
+            if (_inAppNotifications != null)
+                await _inAppNotifications.NotifyGuestbookAsync(eventEntity.Id, dto.AuthorName.Trim());
             if (_notifier != null)
                 await _notifier.NotifyNewGuestbookEntryAsync(eventEntity.Id, dto.AuthorName.Trim());
             return true;

@@ -303,6 +303,7 @@ else
     }
 }
 builder.Services.AddScoped<INotificationSettingsService, NotificationSettingsService>();
+builder.Services.AddScoped<IInAppNotificationService, InAppNotificationService>();
 builder.Services.AddScoped<IEventReminderService, EventReminderService>();
 builder.Services.AddScoped<IOrganizerNotifier, OrganizerNotifier>();
 builder.Services.AddHostedService<ReminderDispatcher>();

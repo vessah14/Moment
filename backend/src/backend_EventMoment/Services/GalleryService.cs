@@ -9,10 +9,12 @@ namespace backend_EventMoment.Services
     public class GalleryService : IGalleryService
     {
         private readonly AdminDbContext _context;
+        private readonly IInAppNotificationService? _inAppNotifications;
 
-        public GalleryService(AdminDbContext context)
+        public GalleryService(AdminDbContext context, IInAppNotificationService? inAppNotifications = null)
         {
             _context = context;
+            _inAppNotifications = inAppNotifications;
         }
 
         public async Task<GalleryPhotoDto> CreateAsync(string url, string? uploadedBy, Guid eventId, Guid organizerId)
@@ -85,6 +87,8 @@ namespace backend_EventMoment.Services
             };
             _context.GalleryPhotos.Add(entity);
             await _context.SaveChangesAsync();
+            if (_inAppNotifications != null)
+                await _inAppNotifications.NotifyGuestPhotoAsync(eventId, entity.UploadedBy);
             return Map(entity);
         }
 

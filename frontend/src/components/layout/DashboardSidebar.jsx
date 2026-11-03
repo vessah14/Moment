@@ -4,6 +4,7 @@ import {
   Calendar,
   ChevronsLeft,
   ChevronsRight,
+  Bell,
   Gift,
   Home,
   Image,
@@ -29,12 +30,14 @@ import { GUESTS_CHANGED_EVENT } from '../../utils/guestEvents'
 import BrandLogo from '../ui/BrandLogo'
 import logoMark from '../../assets/logo-mark.png'
 import { useLocalStorageState } from '../../utils/useLocalStorageState'
+import { useDashboardNotifications } from './DashboardNotificationsContext'
 
 // Menu groupé par moment de l'organisation : on trouve vite ce qui sert maintenant.
 const NAV_SECTIONS = [
   {
     items: [
       { label: 'Vue globale', to: '/dashboard', icon: BarChart3, end: true },
+      { label: 'Notifications', to: '/dashboard/notifications', icon: Bell, badgeKey: 'notifications' },
       { label: 'Créer un événement', to: '/dashboard/evenements/nouveau', icon: Plus },
       { label: 'Mes événements', to: '/dashboard/evenements', icon: Calendar, end: true },
     ],
@@ -102,7 +105,8 @@ function useGuestCount() {
 
 export default function DashboardSidebar({ open, onClose }) {
   const guestCount = useGuestCount()
-  const badges = { guests: guestCount }
+  const { unreadCount } = useDashboardNotifications()
+  const badges = { guests: guestCount, notifications: unreadCount }
   const { plan, loading: planLoading, error: planError, retry: retryPlan } = usePlan()
   const [upgradeOpen, setUpgradeOpen] = useState(false)
   const [collapsed, setCollapsed] = useLocalStorageState(

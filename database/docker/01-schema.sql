@@ -3588,6 +3588,44 @@ ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT SELECT,USAGE O
 
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT SELECT,INSERT,DELETE,UPDATE ON TABLES TO app_admin;
 
+--
+-- In-app notifications
+--
+
+CREATE TABLE public.organizer_notifications (
+    id uuid NOT NULL,
+    organizer_id uuid NOT NULL,
+    event_id uuid NOT NULL,
+    type character varying(40) NOT NULL,
+    title character varying(160) NOT NULL,
+    message character varying(500) NOT NULL,
+    link character varying(250) NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    read_at timestamp with time zone
+);
+
+ALTER TABLE ONLY public.organizer_notifications
+    ADD CONSTRAINT organizer_notifications_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.organizer_notifications
+    ADD CONSTRAINT organizer_notifications_organizer_id_fkey FOREIGN KEY (organizer_id) REFERENCES public.organizers(id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.organizer_notifications
+    ADD CONSTRAINT organizer_notifications_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.events(id) ON DELETE CASCADE;
+CREATE INDEX ix_organizer_notifications_organizer_id_created_at
+    ON public.organizer_notifications USING btree (organizer_id, created_at DESC);
+
+ALTER TABLE public.organizer_notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.organizer_notifications FORCE ROW LEVEL SECURITY;
+CREATE POLICY tbf_bypass ON public.organizer_notifications TO app_admin
+    USING (public.app_rls_bypass()) WITH CHECK (public.app_rls_bypass());
+CREATE POLICY tbf_tenant ON public.organizer_notifications TO app_admin
+    USING ((organizer_id = public.app_current_organizer()) AND (event_id IN (
+        SELECT e.id FROM public.events e WHERE e.organizer_id = public.app_current_organizer()
+    )))
+    WITH CHECK ((organizer_id = public.app_current_organizer()) AND (event_id IN (
+        SELECT e.id FROM public.events e WHERE e.organizer_id = public.app_current_organizer()
+    )));
+GRANT SELECT, INSERT, DELETE, UPDATE ON TABLE public.organizer_notifications TO app_admin;
+
 
 --
 -- PostgreSQL database dump complete

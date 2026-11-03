@@ -76,6 +76,7 @@ namespace backend_EventMoment.Data
         public DbSet<EventModeration> EventModerations { get; set; }
         public DbSet<OrganizerEmailVerification> OrganizerEmailVerifications { get; set; }
         public DbSet<OrganizerNotificationSettings> OrganizerNotificationSettings { get; set; }
+        public DbSet<OrganizerNotification> OrganizerNotifications { get; set; }
         public DbSet<EventReminder> EventReminders { get; set; }
         public DbSet<GuestCheckin> GuestCheckins { get; set; }
 
@@ -522,6 +523,24 @@ namespace backend_EventMoment.Data
                 .HasOne(r => r.Event)
                 .WithMany()
                 .HasForeignKey(r => r.EventId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // -----------------------------------------------------------
+            // OrganizerNotification
+            // -----------------------------------------------------------
+            modelBuilder.Entity<OrganizerNotification>()
+                .HasQueryFilter(n => n.OrganizerId == CurrentOrganizerId);
+            modelBuilder.Entity<OrganizerNotification>()
+                .HasIndex(n => new { n.OrganizerId, n.CreatedAt });
+            modelBuilder.Entity<OrganizerNotification>()
+                .HasOne<Utilisateur>()
+                .WithMany()
+                .HasForeignKey(n => n.OrganizerId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<OrganizerNotification>()
+                .HasOne(n => n.Event)
+                .WithMany()
+                .HasForeignKey(n => n.EventId)
                 .OnDelete(DeleteBehavior.Cascade);
         }
     }

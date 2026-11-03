@@ -6,6 +6,7 @@ import EmailVerificationBanner from './EmailVerificationBanner'
 import DashboardTopbar from './DashboardTopbar'
 import { markFirstEventPrompted } from '../../utils/firstEvent'
 import { useSeo } from '../../utils/seo'
+import DashboardNotificationsProvider from './DashboardNotifications'
 
 // focus : premier événement, sans le menu du tableau de bord (trop d'entrées pour un
 // nouveau client) ; seulement le logo et une sortie « Plus tard ».
@@ -33,15 +34,17 @@ export default function DashboardLayout({ children, focus = false }) {
   }
 
   return (
-    <div className="flex">
-      <DashboardSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="min-h-svh min-w-0 flex-1">
-        <DashboardTopbar onMenuClick={() => setSidebarOpen(true)} />
-        <div className="px-4 py-6 sm:px-8 sm:py-8">
-          <EmailVerificationBanner />
-          {children}
+    <DashboardNotificationsProvider>
+      <div className="flex">
+        <DashboardSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <div className="min-h-svh min-w-0 flex-1">
+          <DashboardTopbar onMenuClick={() => setSidebarOpen(true)} />
+          <div className="px-4 py-6 sm:px-8 sm:py-8">
+            <EmailVerificationBanner />
+            {children}
+          </div>
         </div>
       </div>
-    </div>
+    </DashboardNotificationsProvider>
   )
 }

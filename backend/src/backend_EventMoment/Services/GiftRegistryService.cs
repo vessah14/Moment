@@ -9,10 +9,12 @@ namespace backend_EventMoment.Services
     public class GiftRegistryService : IGiftRegistryService
     {
         private readonly AdminDbContext _context;
+        private readonly IInAppNotificationService? _inAppNotifications;
 
-        public GiftRegistryService(AdminDbContext context)
+        public GiftRegistryService(AdminDbContext context, IInAppNotificationService? inAppNotifications = null)
         {
             _context = context;
+            _inAppNotifications = inAppNotifications;
         }
 
         public async Task<GiftItemDto> CreateAsync(CreateGiftItemDto dto, Guid eventId, Guid organizerId)
@@ -121,6 +123,8 @@ namespace backend_EventMoment.Services
             var entity = await _context.GiftItems.IgnoreQueryFilters()
                 .AsNoTracking()
                 .FirstAsync(g => g.Id == giftId);
+            if (_inAppNotifications != null)
+                await _inAppNotifications.NotifyGiftReservedAsync(entity.EventId, entity.Name, dto.ReservedByName);
             return Map(entity);
         }
 

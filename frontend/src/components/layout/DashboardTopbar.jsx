@@ -7,10 +7,12 @@ import { PhotoOr } from '../ui/Avatar'
 import { listEvents } from '../../api/events'
 import { listGuests } from '../../api/guests'
 import { buildDashboardSearchIndex } from '../../data/dashboardSearchIndex'
+import { useDashboardNotifications } from './DashboardNotificationsContext'
 import Button from '../ui/Button'
 import ThemeToggle from '../ui/ThemeToggle'
 import LanguageSwitcher from '../ui/LanguageSwitcher'
 import GlobalSearch from './GlobalSearch'
+import { useToast } from '../../utils/useToast'
 
 function initials(fullName) {
   if (!fullName) return '?'
@@ -25,6 +27,8 @@ function initials(fullName) {
 
 export default function DashboardTopbar({ onMenuClick }) {
   const navigate = useNavigate()
+  const toast = useToast()
+  const { items: notifications, unreadCount, error: notificationError, markRead } = useDashboardNotifications()
   const [notifOpen, setNotifOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [searchData, setSearchData] = useState({ events: [], guests: [] })
@@ -43,6 +47,16 @@ export default function DashboardTopbar({ onMenuClick }) {
     logout()
     setProfileOpen(false)
     navigate('/connexion')
+  }
+
+  const openNotification = async (notification) => {
+    setNotifOpen(false)
+    try {
+      await markRead(notification.id)
+      navigate(notification.link)
+    } catch (error) {
+      toast(error.message || 'Impossible de marquer cette notification comme lue.', { variant: 'danger' })
+    }
   }
 
   return (
@@ -65,15 +79,20 @@ export default function DashboardTopbar({ onMenuClick }) {
         <LanguageSwitcher />
         <ThemeToggle className="hidden md:inline-flex" showLabels={false} />
 
-        <div className="relative hidden sm:block">
+        <div className="relative">
           <button
             type="button"
             onClick={() => setNotifOpen((v) => !v)}
-            aria-label="Notifications"
+            aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} non lues` : 'Notifications'}
             aria-expanded={notifOpen}
             className="relative text-muted hover:text-ink"
           >
             <Bell className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-2 -right-2 min-w-4 rounded-full bg-danger px-1 text-center text-[10px] font-bold leading-4 text-white">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
           </button>
 
           {notifOpen && (
@@ -85,12 +104,39 @@ export default function DashboardTopbar({ onMenuClick }) {
                 className="fixed inset-0 z-40 cursor-default"
               />
               <div className="absolute top-full right-0 z-50 mt-3 w-72 rounded-xl border border-border-soft bg-panel p-3 shadow-xl">
-                <p className="px-2 pb-2 text-xs font-semibold tracking-wider text-faint uppercase">
-                  Notifications
-                </p>
-                <p className="px-2 py-4 text-center text-xs text-faint">
-                  Bientôt disponible.
-                </p>
+                <div className="flex items-center justify-between px-2 pb-2">
+                  <p className="text-xs font-semibold tracking-wider text-faint uppercase">Notifications</p>
+                  {unreadCount > 0 && <span className="text-[11px] text-brand-purple">{unreadCount} non lue(s)</span>}
+                </div>
+                {notificationError && (
+                  <p className="px-2 py-2 text-xs text-danger">{notificationError}</p>
+                )}
+                {!notificationError && notifications.length === 0 && (
+                  <p className="px-2 py-4 text-center text-xs text-faint">Aucune notification pour le moment.</p>
+                )}
+                <div className="max-h-80 overflow-y-auto">
+                  {notifications.slice(0, 5).map((notification) => (
+                    <button
+                      key={notification.id}
+                      type="button"
+                      onClick={() => openNotification(notification)}
+                      className={`w-full rounded-lg px-2 py-2 text-left hover:bg-surface-2 ${
+                        notification.readAt ? '' : 'bg-brand-purple/5'
+                      }`}
+                    >
+                      <span className="block text-xs font-semibold text-ink">{notification.title}</span>
+                      <span className="mt-0.5 block text-xs text-muted">{notification.message}</span>
+                      <span className="mt-1 block text-[10px] text-faint">{notification.eventName}</span>
+                    </button>
+                  ))}
+                </div>
+                <Link
+                  to="/dashboard/notifications"
+                  onClick={() => setNotifOpen(false)}
+                  className="mt-2 block rounded-lg px-2 py-2 text-center text-xs font-semibold text-brand-purple hover:bg-brand-purple/10"
+                >
+                  Voir toutes les notifications
+                </Link>
               </div>
             </>
           )}

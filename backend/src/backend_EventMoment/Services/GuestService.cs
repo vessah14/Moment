@@ -12,13 +12,20 @@ namespace backend_EventMoment.Services
         private readonly IOrganizerNotifier? _notifier;
         private readonly IPlanService? _plans;
         private readonly InvitationSignal? _invitations;
+        private readonly IInAppNotificationService? _inAppNotifications;
 
-        public GuestService(AdminDbContext context, IOrganizerNotifier? notifier = null, IPlanService? plans = null, InvitationSignal? invitations = null)
+        public GuestService(
+            AdminDbContext context,
+            IOrganizerNotifier? notifier = null,
+            IPlanService? plans = null,
+            InvitationSignal? invitations = null,
+            IInAppNotificationService? inAppNotifications = null)
         {
             _context = context;
             _notifier = notifier;
             _plans = plans;
             _invitations = invitations;
+            _inAppNotifications = inAppNotifications;
         }
 
         public async Task<GuestDTO> CreateAsync(CreateGuestDto dto, Guid eventId, Guid organizerId, Guid? groupId = null)
@@ -541,6 +548,8 @@ namespace backend_EventMoment.Services
 
             if (_notifier != null)
                 await _notifier.NotifyNewRsvpAsync(guest.EventId, guest.FullName, rsvp.Confirmed, rsvp.AccompanyingCount);
+            if (_inAppNotifications != null)
+                await _inAppNotifications.NotifyRsvpAsync(guest.EventId, guest.FullName, rsvp.Confirmed, rsvp.AccompanyingCount);
 
             var location = await _context.EventLocations.IgnoreQueryFilters().AsNoTracking()
                 .Where(l => l.EventId == guest.EventId)
@@ -638,6 +647,8 @@ namespace backend_EventMoment.Services
 
             if (_notifier != null)
                 await _notifier.NotifyNewRsvpAsync(eventEntity.Id, fullName, response.Confirmed, response.AccompanyingCount);
+            if (_inAppNotifications != null)
+                await _inAppNotifications.NotifyRsvpAsync(eventEntity.Id, fullName, response.Confirmed, response.AccompanyingCount);
 
             var location = await _context.EventLocations.IgnoreQueryFilters().AsNoTracking()
                 .Where(l => l.EventId == eventEntity.Id)
