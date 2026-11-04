@@ -572,6 +572,7 @@ export default {
   "Pas encore de compte ?": "No account yet?",
   "Connexion...": "Logging in...",
   "Décochez sur un ordinateur partagé : la session se fermera avec le navigateur.": "Untick on a shared computer: you'll be signed out when the browser closes.",
+  "Rester connecté jusqu’à 30 jours sans activité. Décochez sur un ordinateur partagé.": "Stay signed in for up to 30 days of inactivity. Untick this on a shared computer.",
   "Se souvenir de moi": "Remember me",
   "Connexion": "Log in",
   "Bon retour": "Welcome back",

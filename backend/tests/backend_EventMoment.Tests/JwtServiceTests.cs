@@ -1,5 +1,6 @@
 using backend_EventMoment.Models;
 using backend_EventMoment.Services;
+using System.IdentityModel.Tokens.Jwt;
 using Microsoft.Extensions.Configuration;
 
 namespace backend_EventMoment.Tests;
@@ -108,5 +109,22 @@ public class JwtServiceTests
         // Connexion il y a 29 jours et demi : le jeton s'arrête à la fin des 30 jours.
         var (_, nearEnd) = service.GenerateOrganizerToken(organizer, DateTimeOffset.UtcNow.AddHours(-708));
         Assert.True(nearEnd <= DateTimeOffset.UtcNow.AddHours(12).AddMinutes(1));
+    }
+
+    [Fact]
+    public void GenerateOrganizerToken_RememberMeLastsThirtyDays_AndCanRefreshForNinetyDays()
+    {
+        var service = CreateService();
+        var organizer = CreateOrganizer();
+
+        var (token, expiration) = service.GenerateOrganizerToken(organizer, rememberMe: true);
+        Assert.InRange(expiration, DateTimeOffset.UtcNow.AddDays(29.9), DateTimeOffset.UtcNow.AddDays(30).AddMinutes(1));
+
+        var sessionStartedAt = DateTimeOffset.UtcNow.AddDays(-89);
+        var (_, nearEnd) = service.GenerateOrganizerToken(organizer, sessionStartedAt, rememberMe: true);
+        Assert.InRange(nearEnd, DateTimeOffset.UtcNow.AddHours(23), DateTimeOffset.UtcNow.AddDays(1).AddMinutes(1));
+
+        var claims = new JwtSecurityTokenHandler().ReadJwtToken(token).Claims;
+        Assert.Contains(claims, claim => claim.Type == "remember_me" && claim.Value == "true");
     }
 }

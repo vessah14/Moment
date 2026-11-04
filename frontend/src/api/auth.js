@@ -5,7 +5,7 @@ export async function login({ email, password, remember = true }) {
   const result = await apiFetch('/users/login', {
     method: 'POST',
     auth: false,
-    body: { email, password },
+    body: { email, password, rememberMe: remember },
   })
   setToken(result.token, { persist: remember })
   setCurrentUser(result.utilisateur)

@@ -15,22 +15,28 @@ namespace backend_EventMoment.Services
             _config = config;
         }
 
-        // Heure de la connexion d'origine, recopiée à chaque renouvellement : la session a
-        // une durée maximale même pour un utilisateur toujours actif (Jwt:MaxSessionHours).
+        // Heure de la connexion d'origine, recopiée à chaque renouvellement : chaque type de
+        // session possède une durée maximale, même pour un utilisateur toujours actif.
         public const string AuthTimeClaim = "auth_time";
 
         public TimeSpan MaxSessionLifetime =>
             TimeSpan.FromHours(double.TryParse(_config["Jwt:MaxSessionHours"], out var hours) && hours > 0 ? hours : 720);
 
-        // Durée d'un jeton organisateur (Jwt:OrganizerSessionHours, 3 jours par défaut) : on
-        // reste connecté ce temps-là sans rien faire, prolongé à chaque visite (le site le
-        // renouvelle), sans dépasser MaxSessionLifetime après la connexion. Chaque requête
-        // revérifie le compte en base (session_version) : changer de mot de passe ou
-        // désactiver le compte coupe toutes les sessions sans attendre.
+        // Les sessions ordinaires durent 3 jours et les sessions mémorisées 30 jours.
+        // Les deux sont renouvelées lors de l'activité et bornées par leur durée maximale.
         public TimeSpan OrganizerTokenLifetime =>
             TimeSpan.FromHours(double.TryParse(_config["Jwt:OrganizerSessionHours"], out var hours) && hours > 0 ? hours : 72);
 
-        public (string Token, DateTimeOffset Expiration) GenerateOrganizerToken(Utilisateur organizer, DateTimeOffset? authTime = null)
+        public TimeSpan RememberMeTokenLifetime =>
+            TimeSpan.FromHours(double.TryParse(_config["Jwt:RememberMeTokenHours"], out var hours) && hours > 0 ? hours : 720);
+
+        public TimeSpan RememberMeMaxSessionLifetime =>
+            TimeSpan.FromHours(double.TryParse(_config["Jwt:RememberMeMaxSessionHours"], out var hours) && hours > 0 ? hours : 2160);
+
+        public (string Token, DateTimeOffset Expiration) GenerateOrganizerToken(
+            Utilisateur organizer,
+            DateTimeOffset? authTime = null,
+            bool rememberMe = false)
         {
             var since = authTime ?? DateTimeOffset.UtcNow;
             var claims = new[]
@@ -40,12 +46,15 @@ namespace backend_EventMoment.Services
                 new Claim("type", "organizer"),
                 new Claim("Utilisateur_id", organizer.Id.ToString()),
                 new Claim("session_version", organizer.UpdatedAt.ToUnixTimeMilliseconds().ToString()),
-                new Claim(AuthTimeClaim, since.ToUnixTimeSeconds().ToString())
+                new Claim(AuthTimeClaim, since.ToUnixTimeSeconds().ToString()),
+                new Claim("remember_me", rememberMe ? "true" : "false")
             };
 
-            // Jamais au-delà de la fin de session (connexion + MaxSessionLifetime).
-            var untilSessionEnd = since + MaxSessionLifetime - DateTimeOffset.UtcNow;
-            var lifetime = untilSessionEnd < OrganizerTokenLifetime ? untilSessionEnd : OrganizerTokenLifetime;
+            // Jamais au-delà de la fin maximale de la session depuis la connexion.
+            var maxSessionLifetime = rememberMe ? RememberMeMaxSessionLifetime : MaxSessionLifetime;
+            var tokenLifetime = rememberMe ? RememberMeTokenLifetime : OrganizerTokenLifetime;
+            var untilSessionEnd = since + maxSessionLifetime - DateTimeOffset.UtcNow;
+            var lifetime = untilSessionEnd < tokenLifetime ? untilSessionEnd : tokenLifetime;
             return GenerateToken(claims, lifetime > TimeSpan.Zero ? lifetime : TimeSpan.FromMinutes(1));
         }
 

@@ -262,7 +262,7 @@ namespace backend_EventMoment.Services
 
             // Adresse pas encore confirmée : connexion acceptée, mais publier, payer et envoyer
             // des e-mails restent bloqués (EmailVerificationGuard).
-            var (token, expiration) = _jwtService.GenerateOrganizerToken(user);
+            var (token, expiration) = _jwtService.GenerateOrganizerToken(user, rememberMe: dto.RememberMe);
 
             return new LoginResponseDto
             {
@@ -497,7 +497,7 @@ namespace backend_EventMoment.Services
 
             if (!await MarkEmailVerifiedAsync(organizerId))
                 throw new InvalidOperationException("Ce lien de vérification a déjà été utilisé.");
-            var (sessionToken, expiration) = _jwtService.GenerateOrganizerToken(organizer);
+            var (sessionToken, expiration) = _jwtService.GenerateOrganizerToken(organizer, rememberMe: true);
             return new LoginResponseDto
             {
                 Token = sessionToken,
@@ -510,18 +510,21 @@ namespace backend_EventMoment.Services
         // signature, l'expiration et session_version : un mot de passe changé ou un compte
         // désactivé coupe toujours la session). Sans ça, l'organisateur était déconnecté
         // net toutes les 30 minutes, en plein travail dans le Builder.
-        public async Task<LoginResponseDto?> RefreshTokenAsync(Guid organizerId, DateTimeOffset? authTime)
+        public async Task<LoginResponseDto?> RefreshTokenAsync(Guid organizerId, DateTimeOffset? authTime, bool rememberMe = false)
         {
             // Jeton d'avant l'ajout de auth_time : la durée maximale part de maintenant.
             var since = authTime ?? DateTimeOffset.UtcNow;
-            if (DateTimeOffset.UtcNow - since > _jwtService.MaxSessionLifetime)
+            var maxSessionLifetime = rememberMe
+                ? _jwtService.RememberMeMaxSessionLifetime
+                : _jwtService.MaxSessionLifetime;
+            if (DateTimeOffset.UtcNow - since > maxSessionLifetime)
                 return null;
 
             var organizer = await _adminContext.Organizers.IgnoreQueryFilters().AsNoTracking()
                 .FirstOrDefaultAsync(o => o.Id == organizerId && o.IsActive)
                 ?? throw new KeyNotFoundException("Compte introuvable.");
 
-            var (token, expiration) = _jwtService.GenerateOrganizerToken(organizer, since);
+            var (token, expiration) = _jwtService.GenerateOrganizerToken(organizer, since, rememberMe);
             return new LoginResponseDto
             {
                 Token = token,
@@ -544,7 +547,7 @@ namespace backend_EventMoment.Services
 
         private LoginResponseDto BuildLoginResponse(Utilisateur organizer)
         {
-            var (token, expiration) = _jwtService.GenerateOrganizerToken(organizer);
+            var (token, expiration) = _jwtService.GenerateOrganizerToken(organizer, rememberMe: true);
             return new LoginResponseDto
             {
                 Token = token,

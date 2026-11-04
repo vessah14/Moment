@@ -32,7 +32,7 @@ export default function VerifyEmail() {
         if (!session?.token || !session?.utilisateur) {
           throw new Error(t("L'adresse est confirmée, mais la connexion automatique a échoué. Connectez-vous."))
         }
-        setToken(session.token)
+        setToken(session.token, { persist: true })
         setCurrentUser(session.utilisateur)
         setState('done')
         const target = returnPathFromSearch(window.location.search) ?? consumeSignupReturnPath() ?? consumeReturnPath()

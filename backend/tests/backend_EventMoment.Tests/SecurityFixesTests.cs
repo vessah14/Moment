@@ -274,6 +274,8 @@ public class SecurityFixesTests
 
         Assert.NotNull(await service.RefreshTokenAsync(user.Id, DateTimeOffset.UtcNow.AddDays(-3)));
         Assert.Null(await service.RefreshTokenAsync(user.Id, DateTimeOffset.UtcNow.AddDays(-31)));
+        Assert.NotNull(await service.RefreshTokenAsync(user.Id, DateTimeOffset.UtcNow.AddDays(-31), rememberMe: true));
+        Assert.Null(await service.RefreshTokenAsync(user.Id, DateTimeOffset.UtcNow.AddDays(-91), rememberMe: true));
     }
 
     [Fact]

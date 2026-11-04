@@ -53,9 +53,9 @@ export function voiceUrl(path) {
   return path.startsWith('/uploads/voices/') ? `${API_ORIGIN}${path}` : ''
 }
 
-// Où vit la session : localStorage pour rester connecté (« Se souvenir de moi », 3 jours
-// prolongés à chaque visite), sessionStorage pour une session fermée avec le navigateur
-// (ordinateur partagé). Le compte (USER_KEY) suit toujours le jeton dans le même stockage.
+// Où vit la session : localStorage pour « Se souvenir de moi » (jeton de 30 jours,
+// renouvelable jusqu'à 90 jours), sessionStorage pour le navigateur courant. Le compte
+// (USER_KEY) suit toujours le jeton dans le même stockage.
 function safeStorage(name) {
   try {
     return typeof window !== 'undefined' ? window[name] : null
@@ -190,10 +190,9 @@ async function extractErrorMessage(response) {
 
 const NETWORK_ERROR = 'Connexion au serveur impossible. Vérifiez votre connexion internet, puis réessayez.'
 
-// Renouvellement glissant de la session : le jeton organisateur dure 3 jours. Passé le
-// premier tiers de sa durée (un jour), le premier appel en demande un nouveau : chaque
-// visite repousse la déconnexion de 3 jours, dans la limite fixée par l'API (30 jours
-// après la connexion). Jeton sans date d'émission (iat) : dans ses 10 dernières minutes.
+// Renouvellement glissant : les jetons ordinaires durent 3 jours, les jetons mémorisés 30.
+// Après le premier tiers de la durée, un appel renouvelle le jeton, dans la limite fixée par
+// l'API. Jeton sans date d'émission (iat) : renouvellement dans ses 10 dernières minutes.
 const LEGACY_REFRESH_WINDOW_MS = 10 * 60 * 1000
 let refreshPromise = null
 // Jeton dont le renouvellement a été refusé (fin de session) : on ne redemande pas à chaque appel.

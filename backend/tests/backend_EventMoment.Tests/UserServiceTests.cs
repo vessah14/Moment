@@ -182,6 +182,22 @@ public class UserServiceTests
         Assert.True(result.Expiration > DateTimeOffset.UtcNow);
     }
 
+    [Fact]
+    public async Task LoginAsync_RememberMeIssuesThirtyDaySession()
+    {
+        var (service, adminContext, _, _) = CreateService();
+        var user = SeedOrganizer(adminContext, password: "CorrectPassword1");
+
+        var result = await service.LoginAsync(new LoginDto
+        {
+            Email = user.Email,
+            Password = "CorrectPassword1",
+            RememberMe = true,
+        });
+
+        Assert.InRange(result.Expiration, DateTimeOffset.UtcNow.AddDays(29.9), DateTimeOffset.UtcNow.AddDays(30).AddMinutes(1));
+    }
+
     // La connexion Facebook ne peut pas être vérifiée de bout en bout sans une vraie
     // application Facebook Developer : ces tests couvrent donc directement la logique de
     // rattachement/création de compte, en simulant la vérification du jeton via

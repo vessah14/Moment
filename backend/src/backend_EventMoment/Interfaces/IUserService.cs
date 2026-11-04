@@ -20,6 +20,6 @@ namespace backend_EventMoment.Interfaces
         Task<LoginResponseDto> VerifyEmailAsync(VerifyEmailDto dto);
         Task ResendVerificationEmailAsync(Guid organizerId);
         // null si la durée maximale de session est dépassée (reconnexion nécessaire).
-        Task<LoginResponseDto?> RefreshTokenAsync(Guid organizerId, DateTimeOffset? authTime);
+        Task<LoginResponseDto?> RefreshTokenAsync(Guid organizerId, DateTimeOffset? authTime, bool rememberMe = false);
     }
 }

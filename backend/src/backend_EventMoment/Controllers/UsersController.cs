@@ -101,7 +101,8 @@ namespace backend_EventMoment.Controllers
             DateTimeOffset? authTime = long.TryParse(User.FindFirst(JwtService.AuthTimeClaim)?.Value, out var seconds)
                 ? DateTimeOffset.FromUnixTimeSeconds(seconds)
                 : null;
-            var result = await _service.RefreshTokenAsync(organizerId, authTime);
+            var rememberMe = bool.TryParse(User.FindFirst("remember_me")?.Value, out var remembered) && remembered;
+            var result = await _service.RefreshTokenAsync(organizerId, authTime, rememberMe);
             return result == null
                 ? Unauthorized(new { error = "Session expirée : reconnectez-vous." })
                 : Ok(result);

@@ -21,7 +21,7 @@ export default function LoginForm() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  // Coché : connecté 3 jours (prolongés à chaque visite) ; décoché : jusqu'à la fermeture du navigateur.
+  // Coché : session mémorisée jusqu'à 30 jours ; décoché : navigateur courant uniquement.
   const [remember, setRemember] = useState(true)
   const returnPath = requestedReturnPath(location)
 
@@ -117,7 +117,7 @@ export default function LoginForm() {
               onChange={(e) => setRemember(e.target.checked)}
               className="h-4 w-4 rounded border-border accent-brand-purple"
             />
-            <span title={t('Décochez sur un ordinateur partagé : la session se fermera avec le navigateur.')}>{t('Se souvenir de moi')}</span>
+            <span title={t('Rester connecté jusqu’à 30 jours sans activité. Décochez sur un ordinateur partagé.')}>{t('Se souvenir de moi')}</span>
           </label>
           <Link
             to={email.trim() ? `/mot-de-passe-oublie?email=${encodeURIComponent(email.trim())}` : '/mot-de-passe-oublie'}

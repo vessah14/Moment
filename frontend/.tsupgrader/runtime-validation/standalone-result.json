@@ -1,0 +1,136 @@
+{
+  "planHash": "97f3cfe8dfcc4e54889295633e6848ae228ecd7ba7f35900d15fa1d04ba03fdf",
+  "phase": "standalone",
+  "recordedAtUtc": "2026-11-04T14:18:05.7234982Z",
+  "retryCount": 0,
+  "resetBaseline": false,
+  "complete": true,
+  "result": {
+    "setupSucceeded": true,
+    "setupDurationMs": 0,
+    "setupFailureOutput": null,
+    "assertions": [
+      {
+        "name": "production-build",
+        "kind": "process",
+        "verificationMethod": "exit-code",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": 0,
+        "outputSample": "npm warn Unknown env config \u0022scripts-prepend-node-path\u0022. This will stop working in the next major version of npm.\r\n\r\n\u003E frontend@0.0.0 build\r\n\u003E vite build\r\n\r\n\u001B[36mvite v8.3.5 \u001B[32mbuilding client environment for production...\u001B[36m\u001B[39m\r\ntransforming...\r\n\u2713 3290 modules transformed.\r\nrendering chunks...\r\ncomputing gzip size...\r\ndist/assets/ID-DbKtDLTH.svg                                           0.14 kB \u2502 gzip:   0.13 kB\r\ndist/assets/MC-CGhgNnx2.svg                                           0.15 kB \u2502 gzip:   0.13 kB\r\ndist/assets/PL-B64UUA-d.svg                                           0.15 kB \u2502 gzip:   0.13 kB\r\ndist/assets/PW-CIY85KEc.svg                                           0.15 kB \u2502 gzip:   0.14 kB\r\ndist/assets/JP-C15v8xO5.svg                                           0.15 kB \u2502 gzip:   0.15 kB\r\ndist/assets/AT-BwE3MWXU.svg                                           0.16 kB \u2502 gzip:   0.14 kB\r\ndist/assets/NG-CBflXNuV.svg                                           0.17 kB \u2502 gzip:   0.15 kB\r\ndist/assets/UA-Br55j-Ok.svg                                           0.17 kB \u2502 gzip:   0.14 kB\r\ndist/assets/BD-LmqPH8qU.svg                                           0.17 kB \u2502 gzip:   0.16 kB\r\ndist/assets/DE-j5i4Nu2G.svg                                           0.18 kB \u2502 gzip:   0.14 kB\r\ndist/assets/DK-Bo6B6VKW.svg                                           0.18 kB \u2502 gzip:   0.16 kB\r\ndist/assets/BE-CJuN461b.svg                                           0.18 kB \u2502 gzip:   0.14 kB\r\ndist/assets/CH-CVUWUS1g.svg                                           0.18 kB \u2502 gzip:   0.16 kB\r\ndist/assets/IC-gYyxtpzb.svg                                           0.18 kB \u2502 gzip:   0.13 kB\r\ndist/assets/LV-Ysc28zmJ.svg                                           0.18 kB \u2502 gzip:   0.16 kB\r\ndist/assets/EE-T-BsEBSE.svg                                           0.19 kB \u2502 gzip:   0.14 kB\r\ndist/assets/XO-BZt4Ju1r.svg                                           0.19 kB \u2502 gzip:   0.14 kB\r\ndist/assets/ES-CT-CkgRk-R7.svg                                        0.19 kB \u2502 gzip:   0.16 kB\r\ndist/assets/FI-9ha0lZZR.svg                                           0.19 kB \u2502 gzip:   0.16 kB\r\ndist/assets/BG-xKZwPDdu.svg                                           0.19 kB \u2502 gzip:   0.14 kB\r\ndist/assets/HU-CuzsK3d0.svg                                           0.19 kB \u2502 gzip:   0.14 kB\r\ndist/assets/LU-DDesr4XE.svg                                           0.19 kB \u2502 gzip:   0.14 kB\r\ndist/assets/MG-CraLqBY8.svg                                           0.19 kB \u2502 gzip:   0.14 kB\r\ndist/assets/CI-CcUXpA6n.svg                                           0.19 kB \u2502 gzip:   0.15 kB\r\ndist/assets/FR-Bu1C7DFI.svg                                           0.19 kB \u2502 gzip:   0.14 kB\r\ndist/assets/IE-CC1H49FQ.svg                                           0.19 kB \u2502 gzip:   0.15 kB\r\ndist/assets/NL-CTnEN351.svg                                           0.19 kB \u2502 gzip:   0.14 kB\r\ndist/assets/RU-_JGYxDSu.svg                                           0.19 kB \u2502 gzip:   0.14 kB\r\ndist/assets/AM-CCmj4snF.svg                                           0.19 kB \u2502 gzip:   0.14 kB\r\ndist/assets/GA-QwJ2bO78.svg                                           0.19 kB \u2502 gzip:   0.14 kB\r\ndist/assets/LT-CdkUUKDI.svg                                           0.19 kB \u2502 gzip:   0.14 kB\r\ndist/assets/GB-ENG-DGCB4G_q.svg                                       0.19 kB \u2502 gzip:   0.15 kB\r\ndist/assets/BO-CVtRot57.svg                                           0.19 kB \u2502 gzip:   0.14 kB\r\ndist/assets/GN-P-Ux_2MV.svg                                           0.19 kB \u2502 gzip:   0.15 kB\r\ndist/assets/MQ-DGyiiL9y.svg                                           0.19 kB \u2502 gzip:   0.14 kB\r\ndist/assets/CG-BTepFLZc.svg                                           0.20 kB \u2502 gzip:   0.15 kB\r\ndist/assets/CO-DjJiU0n9.svg                                           0.20 kB \u2502 gzip:   0.15 kB\r\ndist/assets/ML-X0AlG1wo.svg                                           0.20 kB \u2502 gzip:   0.15 kB\r\ndist/assets/RO-Cl_f24A6.svg                                           0.20 kB \u2502 gzi\n\u2026[truncated]",
+        "durationMs": 5989
+      },
+      {
+        "name": "tests-pass",
+        "kind": "process",
+        "verificationMethod": "test-results",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": 0,
+        "outputSample": "npm warn Unknown env config \u0022scripts-prepend-node-path\u0022. This will stop working in the next major version of npm.\r\n\r\n\u003E frontend@0.0.0 test\r\n\u003E vitest run\r\n\r\n\r\n RUN  v5.0.5 C:/Users/PC/Desktop/Moment/frontend\r\n\r\n\r\n Test Files  49 passed (49)\r\n      Tests  242 passed (242)\r\n   Start at  15:17:55\r\n   Duration  5.58s (import 33%, tests 26%, transform 21%, worker 19%, environment 1%)\r\n\r\n    Isolate  49 workers spawned \u00B7 ~609ms startup each (spawn \u002B environment, per file)\r\n             at least ~3.65s faster with isolate: false \u2014 reuses workers across files instead of one per file\r\n\r\n",
+        "durationMs": 7181,
+        "testResults": {
+          "testFramework": "vitest",
+          "runnerDetectedFrom": "package_json",
+          "testsTotal": 242,
+          "testsPassed": 242,
+          "testsFailed": 0,
+          "testsSkipped": 0,
+          "parseFailed": false
+        }
+      },
+      {
+        "name": "event-route-serves-app",
+        "kind": "http-probe",
+        "verificationMethod": "output-contains",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": null,
+        "outputSample": "HTTP 200\n\u003C!doctype html\u003E\r\n\u003Chtml lang=\u0022fr\u0022\u003E\r\n  \u003Chead\u003E\n    \u003Cscript type=\u0022module\u0022\u003Eimport { injectIntoGlobalHook } from \u0022/@react-refresh\u0022;\ninjectIntoGlobalHook(window);\nwindow.$RefreshReg$ = () =\u003E {};\nwindow.$RefreshSig$ = () =\u003E (type) =\u003E type;\u003C/script\u003E\n\n    \u003Cscript type=\u0022module\u0022 src=\u0022/@vite/client\u0022\u003E\u003C/script\u003E\n\r\n    \u003Cmeta charset=\u0022UTF-8\u0022 /\u003E\r\n    \u003C!-- Ic\u00F4nes carr\u00E9es (multiples de 48 px : format attendu par Google dans les r\u00E9sultats). --\u003E\r\n    \u003Clink rel=\u0022icon\u0022 type=\u0022image/png\u0022 sizes=\u002248x48\u0022 href=\u0022/favicon-48.png\u0022 /\u003E\r\n    \u003Clink rel=\u0022icon\u0022 type=\u0022image/png\u0022 sizes=\u002296x96\u0022 href=\u0022/favicon-96.png\u0022 /\u003E\r\n    \u003Clink rel=\u0022icon\u0022 type=\u0022image/png\u0022 sizes=\u0022192x192\u0022 href=\u0022/icon-192.png\u0022 /\u003E\r\n    \u003Clink rel=\u0022apple-touch-icon\u0022 sizes=\u0022180x180\u0022 href=\u0022/apple-touch-icon.png\u0022 /\u003E\r\n    \u003Clink rel=\u0022manifest\u0022 href=\u0022/site.webmanifest\u0022 /\u003E\r\n    \u003Cmeta name=\u0022viewport\u0022 content=\u0022width=device-width, initial-scale=1.0\u0022 /\u003E\r\n    \u003Clink rel=\u0022preconnect\u0022 href=\u0022https://api.tbfmoment.com\u0022 crossorigin /\u003E\r\n    \u003Ctitle\u003ETBF Moment \u2014 Cr\u00E9ez le site de votre \u00E9v\u00E9nement\u003C/title\u003E\r\n    \u003C!-- Valeurs par d\u00E9faut, lues par les robots qui n\u0027ex\u00E9cutent pas le JavaScript\r\n         (aper\u00E7us WhatsApp, Facebook, LinkedIn\u2026). Chaque page les remplace ensuite via\r\n         src/utils/seo.js. http://localhost:5173 est remplac\u00E9 au build. --\u003E\r\n    \u003Cmeta\r\n      name=\u0022description\u0022\r\n      content=\u0022Cr\u00E9ez en quelques minutes le site de votre \u00E9v\u00E9nement (mariage, anniversaire, conf\u00E9rence, concert\u2026) : invitations, confirmations de pr\u00E9sence, programme, billetterie et livre d\u0027or.\u0022\r\n    /\u003E\r\n    \u003Cmeta name=\u0022robots\u0022 content=\u0022index, follow, max-image-preview:large\u0022 /\u003E\r\n    \u003Cmeta name=\u0022theme-color\u0022 content=\u0022#0b1020\u0022 /\u003E\r\n    \u003Cmeta name=\u0022application-name\u0022 content=\u0022TBF Moment\u0022 /\u003E\r\n    \u003Cmeta property=\u0022og:site_name\u0022 content=\u0022TBF Moment\u0022 /\u003E\r\n    \u003Cmeta property=\u0022og:locale\u0022 content=\u0022fr_FR\u0022 /\u003E\r\n    \u003Cmeta property=\u0022og:type\u0022 content=\u0022website\u0022 /\u003E\r\n    \u003Cmeta property=\u0022og:title\u0022 content=\u0022TBF Moment \u2014 Cr\u00E9ez le site de votre \u00E9v\u00E9nement\u0022 /\u003E\r\n    \u003Cmeta\r\n      property=\u0022og:description\u0022\r\n      content=\u0022Invitations, confirmations de pr\u00E9sence, programme, billetterie et livre d\u0027or : le site de votre \u00E9v\u00E9nement en quelques minutes.\u0022\r\n    /\u003E\r\n    \u003Cmeta property=\u0022og:url\u0022 content=\u0022http://localhost:5173/\u0022 /\u003E\r\n    \u003Cmeta property=\u0022og:image\u0022 content=\u0022http://localhost:5173/og-image.png\u0022 /\u003E\r\n    \u003Cmeta property=\u0022og:image:width\u0022 content=\u00221200\u0022 /\u003E\r\n    \u003Cmeta property=\u0022og:image:height\u0022 content=\u0022630\u0022 /\u003E\r\n    \u003Cmeta name=\u0022twitter:card\u0022 content=\u0022summary_large_image\u0022 /\u003E\r\n    \u003Cmeta name=\u0022twitter:image\u0022 content=\u0022http://localhost:5173/og-image.png\u0022 /\u003E\r\n    \u003Clink rel=\u0022canonical\u0022 href=\u0022http://localhost:5173/\u0022 /\u003E\r\n    \u003Cscript\u003E\r\n      (function () {\r\n        try {\r\n          var mode = localStorage.getItem(\u0027tbf_theme\u0027);\r\n          if (mode) mode = JSON.parse(mode);\r\n        } catch (e) {\r\n          mode = null;\r\n        }\r\n        var resolved =\r\n          mode === \u0027light\u0027 || mode === \u0027dark\u0027\r\n            ? mode\r\n            : mode === \u0027auto\u0027 \u0026\u0026\r\n                window.matchMedia(\u0027(prefers-color-scheme: light)\u0027).matches\r\n              ? \u0027light\u0027\r\n              : mode === \u0027auto\u0027\r\n                ? \u0027dark\u0027\r\n                : \u0027dark\u0027;\r\n        document.documentElement.setAttribute(\u0027data-theme\u0027, resolved);\r\n        // Pages des invit\u00E9s (site, invitation, cadeaux) et d\u00E9mo d\u0027un mod\u00E8le dans le t\u00E9l\u00E9phone\r\n        // d\u0027aper\u00E7u (?cadre=1) : pas d\u0027\u00E9cran d\u0027accueil TBF Moment, masqu\u00E9 avant le premier\r\n        // affichage pour qu\u0027il n\u0027apparaisse m\u00EAme pas un instant.\r\n        if (\r\n          /^\\/(e|invitation|cadeaux)\\//.test(window.location.pathname) ||\r\n          /[?\u0026]cadre=1(\u0026|$)/.test(window.location.search)\r\n        ) {\r\n          document.documentElement.setAttribute(\u0027data-guest-page\u0027, \u0027\u0027);\r\n        }\r\n      })();\r\n    \u003C/script\u003E\r\n    \u003Cstyle\u003E\n      [data-guest-page] #startup-splash {\n        display: none !important;\n      }\n      #startup-splash {\n        position: fixed;\n        inset: 0;\n        z-index: 9999;\n        display: grid;\n        place-items: center;\n        background:\n          radial-gradient(ellipse at 50% 42%, #6c4bf426, transparent 48%),\n          #0b1020;\n        \n\u2026[truncated]",
+        "durationMs": 4116
+      }
+    ],
+    "executions": [
+      {
+        "source": "production-build",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.cmd",
+        "args": [
+          "run",
+          "build"
+        ],
+        "cwd": "C:\\Users\\PC\\Desktop\\Moment\\frontend",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32",
+        "nodeExecutable": "C:\\Program Files\\nodejs\\node.EXE",
+        "nodeVersion": "v24.18.0",
+        "packageManager": "npm",
+        "packageManagerExecutable": "C:\\Program Files\\nodejs\\npm.cmd",
+        "packageManagerVersion": "11.6.4",
+        "cleanup": {
+          "RootProcessId": 27228,
+          "Completed": true,
+          "ProcessesObserved": 10,
+          "ProcessesTerminated": 1,
+          "Failure": null
+        }
+      },
+      {
+        "source": "tests-pass",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.cmd",
+        "args": [
+          "test"
+        ],
+        "cwd": "C:\\Users\\PC\\Desktop\\Moment\\frontend",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32",
+        "nodeExecutable": "C:\\Program Files\\nodejs\\node.EXE",
+        "nodeVersion": "v24.18.0",
+        "packageManager": "npm",
+        "packageManagerExecutable": "C:\\Program Files\\nodejs\\npm.cmd",
+        "packageManagerVersion": "11.6.4",
+        "cleanup": {
+          "RootProcessId": 9792,
+          "Completed": true,
+          "ProcessesObserved": 59,
+          "ProcessesTerminated": 1,
+          "Failure": null
+        }
+      },
+      {
+        "source": "event-route-serves-app",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.cmd",
+        "args": [
+          "run",
+          "dev",
+          "--",
+          "--host",
+          "127.0.0.1"
+        ],
+        "cwd": "C:\\Users\\PC\\Desktop\\Moment\\frontend",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32",
+        "nodeExecutable": "C:\\Program Files\\nodejs\\node.EXE",
+        "nodeVersion": "v24.18.0",
+        "packageManager": "npm",
+        "packageManagerExecutable": "C:\\Program Files\\nodejs\\npm.cmd",
+        "packageManagerVersion": "11.6.4",
+        "cleanup": {
+          "RootProcessId": 3048,
+          "Completed": true,
+          "ProcessesObserved": 10,
+          "ProcessesTerminated": 5,
+          "Failure": null
+        }
+      }
+    ]
+  }
+}
