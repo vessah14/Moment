@@ -1,7 +1,6 @@
 import { Component } from 'react'
 import { useLocation } from 'react-router-dom'
 import logoMark from '../assets/logo-mark.webp'
-import { isStaleBuildError, reloadOnceForNewVersion } from '../utils/staleBuild'
 
 // Page affichée quand une page plante (au lieu d'un écran blanc). Volontairement
 // autonome : le gabarit du site lui-même peut être la cause de l'erreur.
@@ -39,26 +38,19 @@ function ErrorScreen({ details }) {
 }
 
 class Boundary extends Component {
-  state = { error: null, reloadFailed: false }
+  state = { error: null }
 
   static getDerivedStateFromError(error) {
-    return { error, reloadFailed: false }
-  }
-
-  componentDidCatch(error) {
-    // Fichier d'une ancienne version après une mise en ligne : rechargement silencieux.
-    // Déjà rechargé il y a peu (le fichier manque vraiment) : on affiche l'écran d'erreur.
-    if (isStaleBuildError(error) && !reloadOnceForNewVersion()) this.setState({ reloadFailed: true })
+    return { error }
   }
 
   componentDidUpdate(previousProps) {
     // Changement de page : on retente l'affichage.
-    if (this.state.error && previousProps.resetKey !== this.props.resetKey) this.setState({ error: null, reloadFailed: false })
+    if (this.state.error && previousProps.resetKey !== this.props.resetKey) this.setState({ error: null })
   }
 
   render() {
     if (!this.state.error) return this.props.children
-    if (isStaleBuildError(this.state.error) && !this.state.reloadFailed) return null // rechargement en cours
     return <ErrorScreen details={import.meta.env.DEV ? String(this.state.error?.stack ?? this.state.error) : null} />
   }
 }

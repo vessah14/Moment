@@ -29,29 +29,15 @@ namespace backend_EventMoment.Services
             // Accompagnants : dernière réponse de chaque invité, seulement s'il vient
             // (un invité qui a confirmé puis refusé, ou passé « Absent » par l'organisateur,
             // ne compte plus ses accompagnants).
-            int totalAccompanying;
-            if (_context.Database.IsNpgsql())
-            {
-                var latestResponses = _context.RsvpResponses
-                    .Where(r => r.EventId == eventId)
-                    .GroupBy(r => r.GuestId)
-                    .Select(group => group.OrderByDescending(r => r.CreatedAt).First());
-                totalAccompanying = await latestResponses
-                    .Where(r => r.Confirmed == true && r.Guest.Status == GuestStatus.Present)
-                    .SumAsync(r => (int?)r.AccompanyingCount) ?? 0;
-            }
-            else
-            {
-                var responses = await _context.RsvpResponses
-                    .Where(r => r.EventId == eventId)
-                    .Select(r => new { r.GuestId, r.Confirmed, r.AccompanyingCount, r.CreatedAt, GuestStatus = r.Guest.Status })
-                    .ToListAsync();
-                totalAccompanying = responses
-                    .GroupBy(r => r.GuestId)
-                    .Select(group => group.OrderByDescending(r => r.CreatedAt).First())
-                    .Where(r => r.Confirmed == true && r.GuestStatus == GuestStatus.Present)
-                    .Sum(r => (int)r.AccompanyingCount);
-            }
+            var responses = await _context.RsvpResponses.AsNoTracking()
+                .Where(r => r.EventId == eventId)
+                .Select(r => new { r.GuestId, r.Confirmed, r.AccompanyingCount, r.CreatedAt, GuestStatus = r.Guest.Status })
+                .ToListAsync();
+            var totalAccompanying = responses
+                .GroupBy(r => r.GuestId)
+                .Select(group => group.OrderByDescending(r => r.CreatedAt).First())
+                .Where(r => r.Confirmed == true && r.GuestStatus == GuestStatus.Present)
+                .Sum(r => (int)r.AccompanyingCount);
 
             var daily = await _context.EventStatsDailies
                 .Where(s => s.EventId == eventId)

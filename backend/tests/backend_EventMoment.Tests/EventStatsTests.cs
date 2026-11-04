@@ -89,4 +89,29 @@ public class EventStatsTests
         Assert.Equal(1, summary.PendingGuests);
         Assert.Equal(2, summary.TotalAccompanying);
     }
+
+    [Fact]
+    public async Task Accompanying_UsesEachGuestsLatestResponse()
+    {
+        var (context, organizerId, evt) = Seed();
+        var changedToNo = AddGuest(context, evt, GuestStatus.Present, confirmed: true, accompanying: 2);
+        var changedToYes = AddGuest(context, evt, GuestStatus.Present, confirmed: false, accompanying: 0);
+
+        context.RsvpResponses.AddRange(
+            new RsvpResponse
+            {
+                Id = Guid.NewGuid(), GuestId = changedToNo.Id, EventId = evt.Id, Confirmed = false,
+                AccompanyingCount = 0, CreatedAt = DateTimeOffset.UtcNow.AddMinutes(1),
+            },
+            new RsvpResponse
+            {
+                Id = Guid.NewGuid(), GuestId = changedToYes.Id, EventId = evt.Id, Confirmed = true,
+                AccompanyingCount = 3, CreatedAt = DateTimeOffset.UtcNow.AddMinutes(1),
+            });
+        await context.SaveChangesAsync();
+
+        var summary = await new EventStatsService(context).GetSummaryAsync(evt.Id, organizerId);
+
+        Assert.Equal(3, summary.TotalAccompanying);
+    }
 }
