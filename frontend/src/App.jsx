@@ -14,7 +14,6 @@ import ScrollToTop from './components/ScrollToTop'
 import BackToTop from './components/layout/BackToTop'
 
 const Builder = lazy(() => import('./pages/Builder'))
-const FlyerStudio = lazy(() => import('./pages/FlyerStudio'))
 const CookiesPolicy = lazy(() => import('./pages/CookiesPolicy'))
 const CreateEvent = lazy(() => import('./pages/CreateEvent'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
@@ -111,7 +110,6 @@ function App () {
           <Route path='/modeles/:theme' element={<TemplateDemo />} />
           <Route path='/tarifs' element={<Pricing />} />
           <Route path='/billets' element={<TicketModels />} />
-          <Route path='/flyer' element={<FlyerStudio />} />
           <Route path='/ecosysteme' element={<Ecosystem />} />
           <Route path='/support' element={<Support />} />
           <Route path='/mentions-legales' element={<LegalNotice />} />

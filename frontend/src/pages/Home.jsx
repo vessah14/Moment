@@ -4,7 +4,6 @@ import AllIncluded from '../components/home/AllIncluded'
 import CostCalculator from '../components/home/CostCalculator'
 import Faq from '../components/home/Faq'
 import FinalCta from '../components/home/FinalCta'
-import FlyerTeaser from '../components/home/FlyerTeaser'
 import Hero from '../components/home/Hero'
 import HomeEventBanner from '../components/home/HomeEventBanner'
 import HowItWorks from '../components/home/HowItWorks'
@@ -35,7 +34,6 @@ export default function Home() {
       <PopularTemplates />
       <AllIncluded />
       <Testimonials />
-      <FlyerTeaser />
       <Souvenirs />
       <CostCalculator />
       <PricingTeaser />

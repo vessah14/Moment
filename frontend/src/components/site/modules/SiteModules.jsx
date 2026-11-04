@@ -1,4 +1,4 @@
-import { CalendarPlus, Check, Copy, Gift, MapPin, Navigation, Search, Share2, Ticket } from 'lucide-react'
+import { CalendarPlus, Check, Copy, Gift, MapPin, Navigation, Search, Ticket } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { mediaUrl } from '../../../api/client'
@@ -17,7 +17,6 @@ import { useCheckInWatch } from '../../../utils/useCheckInWatch'
 import { operatorStyle, usableAccounts, usableColors } from '../../../utils/mobileMoney'
 import { parseVideoUrl } from '../../../utils/videoEmbed'
 import { compressImage } from '../../../utils/imageCompress'
-import { guestStatusFlyerLink } from '../../../utils/flyerLink'
 import { identity } from '../themes/envol/envolI18n'
 
 // Modules du site d'événement partagés par le rendu classique (Tailwind) et les modèles
@@ -530,7 +529,6 @@ export function SeatingModule({ tables = [], slug, themed, editable, findSeat })
 export function GuestPass({ invitation, eventTitle, ticket = {}, onInvitationChange, watch = true, onLeave, allowGuestUploads = false }) {
   const template = findTemplate(invitation.template)
   const themed = Boolean(template)
-  const c = cls(themed)
   useCheckInWatch(invitation, onInvitationChange, watch)
   // Carte souvenir : lien vers la galerie seulement si la page en affiche une.
   const [hasGallery, setHasGallery] = useState(false)
@@ -543,11 +541,6 @@ export function GuestPass({ invitation, eventTitle, ticket = {}, onInvitationCha
     photo: mediaUrl(invitation.coverImageUrl),
     galleryHref: hasGallery ? `#${siteBlockDomId('Galerie')}` : '',
     onOpen: onLeave,
-  })
-  const statusFlyer = guestStatusFlyerLink({
-    eventName: invitation.displayTitle || invitation.eventName,
-    eventDate: invitation.eventDate,
-    eventCategoryCode: invitation.eventCategoryCode,
   })
   return (
     <>
@@ -577,17 +570,6 @@ export function GuestPass({ invitation, eventTitle, ticket = {}, onInvitationCha
         edition={{ number: invitation.ticketNumber, total: invitation.ticketTotal }}
         vip={invitation.isVip}
       />
-      {invitation.rsvpConfirmed && statusFlyer && (
-        <a
-          href={statusFlyer.href}
-          className={c.ghost}
-          onClick={stop}
-          style={{ display: 'flex', justifyContent: 'center', margin: '1rem auto 0', maxWidth: '32rem' }}
-        >
-          <Share2 size={16} aria-hidden="true" />
-          {statusFlyer.label}
-        </a>
-      )}
       {invitation.checkedInAt ? (
         <GuestNightGuide invitation={invitation} themed={themed} />
       ) : (

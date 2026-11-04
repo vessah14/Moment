@@ -38,6 +38,7 @@ export default defineConfig(({ mode }) => {
           if (!id.includes("node_modules")) return undefined;
           if (/node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return "react-vendor";
           if (/node_modules[\\/](react-router|react-router-dom)[\\/]/.test(id)) return "router";
+          if (/node_modules[\\/](lucide-react)[\\/]/.test(id)) return "lucide-icons";
           return undefined;
         },
       },

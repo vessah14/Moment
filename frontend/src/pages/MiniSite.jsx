@@ -1,15 +1,16 @@
 import { PencilLine } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { isAuthenticated, mediaUrl } from '../api/client'
 import { listEvents } from '../api/events'
 import { getPublicGifts } from '../api/giftRegistry'
 import { getPublicInvitation } from '../api/guests'
-import { getPublicGuestBookEntries, getPublicSeating, getPublicSite, submitPublicEventRsvp, trackPublicEvent } from '../api/publicEvents'
+import { clearCachedPublicSite, getCachedPublicSite, getPublicGuestBookEntries, getPublicSeating, getPublicSite, submitPublicEventRsvp, trackPublicEvent } from '../api/publicEvents'
 import logoMark from '../assets/logo-mark.webp'
 import SitePage from '../components/site/SitePage'
 import InvitationLoader from '../components/site/InvitationLoader'
 import EventLoader from '../components/site/EventLoader'
+import Button from '../components/ui/Button'
 import { saveEventLook } from '../utils/eventLook'
 import { formatEventDate } from '../utils/eventStatus'
 import { isInviteCode } from '../utils/mobileMoney'
@@ -125,9 +126,22 @@ export default function MiniSite () {
     invitationPreview?.guestId === inviteParam
       ? invitationPreview
       : null
-  const [site, setSite] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [siteState, setSiteState] = useState(() => ({
+    slug,
+    data: getCachedPublicSite(slug)
+  }))
+  const site = siteState.slug === slug ? siteState.data : null
+  const setSite = useCallback(update => setSiteState(current => {
+    const currentSite = current.slug === slug ? current.data : null
+    const data = typeof update === 'function' ? update(currentSite) : update
+    return { slug, data }
+  }), [slug])
+  const [loading, setLoading] = useState(() => !siteState.data)
+  const siteLoading = loading || siteState.slug !== slug
   const [error, setError] = useState('')
+  const [siteNotice, setSiteNotice] = useState('')
+  const [networkUnavailable, setNetworkUnavailable] = useState(false)
+  const [siteRetry, setSiteRetry] = useState(0)
   // Données des modules (liste de cadeaux, tables) et invité arrivé par son lien personnel.
   const [extras, setExtras] = useState({ gifts: [], seatingTables: [] })
   const [invitation, setInvitation] = useState(matchingPreview)
@@ -217,11 +231,23 @@ export default function MiniSite () {
   }, [slug, inviteParam, matchingPreview])
 
   useEffect(() => {
-    setLoading(true)
-    getPublicSite(slug)
+    let cancelled = false
+    const controller = new AbortController()
+    const cachedSite = getCachedPublicSite(slug)
+    setSite(cachedSite)
+    setLoading(!cachedSite)
+    setError('')
+    setSiteNotice('')
+    setNetworkUnavailable(false)
+    setExtras({ gifts: [], seatingTables: [] })
+
+    getPublicSite(slug, { signal: controller.signal })
       .then(data => {
+        if (cancelled) return
         setSite(data)
         setError('')
+        setSiteNotice('')
+        setNetworkUnavailable(false)
         // Apparence mémorisée pour l'écran de chargement des prochaines visites.
         const hero = parseContent(data.blocks?.find(b => b.blockType === 'Hero')?.content)
         const lookTitle = hero.title || data.event?.name || ''
@@ -242,11 +268,42 @@ export default function MiniSite () {
             .then(tables => setExtras(prev => ({ ...prev, seatingTables: tables ?? [] })))
             .catch(() => {})
       })
-      .catch(() =>
-        setError("Cet événement n'est pas (encore) publié, ou n'existe pas.")
-      )
-      .finally(() => setLoading(false))
-  }, [slug])
+      .catch(loadError => {
+        if (cancelled || loadError?.name === 'AbortError') return
+
+        const retryable = loadError?.status === 0 || loadError?.status === 408 || loadError?.status >= 500
+        const lastKnownSite = retryable ? getCachedPublicSite(slug) : null
+        if (lastKnownSite) {
+          setSite(lastKnownSite)
+          setError('')
+          setSiteNotice("Connexion instable : la dernière version enregistrée est affichée.")
+          setNetworkUnavailable(true)
+          return
+        }
+
+        if (loadError?.status === 404) clearCachedPublicSite(slug)
+        setSite(null)
+        setError(loadError?.status === 404
+          ? "Cet événement n'est pas (encore) publié, ou n'existe pas."
+          : "La connexion est momentanément instable. Réessayez dans quelques instants.")
+        setNetworkUnavailable(retryable)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+      controller.abort()
+    }
+  }, [slug, siteRetry, setSite])
+
+  useEffect(() => {
+    if (!networkUnavailable) return undefined
+    const retryWhenOnline = () => setSiteRetry(value => value + 1)
+    window.addEventListener('online', retryWhenOnline)
+    return () => window.removeEventListener('online', retryWhenOnline)
+  }, [networkUnavailable])
 
   const hasGuestBook = site?.blocks?.some(block => block.blockType === "Livre d'or") ?? false
   useEffect(() => {
@@ -269,7 +326,7 @@ export default function MiniSite () {
       cancelled = true
       clearInterval(timer)
     }
-  }, [slug, hasGuestBook])
+  }, [slug, hasGuestBook, setSite])
 
   const loaderHero = site?.blocks?.find(block => block.blockType === 'Hero')
   const loaderHeroContent = loaderHero ? parseContent(loaderHero.content) : {}
@@ -290,7 +347,7 @@ export default function MiniSite () {
       : ''
   )
 
-  if (loading) {
+  if (siteLoading) {
     if (invitationLoading || isInviteCode(inviteParam)) {
       return (
         <InvitationLoader
@@ -319,9 +376,15 @@ export default function MiniSite () {
     return (
       <div className='flex min-h-svh flex-col items-center justify-center gap-4 px-6 text-center'>
         <img src={logoMark} alt='' className='h-10 w-10 opacity-80' />
-        <p className='text-sm text-faint'>
+        <p role='alert' className='max-w-md text-sm text-faint'>
           {error || 'Événement introuvable.'}
         </p>
+        <Button onClick={() => {
+          setLoading(true)
+          setSiteRetry(value => value + 1)
+        }}>
+          Réessayer
+        </Button>
       </div>
     )
   }
@@ -362,6 +425,16 @@ export default function MiniSite () {
 
   return (
     <>
+      {siteNotice && (
+        <div role='status' className='fixed inset-x-0 top-0 z-[100] flex items-center justify-center gap-3 bg-amber-100 px-4 py-2 text-center text-sm text-amber-950'>
+          <span>{siteNotice}</span>
+          <button type='button' className='font-semibold underline' onClick={() => {
+            setSiteRetry(value => value + 1)
+          }}>
+            Actualiser
+          </button>
+        </div>
+      )}
       {ownEventId && (
         <Link
           to={`/builder/${ownEventId}`}
@@ -393,8 +466,6 @@ export default function MiniSite () {
         blockContent={blockContent}
         data={{
           slug: event.slug,
-          // Bouton « Faire un flyer » du pied de page.
-          flyer: { type: eventTypeId, title: event.name, displayName: displayText, age: birthdayAge },
           eventDateTime: event.eventDate
             ? `${event.eventDate}T${event.startTime ?? '00:00:00'}`
             : '',

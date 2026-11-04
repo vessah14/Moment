@@ -10,7 +10,6 @@ const COLUMNS = [
       { label: t("Fonctionnalités"), to: '/#fonctionnalites' },
       { label: t("Modèles"), to: '/modeles' },
       { label: t("Modèles de billets"), to: '/billets' },
-      { label: t("Flyer d'honneur"), to: '/flyer' },
       { label: t("Tarifs"), to: '/tarifs' }
     ]
   },

@@ -18,7 +18,6 @@ import {
   Navigation,
   Play,
   Share2,
-  Sparkles,
   Star,
   Ticket,
   Users,
@@ -53,7 +52,6 @@ import Sceau, { BandeGuillochee } from './envol/Sceau'
 import { identity, makeTranslator } from './envol/envolI18n'
 import { isSameDayInTimeZone, parseDateTimeInTimeZone, timeZoneYear } from '../../../utils/minuitTime'
 import ReportPageLink from '../ReportPage'
-import { flyerLink } from '../../../utils/flyerLink'
 import './themes.css'
 
 // Rendu « premium » du site d'un événement (Noor, Bloom, Toghu, Ndop, Fiesta,
@@ -528,9 +526,6 @@ export default function ThemedSitePage({
       : new Date(data.eventDateTime)
     : null
   const validStart = start && !Number.isNaN(start.getTime()) ? start : null
-  const flyer = data.flyer && validStart
-    ? flyerLink({ ...data.flyer, start: validStart, slug: data.slug, venueName: data.locationLabel, venueAddress: data.locationAddress, cover: data.coverPath })
-    : null
   // Grand mot du héros « big » : l'âge (« 30 ans ») ou, à défaut, celui du modèle
   // (LIVE, la date de la soirée, EXPO…).
   const heroBig = titleInfo.big
@@ -1391,12 +1386,6 @@ export default function ThemedSitePage({
                 <Share2 />
                 {t('Partager sur WhatsApp')}
               </a>
-            )}
-            {!editable && flyer && (
-              <Link className="btn ghost" to={flyer.href}>
-                <Sparkles />
-                {t(flyer.label)}
-              </Link>
             )}
             <div className="links">
               {data.slug && <Link to={`/cadeaux/${data.slug}`}>Liste de cadeaux</Link>}
