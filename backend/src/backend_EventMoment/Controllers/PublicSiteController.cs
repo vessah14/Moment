@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using backend_EventMoment.Interfaces;
+using backend_EventMoment.Services;
 
 namespace backend_EventMoment.Controllers
 {
@@ -37,6 +38,32 @@ namespace backend_EventMoment.Controllers
         public class TrackEventDto
         {
             public string? Type { get; set; }
+        }
+
+        // « Signaler cette page » : alerte l'équipe TBF MOMENT, pas l'organisateur.
+        [HttpPost("api/public/events/{slug}/report")]
+        [AllowAnonymous]
+        [EnableRateLimiting("public-report")]
+        public async Task<IActionResult> Report(string slug, [FromBody] ReportPageDto dto, [FromServices] IPageReportService reports)
+        {
+            if (slug.Length > 200) return BadRequest();
+            try
+            {
+                return await reports.ReportAsync(slug, dto.Reason, dto.Message, dto.Contact) ? NoContent() : NotFound();
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
+
+        public class ReportPageDto
+        {
+            public string? Reason { get; set; }
+            [System.ComponentModel.DataAnnotations.MaxLength(2000)]
+            public string? Message { get; set; }
+            [System.ComponentModel.DataAnnotations.MaxLength(500)]
+            public string? Contact { get; set; }
         }
 
         // Mur du jour J, projeté dans la salle (relu toutes les 15 s par la page /e/{slug}/mur).

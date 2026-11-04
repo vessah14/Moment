@@ -136,6 +136,10 @@ builder.Services.AddRateLimiter(options =>
         ClientIp(context),
         _ => new FixedWindowRateLimiterOptions { PermitLimit = Limit("PublicRead", 60), Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
     // Photos des invités (jusqu’à 10 Mo chacune) : quota plus serré que les formulaires.
+    // « Signaler cette page » : chaque signalement part par e-mail aux administrateurs.
+    options.AddPolicy("public-report", context => RateLimitPartition.GetFixedWindowLimiter(
+        ClientIp(context),
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = Limit("PublicReport", 5), Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
     options.AddPolicy("public-upload", context => RateLimitPartition.GetFixedWindowLimiter(
         ClientIp(context),
         _ => new FixedWindowRateLimiterOptions { PermitLimit = Limit("PublicUpload", 12), Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
@@ -268,6 +272,7 @@ builder.Services.AddScoped<IGalleryService, GalleryService>();
 builder.Services.AddScoped<IGuestService, GuestService>();
 builder.Services.AddScoped<IPlanService, PlanService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
+builder.Services.AddScoped<IPageReportService, PageReportService>();
 builder.Services.AddScoped<IGuestGroupService, GuestGroupService>();
 builder.Services.AddScoped<IRsvpService, RsvpService>();
 builder.Services.AddScoped<ISubscriptionPlanService, SubscriptionPlanService>();

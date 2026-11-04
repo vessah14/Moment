@@ -60,6 +60,7 @@ export const MINUIT_EN = {
   "Merci d'avoir célébré avec nous": 'Thank you for celebrating with us',
   'Partager sur WhatsApp': 'Share on WhatsApp',
   'Confidentialité': 'Privacy',
+  'Signaler cette page': 'Report this page',
   'Mentions légales': 'Legal notice',
   'Les photos de l’événement apparaîtront ici.': 'Event photos will appear here.',
 }

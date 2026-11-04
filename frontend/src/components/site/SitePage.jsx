@@ -28,6 +28,8 @@ import {
 } from '../../utils/sitePage'
 import { HEADING_FONT_STACKS, siteRootStyle } from '../../utils/templateTheme'
 import GuestBookForm from '../minisite/GuestBookForm'
+import ReportPageLink from './ReportPage'
+import { flyerLink } from '../../utils/flyerLink'
 import BlockToolbar from './BlockToolbar'
 import { DressCodeModule, FamiliesModule, GiftModule, GuestPass, GuestPhotoUpload, HonoursModule, PartnersModule, RsvpModule, SeatingModule, SpeakersModule, VideoModule } from './modules/SiteModules'
 import { parseVideoUrl } from '../../utils/videoEmbed'
@@ -948,7 +950,11 @@ function renderBlockBody({ block, content, data, editable, editor, fullPage, ani
       )
     }
 
-    case 'Pied de page':
+    case 'Pied de page': {
+      const start = data.eventDateTime ? new Date(data.eventDateTime) : null
+      const flyer = data.flyer && !editable && start && !Number.isNaN(start.getTime())
+        ? flyerLink({ ...data.flyer, start, slug: data.slug, venueName: data.locationLabel, venueAddress: data.locationAddress, cover: data.coverPath })
+        : null
       return (
         <div className="flex flex-col items-center gap-4 text-center">
           <p
@@ -970,6 +976,12 @@ function renderBlockBody({ block, content, data, editable, editor, fullPage, ani
             <Link to="/mentions-legales" className="hover:text-ink">
               Mentions légales
             </Link>
+            {flyer && (
+              <Link to={flyer.href} className="hover:text-ink">
+                {flyer.label}
+              </Link>
+            )}
+            <ReportPageLink slug={data.slug} className="hover:text-ink" />
           </div>
           {data.showBranding !== false && (
             <span className="inline-flex items-center gap-2 rounded-full bg-surface-2 px-3 py-1 text-[11px] font-semibold text-faint">
@@ -979,6 +991,7 @@ function renderBlockBody({ block, content, data, editable, editor, fullPage, ani
           )}
         </div>
       )
+    }
 
     case 'FAQ': {
       // Seules les questions remplies sont affichées ; le texte du bloc sert d'introduction.
@@ -1526,6 +1539,7 @@ function ClassicSitePage({
             eventTitle={data.title}
             onInvitationChange={data.onInvitationChange}
             watch={!data.submitRsvp}
+            onLeave={() => setPassOpen(false)}
           />
         </PassDialog>
       )}

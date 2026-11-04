@@ -18,6 +18,7 @@ import {
   Navigation,
   Play,
   Share2,
+  Sparkles,
   Star,
   Ticket,
   Users,
@@ -51,6 +52,8 @@ import { createGuestTicketQr } from '../../../utils/ticketQr'
 import Sceau, { BandeGuillochee } from './envol/Sceau'
 import { identity, makeTranslator } from './envol/envolI18n'
 import { isSameDayInTimeZone, parseDateTimeInTimeZone, timeZoneYear } from '../../../utils/minuitTime'
+import ReportPageLink from '../ReportPage'
+import { flyerLink } from '../../../utils/flyerLink'
 import './themes.css'
 
 // Rendu « premium » du site d'un événement (Noor, Bloom, Toghu, Ndop, Fiesta,
@@ -517,6 +520,9 @@ export default function ThemedSitePage({
       : new Date(data.eventDateTime)
     : null
   const validStart = start && !Number.isNaN(start.getTime()) ? start : null
+  const flyer = data.flyer && validStart
+    ? flyerLink({ ...data.flyer, start: validStart, slug: data.slug, venueName: data.locationLabel, venueAddress: data.locationAddress, cover: data.coverPath })
+    : null
   // Grand mot du héros « big » : l'âge (« 30 ans ») ou, à défaut, celui du modèle
   // (LIVE, la date de la soirée, EXPO…).
   const heroBig = titleInfo.big
@@ -1361,10 +1367,17 @@ export default function ThemedSitePage({
                 {t('Partager sur WhatsApp')}
               </a>
             )}
+            {!editable && flyer && (
+              <Link className="btn ghost" to={flyer.href}>
+                <Sparkles />
+                {t(flyer.label)}
+              </Link>
+            )}
             <div className="links">
               {data.slug && <Link to={`/cadeaux/${data.slug}`}>Liste de cadeaux</Link>}
               <Link to="/confidentialite">{t('Confidentialité')}</Link>
               <Link to="/mentions-legales">{t('Mentions légales')}</Link>
+              <ReportPageLink slug={data.slug} label={t('Signaler cette page')} />
             </div>
             {data.showBranding !== false && (
               <p className="made">
@@ -1622,7 +1635,20 @@ export default function ThemedSitePage({
 
         {sections}
 
-        {!has('Pied de page') && data.showBranding !== false && (
+        {!has('Pied de page') && !editable && (
+          <footer className="footer">
+            {data.showBranding !== false && (theme.id === 'minuit' ? <MinuitBand /> : theme.footerBand && <BandeGuillochee />)}
+            <div className="links">
+              <ReportPageLink slug={data.slug} label={t('Signaler cette page')} />
+            </div>
+            {data.showBranding !== false && (
+              <p className="made">
+                Créé avec <b>TBF MOMENT</b> · Create. Connect. Celebrate.
+              </p>
+            )}
+          </footer>
+        )}
+        {!has('Pied de page') && editable && data.showBranding !== false && (
           <footer className="footer">
             {theme.id === 'minuit' ? <MinuitBand /> : theme.footerBand && <BandeGuillochee />}
             <p className="made">
@@ -1661,7 +1687,7 @@ export default function ThemedSitePage({
       {/* Musique */}
       {passOpen && hasPass && createPortal(
         <PassModal onClose={() => setPassOpen(false)}>
-          <GuestPass invitation={data.invitation} eventTitle={heroStyle.title} ticket={passTicket} onInvitationChange={data.onInvitationChange} watch={!data.submitRsvp} />
+          <GuestPass invitation={data.invitation} eventTitle={heroStyle.title} ticket={passTicket} onInvitationChange={data.onInvitationChange} watch={!data.submitRsvp} onLeave={() => setPassOpen(false)} />
         </PassModal>,
         document.body,
       )}

@@ -28,6 +28,32 @@ namespace backend_EventMoment.Services
 
         // Supprime tous les fichiers téléversés d'un événement (couvertures + galerie).
         Task DeleteEventFilesAsync(Guid eventId, bool keepCovers = false);
+
+        // Message vocal des hôtes (billet des invités), déjà validé : rangé sous
+        // voices/{eventId}/{Guid}.{webm|ogg|m4a|mp3}.
+        Task<string> SaveVoiceAsync(IFormFile file, Guid eventId, string extension);
+
+        // Vrai si l'URL désigne un message vocal téléversé pour cet événement : seule une
+        // telle URL est lue par le billet des invités.
+        bool IsUploadedVoice(string url, Guid eventId);
+    }
+
+    public static class VoiceFiles
+    {
+        public static readonly HashSet<string> Extensions = new(StringComparer.OrdinalIgnoreCase) { ".webm", ".ogg", ".m4a", ".mp3" };
+
+        public static string ContentType(string extension) => extension.ToLowerInvariant() switch
+        {
+            ".webm" => "audio/webm",
+            ".ogg" => "audio/ogg",
+            ".m4a" => "audio/mp4",
+            ".mp3" => "audio/mpeg",
+            _ => throw new InvalidOperationException("Format audio non pris en charge."),
+        };
+
+        // Fin d'URL commune à tous les stockages : « /voices/{eventId}/{Guid}.{ext} ».
+        public static bool EndsLikeVoice(string path, Guid eventId) =>
+            Regex.IsMatch(path, $@"/voices/{eventId}/[0-9a-fA-F-]{{36}}\.(webm|ogg|m4a|mp3)$", RegexOptions.IgnoreCase);
     }
 
     public enum UploadFolder
@@ -100,6 +126,28 @@ namespace backend_EventMoment.Services
         }
 
         public bool IsUploadedCover(string url) => CoverUrlPattern.IsMatch(url);
+
+        public async Task<string> SaveVoiceAsync(IFormFile file, Guid eventId, string extension)
+        {
+            var dir = EventDir("voices", eventId);
+            Directory.CreateDirectory(dir);
+            var fileName = $"{Guid.NewGuid()}{extension.ToLowerInvariant()}";
+            var filePath = Path.Combine(dir, fileName);
+            try
+            {
+                await using var stream = new FileStream(filePath, FileMode.CreateNew);
+                await file.CopyToAsync(stream);
+            }
+            catch
+            {
+                TryDelete(() => File.Delete(filePath), filePath);
+                throw;
+            }
+            return $"/uploads/voices/{eventId}/{fileName}";
+        }
+
+        public bool IsUploadedVoice(string url, Guid eventId) =>
+            url.StartsWith("/uploads/voices/", StringComparison.Ordinal) && VoiceFiles.EndsLikeVoice(url, eventId);
 
         public Task DeleteFileAsync(string url)
         {

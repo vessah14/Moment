@@ -29,3 +29,16 @@ export function isR2MediaUrl(value) {
     return false
   }
 }
+
+// Messages vocaux des hôtes (billet des invités) : voices/{eventId}/{Guid}.{webm|ogg|m4a|mp3}.
+const R2_VOICE_PATH = /^\/(?:[A-Za-z0-9_-]+\/)+voices\/[0-9a-fA-F-]{36}\/[0-9a-fA-F-]{36}\.(?:webm|ogg|m4a|mp3)$/
+
+export function isR2VoiceUrl(value) {
+  if (!R2_PUBLIC_BASE_URL || typeof value !== 'string') return false
+  try {
+    const url = new URL(value)
+    return url.origin === R2_PUBLIC_BASE_URL && !url.username && !url.password && !url.search && !url.hash && R2_VOICE_PATH.test(url.pathname)
+  } catch {
+    return false
+  }
+}

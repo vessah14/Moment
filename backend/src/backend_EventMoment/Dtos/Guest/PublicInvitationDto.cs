@@ -44,6 +44,20 @@ namespace backend_EventMoment.Models
         // Réponse publique rattachée à un invité déjà sur la liste : son pass n'est pas
         // renvoyé (GuestId vide), il se trouve dans son lien personnel.
         public bool LinkedToGuestList { get; set; }
+
+        // Plan de table : HasTable dit seulement qu'une place est prévue ; la table elle-même
+        // (numéro dans l'ordre du plan, nom) n'est envoyée qu'à partir du jour J, révélée
+        // sur le billet.
+        public bool HasTable { get; set; }
+        public int? TableNumber { get; set; }
+        public string? TableLabel { get; set; }
+
+        // Couverture de l'événement : le billet devient une carte souvenir après la fête.
+        public string? CoverImageUrl { get; set; }
+
+        // Message vocal des hôtes, à écouter depuis le billet, et sa signature.
+        public string? VoiceMessageUrl { get; set; }
+        public string? VoiceMessageFrom { get; set; }
     }
 
     public class SubmitPublicRsvpDto

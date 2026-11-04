@@ -40,3 +40,11 @@ export function uploadEventBlockImage(id, file) {
   formData.append('file', file)
   return apiFetch(`/events/${id}/block-image`, { method: 'POST', body: formData })
 }
+
+// Message vocal des hôtes (onglet Billet du Builder) : renvoie { url }, à ranger dans
+// customFields.ticket.voice avec l'événement.
+export function uploadEventVoiceMessage(id, file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return apiFetch(`/events/${id}/voice-message`, { method: 'POST', body: formData })
+}

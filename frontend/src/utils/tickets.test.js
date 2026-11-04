@@ -31,8 +31,8 @@ describe('modèles de billets', () => {
   it("garde le choix de l'organisateur et ignore un modèle inconnu", () => {
     expect(resolveTicketStyle('concert', 'toghu')).toBe('concert')
     expect(resolveTicketStyle('pirate', 'toghu')).toBe('pagne')
-    expect(ticketFromCustomFields('{"ticket":{"style":"badge","note":"Tenue blanche"}}')).toEqual({ style: 'badge', note: 'Tenue blanche' })
-    expect(ticketFromCustomFields('pas du json')).toEqual({ style: null, note: '' })
+    expect(ticketFromCustomFields('{"ticket":{"style":"badge","note":"Tenue blanche"}}')).toEqual({ style: 'badge', note: 'Tenue blanche', voice: null })
+    expect(ticketFromCustomFields('pas du json')).toEqual({ style: null, note: '', voice: null })
   })
 
   it("affiche un code court tiré de l'identifiant de l'invité", () => {
@@ -68,5 +68,13 @@ describe('planches A4 de l’organisateur', () => {
     const sheet = await buildCardSheetPdf([shot(760, 360), shot(760, 360)], 'a4')
     expect(sheet.getNumberOfPages()).toBe(1)
     expect(sheet.internal.pageSize.getWidth()).toBeCloseTo(210)
+  })
+})
+
+describe('message vocal des hôtes', () => {
+  it('lit le message rangé dans le billet', () => {
+    const raw = JSON.stringify({ ticket: { style: 'or', voice: { url: '/uploads/voices/a.m4a', from: 'Shanice' } } })
+    expect(ticketFromCustomFields(raw).voice).toEqual({ url: '/uploads/voices/a.m4a', from: 'Shanice' })
+    expect(ticketFromCustomFields(JSON.stringify({ ticket: { voice: { url: '' } } })).voice).toBeNull()
   })
 })

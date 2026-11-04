@@ -63,3 +63,14 @@ describe('« Se souvenir de moi »', () => {
     expect(getCurrentUser()).toEqual({ id: 'u1' })
   })
 })
+
+describe('voiceUrl', () => {
+  it("n'accepte que les messages vocaux téléversés", async () => {
+    const { voiceUrl } = await import('./client')
+    const id = '11111111-1111-4111-8111-111111111111'
+    expect(voiceUrl(`/uploads/voices/${id}/${id}.m4a`)).toMatch(new RegExp(`/uploads/voices/${id}/${id}\.m4a$`))
+    expect(voiceUrl(`https://pistage.example/voices/${id}/${id}.mp3`)).toBe('')
+    expect(voiceUrl(`/uploads/gallery/${id}/${id}.jpg`)).toBe('')
+    expect(voiceUrl('javascript:alert(1)')).toBe('')
+  })
+})

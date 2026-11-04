@@ -64,3 +64,12 @@ export function trackPublicEvent(slug, type) {
   }
   apiFetch(`/public/events/${encodeURIComponent(slug)}/track`, { method: 'POST', body: { type }, auth: false }).catch(() => {})
 }
+
+// « Signaler cette page » : envoyé à l'équipe TBF MOMENT, jamais à l'organisateur.
+export function reportPublicPage(slug, { reason, message, contact }) {
+  return apiFetch(`/public/events/${encodeURIComponent(slug)}/report`, {
+    method: 'POST',
+    body: { reason, message, contact },
+    auth: false,
+  })
+}

@@ -12,6 +12,7 @@ import {
   getEvent,
   updateEvent as updateEventApi,
   uploadEventBlockImage,
+  uploadEventVoiceMessage,
 } from '../api/events'
 import { listEventCategories } from '../api/eventCategories'
 import { listEventLocations } from '../api/eventLocations'
@@ -372,6 +373,9 @@ export default function Builder() {
     setTemplateDirty(true)
   }
 
+  // Message vocal des hôtes : envoyé tout de suite, rangé dans le billet à l'enregistrement.
+  const handleUploadVoice = async (file) => (await uploadEventVoiceMessage(eventId, file)).url
+
   const handleApplyTemplate = (next) => {
     setEvent((prev) => {
       let fields = {}
@@ -648,6 +652,8 @@ export default function Builder() {
       themeColor: displayedHeroStyle.color,
       ticketStyle: ticket.style,
       ticketNote: ticket.note,
+      voiceMessageUrl: ticket.voice?.url,
+      voiceMessageFrom: ticket.voice?.from,
       locationLabel: siteData.location?.label,
       locationAddress: siteData.location?.address,
       rsvpConfirmed: null,
@@ -856,6 +862,7 @@ export default function Builder() {
             ticket={ticket}
             defaultTicketStyle={defaultTicketStyle(template?.theme)}
             onChangeTicket={handleChangeTicket}
+            onUploadVoice={handleUploadVoice}
             ticketEvent={event ? ticketEventInfo({ name: event.name, eventDate: event.eventDate, startTime: event.startTime, slug: event.slug }) : null}
           />
         )}
@@ -908,6 +915,7 @@ export default function Builder() {
             ticket={ticket}
             defaultTicketStyle={defaultTicketStyle(template?.theme)}
             onChangeTicket={handleChangeTicket}
+            onUploadVoice={handleUploadVoice}
             ticketEvent={event ? ticketEventInfo({ name: event.name, eventDate: event.eventDate, startTime: event.startTime, slug: event.slug }) : null}
             className="min-h-0 w-full flex-1 overflow-y-auto border-0 p-4 pb-8"
           />

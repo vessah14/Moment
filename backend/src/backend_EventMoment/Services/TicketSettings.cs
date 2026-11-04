@@ -32,5 +32,29 @@ namespace backend_EventMoment.Services
                 return (null, null);
             }
         }
+
+        // Message vocal des hôtes : ticket.voice = { url, from }. L'URL doit encore être
+        // vérifiée par le stockage (fichier téléversé pour cet événement) avant d'être servie.
+        public static (string? Url, string? From) ReadVoice(string? customFields)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(customFields) ? "{}" : customFields);
+                if (doc.RootElement.ValueKind != JsonValueKind.Object
+                    || !doc.RootElement.TryGetProperty("ticket", out var t) || t.ValueKind != JsonValueKind.Object
+                    || !t.TryGetProperty("voice", out var v) || v.ValueKind != JsonValueKind.Object)
+                    return (null, null);
+                string? Str(string name) =>
+                    v.TryGetProperty(name, out var s) && s.ValueKind == JsonValueKind.String ? s.GetString()?.Trim() : null;
+                var url = Str("url");
+                var from = Str("from");
+                return (string.IsNullOrEmpty(url) ? null : url,
+                    string.IsNullOrEmpty(from) ? null : from.Length > 60 ? from[..60] : from);
+            }
+            catch (JsonException)
+            {
+                return (null, null);
+            }
+        }
     }
 }

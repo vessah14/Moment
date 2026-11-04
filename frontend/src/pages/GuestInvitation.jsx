@@ -9,7 +9,8 @@ import Button from '../components/ui/Button'
 import { useSeo } from '../utils/seo'
 import { findTemplate, resolveSiteStyle, siteRootStyle } from '../utils/templateTheme'
 import { resolveTicketStyle } from '../utils/ticketStyles'
-import { eventStartIso } from '../utils/ticketLive'
+import { eventStartIso, ticketExtras } from '../utils/ticketLive'
+import { mediaUrl } from '../api/client'
 import { useCheckInWatch } from '../utils/useCheckInWatch'
 import { getSiteTheme, themePalette } from '../components/site/themes/themeDefs'
 
@@ -290,6 +291,12 @@ export default function GuestInvitation() {
 
               <div className="mt-5">
                 <TicketCard
+                  {...ticketExtras(invitation, {
+                    photo: mediaUrl(invitation.coverImageUrl),
+                    galleryHref: invitation.eventSlug
+                      ? `/e/${encodeURIComponent(invitation.eventSlug)}?invite=${encodeURIComponent(guestId)}#site-block-Galerie`
+                      : '',
+                  })}
                   live={{ start: eventStartIso(invitation.eventDate, invitation.eventStartTime), checkedInAt: invitation.checkedInAt }}
                   reveal
                   style={resolveTicketStyle(invitation.ticketStyle, template?.theme)}

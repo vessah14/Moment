@@ -11,6 +11,8 @@ import { AdditionalVenuesEditor, DressCodeEditor, FamiliesEditor, GiftAccountsEd
 import PremiumThemeFields from './PremiumThemeFields'
 import Toggle from './Toggle'
 import TicketCard from '../tickets/TicketCard'
+import VoiceMessageField from './VoiceMessageField'
+import { voiceUrl } from '../../api/client'
 import { TICKET_FORMATS, TICKET_STYLES } from '../../utils/ticketStyles'
 
 const TABS = ['Style', 'Contenu', 'Modèle', 'Billet']
@@ -31,6 +33,7 @@ export default function StylePanel({
   ticket = { style: null, note: '' },
   defaultTicketStyle = 'classique',
   onChangeTicket,
+  onUploadVoice,
   ticketEvent,
   className = 'w-72 shrink-0 overflow-y-auto border-l border-border-soft/60 p-5',
 }) {
@@ -69,6 +72,7 @@ export default function StylePanel({
           themeId={currentTemplate?.theme}
           paletteId={heroStyle?.palette}
           motif={heroStyle?.motif}
+          onUploadVoice={onUploadVoice}
         />
       )}
 
@@ -441,7 +445,7 @@ function SiteLogoFields({ heroStyle, onChange, uploading, onUpload }) {
   )
 }
 
-function TicketTab({ ticket, recommended, onChange, event, accent, themeId, paletteId, motif }) {
+function TicketTab({ ticket, recommended, onChange, event, accent, themeId, paletteId, motif, onUploadVoice }) {
   const current = ticket.style || recommended
   return (
     <div className="mt-6 space-y-5">
@@ -455,6 +459,7 @@ function TicketTab({ ticket, recommended, onChange, event, accent, themeId, pale
           <TicketCard
             style={current}
             note={ticket.note}
+            voice={ticket.voice && voiceUrl(ticket.voice.url) ? { url: voiceUrl(ticket.voice.url), from: ticket.voice.from } : undefined}
             accent={accent}
             themeId={themeId}
             paletteId={paletteId}
@@ -507,6 +512,7 @@ function TicketTab({ ticket, recommended, onChange, event, accent, themeId, pale
         />
         <span className="mt-1 block text-xs text-faint">40 caractères maximum. Ex. « Tenue blanche exigée ».</span>
       </label>
+      {onUploadVoice && <VoiceMessageField voice={ticket.voice} onChange={onChange} onUpload={onUploadVoice} />}
     </div>
   )
 }

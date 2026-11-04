@@ -104,6 +104,35 @@ namespace backend_EventMoment.Services
 
         public bool IsUploadedCover(string url) => _coverUrlPattern.IsMatch(url) || _legacy.IsUploadedCover(url);
 
+        // Cloudinary range l'audio avec les vidéos (…/video/upload/…).
+        public async Task<string> SaveVoiceAsync(IFormFile file, Guid eventId, string extension)
+        {
+            await using var stream = file.OpenReadStream();
+            var upload = new VideoUploadParams
+            {
+                File = new FileDescription($"{Guid.NewGuid()}{extension.ToLowerInvariant()}", stream),
+                PublicId = PublicId("voices", eventId, Guid.NewGuid().ToString()),
+                Overwrite = false,
+                UniqueFilename = false,
+                UseFilename = false,
+                AllowedFormats = new[] { "webm", "ogg", "m4a", "mp3" },
+            };
+            var result = await _cloudinary.UploadAsync(upload);
+            var url = result.SecureUrl?.ToString();
+            if (result.Error != null || url == null || !IsUploadedVoice(url, eventId))
+            {
+                _logger.LogError("Envoi Cloudinary du message vocal refusé ({Status}) : {Message}", result.StatusCode, result.Error?.Message);
+                throw new InvalidOperationException("L'envoi du message vocal a échoué. Réessayez dans un instant.");
+            }
+            return url;
+        }
+
+        public bool IsUploadedVoice(string url, Guid eventId) =>
+            (url.StartsWith($"https://res.cloudinary.com/{_options.CloudName}/video/upload/", StringComparison.Ordinal)
+                && url.Contains($"/{_options.Folder}/voices/", StringComparison.Ordinal)
+                && VoiceFiles.EndsLikeVoice(url, eventId))
+            || _legacy.IsUploadedVoice(url, eventId);
+
         public async Task DeleteFileAsync(string url)
         {
             var match = _fileUrlPattern.Match(url ?? string.Empty);

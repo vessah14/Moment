@@ -1,5 +1,5 @@
 import jsQR from 'jsqr'
-import { FileDown, QrCode, Search, X } from 'lucide-react'
+import { FileDown, Flashlight, QrCode, Search, SwitchCamera, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Avatar from '../../components/ui/Avatar'
 import StatCard from '../../components/dashboard/StatCard'
@@ -72,6 +72,9 @@ export default function CheckIn() {
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const streamRef = useRef(null)
+  const [facingMode, setFacingMode] = useState('environment')
+  const [torch, setTorch] = useState({ available: false, on: false })
+  const [canFlip, setCanFlip] = useState(false)
   const rafRef = useRef(null)
   const guestsRef = useRef(guests)
   const handleCheckInRef = useRef(null)
@@ -215,15 +218,20 @@ export default function CheckIn() {
     handleCheckInRef.current = handleCheckIn
   })
 
-  const stopScan = useCallback(() => {
+  const releaseCamera = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current)
     rafRef.current = null
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop())
       streamRef.current = null
     }
-    setScanning(false)
+    setTorch({ available: false, on: false })
   }, [])
+
+  const stopScan = useCallback(() => {
+    releaseCamera()
+    setScanning(false)
+  }, [releaseCamera])
 
   const tick = useCallback(() => {
     const video = videoRef.current
@@ -257,20 +265,44 @@ export default function CheckIn() {
     rafRef.current = requestAnimationFrame(tick)
   }, [])
 
-  const startScan = async () => {
+  // facing : caméra arrière par défaut ; « Changer de caméra » passe à l'avant (ou l'inverse).
+  const startScan = async (facing = facingMode) => {
     setScanError('')
     setResult(null)
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing } })
       streamRef.current = stream
       if (videoRef.current) {
         videoRef.current.srcObject = stream
         await videoRef.current.play()
       }
+      setFacingMode(facing)
       setScanning(true)
       rafRef.current = requestAnimationFrame(tick)
+      // Lampe : seulement si le téléphone la propose pour cette caméra (Chrome Android).
+      const track = stream.getVideoTracks()[0]
+      setTorch({ available: Boolean(track?.getCapabilities?.().torch), on: false })
+      const devices = await navigator.mediaDevices.enumerateDevices?.().catch(() => [])
+      setCanFlip((devices ?? []).filter((d) => d.kind === 'videoinput').length > 1)
     } catch {
       setScanError("Impossible d'accéder à la caméra. Vérifiez les autorisations de votre navigateur.")
+    }
+  }
+
+  const flipCamera = () => {
+    releaseCamera()
+    startScan(facingMode === 'environment' ? 'user' : 'environment')
+  }
+
+  const toggleTorch = async () => {
+    const track = streamRef.current?.getVideoTracks()[0]
+    if (!track) return
+    const on = !torch.on
+    try {
+      await track.applyConstraints({ advanced: [{ torch: on }] })
+      setTorch({ available: true, on })
+    } catch {
+      setTorch({ available: false, on: false })
     }
   }
 
@@ -400,7 +432,7 @@ export default function CheckIn() {
             {!scanning ? (
               <button
                 type="button"
-                onClick={startScan}
+                onClick={() => startScan()}
                 className="flex w-full items-center justify-center gap-2 rounded-lg border border-border-soft px-3 py-2.5 text-sm font-medium text-ink transition hover:border-brand-purple"
               >
                 <QrCode className="h-4 w-4" />
@@ -418,6 +450,31 @@ export default function CheckIn() {
                   >
                     <X className="h-4 w-4" />
                   </button>
+                  {(torch.available || canFlip) && (
+                    <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-2">
+                      {torch.available && (
+                        <button
+                          type="button"
+                          onClick={toggleTorch}
+                          aria-pressed={torch.on}
+                          aria-label={torch.on ? 'Éteindre la lampe' : 'Allumer la lampe'}
+                          className={`rounded-full p-2.5 ${torch.on ? 'bg-amber-300 text-black' : 'bg-black/60 text-white hover:bg-black/80'}`}
+                        >
+                          <Flashlight className="h-5 w-5" />
+                        </button>
+                      )}
+                      {canFlip && (
+                        <button
+                          type="button"
+                          onClick={flipCamera}
+                          aria-label="Changer de caméra"
+                          className="rounded-full bg-black/60 p-2.5 text-white hover:bg-black/80"
+                        >
+                          <SwitchCamera className="h-5 w-5" />
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <canvas ref={canvasRef} className="hidden" />
               </div>

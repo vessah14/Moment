@@ -39,6 +39,32 @@ namespace backend_EventMoment.Controllers
         public Task<IActionResult> UploadBlockImage(Guid id, [FromForm] IFormFile file) =>
             SaveEventImageAsync(id, file, UploadFolder.Blocks);
 
+        // Message vocal des hôtes, joint au billet des invités. L'URL renvoyée est rangée
+        // dans CustomFields.ticket.voice avec l'événement (Builder, onglet Billet).
+        private const long MaxVoiceBytes = 3 * 1024 * 1024; // ~1 min enregistrée au téléphone
+
+        [HttpPost("{id:guid}/voice-message")]
+        [RequestSizeLimit(MaxVoiceBytes + 64 * 1024)]
+        public async Task<IActionResult> UploadVoiceMessage(Guid id, [FromForm] IFormFile file)
+        {
+            if (!TryGetOrganizerId(out var organizerId))
+                return Unauthorized();
+
+            await _service.GetByIdAsync(id, organizerId);
+
+            if (file == null || file.Length == 0)
+                return BadRequest(new { error = "Aucun fichier fourni." });
+            if (file.Length > MaxVoiceBytes)
+                return BadRequest(new { error = "Message trop long (3 Mo maximum, environ une minute)." });
+
+            var extension = Path.GetExtension(file.FileName);
+            if (!VoiceFiles.Extensions.Contains(extension) || !await AudioFileValidator.HasValidSignatureAsync(file, extension))
+                return BadRequest(new { error = "Format audio non pris en charge (enregistrement du site, M4A, MP3, OGG ou WebM)." });
+
+            var url = await _uploads.SaveVoiceAsync(file, id, extension);
+            return Ok(new { url });
+        }
+
         private async Task<IActionResult> SaveEventImageAsync(Guid id, IFormFile file, UploadFolder folder)
         {
             if (!TryGetOrganizerId(out var organizerId))

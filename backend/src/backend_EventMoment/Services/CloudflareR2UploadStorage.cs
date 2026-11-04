@@ -159,6 +159,42 @@ namespace backend_EventMoment.Services
             return $"{_options.PublicBaseUrl}/{key}";
         }
 
+        public async Task<string> SaveVoiceAsync(IFormFile file, Guid eventId, string extension)
+        {
+            var key = ObjectKey("voices", eventId, $"{Guid.NewGuid()}{extension.ToLowerInvariant()}");
+            await using var stream = file.OpenReadStream();
+            try
+            {
+                await _s3.PutObjectAsync(new PutObjectRequest
+                {
+                    BucketName = _options.Bucket,
+                    Key = key,
+                    InputStream = stream,
+                    DisablePayloadSigning = true,
+                    DisableDefaultChecksumValidation = true,
+                    ContentType = VoiceFiles.ContentType(extension),
+                });
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogError(ex, "Envoi du message vocal vers Cloudflare R2 échoué pour {EventId}", eventId);
+                throw new InvalidOperationException("L'envoi du message vocal a échoué. Réessayez dans un instant.", ex);
+            }
+            return $"{_options.PublicBaseUrl}/{key}";
+        }
+
+        public bool IsUploadedVoice(string url, Guid eventId)
+        {
+            if (Uri.TryCreate(url, UriKind.Absolute, out var uri)
+                && uri.Scheme == Uri.UriSchemeHttps
+                && uri.Authority.Equals(_publicBaseUri.Authority, StringComparison.OrdinalIgnoreCase)
+                && string.IsNullOrEmpty(uri.Query) && string.IsNullOrEmpty(uri.Fragment)
+                && uri.AbsolutePath.StartsWith($"/{_options.Folder}/voices/", StringComparison.Ordinal)
+                && VoiceFiles.EndsLikeVoice(uri.AbsolutePath, eventId))
+                return true;
+            return _legacy.IsUploadedVoice(url, eventId);
+        }
+
         public bool IsUploadedCover(string url)
         {
             if (TryGetObjectKey(url, out _, out var match)

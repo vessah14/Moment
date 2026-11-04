@@ -10,6 +10,7 @@ import { TEMPLATES } from '../data/templates'
 import { routeSeo } from '../data/seoRoutes'
 import { siteUrl, useSeo } from '../utils/seo'
 import { WIZARD_DRAFT_MESSAGE, WIZARD_READY_MESSAGE } from '../utils/wizardPreview'
+import { tryDemo } from '../utils/tryNames'
 
 // Démo d'un modèle premium (/modeles/:theme) : exactement le rendu du site publié, avec le
 // contenu d'exemple des maquettes. Réponse, livre d'or et recherche de place fonctionnent
@@ -103,6 +104,9 @@ function Demo({ theme }) {
   // que l'organisateur saisit (message envoyé par la page parente, même origine uniquement).
   const live = embedded && searchParams.get('apercu') === '1'
   const draft = useWizardDraft(live)
+  // ?essai=Inès%20%26%20Kevin : « Essayez avec vos prénoms » depuis l'accueil.
+  const essai = searchParams.get('essai')
+  const trial = tryDemo(theme, essai)
   const [view, setView] = useState('ordinateur')
   const [qrOpen, setQrOpen] = useState(false)
   const [entries, setEntries] = useState(() => demo?.guestbook ?? [])
@@ -137,7 +141,7 @@ function Demo({ theme }) {
     countdownDemo: minuitDemo,
     coverPath: null,
     coverSrc: draft?.coverSrc || '',
-    description: draft?.description || demo.description,
+    description: draft?.description || trial?.description || demo.description,
     locationLabel: draft?.locationLabel || demo.locationLabel,
     locationAddress: draft?.locationAddress || demo.locationAddress,
     organizer: draft?.organizer ?? null,
@@ -178,7 +182,7 @@ function Demo({ theme }) {
       fullPage
       startOpen={live}
       template={template}
-      heroStyle={{ title: draft?.title || demo.title, kicker: draft?.kicker || demo.kicker, palette: null, motif: null, color: template.preview.accent, font: 'Playfair Display + Inter', darkOverlay: true }}
+      heroStyle={{ title: draft?.title || trial?.title || demo.title, kicker: draft?.kicker || trial?.kicker || demo.kicker, palette: null, motif: null, color: template.preview.accent, font: 'Playfair Display + Inter', darkOverlay: true }}
       blocks={blocks}
       blockContent={blockContent}
       data={data}
@@ -247,8 +251,18 @@ function Demo({ theme }) {
           </Link>
         </div>
       </header>
+      {trial && (
+        <div role="region" aria-label="Aperçu d'essai" className="relative z-[59] flex flex-wrap items-center justify-center gap-x-4 gap-y-2 bg-[#1B1450] px-4 py-2.5 text-center text-sm text-[#F2EFFF]">
+          <span>
+            <b>Votre invitation d'essai.</b> <span className="text-[#A8A1D1]">Rien n'est publié. Créez la vôtre en 5 minutes.</span>
+          </span>
+          <Link to="/inscription" className="rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-[#0F0B2E]">
+            Créer mon événement
+          </Link>
+        </div>
+      )}
       <main id="main-content">
-        {view === 'telephone' ? <PhoneFrame theme={theme} name={template.name} /> : page}
+        {view === 'telephone' ? <PhoneFrame theme={theme} name={template.name} essai={trial ? essai : null} /> : page}
       </main>
     </div>
   )
@@ -306,7 +320,7 @@ function useWizardDraft(enabled) {
 
 // La démo dans un téléphone : un vrai écran de 390 px de large (iframe), réduit si la
 // fenêtre est trop basse pour l'afficher en entier.
-function PhoneFrame({ theme, name }) {
+function PhoneFrame({ theme, name, essai }) {
   const [scale, setScale] = useState(1)
   useEffect(() => {
     const fit = () => setScale(Math.min(1, (window.innerHeight - 120) / (PHONE.height + 28)))
@@ -323,7 +337,7 @@ function PhoneFrame({ theme, name }) {
           style={{ width: PHONE.width + 28, height: PHONE.height + 28, transform: `scale(${scale})` }}
         >
           <iframe
-            src={`/modeles/${theme}?cadre=1`}
+            src={`/modeles/${theme}?cadre=1${essai ? `&essai=${encodeURIComponent(essai)}` : ''}`}
             title={`Aperçu téléphone du modèle ${name}`}
             className="h-full w-full rounded-[36px] bg-white"
             style={{ border: 0 }}

@@ -121,6 +121,7 @@ export const ENVOL_EN = {
   // Pied de page
   'Partager sur WhatsApp': 'Share on WhatsApp',
   'Confidentialité': 'Privacy',
+  'Signaler cette page': 'Report this page',
   'Mentions légales': 'Legal notice',
 }
 

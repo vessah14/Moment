@@ -1,6 +1,6 @@
 import { Check, QrCode, Ticket } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import campusShot from '../../assets/home/campus.webp'
 import fiestaShot from '../../assets/home/fiesta.webp'
 import ndopShot from '../../assets/home/ndop.webp'
@@ -8,6 +8,7 @@ import toghuShot from '../../assets/home/toghu.webp'
 import { TEMPLATES } from '../../data/templates'
 import Button from '../ui/Button'
 import FestiveBackground from './FestiveBackground'
+import { TRY_TYPES, tryUrl } from '../../utils/tryNames'
 
 // En-tête de l'accueil : titre, trois téléphones montrant de vrais modèles et bulles
 // de notifications flottantes.
@@ -111,6 +112,8 @@ export default function Hero() {
             </Button>
           </div>
 
+          <TryWithNames />
+
           <ul className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2 text-[0.84rem] text-muted lg:justify-start">
             {TRUST.map((t) => (
               <li key={t} className="inline-flex items-center gap-1.5">
@@ -132,5 +135,58 @@ export default function Hero() {
       </div>
 
     </section>
+  )
+}
+
+// « Essayez tout de suite avec vos prénoms » : ouvre la démo du modèle avec ces prénoms,
+// sans compte ; rien n'est enregistré.
+function TryWithNames() {
+  const navigate = useNavigate()
+  const [names, setNames] = useState('')
+  const [type, setType] = useState(TRY_TYPES[0].id)
+  const example = TRY_TYPES.find((t) => t.id === type)?.example
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        navigate(tryUrl(type, names))
+      }}
+      className="mx-auto mt-6 max-w-xl rounded-2xl border border-border-soft bg-surface/70 p-3 text-left backdrop-blur lg:mx-0"
+    >
+      <label htmlFor="try-names" className="block px-1 text-sm font-semibold text-ink">
+        Essayez tout de suite avec vos prénoms
+      </label>
+      <div className="mt-2 flex flex-wrap gap-2">
+        <input
+          id="try-names"
+          value={names}
+          onChange={(e) => setNames(e.target.value)}
+          maxLength={40}
+          placeholder={`Ex. ${example}`}
+          autoComplete="off"
+          enterKeyHint="go"
+          aria-describedby="try-help"
+          className="min-w-0 flex-[1_1_10rem] rounded-lg border border-border-soft bg-bg px-3 py-2.5 text-sm text-ink"
+        />
+        <select
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+          aria-label="Type d'événement"
+          className="flex-[0_1_auto] rounded-lg border border-border-soft bg-bg px-3 py-2.5 text-sm text-ink"
+        >
+          {TRY_TYPES.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.label}
+            </option>
+          ))}
+        </select>
+        <button type="submit" className="flex-[1_0_auto] rounded-lg bg-brand-purple px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-indigo">
+          Voir mon invitation
+        </button>
+      </div>
+      <p id="try-help" className="mt-2 px-1 text-xs text-muted">
+        Votre invitation s'ouvre en direct, avec son animation. Sans compte, rien n'est publié.
+      </p>
+    </form>
   )
 }

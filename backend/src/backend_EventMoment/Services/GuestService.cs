@@ -13,14 +13,17 @@ namespace backend_EventMoment.Services
         private readonly IPlanService? _plans;
         private readonly InvitationSignal? _invitations;
         private readonly IInAppNotificationService? _inAppNotifications;
+        private readonly IUploadStorage? _uploads;
 
         public GuestService(
             AdminDbContext context,
             IOrganizerNotifier? notifier = null,
             IPlanService? plans = null,
             InvitationSignal? invitations = null,
-            IInAppNotificationService? inAppNotifications = null)
+            IInAppNotificationService? inAppNotifications = null,
+            IUploadStorage? uploads = null)
         {
+            _uploads = uploads;
             _context = context;
             _notifier = notifier;
             _plans = plans;
@@ -457,7 +460,42 @@ namespace backend_EventMoment.Services
             var rules = RsvpRules.Read(await RsvpBlockContentAsync(guest.EventId)).ForSeats(guest.Seats);
             var invitation = MapInvitation(guest, eventEntity, location, rsvp, rules, checkedInAt);
             invitation.DisplayTitle = await HeroTitleAsync(guest.EventId);
+            await AddSeatAsync(invitation, guest.Id, eventEntity);
+            AddVoice(invitation, eventEntity);
             return invitation;
+        }
+
+        // Message vocal des hôtes : servi seulement s'il a été téléversé pour cet événement.
+        private void AddVoice(PublicInvitationDto invitation, Event eventEntity)
+        {
+            var (url, from) = TicketSettings.ReadVoice(eventEntity.CustomFields);
+            if (url == null || _uploads?.IsUploadedVoice(url, eventEntity.Id) != true) return;
+            invitation.VoiceMessageUrl = url;
+            invitation.VoiceMessageFrom = from;
+        }
+
+        // Table de l'invité, révélée sur son billet le jour J (avant : seulement « une place
+        // vous attend »). Numéro = rang dans le plan, comme sur la page publique.
+        private async Task AddSeatAsync(PublicInvitationDto invitation, Guid guestId, Event eventEntity)
+        {
+            var tableId = await _context.SeatingAssignments.IgnoreQueryFilters().AsNoTracking()
+                .Where(a => a.GuestId == guestId && a.EventId == eventEntity.Id)
+                .Select(a => (Guid?)a.TableId)
+                .FirstOrDefaultAsync();
+            if (tableId == null) return;
+
+            invitation.HasTable = true;
+            if (eventEntity.EventDate is not DateOnly day || Today < day) return;
+
+            var tables = await _context.EventTables.IgnoreQueryFilters().AsNoTracking()
+                .Where(t => t.EventId == eventEntity.Id)
+                .OrderBy(t => t.Position).ThenBy(t => t.CreatedAt)
+                .Select(t => new { t.Id, t.Label })
+                .ToListAsync();
+            var index = tables.FindIndex(t => t.Id == tableId);
+            if (index < 0) return;
+            invitation.TableNumber = index + 1;
+            invitation.TableLabel = tables[index].Label;
         }
 
         private Task<string?> HeroBlockContentAsync(Guid eventId) =>
@@ -556,7 +594,10 @@ namespace backend_EventMoment.Services
                 .OrderBy(l => l.Position)
                 .FirstOrDefaultAsync();
 
-            return MapInvitation(guest, eventEntity, location, rsvp, rules);
+            var invitation = MapInvitation(guest, eventEntity, location, rsvp, rules);
+            await AddSeatAsync(invitation, guest.Id, eventEntity);
+            AddVoice(invitation, eventEntity);
+            return invitation;
         }
 
         public async Task<PublicInvitationDto?> SubmitPublicEventRsvpAsync(string slug, SubmitPublicEventRsvpDto dto)
@@ -655,7 +696,9 @@ namespace backend_EventMoment.Services
                 .OrderBy(l => l.Position)
                 .FirstOrDefaultAsync();
 
-            return MapInvitation(guest, eventEntity, location, response, rules);
+            var created = MapInvitation(guest, eventEntity, location, response, rules);
+            AddVoice(created, eventEntity);
+            return created;
         }
 
         // Invité de l'événement au même e-mail, ou au même numéro (9 derniers chiffres : le
@@ -706,6 +749,7 @@ namespace backend_EventMoment.Services
             RsvpMaxCompanions = rules.MaxCompanions,
             RsvpAllowMaybe = rules.AllowMaybe,
             CheckedInAt = checkedInAt,
+            CoverImageUrl = eventEntity.CoverImageUrl,
         };
 
         // Modèle de site choisi dans l'assistant (rangé dans CustomFields) : l'invitation

@@ -32,3 +32,17 @@ describe('billet vivant', () => {
     expect(eventStartIso('2027-01-16')).toBe('2027-01-16T00:00:00')
   })
 })
+
+describe('ticketExtras', () => {
+  it('annonce la table sans la donner avant le jour J, puis la révèle', async () => {
+    const { ticketExtras } = await import('./ticketLive')
+    expect(ticketExtras({ hasTable: false }).seat).toBeUndefined()
+    expect(ticketExtras({ hasTable: true }).seat).toEqual({ has: true, number: null, label: '' })
+    expect(ticketExtras({ hasTable: true, tableNumber: 3, tableLabel: 'Kribi' }).seat).toEqual({ has: true, number: 3, label: 'Kribi' })
+  })
+
+  it('prépare la carte souvenir avec la photo et la galerie', async () => {
+    const { ticketExtras } = await import('./ticketLive')
+    expect(ticketExtras({}, { photo: 'p.jpg', galleryHref: '#g' }).souvenir).toEqual({ photo: 'p.jpg', galleryHref: '#g' })
+  })
+})

@@ -126,6 +126,15 @@ export const STATIC_ROUTES = [
     jsonLd: (site) => breadcrumbLd(site, [['Accueil', '/'], ['Billets', '/billets']]),
   },
   {
+    path: '/flyer',
+    priority: '0.7',
+    changefreq: 'monthly',
+    title: "Flyer d'honneur",
+    description:
+      "Créez gratuitement en une minute un flyer pour honorer un proche ou annoncer votre événement : anniversaire, diplôme, mariage, hommage, concert. Au format statut WhatsApp, avec détourage automatique.",
+    jsonLd: (site) => breadcrumbLd(site, [['Accueil', '/'], ["Flyer d'honneur", '/flyer']]),
+  },
+  {
     path: '/ecosysteme',
     priority: '0.6',
     changefreq: 'monthly',

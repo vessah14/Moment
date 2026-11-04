@@ -1,3 +1,5 @@
+import { voiceUrl } from '../api/client'
+
 // Billet vivant (repris du prototype) : le billet change selon le moment.
 // - before : compte à rebours jusqu'au début ;
 // - today  : c'est le jour J, le QR code passe en grand ;
@@ -44,5 +46,18 @@ export function markEnvelopeSeen(code) {
     if (!list.includes(code)) localStorage.setItem(ENV_KEY, JSON.stringify([...list, code].slice(-60)))
   } catch {
     // stockage indisponible (navigation privée) : l'enveloppe se rejouera, sans gravité
+  }
+}
+
+// Table et carte souvenir du billet, tirées de l'invitation renvoyée par l'API. La table
+// n'arrive (numéro, nom) qu'à partir du jour J ; avant, hasTable dit seulement qu'une
+// place est prévue. galleryHref : lien vers la galerie de la page, s'il y en a une ;
+// onOpen : appelé avant d'y aller (fermeture de la fenêtre du pass).
+export function ticketExtras(invitation, { photo, galleryHref, onOpen } = {}) {
+  if (!invitation) return {}
+  return {
+    seat: invitation.hasTable ? { has: true, number: invitation.tableNumber ?? null, label: invitation.tableLabel ?? '' } : undefined,
+    souvenir: { photo: photo || '', galleryHref: galleryHref || '', ...(onOpen ? { onOpen } : {}) },
+    voice: voiceUrl(invitation.voiceMessageUrl) ? { url: voiceUrl(invitation.voiceMessageUrl), from: invitation.voiceMessageFrom ?? '' } : undefined,
   }
 }

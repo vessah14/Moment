@@ -9,6 +9,7 @@ const COLUMNS = [
       { label: 'Fonctionnalités', to: '/#fonctionnalites' },
       { label: 'Modèles', to: '/modeles' },
       { label: 'Modèles de billets', to: '/billets' },
+      { label: "Flyer d'honneur", to: '/flyer' },
       { label: 'Tarifs', to: '/tarifs' }
     ]
   },

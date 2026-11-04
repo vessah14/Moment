@@ -155,13 +155,38 @@
 @keyframes tk-stamp { 0% { transform: rotate(-13deg) scale(2.6); opacity: 0 } 60% { opacity: 1 } 100% { transform: rotate(-13deg) scale(1) } }
 
 /* QR agrandi */
-.tk-qrbig { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 24px; background: rgba(5, 5, 12, .9); color: #fff; text-align: center }
-.tk-qrbig > div { display: grid; justify-items: center; gap: .8rem }
-.tk-qrbig .qr { width: min(78vw, 340px); padding: 14px; background: #fff; border-radius: 18px }
-.tk-qrbig .qr img { display: block; width: 100%; height: auto }
+/* Écran tout blanc : le plus lumineux possible pour le scanner de l'accueil. */
+.tk-qrbig { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 24px; background: #fff; color: #111; text-align: center }
+.tk-qrbig > div { display: grid; justify-items: center; gap: .8rem; max-width: 380px }
+.tk-qrbig .qr { width: min(86vw, 380px); padding: 10px; background: #fff; border-radius: 18px }
+.tk-qrbig .qr img { display: block; width: 100%; height: auto; image-rendering: pixelated }
 .tk-qrbig code { font-family: ui-monospace, Menlo, monospace; font-size: 1.3rem; letter-spacing: .18em }
-.tk-qrbig p { margin: 0; opacity: .75; font-size: .9rem }
-.tk-qrbig button { min-height: 42px; padding: 0 1.2rem; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .35); background: transparent; color: #fff; font: 600 .9rem system-ui, sans-serif; cursor: pointer }
+.tk-qrbig p { margin: 0; color: #555; font-size: .9rem }
+.tk-qrbig button { min-height: 42px; padding: 0 1.2rem; border-radius: 999px; border: 1px solid #ccc; background: transparent; color: #111; font: 600 .9rem system-ui, sans-serif; cursor: pointer }
+
+/* Table de l'invité : annoncée avant, révélée le jour J */
+.tbtk .tkc-table { margin: .8rem 0 .1rem; text-align: center; color: var(--stub-ink) }
+.tbtk .tkc-table.soon { padding: .55rem .7rem; border-radius: 10px; border: 1px dashed color-mix(in srgb, var(--stub-ink) 25%, transparent); font-size: .78rem; opacity: .85 }
+.tbtk .tkc-table.on { display: grid; gap: .1rem; padding: .75rem .8rem; border-radius: 14px; background: color-mix(in srgb, var(--deco) 14%, transparent); border: 1.5px solid var(--deco) }
+.tbtk .tkc-table small { font-size: .62rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; opacity: .75 }
+.tbtk .tkc-table b { font-family: var(--f-display); font-size: 1.7rem; line-height: 1.15; overflow-wrap: anywhere }
+.tbtk .tkc-table i { font-style: normal; font-size: .75rem; opacity: .7 }
+.tbtk .tkc-table.fresh { animation: tk-table-in .9s cubic-bezier(.34, 1.56, .64, 1) .4s both }
+.tbtk .tkc-table.fresh b { animation: tk-table-word 1.4s ease .9s both }
+@keyframes tk-table-in { from { opacity: 0; transform: scale(.7) rotateX(70deg) } to { opacity: 1; transform: none } }
+@keyframes tk-table-word { from { letter-spacing: .5em; opacity: 0; filter: blur(6px) } to { letter-spacing: normal; opacity: 1; filter: none } }
+
+/* Après la fête : carte souvenir au-dessus du billet */
+.tk-souv { width: 100%; max-width: 420px; margin: 0 auto 1rem; overflow: hidden; border-radius: 18px; background: var(--surface, #fff); color: var(--fg, #1A1430);
+  border: 1px solid color-mix(in srgb, var(--deco) 40%, transparent); box-shadow: 0 18px 40px rgba(0, 0, 0, .18); text-align: center }
+.tk-souv img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover }
+.tk-souv.mourn img { filter: grayscale(1) }
+.tk-souv > div { padding: 1.1rem 1.2rem 1.3rem }
+.tk-souv small { font-size: .65rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: var(--deco) }
+.tk-souv h3 { margin: .35rem 0 .4rem; font-family: var(--f-display); font-size: 1.35rem; line-height: 1.2 }
+.tk-souv p { margin: 0; font-size: .85rem; line-height: 1.5; color: var(--muted, #5F5880) }
+.tbtk .tk-souv-cta, .tk-souv-cta { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; margin-top: .9rem; padding: 0 1.3rem; border-radius: 999px;
+  background: var(--deco); color: var(--deco-ink) !important; font-weight: 700; font-size: .9rem; text-decoration: none }
 
 /* Ouverture en enveloppe */
 .tk-env { --env-paper: color-mix(in srgb, var(--accent) 12%, #F4EEE3); --env-flap: color-mix(in srgb, var(--accent) 20%, #EBE2D3);
@@ -190,4 +215,18 @@
 @keyframes tk-env-z { to { z-index: 1 } }
 @keyframes tk-env-card { to { transform: translateY(-70%) } }
 @keyframes tk-env-out { to { opacity: 0; visibility: hidden } }
-@media (prefers-reduced-motion: reduce) { .tk-env { display: none } .tbtk .lv-dot, .tbtk .tkc-stamp { animation: none } }
+@media (prefers-reduced-motion: reduce) { .tk-env { display: none } .tbtk .lv-dot, .tbtk .tkc-stamp, .tbtk .tkc-table.fresh, .tbtk .tkc-table.fresh b { animation: none } }
+
+/* Message vocal des hôtes */
+.tbtk .tkc-voice { display: flex; align-items: center; gap: .7rem; margin: .8rem 0 .1rem; padding: .6rem .75rem; border-radius: 14px; text-align: left; color: var(--stub-ink);
+  background: color-mix(in srgb, var(--deco) 10%, transparent); border: 1px solid color-mix(in srgb, var(--deco) 35%, transparent) }
+.tbtk .tkc-voice button { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 50%; background: var(--deco); color: var(--deco-ink); cursor: pointer }
+.tbtk .tkc-voice button svg { width: 20px; height: 20px }
+.tbtk .tkc-voice > div { display: grid; gap: .1rem; min-width: 0; flex: 1 }
+.tbtk .tkc-voice small { font-size: .7rem; opacity: .75 }
+.tbtk .tkc-voice b { font-size: .86rem; line-height: 1.25; overflow-wrap: anywhere }
+.tbtk .tkc-voice-bar { display: block; height: 3px; margin-top: .3rem; border-radius: 3px; background: color-mix(in srgb, var(--stub-ink) 14%, transparent); overflow: hidden }
+.tbtk .tkc-voice-bar i { display: block; height: 100%; background: var(--deco); transition: width .25s linear }
+.tbtk .tkc-voice.on button { animation: tk-voice-pulse 1.4s infinite }
+@keyframes tk-voice-pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--deco) 50%, transparent) } 70%, 100% { box-shadow: 0 0 0 10px transparent } }
+@media (prefers-reduced-motion: reduce) { .tbtk .tkc-voice.on button { animation: none } }

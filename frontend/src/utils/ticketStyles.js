@@ -52,12 +52,17 @@ export const resolveTicketStyle = (style, theme) => (IDS.has(style) ? style : de
 export function ticketFromCustomFields(raw) {
   try {
     const t = JSON.parse(raw || '{}')?.ticket
+    const voice = t?.voice && typeof t.voice.url === 'string' && t.voice.url
+      ? { url: t.voice.url, from: typeof t.voice.from === 'string' ? t.voice.from.slice(0, 60) : '' }
+      : null
     return {
       style: IDS.has(t?.style) ? t.style : null,
       note: typeof t?.note === 'string' ? t.note.slice(0, 40) : '',
+      // Message vocal des hôtes : { url, from }, joué depuis le billet des invités.
+      voice,
     }
   } catch {
-    return { style: null, note: '' }
+    return { style: null, note: '', voice: null }
   }
 }
 

@@ -5,7 +5,7 @@ import { getSiteTheme, themeMotif, themePalette } from '../site/themes/themeDefs
 import { loadThemeFonts } from '../site/themes/themeFonts'
 import { ticketCode, ticketFormat } from '../../utils/ticketStyles'
 import { createGuestTicketQr, normalizeGuestTicketId } from '../../utils/ticketQr'
-import { EntryStamp, LiveStrip, QrZoom, TicketEnvelope, useTicketLive } from './TicketLive'
+import { EntryStamp, LiveStrip, QrZoom, TableReveal, TicketEnvelope, TicketSouvenir, TicketVoice, useTicketLive } from './TicketLive'
 import '../site/themes/themes.css'
 import './tickets.css'
 
@@ -15,6 +15,9 @@ import './tickets.css'
 // Le QR code contient l'identifiant UUID unique de l'invité : c'est ce que lit le scanner d'entrée.
 // live = { start, end, checkedInAt } : billet vivant (compte à rebours, jour J, tampon « Entré »).
 // reveal : à la première ouverture sur ce téléphone, le billet sort d'une enveloppe.
+// seat = { has, number, label } : table de l'invité, révélée le jour J.
+// souvenir = { photo, galleryHref } : après la fête, carte de remerciement au-dessus du billet.
+// voice = { url, from } : message vocal des hôtes, à écouter depuis le billet.
 
 const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 
@@ -158,7 +161,7 @@ function Ornament({ html, mark, small }) {
   )
 }
 
-export default function TicketCard({ style, note, event, guest, look: lookIn, themeId, paletteId, motif: motifId, accent, downloads = true, live, reveal = false }) {
+export default function TicketCard({ style, note, event, guest, look: lookIn, themeId, paletteId, motif: motifId, accent, downloads = true, live, reveal = false, seat, souvenir, voice }) {
   const root = useRef(null)
   const card = useRef(null)
   const [qrState, setQrState] = useState({ guestId: '', dataUrl: '', error: '' })
@@ -264,6 +267,7 @@ export default function TicketCard({ style, note, event, guest, look: lookIn, th
     <>
       {zoom && <QrZoom src={qr} code={ticketCode(guest.id)} onClose={() => setZoom(false)} />}
       {reveal && <TicketEnvelope code={guest.id} name={guest.name} mark={t.mark} mourn={mourn} vars={vars} motifCss={motifCss} />}
+      <TicketSouvenir state={liveState} souvenir={souvenir} title={event.title} name={guest.name} mourn={mourn} />
     </>
   )
   const downloadButton = downloads && (
@@ -318,6 +322,8 @@ export default function TicketCard({ style, note, event, guest, look: lookIn, th
           <div className="tkb-stub">
             <EntryStamp state={liveState} mourn={mourn} />
             {qrBlock}
+            <TableReveal seat={seat} state={liveState} code={guest.id} mourn={mourn} />
+            <TicketVoice voice={voice} name={guest.name} mourn={mourn} />
             <span className="tkc-lbl">Référence</span>
             <p className="tkc-ref">{t.reference}</p>
             <p className="tkb-url" data-print-only>
@@ -371,6 +377,8 @@ export default function TicketCard({ style, note, event, guest, look: lookIn, th
             </div>
             {qrBlock}
           </div>
+          <TableReveal seat={seat} state={liveState} code={guest.id} mourn={mourn} />
+          <TicketVoice voice={voice} name={guest.name} mourn={mourn} />
           <div className="tkc-sep" />
           <span className="tkc-lbl">Référence</span>
           <p className="tkc-ref">{t.reference}</p>

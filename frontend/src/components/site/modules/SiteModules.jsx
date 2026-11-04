@@ -1,6 +1,7 @@
 import { CalendarPlus, Check, Copy, Gift, MapPin, Navigation, Search, Ticket } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { mediaUrl } from '../../../api/client'
 import { submitPublicRsvp } from '../../../api/guests'
 import { findPublicSeat, uploadGuestPhoto } from '../../../api/publicEvents'
 import { DEFAULT_SIDE_LABEL, usableSides } from '../../../data/rsvpSides'
@@ -10,7 +11,8 @@ import { deadlineLabel, deadlinePassed, rsvpRules } from '../../../utils/rsvpRul
 import { findTemplate } from '../../../utils/templateTheme'
 import { resolveTicketStyle } from '../../../utils/ticketStyles'
 import TicketCard, { ticketEventInfo } from '../../tickets/TicketCard'
-import { eventStartIso } from '../../../utils/ticketLive'
+import { eventStartIso, ticketExtras } from '../../../utils/ticketLive'
+import { siteBlockDomId } from '../../../utils/sitePage'
 import { useCheckInWatch } from '../../../utils/useCheckInWatch'
 import { operatorStyle, usableAccounts, usableColors } from '../../../utils/mobileMoney'
 import { parseVideoUrl } from '../../../utils/videoEmbed'
@@ -523,11 +525,25 @@ export function SeatingModule({ tables = [], slug, themed, editable, findSeat })
 // modèle de site ; il se télécharge en PDF ou en image pour WhatsApp. C'est un billet vivant :
 // compte à rebours, QR en grand le jour J, tampon « Entré » après le scan, et il sort d'une
 // enveloppe la première fois qu'il s'affiche.
-export function GuestPass({ invitation, eventTitle, ticket = {}, onInvitationChange, watch = true }) {
+// onLeave : fermeture de la fenêtre du pass, avant d'aller à la galerie (carte souvenir).
+export function GuestPass({ invitation, eventTitle, ticket = {}, onInvitationChange, watch = true, onLeave }) {
   const template = findTemplate(invitation.template)
   useCheckInWatch(invitation, onInvitationChange, watch)
+  // Carte souvenir : lien vers la galerie seulement si la page en affiche une.
+  const [hasGallery, setHasGallery] = useState(false)
+  useEffect(() => {
+    // Après l'affichage : la galerie peut se trouver plus bas sur la page.
+    const id = requestAnimationFrame(() => setHasGallery(Boolean(document.getElementById(siteBlockDomId('Galerie')))))
+    return () => cancelAnimationFrame(id)
+  }, [])
+  const extras = ticketExtras(invitation, {
+    photo: mediaUrl(invitation.coverImageUrl),
+    galleryHref: hasGallery ? `#${siteBlockDomId('Galerie')}` : '',
+    onOpen: onLeave,
+  })
   return (
     <TicketCard
+      {...extras}
       live={{ start: eventStartIso(invitation.eventDate, invitation.eventStartTime), checkedInAt: invitation.checkedInAt }}
       reveal
       look={ticket.look}

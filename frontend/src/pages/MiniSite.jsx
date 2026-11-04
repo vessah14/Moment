@@ -393,6 +393,8 @@ export default function MiniSite () {
         blockContent={blockContent}
         data={{
           slug: event.slug,
+          // Bouton « Faire un flyer » du pied de page.
+          flyer: { type: eventTypeId, title: event.name, displayName: displayText, age: birthdayAge },
           eventDateTime: event.eventDate
             ? `${event.eventDate}T${event.startTime ?? '00:00:00'}`
             : '',

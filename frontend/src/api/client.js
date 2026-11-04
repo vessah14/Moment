@@ -1,5 +1,5 @@
 import { rememberReturnPath } from '../utils/returnPath'
-import { isR2MediaUrl } from '../utils/r2Media'
+import { isR2MediaUrl, isR2VoiceUrl } from '../utils/r2Media'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5146/api'
 const TOKEN_KEY = 'tbf_auth_token'
@@ -42,6 +42,15 @@ export function mediaUrl(path) {
     return path.replace('/image/upload/', '/image/upload/f_auto,q_auto/')
   if (isR2MediaUrl(path)) return path
   return path.startsWith('/') ? `${API_ORIGIN}${path}` : ''
+}
+
+// URL d'écoute d'un message vocal téléversé : R2, Cloudinary (rangé avec les vidéos) ou
+// fichier local. Toute autre adresse est ignorée.
+const VOICE_FILE = /\/voices\/[0-9a-fA-F-]{36}\/[0-9a-fA-F-]{36}\.(?:webm|ogg|m4a|mp3)$/
+export function voiceUrl(path) {
+  if (typeof path !== 'string' || !VOICE_FILE.test(path)) return ''
+  if (isR2VoiceUrl(path) || path.startsWith('https://res.cloudinary.com/')) return path
+  return path.startsWith('/uploads/voices/') ? `${API_ORIGIN}${path}` : ''
 }
 
 // Où vit la session : localStorage pour rester connecté (« Se souvenir de moi », 3 jours
