@@ -241,7 +241,7 @@ export default function MiniSite () {
     setNetworkUnavailable(false)
     setExtras({ gifts: [], seatingTables: [] })
 
-    getPublicSite(slug, { signal: controller.signal })
+    getPublicSite(slug, { signal: controller.signal, force: siteRetry > 0 })
       .then(data => {
         if (cancelled) return
         setSite(data)

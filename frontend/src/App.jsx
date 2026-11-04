@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react'
 import { Route, Routes, useLocation } from 'react-router-dom'
+import { clearPrefetchedPublicSite, prefetchPublicSite } from './api/publicEvents'
 import CookieConsent from './components/layout/CookieConsent'
 import Footer from './components/layout/Footer'
 import Header from './components/layout/Header'
@@ -70,6 +71,17 @@ function SiteLayout ({ children }) {
 function RouteLoader ({ children }) {
   const { pathname } = useLocation()
   const guestPage = isGuestPath(pathname)
+  const eventSlug = eventSlugFromPath(pathname)
+  useEffect(() => {
+    if (!eventSlug) return undefined
+
+    const controller = new AbortController()
+    prefetchPublicSite(eventSlug, { signal: controller.signal }).catch(() => {})
+    return () => {
+      controller.abort()
+      clearPrefetchedPublicSite(eventSlug)
+    }
+  }, [eventSlug])
   // Anglais : traduction écrite à la main ici, Google Traduction ailleurs.
   useEffect(() => syncTranslationForRoute(pathname), [pathname])
   return (

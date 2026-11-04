@@ -6,7 +6,12 @@ vi.mock('./client', () => ({
 }))
 
 import { apiFetch } from './client'
-import { getCachedPublicSite, getPublicSite } from './publicEvents'
+import {
+  clearPrefetchedPublicSite,
+  getCachedPublicSite,
+  getPublicSite,
+  prefetchPublicSite,
+} from './publicEvents'
 
 const publicSite = { event: { name: 'Mariage' }, blocks: [] }
 
@@ -14,6 +19,9 @@ afterEach(() => {
   vi.useRealTimers()
   vi.unstubAllGlobals()
   vi.clearAllMocks()
+  clearPrefetchedPublicSite('mariage')
+  clearPrefetchedPublicSite('mariage test')
+  clearPrefetchedPublicSite('inconnu')
 })
 
 describe('chargement du site public', () => {
@@ -47,6 +55,17 @@ describe('chargement du site public', () => {
     apiFetch.mockRejectedValueOnce(Object.assign(new Error('not found'), { status: 404 }))
 
     await expect(getPublicSite('inconnu')).rejects.toMatchObject({ status: 404 })
+    expect(apiFetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('réutilise le préchargement anticipé quand la page événement se monte', async () => {
+    apiFetch.mockResolvedValueOnce(publicSite)
+
+    const preloaded = prefetchPublicSite('mariage')
+    const pageRequest = getPublicSite('mariage', { signal: new AbortController().signal })
+
+    await expect(pageRequest).resolves.toEqual(publicSite)
+    await expect(preloaded).resolves.toEqual(publicSite)
     expect(apiFetch).toHaveBeenCalledTimes(1)
   })
 

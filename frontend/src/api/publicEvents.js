@@ -5,6 +5,7 @@ const PUBLIC_SITE_CACHE_MAX_AGE_MS = 6 * 60 * 60 * 1000
 const PUBLIC_SITE_CACHE_MAX_LENGTH = 750_000
 const PUBLIC_SITE_TIMEOUT_MS = 8000
 const PUBLIC_SITE_RETRY_DELAYS_MS = [400, 1000]
+const prefetchedPublicSites = new Map()
 
 export function getPublicEvent(slug) {
   return apiFetch(`/public/events/${slug}`, { auth: false })
@@ -91,7 +92,7 @@ function waitForRetry(delay, signal) {
   })
 }
 
-export async function getPublicSite(slug, { signal } = {}) {
+async function requestPublicSite(slug, { signal } = {}) {
   let lastError
 
   for (let attempt = 0; attempt <= PUBLIC_SITE_RETRY_DELAYS_MS.length; attempt += 1) {
@@ -137,6 +138,23 @@ export async function getPublicSite(slug, { signal } = {}) {
   }
 
   throw lastError
+}
+
+export function getPublicSite(slug, { signal, force = false } = {}) {
+  const prefetched = prefetchedPublicSites.get(slug)
+  if (!force && prefetched) return prefetched
+
+  const request = requestPublicSite(slug, { signal })
+  prefetchedPublicSites.set(slug, request)
+  return request
+}
+
+export function clearPrefetchedPublicSite(slug) {
+  prefetchedPublicSites.delete(slug)
+}
+
+export function prefetchPublicSite(slug, options) {
+  return getPublicSite(slug, options)
 }
 
 // Messages du livre d'or validés, actualisés pendant qu'un invité consulte l'événement.
