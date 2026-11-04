@@ -173,7 +173,7 @@ export function createParticles(canvas, kind) {
 }
 
 // ---------- Explosion festive (réponse envoyée, cadeau ouvert) ----------
-export function burst(canvas, x, y, kind, colors) {
+export function burst(canvas, x, y, kind, colors, durationMs = 2100) {
   // Modèles sobres (hommage) : aucune explosion festive.
   if (!kind || kind === 'none') return
   const ctx = canvas.getContext('2d')
@@ -197,8 +197,10 @@ export function burst(canvas, x, y, kind, colors) {
       vr: (Math.random() - 0.5) * 0.3,
     }
   })
-  let t = 0
-  const step = () => {
+  let startedAt
+  const step = (now) => {
+    if (startedAt === undefined) startedAt = now
+    const progress = Math.min((now - startedAt) / durationMs, 1)
     ctx.clearRect(0, 0, W, H)
     for (const p of P) {
       p.vy += 0.28
@@ -210,7 +212,7 @@ export function burst(canvas, x, y, kind, colors) {
       ctx.translate(p.x, p.y)
       ctx.rotate(p.r)
       ctx.fillStyle = p.c
-      ctx.globalAlpha = Math.max(0, 1 - t / 130)
+      ctx.globalAlpha = 1 - progress
       if (kind === 'coeurs') {
         const s = p.s
         ctx.beginPath()
@@ -231,10 +233,10 @@ export function burst(canvas, x, y, kind, colors) {
       }
       ctx.restore()
     }
-    if (++t < 130) requestAnimationFrame(step)
+    if (progress < 1) requestAnimationFrame(step)
     else ctx.clearRect(0, 0, W, H)
   }
-  step()
+  requestAnimationFrame(step)
 }
 
 // ---------- Musique générée en direct ----------

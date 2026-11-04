@@ -10,6 +10,7 @@ import { ConfirmDialog } from '../../components/ui/Dialog'
 import { listEvents } from '../../api/events'
 import { createCampaign, deleteCampaign, listCampaigns, updateCampaign } from '../../api/campaigns'
 import { useToast } from '../../utils/useToast'
+import { SkeletonList } from '../../components/ui/Skeleton'
 
 // SMS et notifications ne sont pas encore envoyés par l'API : seuls l'e-mail et les rappels
 // automatiques sont proposés ici ; WhatsApp passe par « Envoyer des invitations ».
@@ -72,7 +73,9 @@ export default function Communication() {
   const handleUpdate = async (dto) => {
     const result = await updateCampaign(editing.id, dto)
     reload(selectedEventId)
-    if (dto.sendNow)
+    // Grande liste : envoi en arrière-plan, notification à la fin.
+    if (dto.sendNow && result.status === 'EnCours') toast(`Envoi en cours à ${result.recipientCount} destinataires. Vous recevrez une notification à la fin.`)
+    else if (dto.sendNow)
       toast(
         result.emailsSentCount > 0
           ? `Campagne envoyée à ${result.emailsSentCount} destinataire${result.emailsSentCount > 1 ? 's' : ''}`
@@ -189,7 +192,7 @@ export default function Communication() {
           <div>
             <h2 className="mb-3 font-semibold text-ink">Historique</h2>
             {loading ? (
-              <p className="text-sm text-faint">Chargement…</p>
+              <SkeletonList rows={3} />
             ) : (
               <CampaignsList campaigns={filteredCampaigns} onEdit={setEditing} onDelete={setDeleting} />
             )}

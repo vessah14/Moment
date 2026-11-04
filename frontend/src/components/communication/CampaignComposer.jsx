@@ -34,7 +34,9 @@ export default function CampaignComposer({ defaultChannel = 'E-mail', onCreate }
       })
       if (sendNow) {
         setSentInfo(
-          channel === 'E-mail'
+          channel === 'E-mail' && result?.status === 'EnCours'
+            ? `Envoi en cours à ${result.recipientCount} destinataire(s). Vous recevrez une notification à la fin.`
+            : channel === 'E-mail'
             ? `${result?.emailsSentCount ?? 0} e-mail(s) envoyé(s) sur ${result?.recipientCount ?? 0} destinataire(s).`
             : `Campagne enregistrée pour ${result?.recipientCount ?? 0} destinataire(s) par ${channel} (aucun envoi réel, ce canal n'est pas branché).`,
         )

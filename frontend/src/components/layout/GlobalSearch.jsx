@@ -2,7 +2,8 @@ import { Search } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-export default function GlobalSearch({ placeholder, buildIndex }) {
+// onActivate : appelé à la première utilisation du champ (chargement des données à la demande).
+export default function GlobalSearch({ placeholder, buildIndex, onActivate }) {
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
@@ -48,7 +49,10 @@ export default function GlobalSearch({ placeholder, buildIndex }) {
           setQuery(e.target.value)
           setOpen(true)
         }}
-        onFocus={() => setOpen(true)}
+        onFocus={() => {
+          setOpen(true)
+          onActivate?.()
+        }}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && results[0]) goTo(results[0].to)
           if (e.key === 'Escape') {

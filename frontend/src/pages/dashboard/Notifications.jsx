@@ -1,4 +1,4 @@
-import { Bell, BookHeart, Check, CheckCheck, Image, Ticket, Trash2, Users } from 'lucide-react'
+import { Bell, BookHeart, Check, CheckCheck, Image, Mail, MailX, Ticket, Trash2, Users } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
@@ -10,6 +10,8 @@ const ICONS = {
   guest_photo: Image,
   rsvp: Users,
   gift_reserved: Ticket,
+  campaign_sent: Mail,
+  campaign_failed: MailX,
 }
 
 function notificationTime(value) {

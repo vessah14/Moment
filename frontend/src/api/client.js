@@ -1,7 +1,7 @@
 import { rememberReturnPath } from '../utils/returnPath'
 import { isR2MediaUrl, isR2VoiceUrl } from '../utils/r2Media'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5146/api'
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5146/api'
 const TOKEN_KEY = 'tbf_auth_token'
 const USER_KEY = 'tbf_auth_user'
 export const CURRENT_USER_UPDATED_EVENT = 'tbf:current-user-updated'
@@ -235,7 +235,23 @@ async function refreshTokenIfNeeded() {
   await refreshPromise
 }
 
-export async function apiFetch(path, { auth = true, headers, body, ...options } = {}) {
+// Lectures identiques lancées en même temps (barre du haut + page, deux composants…) :
+// un seul appel réseau, partagé. Chaque appelant reçoit sa propre copie de la réponse.
+const inflight = new Map()
+
+export function apiFetch(path, options = {}) {
+  const { method, body, signal, auth = true } = options
+  if ((method && method.toUpperCase() !== 'GET') || body !== undefined || signal) return request(path, options)
+  const key = `${auth ? getToken() ?? '' : '-'} ${path}`
+  let shared = inflight.get(key)
+  if (!shared) {
+    shared = request(path, options).finally(() => inflight.delete(key))
+    inflight.set(key, shared)
+  }
+  return shared.then((value) => (value && typeof value === 'object' ? structuredClone(value) : value))
+}
+
+async function request(path, { auth = true, headers, body, ...options } = {}) {
   const finalHeaders = { ...headers }
   let finalBody = body
 

@@ -96,6 +96,9 @@ namespace backend_EventMoment.Services
                     ServiceURL = $"https://{options.AccountId}.r2.cloudflarestorage.com",
                     AuthenticationRegion = "auto",
                     ForcePathStyle = true,
+                    // R2 lent ou injoignable : l'envoi échoue en 30 s au lieu de bloquer 100 s.
+                    Timeout = TimeSpan.FromSeconds(30),
+                    MaxErrorRetry = 2,
                 });
 
         private string ObjectKey(string kind, Guid eventId, string file) =>
@@ -123,6 +126,10 @@ namespace backend_EventMoment.Services
             return true;
         }
 
+        // Nom de fichier unique (GUID) jamais réécrit : le navigateur et le CDN peuvent le
+        // garder un an sans revenir le demander.
+        public const string ImmutableCache = "public, max-age=31536000, immutable";
+
         public async Task<string> SaveImageAsync(IFormFile file, UploadFolder folder, Guid eventId, string extension)
         {
             var kind = UploadPaths.Name(folder);
@@ -132,7 +139,7 @@ namespace backend_EventMoment.Services
 
             try
             {
-                await _s3.PutObjectAsync(new PutObjectRequest
+                var request = new PutObjectRequest
                 {
                     BucketName = _options.Bucket,
                     Key = key,
@@ -148,7 +155,9 @@ namespace backend_EventMoment.Services
                         ".gif" => "image/gif",
                         _ => throw new InvalidOperationException("Extension d’image non prise en charge."),
                     },
-                });
+                };
+                request.Headers.CacheControl = ImmutableCache;
+                await _s3.PutObjectAsync(request);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
@@ -165,7 +174,7 @@ namespace backend_EventMoment.Services
             await using var stream = file.OpenReadStream();
             try
             {
-                await _s3.PutObjectAsync(new PutObjectRequest
+                var request = new PutObjectRequest
                 {
                     BucketName = _options.Bucket,
                     Key = key,
@@ -173,7 +182,9 @@ namespace backend_EventMoment.Services
                     DisablePayloadSigning = true,
                     DisableDefaultChecksumValidation = true,
                     ContentType = VoiceFiles.ContentType(extension),
-                });
+                };
+                request.Headers.CacheControl = ImmutableCache;
+                await _s3.PutObjectAsync(request);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {

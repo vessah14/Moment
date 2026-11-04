@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { requestPasswordReset } from '../api/auth'
-import logoMark from '../assets/logo-mark.png'
+import logoMark from '../assets/logo-mark.webp'
 import AuthLayout from '../components/layout/AuthLayout'
 import Button from '../components/ui/Button'
 

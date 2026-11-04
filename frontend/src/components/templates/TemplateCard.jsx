@@ -38,7 +38,7 @@ export default function TemplateCard({ template }) {
     <article className="group flex flex-col self-start overflow-hidden rounded-2xl border border-border-soft bg-surface shadow-sm transition duration-300 hover:-translate-y-1 hover:border-brand-purple/50 hover:shadow-lg">
       <div className="relative aspect-4/3 overflow-hidden border-b border-border-soft">
         {template.image ? (
-          <img src={template.image} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          <img src={template.image} alt="" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
         ) : (
           <TemplatePreview template={template} preview={template.preview} minimal={template.minimal} />
         )}

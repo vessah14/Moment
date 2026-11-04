@@ -8,7 +8,7 @@ public class FakeEmailSender : IEmailSender
 
     public Task<bool> SendAsync(string toEmail, string subject, string htmlBody)
     {
-        Sent.Add((toEmail, subject, htmlBody));
+        lock (Sent) Sent.Add((toEmail, subject, htmlBody)); // envois en parallèle (campagnes)
         return Task.FromResult(true);
     }
 }

@@ -44,6 +44,9 @@ namespace backend_EventMoment.Services
             // Nombre d'invités par événement limité par l'offre (Free : 50, Premium : 500…).
             if (_plans != null)
                 await _plans.EnsureCanAddGuestAsync(organizerId, eventId);
+            var editionNumber = (await _context.Guests
+                .Where(g => g.EventId == eventId)
+                .MaxAsync(g => (int?)g.EditionNumber) ?? 0) + 1;
 
             var entity = new Guest
             {
@@ -54,6 +57,8 @@ namespace backend_EventMoment.Services
                 Phone = dto.Phone,
                 Email = dto.Email ?? string.Empty,
                 Seats = dto.Seats,
+                EditionNumber = editionNumber,
+                IsVip = dto.IsVip,
                 Status = GuestStatus.EnAttente,
                 CreatedAt = DateTimeOffset.UtcNow,
                 UpdatedAt = DateTimeOffset.UtcNow
@@ -211,6 +216,7 @@ namespace backend_EventMoment.Services
             entity.Phone = dto.Phone;
             entity.Email = dto.Email ?? string.Empty;
             entity.Seats = dto.Seats;
+            entity.IsVip = dto.IsVip;
             entity.Status = dto.Status;
             entity.UpdatedAt = DateTimeOffset.UtcNow;
 
@@ -303,6 +309,9 @@ namespace backend_EventMoment.Services
             var result = new ImportGuestsResultDto();
             var batchId = Guid.NewGuid();
             await using var transaction = await OrganizerLock.BeginAsync(_context, organizerId);
+            var editionNumber = (await _context.Guests
+                .Where(g => g.EventId == eventId)
+                .MaxAsync(g => (int?)g.EditionNumber) ?? 0);
             foreach (var row in dto.Rows)
             {
                 var fullName = row.FullName?.Trim() ?? string.Empty;
@@ -351,6 +360,7 @@ namespace backend_EventMoment.Services
                     FullName = fullName,
                     Phone = phone,
                     Email = string.Empty,
+                    EditionNumber = ++editionNumber,
                     Status = GuestStatus.EnAttente,
                     ImportBatchId = batchId,
                     CreatedAt = now,
@@ -459,10 +469,84 @@ namespace backend_EventMoment.Services
 
             var rules = RsvpRules.Read(await RsvpBlockContentAsync(guest.EventId)).ForSeats(guest.Seats);
             var invitation = MapInvitation(guest, eventEntity, location, rsvp, rules, checkedInAt);
+            invitation.EventCategoryCode = await _context.EventCategories.IgnoreQueryFilters().AsNoTracking()
+                .Where(category => category.Id == eventEntity.CategoryId)
+                .Select(category => category.Code)
+                .FirstOrDefaultAsync() ?? string.Empty;
+            invitation.TicketTotal = await _context.Guests.IgnoreQueryFilters().CountAsync(g => g.EventId == guest.EventId);
             invitation.DisplayTitle = await HeroTitleAsync(guest.EventId);
             await AddSeatAsync(invitation, guest.Id, eventEntity);
+            if (checkedInAt != null && eventEntity.EventDate == Today)
+                await AddProgramGuideAsync(invitation, eventEntity.Id);
             AddVoice(invitation, eventEntity);
             return invitation;
+        }
+
+        public async Task<PublicInvitationDto?> MarkEnRouteAsync(Guid guestId)
+        {
+            var guest = await _context.Guests.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(g => g.Id == guestId);
+            if (guest == null) return null;
+
+            var eventEntity = await _context.Events.IgnoreQueryFilters().AsNoTracking()
+                .FirstOrDefaultAsync(e => e.Id == guest.EventId && e.Status == EventStatus.Publie
+                    && !_context.EventModerations.Any(m => m.EventId == e.Id));
+            if (eventEntity == null) return null;
+            if (eventEntity.EventDate != Today)
+                throw new InvalidOperationException("Le signal « Je suis en route » est disponible le jour de l’événement.");
+
+            var rsvp = await _context.RsvpResponses.IgnoreQueryFilters().AsNoTracking()
+                .Where(r => r.GuestId == guestId)
+                .OrderByDescending(r => r.CreatedAt)
+                .FirstOrDefaultAsync();
+            if (rsvp?.Confirmed != true)
+                throw new InvalidOperationException("Confirmez votre présence avant de signaler votre arrivée.");
+
+            if (await _context.GuestCheckins.IgnoreQueryFilters().AnyAsync(c => c.GuestId == guestId))
+                throw new InvalidOperationException("Votre arrivée a déjà été enregistrée à l’entrée.");
+
+            var notifyOrganizer = false;
+            if (guest.EnRouteAt == null)
+            {
+                var now = DateTimeOffset.UtcNow;
+                if (_context.Database.IsRelational())
+                {
+                    notifyOrganizer = await _context.Guests.IgnoreQueryFilters()
+                        .Where(g => g.Id == guestId && g.EnRouteAt == null)
+                        .ExecuteUpdateAsync(update => update.SetProperty(g => g.EnRouteAt, now)) == 1;
+                }
+                else
+                {
+                    guest.EnRouteAt = now;
+                    await _context.SaveChangesAsync();
+                    notifyOrganizer = true;
+                }
+            }
+
+            if (notifyOrganizer && _inAppNotifications != null)
+                await _inAppNotifications.NotifyGuestEnRouteAsync(guest.EventId, guest.FullName);
+
+            return await GetPublicInvitationAsync(guestId);
+        }
+
+        private async Task AddProgramGuideAsync(PublicInvitationDto invitation, Guid eventId)
+        {
+            var hasProgram = await _context.EventBlocks.IgnoreQueryFilters().AsNoTracking()
+                .AnyAsync(b => b.EventId == eventId && b.IsVisible
+                    && (b.BlockType == "Programme" || b.BlockType == "programme" || b.BlockType == "program"));
+            if (!hasProgram) return;
+
+            invitation.ProgramItems = await _context.ProgramItems.IgnoreQueryFilters().AsNoTracking()
+                .Where(p => p.EventId == eventId)
+                .OrderBy(p => p.StartTime).ThenBy(p => p.Position)
+                .Select(p => new PublicInvitationProgramItemDto
+                {
+                    Title = p.Title,
+                    Location = p.Location,
+                    StartTime = p.StartTime,
+                    DurationMinutes = p.DurationMinutes,
+                })
+                .ToListAsync();
         }
 
         // Message vocal des hôtes : servi seulement s'il a été téléversé pour cet événement.
@@ -496,6 +580,18 @@ namespace backend_EventMoment.Services
             if (index < 0) return;
             invitation.TableNumber = index + 1;
             invitation.TableLabel = tables[index].Label;
+            if (invitation.CheckedInAt == null || eventEntity.EventDate != Today) return;
+
+            var tableGuests = await _context.SeatingAssignments.IgnoreQueryFilters().AsNoTracking()
+                .Where(a => a.EventId == eventEntity.Id && a.TableId == tableId && a.GuestId != guestId)
+                .OrderBy(a => a.CreatedAt)
+                .Select(a => a.Guest.FullName)
+                .ToListAsync();
+            invitation.TableGuestFirstNames = tableGuests
+                .Select(name => name.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault())
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Select(name => name!)
+                .ToList();
         }
 
         private Task<string?> HeroBlockContentAsync(Guid eventId) =>
@@ -655,6 +751,9 @@ namespace backend_EventMoment.Services
                 await _plans.EnsureCanAddGuestAsync(eventEntity.OrganizerId, eventEntity.Id);
 
             var now = DateTimeOffset.UtcNow;
+            var editionNumber = (await _context.Guests
+                .Where(g => g.EventId == eventEntity.Id)
+                .MaxAsync(g => (int?)g.EditionNumber) ?? 0) + 1;
             var guest = new Guest
             {
                 Id = Guid.NewGuid(),
@@ -662,6 +761,7 @@ namespace backend_EventMoment.Services
                 FullName = fullName,
                 Phone = phone,
                 Email = email,
+                EditionNumber = editionNumber,
                 Status = dto.Maybe ? GuestStatus.EnAttente : confirmed ? GuestStatus.Present : GuestStatus.Absent,
                 CreatedAt = now,
                 UpdatedAt = now,
@@ -697,6 +797,12 @@ namespace backend_EventMoment.Services
                 .FirstOrDefaultAsync();
 
             var created = MapInvitation(guest, eventEntity, location, response, rules);
+            created.EventCategoryCode = await _context.EventCategories.IgnoreQueryFilters().AsNoTracking()
+                .Where(category => category.Id == eventEntity.CategoryId)
+                .Select(category => category.Code)
+                .FirstOrDefaultAsync() ?? string.Empty;
+            created.TicketTotal = await _context.Guests.IgnoreQueryFilters().CountAsync(g => g.EventId == eventEntity.Id);
+            created.DisplayTitle = await HeroTitleAsync(eventEntity.Id);
             AddVoice(created, eventEntity);
             return created;
         }
@@ -728,6 +834,8 @@ namespace backend_EventMoment.Services
         {
             GuestId = guest.Id,
             GuestFullName = guest.FullName,
+            TicketNumber = guest.EditionNumber,
+            IsVip = guest.IsVip,
             EventName = eventEntity.Name,
             EventSlug = eventEntity.Slug,
             EventDate = eventEntity.EventDate,
@@ -749,6 +857,7 @@ namespace backend_EventMoment.Services
             RsvpMaxCompanions = rules.MaxCompanions,
             RsvpAllowMaybe = rules.AllowMaybe,
             CheckedInAt = checkedInAt,
+            EnRouteAt = guest.EnRouteAt,
             CoverImageUrl = eventEntity.CoverImageUrl,
         };
 
@@ -788,9 +897,12 @@ namespace backend_EventMoment.Services
             Email = entity.Email ?? string.Empty,
             GroupId = entity.GroupId,
             Seats = entity.Seats,
+            EditionNumber = entity.EditionNumber,
+            IsVip = entity.IsVip,
             Status = entity.Status,
             InvitationOpenedAt = entity.InvitationOpenedAt,
-            InvitationSharedAt = entity.InvitationSharedAt
+            InvitationSharedAt = entity.InvitationSharedAt,
+            EnRouteAt = entity.EnRouteAt
         };
     }
 }

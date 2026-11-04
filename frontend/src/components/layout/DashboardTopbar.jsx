@@ -1,5 +1,5 @@
 import { Bell, LogOut, Menu, Settings } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { logout } from '../../api/auth'
 import { CURRENT_USER_UPDATED_EVENT, getCurrentUser, mediaUrl } from '../../api/client'
@@ -37,11 +37,21 @@ export default function DashboardTopbar({ onMenuClick }) {
   useEffect(() => {
     const updateUser = () => setUser(getCurrentUser())
     window.addEventListener(CURRENT_USER_UPDATED_EVENT, updateUser)
-    Promise.all([listEvents(), listGuests()])
-      .then(([events, guests]) => setSearchData({ events: events ?? [], guests: guests ?? [] }))
-      .catch(() => setSearchData({ events: [], guests: [] }))
     return () => window.removeEventListener(CURRENT_USER_UPDATED_EVENT, updateUser)
   }, [])
+
+  // Événements et invités de la recherche : chargés à la première utilisation du champ,
+  // pas à chaque page du tableau de bord (tous les invités de tous les événements).
+  const searchLoaded = useRef(false)
+  const loadSearchData = () => {
+    if (searchLoaded.current) return
+    searchLoaded.current = true
+    Promise.all([listEvents(), listGuests()])
+      .then(([events, guests]) => setSearchData({ events: events ?? [], guests: guests ?? [] }))
+      .catch(() => {
+        searchLoaded.current = false
+      })
+  }
 
   const handleLogout = () => {
     logout()
@@ -73,6 +83,7 @@ export default function DashboardTopbar({ onMenuClick }) {
       <GlobalSearch
         placeholder="Rechercher un événement, un invité..."
         buildIndex={() => buildDashboardSearchIndex(searchData.events, searchData.guests)}
+        onActivate={loadSearchData}
       />
 
       <div className="ml-auto flex items-center gap-3 sm:gap-5">

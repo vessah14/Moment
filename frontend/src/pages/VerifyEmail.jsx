@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { verifyEmail } from '../api/users'
 import { setCurrentUser, setToken } from '../api/client'
 import { goHomeAfterLogin } from '../utils/firstEvent'
-import logoMark from '../assets/logo-mark.png'
+import logoMark from '../assets/logo-mark.webp'
 import AuthLayout from '../components/layout/AuthLayout'
 import Button from '../components/ui/Button'
 import {

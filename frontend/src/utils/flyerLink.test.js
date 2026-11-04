@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { flyerLink } from './flyerLink'
+import { flyerLink, guestStatusFlyerLink } from './flyerLink'
 
 const now = new Date('2027-03-01T12:00:00').getTime()
 const params = (href) => Object.fromEntries(new URL(href, 'https://x').searchParams)
@@ -32,5 +32,19 @@ describe('lien vers le studio de flyers', () => {
     expect(params(flyerLink({ ...base, cover: '/uploads/covers/a.jpg' }).href).cover).toBe('/uploads/covers/a.jpg')
     expect(params(flyerLink({ ...base, cover: 'javascript:alert(1)' }).href).cover).toBeUndefined()
     expect(flyerLink({ ...base, slug: '' })).toBeNull()
+  })
+
+  it('prépare un statut WhatsApp personnalisé pour le billet invité', () => {
+    const link = guestStatusFlyerLink({ eventName: 'Inès & Kevin', eventDate: '2027-06-12', eventCategoryCode: 'mariage' })
+    expect(link.label).toBe('Créer mon statut WhatsApp')
+    expect(params(link.href)).toMatchObject({
+      status: 'guest',
+      occ: 'mariage',
+      message: 'Je serai au mariage d’Inès & Kevin, 12 juin',
+    })
+    expect(params(guestStatusFlyerLink({ eventName: "Mariage d'Inès & Kevin", eventDate: '2027-06-12', eventCategoryCode: 'mariage' }).href).message)
+      .toBe('Je serai au mariage d’Inès & Kevin, 12 juin')
+    expect(guestStatusFlyerLink({ eventName: 'Inès & Kevin', eventDate: '2027-06-12' })).toBeNull()
+    expect(guestStatusFlyerLink({ eventName: '', eventDate: '2027-06-12', eventCategoryCode: 'mariage' })).toBeNull()
   })
 })

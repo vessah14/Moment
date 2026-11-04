@@ -4,7 +4,7 @@ import Pagination from '../ui/Pagination'
 import StatusBadge from '../ui/StatusBadge'
 import { usePagination } from '../../utils/pagination'
 
-const STATUS_LABELS = { Brouillon: 'Brouillon', Programmee: 'Programmée', Envoyee: 'Envoyée' }
+const STATUS_LABELS = { Brouillon: 'Brouillon', Programmee: 'Programmée', Envoyee: 'Envoyée', EnCours: 'Envoi en cours' }
 
 function channelIcon(channel) {
   return CHANNELS.find((c) => c.value === channel)?.icon
@@ -64,7 +64,7 @@ export default function CampaignsList({ campaigns, onEdit, onDelete }) {
                   <td className="px-3 py-4">
                     <div className="flex justify-end gap-1">
                       {/* Une campagne envoyée ne se modifie plus : les messages sont partis. */}
-                      {c.status !== 'Envoyee' && (
+                      {c.status !== 'Envoyee' && c.status !== 'EnCours' && (
                         <button
                           type="button"
                           onClick={() => onEdit?.(c)}

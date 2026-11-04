@@ -41,6 +41,9 @@
 .tbtk .tkc-qr .qr-error { max-width: 120px; color: #b42318; font-size: .64rem; line-height: 1.35 }
 .tbtk .tkc-sep { height: 1px; margin: .95rem 0 .85rem; background: color-mix(in srgb, var(--stub-ink) 14%, var(--stub-bg)) }
 .tbtk .tkc-ref { margin: .45rem 0 0; font-family: ui-monospace, Menlo, monospace; font-size: 1.05rem; font-weight: 700; letter-spacing: .22em; color: var(--stub-ink) }
+.tbtk .tkc-edition { margin: .35rem 0 0; color: color-mix(in srgb, var(--stub-ink) 70%, var(--stub-bg)); font-family: var(--f-body); font-size: .64rem; font-weight: 700; letter-spacing: .08em }
+.tbtk.vip .tkc { filter: drop-shadow(0 26px 40px rgba(201, 163, 78, .35)) }
+.tbtk.vip .tkc-brand { color: #9a772a }
 .tbtk .tkc-bar { display: flex; align-items: center; justify-content: center; gap: .5rem; width: 100%; min-height: 46px; margin: 1.05rem 0 0; padding: .5rem 1rem; border: 0; border-radius: 12px;
   background: var(--stub-ink); color: var(--stub-bg); font-family: var(--f-body); font-size: .74rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; text-align: center }
 .tbtk .tkc-dl { cursor: pointer; font-size: .82rem }

@@ -7,7 +7,9 @@ namespace backend_EventMoment.Models
     {
         Brouillon,
         Programmee,
-        Envoyee
+        Envoyee,
+        // Grande liste : envoi en arrière-plan (CampaignDispatcher), notification à la fin.
+        EnCours
     }
 
     [Table("message_campaigns")]

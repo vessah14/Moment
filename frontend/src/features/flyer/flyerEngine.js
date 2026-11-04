@@ -72,6 +72,21 @@ const qs = new URLSearchParams(location.search);
 if (qs.get("occ") && OCC[qs.get("occ")]) { st.occ = qs.get("occ"); st.style = OCC[st.occ].styles[0]; st.pal = OCC[st.occ].pal || 0; st.edited = false; }
 ["nom", "num", "sous", "quand", "lieu", "prix", "lien"].forEach(k => { if (qs.get(k)) st[k] = qs.get(k).slice(0, k === "num" ? 4 : k === "lien" ? 120 : 60); });
 if (qs.get("type") && TYPES[qs.get("type")]) st.etype = qs.get("type");
+if (qs.get("status") === "guest") {
+  st.occ = "mariage";
+  st.etype = "";
+  st.style = "elegance";
+  st.pal = 0;
+  st.num = "";
+  st.sous = "";
+  st.tags = "";
+  st.sig = "";
+  st.form = 0;
+  st.hide = {};
+  st.voeu = (qs.get("message") || "").slice(0, 220);
+  st.edited = true;
+  st.fmt = "statut";
+}
 let photo = null, pz = 1, px = 0, py = 0; // photo, zoom, décalage (en fraction)
 let extras = [], cut = null, logo = null, xcuts = []; // xcuts : photos du collage détourées // photos du collage, personne détourée (canvas)
 const save = () => { try { const { voeu, ...rest } = st; localStorage.setItem(KEY, JSON.stringify({ ...rest, voeu: st.edited ? voeu : "" })); } catch {} };
@@ -593,8 +608,8 @@ function texts(S) {
   const tags = h.tags ? [] : String(S.tags || "").split(",").map(v => v.trim()).filter(Boolean).slice(0, 3);
   return { tags, info, qr, qrl: o.qrl || "Scannez-moi", name: h.name ? "" : name, sous: h.sous ? "" : sous, wish: h.wish ? "" : (S.voeu || "").slice(0, 220), sig: h.sig ? "" : sig, kick, big, caps, num, numSmall };
 }
-function watermark(x, H, dark) {
-  x.save(); x.font = `500 26px ${F.sans}`; x.textAlign = "center"; const t = "Fait avec TBF MOMENT · tbfmoment.com", w = x.measureText(t).width + 44;
+function watermark(x, H, dark, created = false) {
+  x.save(); x.font = `500 26px ${F.sans}`; x.textAlign = "center"; const t = `${created ? "Créé" : "Fait"} avec TBF MOMENT · tbfmoment.com`, w = x.measureText(t).width + 44;
   x.fillStyle = dark ? "rgba(0,0,0,.42)" : "rgba(255,255,255,.7)"; rr(x, 540 - w / 2, H - 76, w, 46, 23); x.fill();
   x.fillStyle = dark ? "rgba(255,255,255,.92)" : "rgba(20,16,40,.82)"; x.fillText(t, 540, H - 44); x.restore();
 }
@@ -623,7 +638,7 @@ function draw(x, S, scale, thumb, sel) {
   ({ icone: iconeS, neon: neonS, lumiere: lumiereS, duo: duoS, reve: reveS, tournesol: tournesolS, event: eventS, pro: proS, star: starS, eclat, souvenirs, wax, prestige, pop, elegance, affiche, sobre })[S.style](x, H, sq, c1, c2, ink, acc, T, S, thumb);
   if (S.film) film(x, H);
   if (!thumb) drawItems(x, H, S, acc, sel);
-  if (!thumb) watermark(x, H, ["icone", "neon", "lumiere", "duo", "tournesol", "event", "star", "eclat", "prestige", "affiche", "pop"].includes(S.style) || (S.style === "sobre" && S.pal === 2));
+  if (!thumb) watermark(x, H, ["icone", "neon", "lumiere", "duo", "tournesol", "event", "star", "eclat", "prestige", "affiche", "pop"].includes(S.style) || (S.style === "sobre" && S.pal === 2), qs.get("status") === "guest");
 }
 
 /* ---------- Star : la personne détourée devant un très grand mot, ballons dorés ---------- */
@@ -1305,7 +1320,9 @@ $("#vid-share").addEventListener("click", async () => { if (!vidBlob) return; co
 onDoc("click", async e => { const b = e.target.closest("[data-act]"); if (!b) return; if (b.dataset.act === "video") { if (b.disabled) return; $$("[data-act=video]").forEach(x2 => x2.disabled = true); try { await videoFlow(); } finally { $$("[data-act=video]").forEach(x2 => x2.disabled = false); } return; } const lab = b.querySelector("span"), old = lab.textContent; b.disabled = true; lab.textContent = "Préparation…"; try { await (b.dataset.act === "share" ? share() : download()); } finally { lab.textContent = old; b.disabled = false; } });
 
 // Préremplissage depuis un événement
-if (qs.get("ev")) { const n = $("#ev-note"); n.hidden = false; n.textContent = `Pour l'événement « ${qs.get("ev").slice(0, 80)} » : le flyer est prêt, ajoutez une photo et votre nom.`; }
+if (qs.get("ev")) { const n = $("#ev-note"); n.hidden = false; n.textContent = qs.get("status") === "guest"
+  ? "Votre statut est prêt. Ajoutez une photo si vous le souhaitez, puis partagez le flyer."
+  : `Pour l'événement « ${qs.get("ev").slice(0, 80)} » : le flyer est prêt, ajoutez une photo et votre nom.`; }
 if (qs.get("cover")) { const u = qs.get("cover"); const safe = /\.(jpe?g|png|webp)$/i.test(u.split("?")[0]) ? mediaUrl(u) : ""; if (safe) { fetch(safe).then(r => r.ok ? r.blob() : null).then(b => b && setPhoto(new File([b], "cover", { type: b.type }))).catch(() => {}); } }
 cutUi(); syncForm(); render();
 return () => { cleanups.forEach(f => f()); cancelAnimationFrame(raf); clearTimeout(thumbT); document.body.style.overflow = ""; };

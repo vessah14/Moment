@@ -8,6 +8,7 @@ namespace backend_EventMoment.Models
         public string GuestFullName { get; set; } = string.Empty;
 
         public string EventName { get; set; } = string.Empty;
+        public string EventCategoryCode { get; set; } = string.Empty;
         public string? DisplayTitle { get; set; }
         // Adresse du site public (/e/{slug}) : l'invitation y renvoie, avec ?invite=.
         public string EventSlug { get; set; } = string.Empty;
@@ -41,6 +42,13 @@ namespace backend_EventMoment.Models
         // Heure de la première entrée scannée (null tant que l'invité n'est pas arrivé).
         public DateTimeOffset? CheckedInAt { get; set; }
 
+        // Arrivée annoncée par l'invité depuis son billet.
+        public DateTimeOffset? EnRouteAt { get; set; }
+
+        public int TicketNumber { get; set; }
+        public int TicketTotal { get; set; }
+        public bool IsVip { get; set; }
+
         // Réponse publique rattachée à un invité déjà sur la liste : son pass n'est pas
         // renvoyé (GuestId vide), il se trouve dans son lien personnel.
         public bool LinkedToGuestList { get; set; }
@@ -51,6 +59,8 @@ namespace backend_EventMoment.Models
         public bool HasTable { get; set; }
         public int? TableNumber { get; set; }
         public string? TableLabel { get; set; }
+        public List<string> TableGuestFirstNames { get; set; } = new();
+        public List<PublicInvitationProgramItemDto> ProgramItems { get; set; } = new();
 
         // Couverture de l'événement : le billet devient une carte souvenir après la fête.
         public string? CoverImageUrl { get; set; }
@@ -58,6 +68,14 @@ namespace backend_EventMoment.Models
         // Message vocal des hôtes, à écouter depuis le billet, et sa signature.
         public string? VoiceMessageUrl { get; set; }
         public string? VoiceMessageFrom { get; set; }
+    }
+
+    public class PublicInvitationProgramItemDto
+    {
+        public string Title { get; set; } = string.Empty;
+        public string? Location { get; set; }
+        public DateTimeOffset? StartTime { get; set; }
+        public int DurationMinutes { get; set; }
     }
 
     public class SubmitPublicRsvpDto

@@ -252,7 +252,7 @@ function MinuitBand() {
 }
 
 // QR d'entrée de l'invité (même contenu que son pass : l'identifiant d'invité).
-function GuestQr({ guestId }) {
+function GuestQr({ guestId, dayOf }) {
   const [src, setSrc] = useState('')
   useEffect(() => {
     let cancelled = false
@@ -263,7 +263,7 @@ function GuestQr({ guestId }) {
       cancelled = true
     }
   }, [guestId])
-  return src ? <img className="inv-qr" src={src} alt="QR code d’entrée" /> : <span className="inv-qr" />
+  return src ? <img className={`inv-qr${dayOf ? ' inv-qr-day-of rv' : ''}`} src={src} alt="QR code d’entrée" /> : <span className="inv-qr" />
 }
 
 function SectionHead({ eyebrow, title, ornament }) {
@@ -313,7 +313,7 @@ function Lightbox({ photos, index, onClose, onMove }) {
         <ChevronLeft />
       </button>
       <figure>
-        <img src={mediaUrl(photo.url)} alt={photo.caption ?? ''} />
+        <img src={mediaUrl(photo.url)} alt={photo.caption ?? ''} loading="lazy" decoding="async" />
       </figure>
       <button type="button" aria-label="Photo suivante" onClick={() => onMove(1)}>
         <ChevronRight />
@@ -431,6 +431,8 @@ export default function ThemedSitePage({
 }) {
   const theme = getSiteTheme(template?.theme)
   const editable = Boolean(editor)
+  const allowGuestUploads = !editable && Boolean(data.slug)
+    && (blocks || []).includes('Galerie') && blockContent?.Galerie?.guestUploads !== false
   const embedded = !fullPage
   const [reduced] = useState(prefersReducedMotion)
   const motion = fullPage && !reduced
@@ -474,6 +476,7 @@ export default function ThemedSitePage({
   const [lightboxIndex, setLightboxIndex] = useState(-1)
   const [passOpen, setPassOpen] = useState(false)
   const [activeSection, setActiveSection] = useState(null)
+  const [ticketFlipped, setTicketFlipped] = useState(false)
 
   const rootRef = useRef(null)
   const particlesRef = useRef(null)
@@ -481,6 +484,11 @@ export default function ThemedSitePage({
   const coverRef = useRef(null)
   const motifRef = useRef(null)
   const musicRef = useRef(null)
+  const ticketBackRef = useRef(null)
+
+  useEffect(() => {
+    if (ticketFlipped) ticketBackRef.current?.focus()
+  }, [ticketFlipped])
 
   useFonts(theme)
 
@@ -540,6 +548,18 @@ export default function ThemedSitePage({
         }))
       : ''
   const timeLabel = validStart ? formatTime(data.eventDateTime, t.locale, theme.eventTimeZone) : ''
+  const eventDay = validStart ? isSameDay(validStart, theme.eventTimeZone) : false
+  const ticketAddress = data.locationAddress || blockContent.Localisation?.address || ''
+  const ticketMapUrl = ticketAddress
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ticketAddress)}`
+    : null
+  const ticketProgram = Array.isArray(data.programItems) ? data.programItems.slice(0, 3) : []
+  const dressCode = blockContent['Dress code'] ?? {}
+  const ticketDress = [
+    dressCode.title?.trim(),
+    dressCode.body?.trim(),
+    usableColors(dressCode.colors).map((color) => color.name || color.hex).join(', '),
+  ].filter(Boolean).join(' · ')
   // Année dorée de l'en-tête officiel (Envol), sauf si le surtitre la donne déjà.
   const eventYear = validStart ? (theme.eventTimeZone ? timeZoneYear(validStart, theme.eventTimeZone) : validStart.getFullYear()) : null
   const heroYear = theme.heroSeal && validStart && !String(heroStyle.kicker ?? '').includes(String(eventYear))
@@ -639,18 +659,23 @@ export default function ThemedSitePage({
     }
   }, [motion, opened])
 
-  const openIntro = (e) => {
+  const openIntro = () => {
     if (intro !== 'closed') return
     const duration = motion
       ? { envelope: 1700, curtain: 1250, gift: 900, bloom: 1150, iris: 1300, ticket: 1100, candle: 1800, badge: 1100 }[theme.intro]
       : 0
     setIntro('opening')
     if (withMusic && musicStyle) music().play()
-    if (theme.intro === 'gift' && motion && fxRef.current) {
-      const r = e.currentTarget.getBoundingClientRect()
-      burst(fxRef.current, r.left + r.width / 2, r.top + r.height / 3, 'confetti', palette.particleColors)
+    if (motion && fxRef.current) {
+      burst(fxRef.current, window.innerWidth / 2, window.innerHeight * 0.35, 'confetti', palette.particleColors, 1450)
     }
+    if (theme.intro === 'envelope' && motion && typeof navigator !== 'undefined') navigator.vibrate?.(12)
     setTimeout(() => setIntro('gone'), duration)
+  }
+
+  const turnTicket = (e) => {
+    e.stopPropagation()
+    setTicketFlipped(true)
   }
 
   const celebrate = (el) => {
@@ -737,7 +762,7 @@ export default function ThemedSitePage({
               <p className="inv-card-name">{guestFull || 'Nom de l’invité'}</p>
             </div>
           )}
-          {guestId ? <GuestQr guestId={guestId} /> : editable && <span className="inv-qr ph-qr">QR</span>}
+          {guestId ? <GuestQr guestId={guestId} dayOf={eventDay} /> : editable && <span className="inv-qr ph-qr">QR</span>}
           {(guestId || editable) && <p className="muted inv-card-qr">{t('QR code d’entrée, à présenter à l’accueil')}</p>}
           {signature && <p className="sig">{signature}</p>}
         </div>
@@ -769,7 +794,7 @@ export default function ThemedSitePage({
         const invPhoto = content.imageSrc || (invPath ? mediaUrl(invPath) : '')
         const invVisual = invPhoto ? (
           <figure className={`inv-art inv-photo rv frame-${art?.frame ?? 'round'}`}>
-            <img src={invPhoto} alt="" />
+            <img src={invPhoto} alt="" loading="lazy" decoding="async" />
           </figure>
         ) : artSvg ? (
           // SVG produit par utils/illus.js (dessins du modèle), sans aucune saisie.
@@ -843,7 +868,7 @@ export default function ThemedSitePage({
         if (!editable && !hostMessage && !storySrc && theme.id !== 'minuit') return null
         const photo = editable ? (
           <label className="photo-pick rv" onClick={(e) => e.stopPropagation()}>
-            {imagePath ? <img src={mediaUrl(imagePath)} alt="" /> : (
+            {imagePath ? <img src={mediaUrl(imagePath)} alt="" loading="lazy" decoding="async" /> : (
               <span style={{ display: 'grid', justifyItems: 'center', gap: '.4rem' }}>
                 <ImagePlus />
                 {editor.uploading ? 'Envoi en cours…' : 'Ajouter une photo'}
@@ -860,7 +885,7 @@ export default function ThemedSitePage({
             />
           </label>
         ) : storySrc ? (
-          <img className={`rv ${theme.id === 'minuit' ? 'minuit-host-photo' : ''}`} src={storySrc} alt="" />
+          <img className={`rv ${theme.id === 'minuit' ? 'minuit-host-photo' : ''}`} src={storySrc} alt="" loading="lazy" decoding="async" />
         ) : theme.id === 'minuit' ? (
           <div className="minuit-host-placeholder rv" aria-hidden="true">
             <span>{(organizerName || heroStyle.title).split(/\s+/).map((part) => part[0]).slice(0, 2).join('')}</span>
@@ -1414,19 +1439,6 @@ export default function ThemedSitePage({
     ...palette.vars,
     colorScheme: palette.dark ? 'dark' : 'light',
   }
-  const fallingConfetti = motion && theme.id === 'minuit'
-    ? Array.from({ length: 18 }, (_, i) => (
-        <i
-          key={i}
-          className={`minuit-confetti c${i % 4}`}
-          style={{
-            '--x': `${(i * 37) % 100}%`,
-            '--delay': `${-(i % 9) * 0.8}s`,
-            '--duration': `${8 + (i % 6)}s`,
-          }}
-        />
-      ))
-    : null
   const heroSel = selectable('Hero')
   const forText = guest ? `Pour ${guest}` : t(theme.introFor)
   const sealButton = (label, extra = {}) => (
@@ -1452,7 +1464,6 @@ export default function ThemedSitePage({
     >
       <div className="bg-glow" aria-hidden="true" />
       <div className="bg-motif" ref={motifRef} aria-hidden="true" style={motifCss} />
-      {fallingConfetti && <div className="minuit-falling-confetti" aria-hidden="true">{fallingConfetti}</div>}
       {!embedded && <canvas className="tbft-particles" ref={particlesRef} aria-hidden="true" />}
       {!embedded && <canvas className="tbft-fx" ref={fxRef} aria-hidden="true" />}
 
@@ -1687,7 +1698,7 @@ export default function ThemedSitePage({
       {/* Musique */}
       {passOpen && hasPass && createPortal(
         <PassModal onClose={() => setPassOpen(false)}>
-          <GuestPass invitation={data.invitation} eventTitle={heroStyle.title} ticket={passTicket} onInvitationChange={data.onInvitationChange} watch={!data.submitRsvp} onLeave={() => setPassOpen(false)} />
+          <GuestPass invitation={data.invitation} eventTitle={heroStyle.title} ticket={passTicket} onInvitationChange={data.onInvitationChange} watch={!data.submitRsvp} onLeave={() => setPassOpen(false)} allowGuestUploads={allowGuestUploads} />
         </PassModal>,
         document.body,
       )}
@@ -1742,19 +1753,56 @@ export default function ThemedSitePage({
               <div className="env-wrap">
                 {forText && theme.intro !== 'candle' && theme.intro !== 'badge' && <p className="intro-for">{forText}</p>}
                 {theme.intro === 'ticket' && (
-                  <div className="tk-intro">
-                    <div className="tk-body">
-                      <small>{t(theme.introLabel || 'Entrée')}</small>
-                      <b>{heroStyle.title}</b>
-                      {validStart && (
-                        <span>
-                          {capitalize(validStart.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }))} · {timeLabel}
-                        </span>
-                      )}
+                  <div className={`tk-intro${ticketFlipped ? ' flipped' : ''}`}>
+                    <div className="tk-intro-card">
+                      <div className="tk-face tk-front" inert={ticketFlipped}>
+                        <div className="tk-body">
+                          <small>{t(theme.introLabel || 'Entrée')}</small>
+                          <b>{heroStyle.title}</b>
+                          {validStart && (
+                            <span>
+                              {capitalize(validStart.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }))} · {timeLabel}
+                            </span>
+                          )}
+                        </div>
+                        <button type="button" className="tk-stub" onClick={turnTicket} aria-label="Retourner le billet pour voir les informations" autoFocus>
+                          <span>Infos</span>
+                        </button>
+                      </div>
+                      <div className="tk-face tk-back" inert={!ticketFlipped}>
+                        <p className="tk-back-title">Au dos du billet</p>
+                        <div className="tk-back-details">
+                          <div>
+                            <b>Plan d’accès</b>
+                            {ticketAddress ? (
+                              <a href={ticketMapUrl} target="_blank" rel="noopener noreferrer" onClick={(event) => event.stopPropagation()}>
+                                {ticketAddress}
+                              </a>
+                            ) : <span>À venir</span>}
+                          </div>
+                          <div>
+                            <b>Programme</b>
+                            {ticketProgram.length ? (
+                              <ul>
+                                {ticketProgram.map((item) => (
+                                  <li key={item.id}>
+                                    {item.startTime && <time>{formatTime(item.startTime, t.locale, theme.eventTimeZone)} · </time>}
+                                    {t(item.title)}
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : <span>À venir</span>}
+                          </div>
+                          <div>
+                            <b>Code vestimentaire</b>
+                            <span>{ticketDress || 'À venir'}</span>
+                          </div>
+                        </div>
+                        <button ref={ticketBackRef} type="button" className="tk-back-enter" onClick={openIntro}>
+                          Entrer
+                        </button>
+                      </div>
                     </div>
-                    <button type="button" className="tk-stub" onClick={openIntro} aria-label="Détacher le billet pour entrer" autoFocus>
-                      <span>Entrer</span>
-                    </button>
                   </div>
                 )}
                 {theme.intro === 'candle' && (
@@ -1834,7 +1882,7 @@ export default function ThemedSitePage({
                       envelope: 'Touchez le sceau pour ouvrir',
                       bloom: 'Touchez la fleur pour ouvrir',
                       gift: 'Touchez le cadeau',
-                      ticket: 'Touchez le talon pour entrer',
+                      ticket: ticketFlipped ? 'Touchez pour entrer' : 'Touchez le billet pour le retourner',
                       badge: 'Touchez votre badge pour entrer',
                     }[theme.intro] ?? 'Touchez pour entrer'}
                   </p>

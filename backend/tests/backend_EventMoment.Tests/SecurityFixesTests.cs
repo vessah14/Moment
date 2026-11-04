@@ -508,4 +508,60 @@ public class SecurityFixesTests
         await Assert.ThrowsAsync<KeyNotFoundException>(() =>
             new EventReminderService(context).SetEnabledAsync(evt.Id, EventReminderKind.DayBefore, true, Guid.NewGuid()));
     }
+
+    [Fact]
+    public async Task Campaign_LargeList_IsSentInBackground_ThenNotifiesOrganizer()
+    {
+        var organizerId = Guid.NewGuid();
+        var dbName = Guid.NewGuid().ToString();
+        var context = TestDbContextFactory.CreateAdminContext(organizerId, dbName);
+        var (_, evt) = SeedEvent(context, EventStatus.Publie, organizerId);
+        for (var i = 0; i < CampaignService.BackgroundThreshold + 1; i++)
+            SeedGuest(context, evt.Id, $"Invité {i}", $"invite{i}@example.com");
+        var email = new FakeEmailSender();
+        var queue = new CampaignQueue();
+        var service = new CampaignService(context, email, CreateConfig(), NullLogger<CampaignService>.Instance, queue);
+
+        var result = await service.CreateAsync(new CreateCampaignDto
+        {
+            Name = "Rappel", Channel = "E-mail", Audience = "Tous les invités", Body = "Bonjour {prénom}", SendNow = true,
+        }, evt.Id, organizerId);
+
+        Assert.Equal(CampaignStatus.EnCours, result.Status);
+        Assert.Empty(email.Sent);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.UpdateAsync(result.Id,
+            new UpdateCampaignDto { Name = "Rappel", Audience = "Tous les invités", Body = "x" }, organizerId));
+
+        // Le dispatcher travaille hors requête : aucun organisateur connecté.
+        var background = TestDbContextFactory.CreateAdminContext(null, dbName);
+        var notifications = new InAppNotificationService(background, NullLogger<InAppNotificationService>.Instance);
+        await new CampaignService(background, email, CreateConfig(), NullLogger<CampaignService>.Instance, queue, notifications)
+            .SendQueuedAsync(result.Id);
+
+        Assert.Equal(CampaignService.BackgroundThreshold + 1, email.Sent.Count);
+        var saved = background.MessageCampaigns.IgnoreQueryFilters().Single(c => c.Id == result.Id);
+        Assert.Equal(CampaignStatus.Envoyee, saved.Status);
+        var note = background.OrganizerNotifications.IgnoreQueryFilters().Single();
+        Assert.Equal("campaign_sent", note.Type);
+        Assert.Equal(organizerId, note.OrganizerId);
+    }
+
+    [Fact]
+    public async Task Campaign_SmallList_StillSendsRightAway()
+    {
+        var organizerId = Guid.NewGuid();
+        var context = TestDbContextFactory.CreateAdminContext(organizerId);
+        var (_, evt) = SeedEvent(context, EventStatus.Publie, organizerId);
+        SeedGuest(context, evt.Id, "Awa Diop");
+        var email = new FakeEmailSender();
+        var service = new CampaignService(context, email, CreateConfig(), NullLogger<CampaignService>.Instance, new CampaignQueue());
+
+        var result = await service.CreateAsync(new CreateCampaignDto
+        {
+            Name = "Rappel", Channel = "E-mail", Audience = "Tous les invités", Body = "Bonjour", SendNow = true,
+        }, evt.Id, organizerId);
+
+        Assert.Equal(CampaignStatus.Envoyee, result.Status);
+        Assert.Equal(1, result.EmailsSentCount);
+    }
 }

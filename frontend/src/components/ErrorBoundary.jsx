@@ -1,6 +1,6 @@
 import { Component } from 'react'
 import { useLocation } from 'react-router-dom'
-import logoMark from '../assets/logo-mark.png'
+import logoMark from '../assets/logo-mark.webp'
 import { isStaleBuildError, reloadOnceForNewVersion } from '../utils/staleBuild'
 
 // Page affichée quand une page plante (au lieu d'un écran blanc). Volontairement

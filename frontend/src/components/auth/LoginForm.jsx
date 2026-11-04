@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { consumeReturnPath, loginPathForReturnPath, requestedReturnPath } from '../../utils/returnPath'
 import { login } from '../../api/auth'
 import { goHomeAfterLogin } from '../../utils/firstEvent'
-import logoMark from '../../assets/logo-mark.png'
+import logoMark from '../../assets/logo-mark.webp'
 import Button from '../ui/Button'
 import GoogleSignInButton from './GoogleSignInButton'
 

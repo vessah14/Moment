@@ -143,6 +143,22 @@ namespace backend_EventMoment.Controllers
             return result == null ? NotFound() : Ok(result);
         }
 
+        [HttpPost("~/api/public/invitations/{guestId:guid}/en-route")]
+        [AllowAnonymous]
+        [EnableRateLimiting("public-write")]
+        public async Task<IActionResult> MarkPublicGuestEnRoute(Guid guestId)
+        {
+            try
+            {
+                var result = await _service.MarkEnRouteAsync(guestId);
+                return result == null ? NotFound() : Ok(result);
+            }
+            catch (InvalidOperationException exception)
+            {
+                return BadRequest(new { error = exception.Message });
+            }
+        }
+
         [HttpPost("~/api/public/invitations/{guestId:guid}/rsvp")]
         [AllowAnonymous]
         [EnableRateLimiting("public-write")]

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { deleteMyReview, getMyReview, saveMyReview } from '../../api/account'
 import { getCurrentUser } from '../../api/client'
 import DashboardLayout from '../../components/layout/DashboardLayout'
+import { SkeletonList } from '../../components/ui/Skeleton'
 
 // Avis du client sur TBF Moment : une note et un commentaire, publiés sur la page
 // d'accueil après validation par l'équipe. Toute modification repasse en validation.
@@ -96,7 +97,7 @@ export default function MyReview() {
       </p>
 
       {loading ? (
-        <p className="mt-10 text-sm text-faint">Chargement…</p>
+        <SkeletonList rows={2} className="mt-10" />
       ) : (
         <form onSubmit={submit} className="mt-8 max-w-2xl space-y-6 rounded-2xl border border-border-soft bg-surface p-6">
           {status && (

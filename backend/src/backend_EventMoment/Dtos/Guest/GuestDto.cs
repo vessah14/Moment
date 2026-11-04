@@ -15,6 +15,10 @@ namespace backend_EventMoment.Models
         // Places réservées, invité compris (null : règle de l'événement).
         public short? Seats { get; set; }
 
+        public int EditionNumber { get; set; }
+
+        public bool IsVip { get; set; }
+
         // Réponse RSVP de l'invité.
         public GuestStatus Status { get; set; }
 
@@ -23,6 +27,8 @@ namespace backend_EventMoment.Models
 
         // Vrai quand un scan retrouve un invité déjà pointé (écran d'accueil : « Déjà enregistré »).
         public bool AlreadyCheckedIn { get; set; }
+
+        public DateTimeOffset? EnRouteAt { get; set; }
 
         // Dernière réponse : choix « côté » (service, filière…) et case optionnelle (cocktail).
         public string? Side { get; set; }

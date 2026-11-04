@@ -22,8 +22,11 @@ namespace backend_EventMoment.Interfaces
         Task<int> MarkAllReadAsync(Guid organizerId);
         Task NotifyGuestbookAsync(Guid eventId, string authorName);
         Task NotifyGuestPhotoAsync(Guid eventId, string? uploadedBy);
+        Task NotifyGuestEnRouteAsync(Guid eventId, string guestName);
         Task NotifyRsvpAsync(Guid eventId, string guestName, bool? confirmed, int accompanyingCount);
         Task NotifyGiftReservedAsync(Guid eventId, string giftName, string reservedBy);
+        // Fin d'une campagne e-mail envoyée en arrière-plan : nombre envoyé, ou raison de l'échec.
+        Task NotifyCampaignSentAsync(Guid eventId, string campaignName, int sentCount, int recipientCount, string? failure);
     }
 
     // E-mails envoyés à l'organisateur, filtrés par ses préférences de notification.

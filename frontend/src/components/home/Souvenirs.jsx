@@ -1,11 +1,11 @@
 import BrandBackdrop from '../ui/BrandBackdrop'
 import SectionHeader from './SectionHeader'
-import invitationPhoto from '../../assets/home/souvenir-invitation.jpeg'
-import studioPhoto from '../../assets/home/souvenir-studio.jpeg'
-import portraitPhoto from '../../assets/home/souvenir-portrait.jpeg'
-import framePhoto from '../../assets/home/souvenir-frame.jpeg'
-import printPhoto from '../../assets/home/souvenir-print.jpeg'
-import mugPhoto from '../../assets/home/souvenir-mug.jpeg'
+import invitationPhoto from '../../assets/home/souvenir-invitation.webp'
+import studioPhoto from '../../assets/home/souvenir-studio.webp'
+import portraitPhoto from '../../assets/home/souvenir-portrait.webp'
+import framePhoto from '../../assets/home/souvenir-frame.webp'
+import printPhoto from '../../assets/home/souvenir-print.webp'
+import mugPhoto from '../../assets/home/souvenir-mug.webp'
 import { tbfDigitalOrderUrl } from '../../data/tbfDigital'
 
 // « Et après la fête ? » : souvenirs imprimés par TBF DIGITAL, commandés sur WhatsApp.

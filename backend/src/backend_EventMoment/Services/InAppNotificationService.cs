@@ -95,6 +95,14 @@ namespace backend_EventMoment.Services
                 $"{DisplayName(uploadedBy)} a ajouté une photo à votre galerie.",
                 "/dashboard/galerie");
 
+        public Task NotifyGuestEnRouteAsync(Guid eventId, string guestName) =>
+            CreateForEventAsync(
+                eventId,
+                "guest_en_route",
+                "Un invité est en route",
+                $"{DisplayName(guestName)} vous prévient qu'il arrive bientôt.",
+                $"/dashboard/participants?eventId={eventId}");
+
         public Task NotifyRsvpAsync(Guid eventId, string guestName, bool? confirmed, int accompanyingCount)
         {
             var answer = confirmed switch
@@ -118,6 +126,16 @@ namespace backend_EventMoment.Services
                 "Un cadeau a été réservé",
                 $"{DisplayName(reservedBy)} a réservé « {DisplayName(giftName)} ».",
                 "/dashboard/liste-mariage");
+
+        public Task NotifyCampaignSentAsync(Guid eventId, string campaignName, int sentCount, int recipientCount, string? failure) =>
+            CreateForEventAsync(
+                eventId,
+                sentCount > 0 ? "campaign_sent" : "campaign_failed",
+                sentCount > 0 ? "Campagne envoyée" : "Campagne non envoyée",
+                sentCount > 0
+                    ? $"« {DisplayName(campaignName)} » : {sentCount} e-mail(s) envoyé(s) sur {recipientCount}."
+                    : $"« {DisplayName(campaignName)} » : {failure ?? "aucun e-mail n'est parti."}",
+                "/dashboard/communication");
 
         private async Task CreateForEventAsync(Guid eventId, string type, string title, string message, string link)
         {

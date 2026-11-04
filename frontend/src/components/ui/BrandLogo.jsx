@@ -1,5 +1,5 @@
-import logo from '../../assets/logo.png'
-import logoLight from '../../assets/logo-light.png'
+import logo from '../../assets/logo.webp'
+import logoLight from '../../assets/logo-light.webp'
 
 // Logo complet adapté au thème : texte blanc sur fond sombre, texte foncé en mode clair.
 // Les deux images sont rendues et l'une est masquée en CSS selon data-theme (index.css),

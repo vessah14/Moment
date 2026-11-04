@@ -6,6 +6,7 @@ import {
   listMySubscriptions
 } from '../../api/subscriptions'
 import { notifyPlanChanged } from '../../utils/usePlan'
+import { SkeletonList } from '../ui/Skeleton'
 
 const SASPAY_ENABLED = import.meta.env.VITE_SASPAY_ENABLED === 'true'
 
@@ -126,7 +127,7 @@ export default function BillingTab () {
       <div className='mt-6 rounded-xl border border-border-soft bg-surface-2 p-5'>
         <p className='text-sm font-semibold text-ink'>Formule actuelle</p>
         {loading ? (
-          <p className='mt-2 text-sm text-faint'>Chargement…</p>
+          <SkeletonList rows={3} className='mt-2' />
         ) : active ? (
           <p className='mt-2 text-sm text-muted'>
             {active.planLabel} · {formatCents(active.priceCents)}

@@ -99,6 +99,7 @@ public class GuestServiceTests
             Id = Guid.NewGuid(),
             EventId = eventId,
             FullName = "Invité Test",
+            EditionNumber = 1,
             Status = GuestStatus.EnAttente,
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow,
@@ -121,7 +122,66 @@ public class GuestServiceTests
         Assert.NotNull(result);
         Assert.Equal(guest.FullName, result!.GuestFullName);
         Assert.Equal(evt.Name, result.EventName);
+        Assert.Equal("mariage", result.EventCategoryCode);
+        Assert.Equal(1, result.TicketNumber);
+        Assert.Equal(1, result.TicketTotal);
         Assert.Null(result.RsvpConfirmed);
+    }
+
+    [Fact]
+    public async Task CreateAsync_AssignsPermanentEditionNumber_AndVipFlag()
+    {
+        var organizerId = Guid.NewGuid();
+        var context = TestDbContextFactory.CreateAdminContext(organizerId);
+        var (_, _, evt) = SeedEvent(context, organizerId: organizerId);
+        var service = new GuestService(context);
+
+        var first = await service.CreateAsync(new CreateGuestDto { FullName = "Invité VIP", IsVip = true }, evt.Id, organizerId);
+        var second = await service.CreateAsync(new CreateGuestDto { FullName = "Invité suivant" }, evt.Id, organizerId);
+
+        Assert.Equal(1, first.EditionNumber);
+        Assert.True(first.IsVip);
+        Assert.Equal(2, second.EditionNumber);
+        Assert.False(second.IsVip);
+    }
+
+    [Fact]
+    public async Task MarkEnRouteAsync_IsIdempotent_ForConfirmedGuestOnEventDay()
+    {
+        var context = TestDbContextFactory.CreateAdminContext();
+        var (_, _, evt) = SeedEvent(context);
+        evt.EventDate = DateOnly.FromDateTime(DateTime.UtcNow);
+        var guest = SeedGuest(context, evt.Id);
+        context.RsvpResponses.Add(new RsvpResponse
+        {
+            Id = Guid.NewGuid(),
+            GuestId = guest.Id,
+            EventId = evt.Id,
+            Confirmed = true,
+            CreatedAt = DateTimeOffset.UtcNow,
+        });
+        await context.SaveChangesAsync();
+        var service = new GuestService(context);
+
+        var first = await service.MarkEnRouteAsync(guest.Id);
+        var firstTimestamp = first?.EnRouteAt;
+        var second = await service.MarkEnRouteAsync(guest.Id);
+
+        Assert.NotNull(firstTimestamp);
+        Assert.Equal(firstTimestamp, second?.EnRouteAt);
+        Assert.Equal(guest.Id, second?.GuestId);
+    }
+
+    [Fact]
+    public async Task MarkEnRouteAsync_RejectsGuestWithoutConfirmedRsvp()
+    {
+        var context = TestDbContextFactory.CreateAdminContext();
+        var (_, _, evt) = SeedEvent(context);
+        evt.EventDate = DateOnly.FromDateTime(DateTime.UtcNow);
+        var guest = SeedGuest(context, evt.Id);
+        await context.SaveChangesAsync();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => new GuestService(context).MarkEnRouteAsync(guest.Id));
     }
 
     [Fact]
@@ -339,6 +399,26 @@ public class GuestServiceTests
         Assert.Equal(2, response.AccompanyingCount);
         Assert.Equal("Avec plaisir", response.Message);
         Assert.Equal("Famille de la mariée", response.Side);
+    }
+
+    [Fact]
+    public async Task SubmitPublicEventRsvpAsync_AssignsEditionNumberToNewGuest()
+    {
+        var context = TestDbContextFactory.CreateAdminContext();
+        var (_, _, evt) = SeedEvent(context);
+        var service = new GuestService(context);
+
+        var answer = await service.SubmitPublicEventRsvpAsync(evt.Slug, new SubmitPublicEventRsvpDto
+        {
+            FullName = "Nouvel invité",
+            Phone = "+237 690 11 22 33",
+            Confirmed = true,
+        });
+
+        Assert.NotNull(answer);
+        Assert.Equal(1, answer!.TicketNumber);
+        Assert.Equal(1, answer.TicketTotal);
+        Assert.Equal("mariage", answer.EventCategoryCode);
     }
 
     [Fact]

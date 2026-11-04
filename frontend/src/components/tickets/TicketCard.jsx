@@ -161,7 +161,7 @@ function Ornament({ html, mark, small }) {
   )
 }
 
-export default function TicketCard({ style, note, event, guest, look: lookIn, themeId, paletteId, motif: motifId, accent, downloads = true, live, reveal = false, seat, souvenir, voice }) {
+export default function TicketCard({ style, note, event, guest, look: lookIn, themeId, paletteId, motif: motifId, accent, downloads = true, live, reveal = false, seat, souvenir, voice, edition, vip = false }) {
   const root = useRef(null)
   const card = useRef(null)
   const [qrState, setQrState] = useState({ guestId: '', dataUrl: '', error: '' })
@@ -204,6 +204,9 @@ export default function TicketCard({ style, note, event, guest, look: lookIn, th
   const format = ticketFormat(style, Boolean(guest.type))
   const t = ticketTexts(style, event, guest, format)
   const c = ticketColors(palette)
+  const editionLabel = edition?.number > 0 && edition?.total > 0
+    ? `Invitation n° ${String(edition.number).padStart(3, '0')} / ${String(edition.total).padStart(3, '0')}`
+    : ''
   const motifCss = motifStyle(motif, palette)
   const names =
     event.names?.length === 2 ? (
@@ -245,8 +248,8 @@ export default function TicketCard({ style, note, event, guest, look: lookIn, th
 
   const vars = {
     ...palette.vars,
-    '--deco': c.deco,
-    '--deco-ink': c.decoInk,
+    '--deco': vip ? '#C9A34E' : c.deco,
+    '--deco-ink': vip ? '#241B08' : c.decoInk,
     '--stub-bg': c.stubBg,
     '--stub-ink': c.stubInk,
     background: 'transparent',
@@ -293,7 +296,7 @@ export default function TicketCard({ style, note, event, guest, look: lookIn, th
   // ---------- Billet d'entrée : horizontal, talon détachable à droite ----------
   if (format === 'billet') {
     return (
-      <div ref={root} className={`tbft tbtk ${liveClass}`} data-tbft={theme?.id} style={vars}>
+      <div ref={root} className={`tbft tbtk ${vip ? 'vip' : ''} ${liveClass}`} data-tbft={theme?.id} style={vars}>
         {extras}
         <article ref={card} className={`tkc tkc-billet tks-${style}`} aria-label={`${t.kind} de ${guest.name}`}>
           <div className="tkb-main">
@@ -326,6 +329,7 @@ export default function TicketCard({ style, note, event, guest, look: lookIn, th
             <TicketVoice voice={voice} name={guest.name} mourn={mourn} />
             <span className="tkc-lbl">Référence</span>
             <p className="tkc-ref">{t.reference}</p>
+            {editionLabel && <p className="tkc-edition">{editionLabel}</p>}
             <p className="tkb-url" data-print-only>
               {t.url}
             </p>
@@ -345,7 +349,7 @@ export default function TicketCard({ style, note, event, guest, look: lookIn, th
 
   // ---------- Carte d'invitation et badge : verticaux, talon en bas ----------
   return (
-    <div ref={root} className={`tbft tbtk ${liveClass}`} data-tbft={theme?.id} style={vars}>
+    <div ref={root} className={`tbft tbtk ${vip ? 'vip' : ''} ${liveClass}`} data-tbft={theme?.id} style={vars}>
       {extras}
       <article ref={card} className={`tkc tkc-${format} tks-${style}`} aria-label={`${t.kind} de ${guest.name}`}>
         {style === 'pagne' && <span className="tkc-saw top" aria-hidden="true" />}
@@ -382,6 +386,7 @@ export default function TicketCard({ style, note, event, guest, look: lookIn, th
           <div className="tkc-sep" />
           <span className="tkc-lbl">Référence</span>
           <p className="tkc-ref">{t.reference}</p>
+          {editionLabel && <p className="tkc-edition">{editionLabel}</p>}
           <LiveStrip state={liveState} mourn={mourn} />
           {downloadButton}
           <p className={`tkc-bar tkc-url ${downloads ? '' : 'always'}`} data-print-only>

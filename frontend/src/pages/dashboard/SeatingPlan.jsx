@@ -6,6 +6,7 @@ import Button from '../../components/ui/Button'
 import { listEvents } from '../../api/events'
 import { listGuests } from '../../api/guests'
 import { assignGuest, createTable, deleteTable, listAssignments, listTables, unassignGuest } from '../../api/seating'
+import { SkeletonGrid } from '../../components/ui/Skeleton'
 
 export default function SeatingPlan() {
   const [events, setEvents] = useState([])
@@ -194,7 +195,7 @@ export default function SeatingPlan() {
       )}
 
       {loading ? (
-        <p className="mt-8 text-center text-sm text-faint">Chargement…</p>
+        <SkeletonGrid count={6} className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-3" aspect="aspect-[3/2]" />
       ) : (
         <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_280px]">
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">

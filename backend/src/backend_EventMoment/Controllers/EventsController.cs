@@ -86,8 +86,8 @@ namespace backend_EventMoment.Controllers
             if (!await ImageFileValidator.HasValidSignatureAsync(file, extension))
                 return BadRequest(new { error = "Le contenu du fichier ne correspond pas à une image valide." });
 
-            // Position GPS, appareil, date… retirés avant l'enregistrement.
-            file = await ImageMetadataStripper.StripAsync(file, extension);
+            // Remise à l'endroit, taille d'écran et WebP ; métadonnées (GPS, appareil…) retirées.
+            (file, extension) = await ImageOptimizer.PrepareAsync(file, extension, ImageOptimizer.MaxSide(folder));
             var url = await _uploads.SaveImageAsync(file, folder, id, extension);
             return Ok(new { url });
         }

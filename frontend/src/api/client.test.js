@@ -74,3 +74,25 @@ describe('voiceUrl', () => {
     expect(voiceUrl('javascript:alert(1)')).toBe('')
   })
 })
+
+describe('lectures partagées', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it("ne lance qu'un appel pour deux lectures simultanées, et chacun reçoit sa copie", async () => {
+    vi.stubGlobal('localStorage', memoryStorage())
+    vi.stubGlobal('sessionStorage', memoryStorage())
+    const fetch = vi.fn(async () => ({ ok: true, status: 200, json: async () => [{ id: 1 }] }))
+    vi.stubGlobal('fetch', fetch)
+    const { apiFetch } = await import('./client')
+
+    const [a, b] = await Promise.all([apiFetch('/events', { auth: false }), apiFetch('/events', { auth: false })])
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(a).toEqual(b)
+    expect(a).not.toBe(b)
+
+    await apiFetch('/events', { auth: false })
+    expect(fetch).toHaveBeenCalledTimes(2)
+    await Promise.all([apiFetch('/events', { method: 'POST', body: {}, auth: false }), apiFetch('/events', { method: 'POST', body: {}, auth: false })])
+    expect(fetch).toHaveBeenCalledTimes(4)
+  })
+})

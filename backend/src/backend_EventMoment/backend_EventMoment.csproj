@@ -25,4 +25,7 @@
   </ItemGroup>
 
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="backend_EventMoment.Tests" />
+  </ItemGroup>
 </Project>

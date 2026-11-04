@@ -1,4 +1,4 @@
-import logoMark from '../../assets/logo-mark.png'
+import logoMark from '../../assets/logo-mark.webp'
 
 export default function BrandBackdrop({ side = 'right', className = '' }) {
   const isRight = side === 'right'

@@ -1,4 +1,3 @@
-import * as Flags from 'country-flag-icons/react/3x2'
 import { useState } from 'react'
 import {
   applyCountryCode,
@@ -6,12 +5,20 @@ import {
   searchCountries,
 } from '../../utils/phoneCountry'
 
+// Drapeaux : un petit fichier SVG par pays (cache long), téléchargé seulement quand il
+// s'affiche, au lieu des 260 drapeaux dans le JavaScript de la page.
+const FLAG_URLS = Object.fromEntries(
+  Object.entries(
+    import.meta.glob('../../../node_modules/country-flag-icons/3x2/*.svg', { query: '?no-inline', import: 'default', eager: true }),
+  ).map(([path, url]) => [path.slice(path.lastIndexOf('/') + 1, -4), url]),
+)
+
 function FlagIcon({ iso, className }) {
-  const Flag = iso && Flags[iso]
-  if (!Flag) {
+  const url = iso && FLAG_URLS[iso]
+  if (!url) {
     return <span className={`block rounded-sm bg-surface-2 ${className}`} />
   }
-  return <Flag className={`rounded-sm ${className}`} title={iso} />
+  return <img src={url} alt="" title={iso} loading="lazy" decoding="async" className={`rounded-sm ${className}`} />
 }
 
 export default function PhoneInput({ value, onChange, className = '', ...props }) {

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Button from '../ui/Button'
 import { listMySubscriptions } from '../../api/subscriptions'
+import { SkeletonList } from '../ui/Skeleton'
 
 export default function SubscriptionTab() {
   const [subscriptions, setSubscriptions] = useState([])
@@ -32,7 +33,7 @@ export default function SubscriptionTab() {
       )}
 
       {loading ? (
-        <p className="mt-6 text-sm text-faint">Chargement…</p>
+        <SkeletonList rows={3} className="mt-6" />
       ) : !active ? (
         <div className="mt-6 rounded-xl border border-border-soft bg-surface-2 p-5">
           <p className="text-sm text-muted">

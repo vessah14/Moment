@@ -174,7 +174,7 @@ namespace backend_EventMoment.Controllers
             if (!await ImageFileValidator.HasValidSignatureAsync(file, extension))
                 return BadRequest(new { error = "Le contenu du fichier ne correspond pas à une image valide." });
 
-            file = await ImageMetadataStripper.StripAsync(file, extension);
+            (file, _) = await ImageOptimizer.PrepareAsync(file, extension, ImageOptimizer.MaxSide(UploadFolder.Avatars));
             var result = await _service.UpdateProfilePhotoAsync(id, file);
             return Ok(result);
         }

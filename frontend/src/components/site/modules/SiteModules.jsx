@@ -1,8 +1,8 @@
-import { CalendarPlus, Check, Copy, Gift, MapPin, Navigation, Search, Ticket } from 'lucide-react'
+import { CalendarPlus, Check, Copy, Gift, MapPin, Navigation, Search, Share2, Ticket } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { mediaUrl } from '../../../api/client'
-import { submitPublicRsvp } from '../../../api/guests'
+import { markPublicGuestEnRoute, submitPublicRsvp } from '../../../api/guests'
 import { findPublicSeat, uploadGuestPhoto } from '../../../api/publicEvents'
 import { DEFAULT_SIDE_LABEL, usableSides } from '../../../data/rsvpSides'
 import { initialsOf } from '../../../utils/blockLists'
@@ -17,6 +17,7 @@ import { useCheckInWatch } from '../../../utils/useCheckInWatch'
 import { operatorStyle, usableAccounts, usableColors } from '../../../utils/mobileMoney'
 import { parseVideoUrl } from '../../../utils/videoEmbed'
 import { compressImage } from '../../../utils/imageCompress'
+import { guestStatusFlyerLink } from '../../../utils/flyerLink'
 import { identity } from '../themes/envol/envolI18n'
 
 // Modules du site d'événement partagés par le rendu classique (Tailwind) et les modèles
@@ -526,8 +527,10 @@ export function SeatingModule({ tables = [], slug, themed, editable, findSeat })
 // compte à rebours, QR en grand le jour J, tampon « Entré » après le scan, et il sort d'une
 // enveloppe la première fois qu'il s'affiche.
 // onLeave : fermeture de la fenêtre du pass, avant d'aller à la galerie (carte souvenir).
-export function GuestPass({ invitation, eventTitle, ticket = {}, onInvitationChange, watch = true, onLeave }) {
+export function GuestPass({ invitation, eventTitle, ticket = {}, onInvitationChange, watch = true, onLeave, allowGuestUploads = false }) {
   const template = findTemplate(invitation.template)
+  const themed = Boolean(template)
+  const c = cls(themed)
   useCheckInWatch(invitation, onInvitationChange, watch)
   // Carte souvenir : lien vers la galerie seulement si la page en affiche une.
   const [hasGallery, setHasGallery] = useState(false)
@@ -541,31 +544,140 @@ export function GuestPass({ invitation, eventTitle, ticket = {}, onInvitationCha
     galleryHref: hasGallery ? `#${siteBlockDomId('Galerie')}` : '',
     onOpen: onLeave,
   })
+  const statusFlyer = guestStatusFlyerLink({
+    eventName: invitation.displayTitle || invitation.eventName,
+    eventDate: invitation.eventDate,
+    eventCategoryCode: invitation.eventCategoryCode,
+  })
   return (
-    <TicketCard
-      {...extras}
-      live={{ start: eventStartIso(invitation.eventDate, invitation.eventStartTime), checkedInAt: invitation.checkedInAt }}
-      reveal
-      look={ticket.look}
-      themeId={template?.theme}
-      style={resolveTicketStyle(invitation.ticketStyle, template?.theme)}
-      note={invitation.ticketNote}
-      accent={invitation.themeColor || template?.preview?.accent}
-      event={{
-        ...ticket,
-        ...ticketEventInfo({
-          name: eventTitle || invitation.eventName,
-          eventDate: invitation.eventDate,
-          startTime: invitation.eventStartTime,
-          locationLabel: invitation.locationLabel,
-          locationAddress: invitation.locationAddress,
-          slug: invitation.eventSlug,
-          kicker: ticket.kicker,
-          brand: ticket.brand,
-        }),
-      }}
-      guest={{ id: invitation.guestId, name: invitation.guestFullName, n: 1 + (invitation.rsvpAccompanyingCount ?? 0), side: invitation.rsvpSide || undefined }}
-    />
+    <>
+      <TicketCard
+        {...extras}
+        live={{ start: eventStartIso(invitation.eventDate, invitation.eventStartTime), checkedInAt: invitation.checkedInAt }}
+        reveal
+        look={ticket.look}
+        themeId={template?.theme}
+        style={resolveTicketStyle(invitation.ticketStyle, template?.theme)}
+        note={invitation.ticketNote}
+        accent={invitation.themeColor || template?.preview?.accent}
+        event={{
+          ...ticket,
+          ...ticketEventInfo({
+            name: eventTitle || invitation.eventName,
+            eventDate: invitation.eventDate,
+            startTime: invitation.eventStartTime,
+            locationLabel: invitation.locationLabel,
+            locationAddress: invitation.locationAddress,
+            slug: invitation.eventSlug,
+            kicker: ticket.kicker,
+            brand: ticket.brand,
+          }),
+        }}
+        guest={{ id: invitation.guestId, name: invitation.guestFullName, n: 1 + (invitation.rsvpAccompanyingCount ?? 0), side: invitation.rsvpSide || undefined }}
+        edition={{ number: invitation.ticketNumber, total: invitation.ticketTotal }}
+        vip={invitation.isVip}
+      />
+      {invitation.rsvpConfirmed && statusFlyer && (
+        <a
+          href={statusFlyer.href}
+          className={c.ghost}
+          onClick={stop}
+          style={{ display: 'flex', justifyContent: 'center', margin: '1rem auto 0', maxWidth: '32rem' }}
+        >
+          <Share2 size={16} aria-hidden="true" />
+          {statusFlyer.label}
+        </a>
+      )}
+      {invitation.checkedInAt ? (
+        <GuestNightGuide invitation={invitation} themed={themed} />
+      ) : (
+        <EnRouteAction invitation={invitation} onInvitationChange={onInvitationChange} />
+      )}
+      {invitation.checkedInAt && allowGuestUploads && invitation.eventSlug && (
+        <GuestPhotoUpload slug={invitation.eventSlug} themed={themed} />
+      )}
+    </>
+  )
+}
+
+function EnRouteAction({ invitation, onInvitationChange }) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const isToday = Boolean(invitation.eventDate)
+    && new Date(`${invitation.eventDate}T00:00:00`).toDateString() === new Date().toDateString()
+  if (!isToday || !invitation.rsvpConfirmed || invitation.checkedInAt) return null
+  if (invitation.enRouteAt) {
+    return <p className="mt-4 text-center text-sm text-muted" role="status">L’organisateur a été prévenu : vous êtes en route.</p>
+  }
+  const send = async () => {
+    setBusy(true)
+    setError('')
+    try {
+      const updated = await markPublicGuestEnRoute(invitation.guestId)
+      onInvitationChange?.(updated)
+    } catch (err) {
+      setError(err.message || 'Le signal n’a pas pu être envoyé.')
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <div style={{ margin: '1rem auto 0', maxWidth: '32rem', textAlign: 'center' }}>
+      <button type="button" className="btn ghost" onClick={send} disabled={busy}>
+        <Navigation size={16} aria-hidden="true" />
+        {busy ? 'Envoi…' : 'Je suis en route'}
+      </button>
+      {error && <p className="mt-2 text-sm text-danger" role="alert">{error}</p>}
+    </div>
+  )
+}
+
+function GuestNightGuide({ invitation, themed }) {
+  const [now, setNow] = useState(0)
+  useEffect(() => {
+    const initial = setTimeout(() => setNow(Date.now()), 0)
+    const timer = setInterval(() => setNow(Date.now()), 30000)
+    return () => {
+      clearTimeout(initial)
+      clearInterval(timer)
+    }
+  }, [])
+  const items = (invitation.programItems || [])
+    .map((item) => ({ ...item, starts: item.startTime ? new Date(item.startTime).getTime() : NaN }))
+    .filter((item) => Number.isFinite(item.starts))
+    .sort((a, b) => a.starts - b.starts)
+  const current = items.find((item) => item.starts <= now && now < item.starts + Math.max(0, item.durationMinutes) * 60000)
+  const next = items.find((item) => item.starts > now)
+  const card = themed ? 'card rv narrow' : 'mx-auto mt-5 max-w-xl rounded-2xl border border-border-soft bg-bg p-5'
+  const muted = themed ? 'muted' : 'text-sm text-muted'
+  const timeLabel = (time) => new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(time)
+  return (
+    <section className={card} aria-label="Guide de la soirée" style={{ marginTop: '1.25rem' }}>
+      <p className={themed ? 'kicker' : 'text-xs font-semibold uppercase tracking-wider text-faint'}>Votre soirée</p>
+      <h3 className={themed ? 'mod-title' : 'mt-1 text-lg font-semibold text-ink'}>Guide de l’invité</h3>
+      <div style={{ display: 'grid', gap: '.65rem', marginTop: '.8rem' }}>
+        <p className={muted} style={{ margin: 0 }}>
+          <strong>{current ? 'En ce moment' : 'À suivre'}</strong>
+          {' · '}
+          {current ? `${current.title} · ${timeLabel(new Date(current.starts))}` : next ? `${next.title} · ${timeLabel(new Date(next.starts))}` : 'Aucune activité en cours'}
+          {current?.location && ` · ${current.location}`}
+        </p>
+        {current && next && (
+          <p className={muted} style={{ margin: 0 }}>
+            <strong>Ensuite</strong>
+            {' · '}
+            {next.title} · {timeLabel(new Date(next.starts))}
+            {next.location && ` · ${next.location}`}
+          </p>
+        )}
+        {invitation.tableLabel && (
+          <p className={muted} style={{ margin: 0 }}>
+            <strong>À votre table : {invitation.tableLabel}</strong>
+            {invitation.tableGuestFirstNames?.length > 0 && ` · ${invitation.tableGuestFirstNames.join(', ')}`}
+          </p>
+        )}
+      </div>
+    </section>
   )
 }
 

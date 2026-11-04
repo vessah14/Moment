@@ -10,6 +10,9 @@ import { checkInGuest, listGuests, undoCheckInGuest } from '../../api/guests'
 import { guestStatusLabel } from '../../utils/guestStatus'
 import { cacheGuestList, dequeueCheckin, enqueueCheckin, flushQueue, isNetworkError, readGuestList, readQueue, withQueued } from '../../utils/offlineCheckins'
 import { arrivalTime, downloadAttendanceCsv, downloadAttendancePdf } from '../../utils/attendanceSheet'
+import { SkeletonRows } from '../../components/ui/Skeleton'
+import Pagination from '../../components/ui/Pagination'
+import { usePagination } from '../../utils/pagination'
 
 function formatTime(value) {
   if (!value) return '—'
@@ -153,6 +156,8 @@ export default function CheckIn() {
     .filter((g) => g.checkedInAt)
     .sort((a, b) => new Date(b.checkedInAt) - new Date(a.checkedInAt))
   const pending = guests.filter((g) => !g.checkedInAt)
+  // Jour J : des centaines d'arrivées ; seule une page est rendue à chaque scan.
+  const arrivedPage = usePagination(attended, 'tbf_page_size_checkin', selectedEventId)
   const expected = guests.filter((g) => g.status !== 'Absent')
 
   const results = useMemo(() => {
@@ -513,11 +518,7 @@ export default function CheckIn() {
                 </thead>
                 <tbody>
                   {loading && (
-                    <tr>
-                      <td colSpan={4} className="px-6 py-10 text-center text-sm text-faint">
-                        Chargement…
-                      </td>
-                    </tr>
+                    <SkeletonRows rows={4} cols={4} />
                   )}
                   {!loading && attended.length === 0 && (
                     <tr>
@@ -527,7 +528,7 @@ export default function CheckIn() {
                     </tr>
                   )}
                   {!loading &&
-                    attended.map((guest) => (
+                    arrivedPage.items.map((guest) => (
                       <tr key={guest.id} className="border-b border-border-soft last:border-b-0">
                         <td className="px-6 py-3">
                           <div className="flex items-center gap-3">
@@ -555,6 +556,7 @@ export default function CheckIn() {
                 </tbody>
               </table>
             </div>
+            <Pagination pagination={arrivedPage} label="arrivées" />
           </div>
         </div>
       </div>

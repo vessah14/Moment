@@ -14,6 +14,7 @@ export default function GuestEditDialog({ guest, groups, onClose, onSave }) {
   const [groupId, setGroupId] = useState(guest.groupId ?? '')
   const [status, setStatus] = useState(guest.status)
   const [seats, setSeats] = useState(guest.seats ? String(guest.seats) : '')
+  const [isVip, setIsVip] = useState(Boolean(guest.isVip))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const emailChanged = email.trim().toLowerCase() !== (guest.email ?? '').trim().toLowerCase()
@@ -23,7 +24,7 @@ export default function GuestEditDialog({ guest, groups, onClose, onSave }) {
     setError('')
     setSaving(true)
     try {
-      await onSave({ fullName: fullName.trim(), phone: phone.trim(), email: email.trim(), groupId: groupId || null, status, seats: seats ? Number(seats) : null })
+      await onSave({ fullName: fullName.trim(), phone: phone.trim(), email: email.trim(), groupId: groupId || null, status, seats: seats ? Number(seats) : null, isVip })
       onClose()
     } catch (err) {
       setError(err.message || "L'invité n'a pas pu être modifié.")
@@ -49,6 +50,10 @@ export default function GuestEditDialog({ guest, groups, onClose, onSave }) {
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={fieldClass} />
           </label>
         </div>
+        <label className="flex items-center gap-2 text-sm text-ink">
+          <input type="checkbox" checked={isVip} onChange={(e) => setIsVip(e.target.checked)} className="h-4 w-4 rounded border-border accent-brand-purple" />
+          Billet VIP (habillage doré)
+        </label>
         <label className="block">
           <span className="text-xs font-medium text-ink">Places pour cette invitation (facultatif)</span>
           <input

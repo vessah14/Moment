@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Toggle from '../builder/Toggle'
 import { getNotificationSettings, updateNotificationSettings } from '../../api/users'
 import { useToast } from '../../utils/useToast'
+import { SkeletonList } from '../ui/Skeleton'
 
 const PREFS = [
   {
@@ -70,7 +71,7 @@ export default function NotificationsTab() {
       )}
 
       <div className="mt-6 space-y-4">
-        {!prefs && !error && <p className="text-sm text-faint">Chargement…</p>}
+        {!prefs && !error && <SkeletonList rows={4} />}
         {prefs &&
           PREFS.map((pref) => (
             <div

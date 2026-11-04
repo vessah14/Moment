@@ -52,6 +52,8 @@ namespace backend_EventMoment.Services.Email
             using var client = new SmtpClient(host, port)
             {
                 EnableSsl = true,
+                // Serveur SMTP lent : abandon en 15 s (100 s par défaut).
+                Timeout = 15_000,
                 Credentials = string.IsNullOrWhiteSpace(user) ? null : new NetworkCredential(user, password),
             };
 

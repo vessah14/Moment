@@ -19,6 +19,7 @@ import { GUEST_STATUS_BY_FILTER, guestStatusLabel, hasGuestStatus } from '../../
 import { notifyGuestsChanged } from '../../utils/guestEvents'
 import { usePagination } from '../../utils/pagination'
 import { useToast } from '../../utils/useToast'
+import { SkeletonList, SkeletonRows } from '../../components/ui/Skeleton'
 
 const FILTERS = ['Tous', 'Confirmés', 'En attente', 'Refus']
 
@@ -297,6 +298,7 @@ export default function Guests() {
             email: g.email,
             status: g.status,
             seats: g.seats ?? null,
+            isVip: Boolean(g.isVip),
           }),
         ),
       )
@@ -318,12 +320,13 @@ export default function Guests() {
     const email = form.get('email')?.toString().trim()
     const groupId = form.get('group')?.toString() || undefined
     const seats = Number(form.get('seats')) || null
+    const isVip = form.get('isVip') === 'on'
     const sendInvitation = form.get('sendInvitation') === 'on' && Boolean(email)
     if (!fullName) return
 
     setError('')
     try {
-      await createGuest({ fullName, phone, email, seats, sendInvitation }, { eventId: selectedEventId, groupId })
+      await createGuest({ fullName, phone, email, seats, isVip, sendInvitation }, { eventId: selectedEventId, groupId })
       await reloadGuests()
       toast(
         !email
@@ -486,6 +489,10 @@ export default function Guests() {
               className="mt-1.5 w-40 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-brand-purple"
             />
           </label>
+          <label className="flex items-center gap-2 self-center text-xs font-medium text-ink">
+            <input type="checkbox" name="isVip" className="h-4 w-4 rounded border-border accent-brand-purple" />
+            Billet VIP doré
+          </label>
           <label className="block">
             <span className="text-xs font-medium text-ink">Téléphone (facultatif)</span>
             <input
@@ -609,7 +616,7 @@ export default function Guests() {
 
       <div className="mt-6 overflow-hidden rounded-2xl border border-border-soft bg-surface">
         <div className="divide-y divide-border-soft md:hidden">
-          {loading && <p className="px-4 py-8 text-center text-sm text-faint">Chargement…</p>}
+          {loading && <SkeletonList rows={5} className="px-4 py-6" />}
           {!loading && visible.length === 0 && (
             <p className="px-4 py-8 text-center text-sm text-faint">Aucun invité dans cette sélection.</p>
           )}
@@ -625,9 +632,10 @@ export default function Guests() {
                 />
                 <Avatar name={guest.fullName} />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-ink">{guest.fullName}{guest.seats > 1 && <span className="ml-1.5 text-xs font-normal text-faint">· {guest.seats} places</span>}</p>
+                  <p className="truncate font-medium text-ink">{guest.fullName}{guest.seats > 1 && <span className="ml-1.5 text-xs font-normal text-faint">· {guest.seats} places</span>}{guest.isVip && <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">VIP</span>}</p>
                   <p className="break-all text-xs text-muted">{guest.email || 'Aucun e-mail'}</p>
                   <p className="font-mono text-xs text-faint">{guest.phone ? maskPhone(guest.phone) : 'Aucun téléphone'}</p>
+                  {guest.enRouteAt && <p className="mt-1 text-xs font-semibold text-brand-orange">En route · {new Date(guest.enRouteAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>}
                 </div>
                 <StatusBadge status={guestStatusLabel(guest.status)} />
               </div>
@@ -694,11 +702,7 @@ export default function Guests() {
             </thead>
             <tbody>
               {loading && (
-                <tr>
-                  <td colSpan={hasExtra ? 9 : 8} className="px-6 py-10 text-center text-sm text-faint">
-                    Chargement…
-                  </td>
-                </tr>
+                <SkeletonRows rows={6} cols={hasExtra ? 9 : 8} />
               )}
               {!loading && visible.length === 0 && (
                 <tr>
@@ -741,7 +745,8 @@ export default function Guests() {
                       <div className="flex items-center gap-3">
                         <Avatar name={guest.fullName} />
                         <div>
-                          <p className="font-medium text-ink">{guest.fullName}{guest.seats > 1 && <span className="ml-1.5 text-xs font-normal text-faint">· {guest.seats} places</span>}</p>
+                          <p className="font-medium text-ink">{guest.fullName}{guest.seats > 1 && <span className="ml-1.5 text-xs font-normal text-faint">· {guest.seats} places</span>}{guest.isVip && <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">VIP</span>}</p>
+                          {guest.enRouteAt && <p className="mt-1 text-xs font-semibold text-brand-orange">En route · {new Date(guest.enRouteAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>}
                           {sideByGuest[guest.id] && <p className="text-xs text-faint">{sideByGuest[guest.id]}</p>}
                           {maybeGuests.has(guest.id) && <p className="text-xs text-brand-orange">A répondu « Peut-être »</p>}
                         </div>

@@ -28,7 +28,7 @@ import UpgradeDialog from '../plan/UpgradeDialog'
 import { eventUsagePercent, isEventLimitReached, usePlan } from '../../utils/usePlan'
 import { GUESTS_CHANGED_EVENT } from '../../utils/guestEvents'
 import BrandLogo from '../ui/BrandLogo'
-import logoMark from '../../assets/logo-mark.png'
+import logoMark from '../../assets/logo-mark.webp'
 import { useLocalStorageState } from '../../utils/useLocalStorageState'
 import { useDashboardNotifications } from './DashboardNotificationsContext'
 

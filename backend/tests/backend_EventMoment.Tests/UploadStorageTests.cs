@@ -185,3 +185,33 @@ public class UploadStorageTests : IDisposable
             Directory.Delete(_root, recursive: true);
     }
 }
+
+public class R2CacheHeaderTests
+{
+    private sealed class RecordingS3 : Amazon.S3.AmazonS3Client
+    {
+        public List<Amazon.S3.Model.PutObjectRequest> Puts { get; } = new();
+        public RecordingS3() : base("k", "s", new Amazon.S3.AmazonS3Config { ServiceURL = "https://r2.example.com" }) { }
+        public override Task<Amazon.S3.Model.PutObjectResponse> PutObjectAsync(Amazon.S3.Model.PutObjectRequest request, CancellationToken cancellationToken = default)
+        {
+            Puts.Add(request);
+            return Task.FromResult(new Amazon.S3.Model.PutObjectResponse());
+        }
+    }
+
+    [Fact]
+    public async Task UploadedFilesAreCachedForAYear()
+    {
+        var s3 = new RecordingS3();
+        var options = new CloudflareR2Options { AccountId = "a", AccessKeyId = "k", SecretAccessKey = "s", Bucket = "b", PublicBaseUrl = "https://media.example.com" };
+        using var storage = new CloudflareR2UploadStorage(options, new LocalUploadStorage(null!, null!), Microsoft.Extensions.Logging.Abstractions.NullLogger<CloudflareR2UploadStorage>.Instance, s3);
+        var bytes = new byte[] { 1, 2, 3 };
+        var file = new Microsoft.AspNetCore.Http.FormFile(new MemoryStream(bytes), 0, bytes.Length, "file", "a.webp");
+
+        await storage.SaveImageAsync(file, UploadFolder.Gallery, Guid.NewGuid(), ".webp");
+        await storage.SaveVoiceAsync(file, Guid.NewGuid(), ".m4a");
+
+        Assert.All(s3.Puts, p => Assert.Equal("public, max-age=31536000, immutable", p.Headers.CacheControl));
+        Assert.Equal("image/webp", s3.Puts[0].ContentType);
+    }
+}

@@ -48,3 +48,20 @@ export function flyerLink({ type, title, displayName, start, venueName, venueAdd
         : 'Flyer de remerciements'
   return { href: `/flyer?${q}`, label }
 }
+
+export function guestStatusFlyerLink({ eventName, eventDate, eventCategoryCode }) {
+  if (!eventName || !eventDate || eventCategoryCode?.toLowerCase() !== 'mariage') return null
+  const date = new Date(`${eventDate}T12:00:00`)
+  if (Number.isNaN(date.getTime())) return null
+  const dateLabel = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long' }).format(date)
+  const coupleName = eventName.replace(/^\s*mariage\s+(?:de\s+|d['’]\s*)/i, '').trim()
+  const article = /^[aeiouyàâäéèêëïîôöùûü]/i.test(coupleName) ? 'd’' : 'de '
+  const q = new URLSearchParams({
+    status: 'guest',
+    occ: 'mariage',
+    ev: eventName.slice(0, 80),
+    nom: coupleName.slice(0, 60),
+    message: `Je serai au mariage ${article}${coupleName}, ${dateLabel}`.slice(0, 220),
+  })
+  return { href: `/flyer?${q}`, label: 'Créer mon statut WhatsApp' }
+}

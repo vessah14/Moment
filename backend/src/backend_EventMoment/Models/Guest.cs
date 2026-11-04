@@ -46,6 +46,17 @@ namespace backend_EventMoment.Models
         [Column("seats")]
         public short? Seats { get; set; }
 
+        [Required]
+        [Column("edition_number")]
+        public int EditionNumber { get; set; }
+
+        [Required]
+        [Column("is_vip")]
+        public bool IsVip { get; set; }
+
+        [Column("en_route_at")]
+        public DateTimeOffset? EnRouteAt { get; set; }
+
         // Première ouverture du lien personnel (statut « Vue » dans l'espace organisateur).
         [Column("invitation_opened_at")]
         public DateTimeOffset? InvitationOpenedAt { get; set; }

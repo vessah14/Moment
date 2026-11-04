@@ -508,6 +508,9 @@ CREATE TABLE public.guests (
     email public.citext,
     status public.guest_status DEFAULT 'en_attente'::public.guest_status NOT NULL,
     seats smallint,
+    edition_number integer NOT NULL,
+    is_vip boolean DEFAULT false NOT NULL,
+    en_route_at timestamp with time zone,
     import_batch_id uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
@@ -1042,6 +1045,9 @@ ALTER TABLE ONLY public.guests
 ALTER TABLE ONLY public.guests
     ADD CONSTRAINT guests_seats_range CHECK (seats IS NULL OR seats BETWEEN 1 AND 50);
 
+ALTER TABLE ONLY public.guests
+    ADD CONSTRAINT guests_edition_number_positive CHECK (edition_number > 0);
+
 
 --
 -- Name: message_campaigns message_campaigns_pkey; Type: CONSTRAINT; Schema: public; Owner: -
@@ -1438,6 +1444,8 @@ CREATE INDEX ix_ticket_sales_ticket_type_id ON public.ticket_sales USING btree (
 --
 
 CREATE INDEX ix_ticket_types_event_id ON public.ticket_types USING btree (event_id);
+
+CREATE UNIQUE INDEX uq_guests_event_edition_number ON public.guests USING btree (event_id, edition_number);
 
 
 --

@@ -5,6 +5,7 @@ import { listEvents } from '../../api/events'
 import { eventShareUrl, mediaUrl } from '../../api/client'
 import { deleteGalleryPhoto, listGalleryPhotos, updateGalleryPhotoStatus, uploadGalleryPhoto } from '../../api/gallery'
 import { tbfDigitalOrderUrl } from '../../data/tbfDigital'
+import { SkeletonGrid } from '../../components/ui/Skeleton'
 
 export default function Gallery() {
   const [events, setEvents] = useState([])
@@ -49,22 +50,28 @@ export default function Gallery() {
   const visible = media.filter((m) => m.status === 'Publie')
   const pending = media.filter((m) => m.status === 'EnAttente')
 
+  // Interface optimiste : la photo change de place tout de suite ; en cas d'échec
+  // côté serveur, la liste revient à son état précédent.
   const handleModerate = async (id, status) => {
     setError('')
+    const before = media
+    setMedia((prev) => prev.map((m) => (m.id === id ? { ...m, status } : m)))
     try {
       await updateGalleryPhotoStatus(id, status)
-      setMedia((prev) => prev.map((m) => (m.id === id ? { ...m, status } : m)))
     } catch (err) {
+      setMedia(before)
       setError(err.message || 'La validation a échoué.')
     }
   }
 
   const handleDelete = async (id) => {
     setError('')
+    const before = media
+    setMedia((prev) => prev.filter((m) => m.id !== id))
     try {
       await deleteGalleryPhoto(id)
-      reload(selectedEventId)
     } catch (err) {
+      setMedia(before)
       setError(err.message || 'La suppression a échoué.')
     }
   }
@@ -148,7 +155,7 @@ export default function Gallery() {
             {pending.map((item) => (
               <div key={item.id}>
                 <div className="aspect-square overflow-hidden rounded-xl bg-surface-2">
-                  <img src={mediaUrl(item.url)} alt="" className="h-full w-full object-cover" />
+                  <img src={mediaUrl(item.url)} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                 </div>
                 {item.uploadedBy && <p className="mt-1 truncate text-xs text-faint">par {item.uploadedBy}</p>}
                 <div className="mt-2 flex gap-2">
@@ -195,7 +202,7 @@ export default function Gallery() {
 
       <div className="mt-6 rounded-2xl border border-border-soft bg-surface p-5">
         {loading ? (
-          <p className="py-10 text-center text-sm text-faint">Chargement…</p>
+          <SkeletonGrid count={8} className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4" aspect="aspect-square" />
         ) : visible.length === 0 ? (
           <p className="py-10 text-center text-sm text-faint">Aucune photo publiée pour le moment.</p>
         ) : (
@@ -206,6 +213,8 @@ export default function Gallery() {
                   <img
                     src={mediaUrl(item.url)}
                     alt=""
+                    loading="lazy"
+                    decoding="async"
                     className="h-full w-full object-cover"
                   />
                 </div>

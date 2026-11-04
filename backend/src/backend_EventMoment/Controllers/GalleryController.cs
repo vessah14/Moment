@@ -60,8 +60,8 @@ namespace backend_EventMoment.Controllers
             if (_plans != null)
                 await _plans.EnsureCanAddPhotoAsync(organizerId, eventId);
 
-            // Position GPS, appareil, date… retirés avant l'enregistrement.
-            file = await ImageMetadataStripper.StripAsync(file, extension);
+            // Remise à l'endroit, taille d'écran et WebP ; métadonnées (GPS, appareil…) retirées.
+            (file, extension) = await ImageOptimizer.PrepareAsync(file, extension, ImageOptimizer.MaxSide(UploadFolder.Gallery));
             var url = await _uploads.SaveImageAsync(file, UploadFolder.Gallery, eventId, extension);
             try
             {
@@ -103,7 +103,7 @@ namespace backend_EventMoment.Controllers
             if (_plans != null)
                 await _plans.EnsureCanAddPhotoAsync(organizerId, eventId);
 
-            file = await ImageMetadataStripper.StripAsync(file, extension);
+            (file, extension) = await ImageOptimizer.PrepareAsync(file, extension, ImageOptimizer.MaxSide(UploadFolder.Gallery));
             var url = await _uploads.SaveImageAsync(file, UploadFolder.Gallery, eventId, extension);
             try
             {

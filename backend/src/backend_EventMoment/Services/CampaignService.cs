@@ -13,13 +13,62 @@ namespace backend_EventMoment.Services
         private readonly IEmailSender _emailSender;
         private readonly IConfiguration _config;
         private readonly ILogger<CampaignService> _logger;
+        private readonly CampaignQueue? _queue;
+        private readonly Interfaces.IInAppNotificationService? _notifications;
 
-        public CampaignService(AdminDbContext context, IEmailSender emailSender, IConfiguration config, ILogger<CampaignService> logger)
+        // Au-delà de ce nombre d'adresses e-mail, la campagne part en arrière-plan : la page
+        // répond tout de suite et l'organisateur reçoit une notification à la fin. En dessous,
+        // l'envoi direct (5 en parallèle) prend quelques secondes et donne le résultat aussitôt.
+        public const int BackgroundThreshold = 100;
+
+        public CampaignService(AdminDbContext context, IEmailSender emailSender, IConfiguration config, ILogger<CampaignService> logger,
+            CampaignQueue? queue = null, Interfaces.IInAppNotificationService? notifications = null)
         {
             _context = context;
             _emailSender = emailSender;
             _config = config;
             _logger = logger;
+            _queue = queue;
+            _notifications = notifications;
+        }
+
+        private Task<int> CountEmailRecipientsAsync(Guid eventId, string audience) =>
+            FilterByAudience(_context.Guests.IgnoreQueryFilters().Where(g => g.EventId == eventId), audience)
+                .CountAsync(g => g.Email != null && g.Email != "");
+
+        // Grande liste : passage « En cours » et mise en file. Renvoie false si l'envoi doit
+        // se faire tout de suite (petite liste, ou file indisponible dans les tests).
+        private async Task<bool> QueueIfLargeAsync(MessageCampaign entity)
+        {
+            if (_queue == null || await CountEmailRecipientsAsync(entity.EventId, entity.Audience) <= BackgroundThreshold)
+                return false;
+            entity.Status = CampaignStatus.EnCours;
+            await _context.SaveChangesAsync();
+            _queue.Enqueue(entity.Id);
+            return true;
+        }
+
+        // Appelé par CampaignDispatcher, hors requête (aucun organisateur connecté).
+        public async Task SendQueuedAsync(Guid campaignId, CancellationToken ct = default)
+        {
+            var entity = await _context.MessageCampaigns.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(c => c.Id == campaignId && c.Status == CampaignStatus.EnCours, ct);
+            if (entity == null) return;
+            var evt = await _context.Events.IgnoreQueryFilters().FirstAsync(e => e.Id == entity.EventId, ct);
+
+            var result = await SendInvitationEmailsAsync(evt, entity.Audience, entity.Body, entity.Subject ?? evt.Name);
+            if (result.SentCount > 0)
+            {
+                entity.Status = CampaignStatus.Envoyee;
+                entity.SentAt = DateTimeOffset.UtcNow;
+            }
+            else
+            {
+                entity.Status = CampaignStatus.Brouillon;
+            }
+            await _context.SaveChangesAsync(CancellationToken.None);
+            if (_notifications != null)
+                await _notifications.NotifyCampaignSentAsync(entity.EventId, entity.Subject ?? evt.Name, result.SentCount, entity.RecipientCount, result.FailureReason);
         }
 
         private IQueryable<Guest> FilterByAudience(IQueryable<Guest> query, string audience) => audience switch
@@ -38,15 +87,16 @@ namespace backend_EventMoment.Services
 
         private async Task<EmailSendResult> SendInvitationEmailsAsync(Event evt, string audience, string template, string subject)
         {
-            var guests = await FilterByAudience(_context.Guests.Where(g => g.EventId == evt.Id), audience)
+            // IgnoreQueryFilters : aussi appelé en arrière-plan ; l'événement est déjà vérifié.
+            var guests = await FilterByAudience(_context.Guests.IgnoreQueryFilters().Where(g => g.EventId == evt.Id), audience)
                 .AsNoTracking()
                 .ToListAsync();
-            var organizer = await _context.Organizers.AsNoTracking()
+            var organizer = await _context.Organizers.IgnoreQueryFilters().AsNoTracking()
                 .Where(user => user.Id == evt.OrganizerId)
                 .Select(user => new { user.Email, user.FullName })
                 .FirstOrDefaultAsync();
 
-            var location = await _context.EventLocations.AsNoTracking()
+            var location = await _context.EventLocations.IgnoreQueryFilters().AsNoTracking()
                 .Where(l => l.EventId == evt.Id)
                 .OrderBy(l => l.Position)
                 .FirstOrDefaultAsync();
@@ -184,6 +234,9 @@ namespace backend_EventMoment.Services
                     && c.Subject == dto.Name && c.Body == dto.Body);
                 if (duplicate)
                     throw new InvalidOperationException("Cette campagne vient déjà d'être envoyée. Patientez quelques minutes avant de la renvoyer.");
+                if (await _context.MessageCampaigns.AnyAsync(c => c.EventId == eventId && c.Status == CampaignStatus.EnCours
+                        && c.Subject == dto.Name && c.Body == dto.Body))
+                    throw new InvalidOperationException("Cette campagne est en cours d'envoi. Vous recevrez une notification à la fin.");
             }
 
             var recipientCount = await CountRecipientsAsync(eventId, dto.Audience);
@@ -205,6 +258,9 @@ namespace backend_EventMoment.Services
 
             _context.MessageCampaigns.Add(entity);
             await _context.SaveChangesAsync();
+
+            if (dto.SendNow && dto.Channel == "E-mail" && await QueueIfLargeAsync(entity))
+                return Map(entity);
 
             var emailResult = new EmailSendResult(0, null);
             if (dto.SendNow && dto.Channel == "E-mail")
@@ -244,6 +300,8 @@ namespace backend_EventMoment.Services
                 ?? throw new KeyNotFoundException("Campagne introuvable.");
             if (entity.Status == CampaignStatus.Envoyee)
                 throw new InvalidOperationException("Cette campagne a déjà été envoyée : elle ne peut plus être modifiée. Dupliquez-la pour en créer une nouvelle.");
+            if (entity.Status == CampaignStatus.EnCours)
+                throw new InvalidOperationException("Cette campagne est en cours d'envoi : attendez la notification de fin avant de la modifier.");
 
             var evt = await _context.Events.FirstAsync(e => e.Id == entity.EventId);
             entity.Subject = dto.Name;
@@ -251,6 +309,9 @@ namespace backend_EventMoment.Services
             entity.Body = dto.Body;
             entity.RecipientCount = await CountRecipientsAsync(entity.EventId, dto.Audience);
             await _context.SaveChangesAsync();
+
+            if (dto.SendNow && entity.Channel == "E-mail" && await QueueIfLargeAsync(entity))
+                return Map(entity);
 
             var emailResult = new EmailSendResult(0, null);
             if (dto.SendNow && entity.Channel == "E-mail")

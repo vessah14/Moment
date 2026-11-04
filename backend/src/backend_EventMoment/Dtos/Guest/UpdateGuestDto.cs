@@ -19,6 +19,8 @@ namespace backend_EventMoment.Models
         [Range(1, 50)]
         public short? Seats { get; set; }
 
+        public bool IsVip { get; set; }
+
         public GuestStatus Status { get; set; } = GuestStatus.EnAttente;
 
     }

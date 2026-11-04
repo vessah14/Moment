@@ -46,6 +46,10 @@ export function getPublicInvitation(guestId) {
   return apiFetch(`/public/invitations/${guestId}`, { auth: false })
 }
 
+export function markPublicGuestEnRoute(guestId) {
+  return apiFetch(`/public/invitations/${guestId}/en-route`, { method: 'POST', auth: false })
+}
+
 export function submitPublicRsvp(guestId, dto) {
   return apiFetch(`/public/invitations/${guestId}/rsvp`, { method: 'POST', body: dto, auth: false })
 }

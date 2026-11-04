@@ -17,6 +17,8 @@ namespace backend_EventMoment.Models
         [Range(1, 50)]
         public short? Seats { get; set; }
 
+        public bool IsVip { get; set; }
+
         // Envoyer automatiquement le lien d'invitation (confirmation de présence) par e-mail,
         // dès que l'événement est publié.
         public bool SendInvitation { get; set; } = true;

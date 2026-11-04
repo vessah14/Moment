@@ -20,7 +20,7 @@ import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { eventShareUrl, mediaUrl } from '../../api/client'
 import { googleCalendarUrl, handleAddToCalendar } from '../../utils/calendar'
-import logoMark from '../../assets/logo-mark.png'
+import logoMark from '../../assets/logo-mark.webp'
 import {
   safeBlockImagePath,
   safeCoverPath,
@@ -215,7 +215,7 @@ function PhotoPicker({ imageUrl, uploading, onPick }) {
     >
       {imageUrl ? (
         <>
-          <img src={mediaUrl(imageUrl)} alt="" className="h-full w-full object-cover" />
+          <img src={mediaUrl(imageUrl)} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
           <span className="absolute inset-0 flex items-center justify-center bg-black/45 text-xs font-semibold text-white opacity-0 transition group-hover:opacity-100">
             {uploading ? 'Envoi en cours…' : 'Changer la photo'}
           </span>
@@ -251,6 +251,8 @@ function FramedImage({ src }) {
       <img
         src={src}
         alt=""
+        loading="lazy"
+        decoding="async"
         className="relative aspect-4/3 w-full rounded-2xl object-cover shadow-lg"
       />
     </div>
@@ -1451,6 +1453,8 @@ function ClassicSitePage({
       ? { className: 'site-enter', style: { animationDelay: `${120 + index * 140}ms` } }
       : { className: '', style: undefined }
   const data = { ...rawData, title: heroStyle.title }
+  const allowGuestUploads = !editable && Boolean(data.slug)
+    && (blocks || []).includes('Galerie') && blockContent?.Galerie?.guestUploads !== false
   const coverPath = safeCoverPath(data.coverPath)
   // coverSrc : photo choisie dans l'assistant, pas encore envoyée (aperçu seulement).
   const coverSrc = data.coverSrc || (coverPath ? mediaUrl(coverPath) : '')
@@ -1540,6 +1544,7 @@ function ClassicSitePage({
             onInvitationChange={data.onInvitationChange}
             watch={!data.submitRsvp}
             onLeave={() => setPassOpen(false)}
+            allowGuestUploads={allowGuestUploads}
           />
         </PassDialog>
       )}

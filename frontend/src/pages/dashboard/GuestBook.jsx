@@ -15,6 +15,7 @@ import {
   replyGuestBookEntry,
   updateGuestBookStatus,
 } from '../../api/guestBook'
+import { SkeletonList } from '../../components/ui/Skeleton'
 
 const STATUS_LABELS = { EnAttente: 'À valider', Publie: 'Publié', Masque: 'Masqué', Signale: 'Signalé' }
 const ACTIONS_BY_STATUS = {
@@ -129,12 +130,16 @@ export default function GuestBook() {
   )
   const visible = messages.filter((m) => m.status === filter)
 
+  // Interface optimiste : le message change d'onglet tout de suite, et revient en
+  // arrière si le serveur refuse.
   const applyAction = async (id, next) => {
     setError('')
+    const before = messages
+    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, status: next } : m)))
     try {
       await updateGuestBookStatus(id, next)
-      reload(selectedEventId)
     } catch (err) {
+      setMessages(before)
       setError(err.message || "L'action a échoué.")
     }
   }
@@ -161,10 +166,12 @@ export default function GuestBook() {
 
   const handleDelete = async (id) => {
     setError('')
+    const before = messages
+    setMessages((prev) => prev.filter((m) => m.id !== id))
     try {
       await deleteGuestBookEntry(id)
-      reload(selectedEventId)
     } catch (err) {
+      setMessages(before)
       setError(err.message || 'La suppression a échoué.')
     }
   }
@@ -333,7 +340,7 @@ export default function GuestBook() {
       </div>
 
       <div className="mt-5 space-y-4">
-        {loading && <p className="text-center text-sm text-faint">Chargement…</p>}
+        {loading && <SkeletonList rows={4} />}
         {!loading && visible.length === 0 && (
           <p className="rounded-xl border border-dashed border-border-soft py-10 text-center text-sm text-faint">
             Aucun message ici.
@@ -469,7 +476,7 @@ function WishColumns({ loading, messages, onShow, onRefuse, onRemove }) {
         <h2 id="wishes-pending" className="text-sm font-semibold text-ink">
           À valider · {pending.length}
         </h2>
-        {loading && <p className="text-sm text-faint">Chargement…</p>}
+        {loading && <SkeletonList rows={4} />}
         {!loading && pending.length === 0 && (
           <p className="rounded-xl border border-dashed border-border-soft py-8 text-center text-sm text-faint">Tout est validé.</p>
         )}

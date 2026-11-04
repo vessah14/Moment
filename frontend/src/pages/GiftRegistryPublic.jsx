@@ -5,6 +5,7 @@ import Button from '../components/ui/Button'
 import { getPublicEvent, getPublicGifts, reservePublicGift } from '../api/giftRegistry'
 import { useSeo } from '../utils/seo'
 import { findTemplate, resolveSiteStyle, siteRootStyle } from '../utils/templateTheme'
+import { SkeletonGrid } from '../components/ui/Skeleton'
 
 export default function GiftRegistryPublic() {
   const { code } = useParams()
@@ -59,7 +60,7 @@ export default function GiftRegistryPublic() {
   })
 
   if (loading) {
-    return <div className="flex min-h-svh items-center justify-center text-sm text-faint">Chargement…</div>
+    return <SkeletonGrid count={6} className="mx-auto grid min-h-svh max-w-5xl gap-5 px-6 py-16 sm:grid-cols-2 lg:grid-cols-3" />
   }
 
   if (error || !event) {

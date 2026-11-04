@@ -106,10 +106,10 @@
 .tbft .countdown .label { font-size: .7rem; letter-spacing: .22em; text-transform: uppercase; font-weight: 700; color: var(--muted); text-align: center; margin-bottom: .8rem }
 .tbft .cd { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem }
 .tbft .cd > div { display: grid; justify-items: center; gap: .25rem; min-width: 0 }
-.tbft .cd .num { position: relative; width: 100%; height: 3.4rem; overflow: hidden; border-radius: var(--radius-sm); background: var(--surface-2); display: grid; place-items: center }
+.tbft .cd .num { position: relative; width: 100%; height: 3.4rem; overflow: hidden; perspective: 320px; border-radius: var(--radius-sm); background: var(--surface-2); display: grid; place-items: center }
 .tbft .cd .num span { font-family: var(--f-display); font-size: 2rem; font-variant-numeric: tabular-nums; line-height: 1; color: var(--fg) }
-.tbft.motion .cd .num span { animation: tbft-flip .45s var(--ease-out) }
-@keyframes tbft-flip { from { transform: translateY(-70%); opacity: 0 } to { transform: none; opacity: 1 } }
+.tbft.motion .cd .num span { transform-origin: 50% 100%; backface-visibility: hidden; animation: tbft-airport-flip .5s var(--ease-out) }
+@keyframes tbft-airport-flip { from { transform: rotateX(-88deg); opacity: .35 } to { transform: rotateX(0); opacity: 1 } }
 .tbft .cd small { font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; color: var(--muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis }
 .tbft .cd-done { text-align: center; font-family: var(--f-display); font-size: 1.4rem; margin: 0 }
 /* Dernière minute (countdownFinal) puis message de fin (countdownDone) */
@@ -372,10 +372,13 @@
   background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--accent) 70%, #fff), var(--accent) 60%, color-mix(in srgb, var(--accent) 70%, #000));
   color: var(--on-accent); font-family: var(--f-display); font-size: 1.1rem; letter-spacing: .04em; box-shadow: 0 8px 20px -6px rgba(0, 0, 0, .5), inset 0 0 0 5px color-mix(in srgb, var(--accent) 80%, #000);
   transition: transform .4s var(--ease-spring), opacity .4s }
-.tbft.motion .env .seal { animation: tbft-pulse 2.4s ease-in-out infinite }
-@keyframes tbft-pulse { 50% { box-shadow: 0 8px 20px -6px rgba(0, 0, 0, .5), inset 0 0 0 5px color-mix(in srgb, var(--accent) 80%, #000), 0 0 0 14px color-mix(in srgb, var(--accent) 20%, transparent) } }
+.tbft.motion .env .seal { animation: tbft-seal-pulse 1.8s ease-in-out 1 }
+@keyframes tbft-seal-pulse { 50% { box-shadow: 0 8px 20px -6px rgba(0, 0, 0, .5), inset 0 0 0 5px color-mix(in srgb, var(--accent) 80%, #000), 0 0 0 14px color-mix(in srgb, var(--accent) 20%, transparent) } }
 .tbft .env .seal:hover { transform: scale(1.06) }
-.tbft .intro.opening .env .seal { transform: scale(.4); opacity: 0; animation: none }
+.tbft .env .seal::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(135deg, transparent 46%, color-mix(in srgb, var(--on-accent) 85%, transparent) 48% 50%, transparent 52%); opacity: 0; pointer-events: none }
+.tbft .intro.opening .env .seal { transform: scale(.4); opacity: 0; animation: tbft-seal-snap .22s ease-out both }
+.tbft .intro.opening .env .seal::after { opacity: 1 }
+@keyframes tbft-seal-snap { 0% { transform: scale(1) rotate(0); opacity: 1 } 28% { transform: scale(1.08) rotate(-8deg) } 58% { transform: scale(.9) rotate(7deg) } 100% { transform: scale(.35) rotate(18deg); opacity: 0 } }
 .tbft .intro.opening .env .flap { transform: rotateX(180deg); z-index: 0 }
 .tbft .intro.opening .env .letter { transform: translateY(-62%) }
 
@@ -646,7 +649,21 @@
 .tbft .soldout { margin: 0; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); text-align: center; padding: .7rem; border: 1px dashed var(--line); border-radius: var(--radius-sm) }
 
 /* ---------- Ouverture « billet » ---------- */
-.tbft .tk-intro { display: grid; grid-template-columns: 1fr 92px; width: min(88vw, 380px); height: 160px; margin: 1rem auto .4rem; filter: drop-shadow(0 24px 30px rgba(0, 0, 0, .35)) }
+.tbft .tk-intro { width: min(88vw, 380px); height: 230px; margin: 1rem auto .4rem; perspective: 1000px; filter: drop-shadow(0 24px 30px rgba(0, 0, 0, .35)) }
+.tbft .tk-intro-card { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform .55s var(--ease-out), opacity .35s }
+.tbft .tk-intro.flipped .tk-intro-card { transform: rotateY(180deg) }
+.tbft .tk-face { position: absolute; inset: 0; overflow: hidden; border-radius: 14px; backface-visibility: hidden }
+.tbft .tk-front { inset: 35px 0; display: grid; grid-template-columns: 1fr 92px; height: 160px }
+.tbft .tk-back { display: grid; align-content: start; gap: .45rem; padding: .8rem 1rem; transform: rotateY(180deg); background: var(--surface); color: var(--fg); border: 1px solid var(--accent); text-align: left }
+.tbft .tk-back-title { margin: 0; color: var(--accent); font-family: var(--f-display); font-size: 1.05rem; font-weight: 700 }
+.tbft .tk-back-details { display: grid; gap: .35rem; min-height: 0; overflow-y: auto; font-size: .75rem; line-height: 1.3 }
+.tbft .tk-back-details > div { display: grid; gap: .08rem }
+.tbft .tk-back-details b { font-size: .66rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted) }
+.tbft .tk-back-details a, .tbft .tk-back-details span { color: var(--fg); overflow-wrap: anywhere }
+.tbft .tk-back-details ul { display: grid; gap: .08rem; margin: 0; padding: 0; list-style: none }
+.tbft .tk-back-enter { justify-self: end; min-height: 38px; padding: .4rem 1rem; border: 0; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-weight: 700; cursor: pointer }
+.tbft .tk-back-enter:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px }
+.tbft .intro.opening .tk-intro-card { transform: rotateY(180deg) translateX(30px) scale(.94); opacity: 0 }
 .tbft .tk-body { background: var(--accent); color: var(--on-accent); border-radius: 14px 0 0 14px; padding: 1.1rem 1.2rem; display: grid; align-content: center; gap: .25rem; text-align: left; min-width: 0;
   -webkit-mask: radial-gradient(circle 10px at 100% 0, #0000 98%, #000) top / 100% 51% no-repeat, radial-gradient(circle 10px at 100% 100%, #0000 98%, #000) bottom / 100% 51% no-repeat;
   mask: radial-gradient(circle 10px at 100% 0, #0000 98%, #000) top / 100% 51% no-repeat, radial-gradient(circle 10px at 100% 100%, #0000 98%, #000) bottom / 100% 51% no-repeat;
@@ -657,10 +674,6 @@
 .tbft .tk-stub { border: 0; cursor: pointer; background: var(--accent-2); color: var(--on-accent); border-radius: 0 14px 14px 0; border-left: 2px dashed color-mix(in srgb, var(--on-accent) 50%, transparent);
   display: grid; place-items: center; font-weight: 800; letter-spacing: .2em; text-transform: uppercase; font-size: .75rem; transform-origin: 0 100%; transition: transform .9s var(--ease-out), opacity .7s .2s }
 .tbft .tk-stub span { writing-mode: vertical-rl; transform: rotate(180deg) }
-.tbft.motion .tk-stub { animation: tbft-nudge 2.6s ease-in-out infinite }
-@keyframes tbft-nudge { 0%, 80%, 100% { transform: none } 85% { transform: rotate(4deg) } 90% { transform: rotate(-2deg) } }
-.tbft .intro.opening .tk-stub { animation: none; transform: translate(40px, 120px) rotate(28deg); opacity: 0 }
-.tbft .intro.opening .tk-body { transform: translateX(-30px) scale(.96); opacity: 0 }
 
 /* ---------- Ouverture « bougie » ---------- */
 .tbft .candle-wrap { position: relative; width: 120px; height: 230px; margin: 0 auto 1rem }
@@ -901,20 +914,11 @@
 .tbft[data-tbft="minuit"] .minuit-host-signature { grid-column: 1 / -1; margin: -1rem 0 0; color: var(--accent-2); font: italic 1.15rem var(--f-display); text-align: right }
 .tbft[data-tbft="minuit"] .minuit-ndop { height: 22px; overflow: hidden; color: var(--accent); border-block: 1px solid color-mix(in srgb, var(--accent) 55%, transparent); text-align: center; line-height: 20px; letter-spacing: .42em; font-size: 15px }
 .tbft[data-tbft="minuit"] .minuit-ndop span { opacity: .9 }
-.tbft .minuit-falling-confetti { position: fixed; inset: 0; z-index: 1; overflow: hidden; pointer-events: none }
-.tbft .minuit-confetti { position: absolute; top: -8vh; left: var(--x); width: 8px; height: 13px; border-radius: 2px; opacity: .75; animation: minuit-confetti-fall var(--duration) linear var(--delay) infinite }
-.tbft .minuit-confetti.c0 { background: var(--accent) }
-.tbft .minuit-confetti.c1 { background: #F08FB0 }
-.tbft .minuit-confetti.c2 { background: #A996FF }
-.tbft .minuit-confetti.c3 { background: var(--accent-2) }
-@keyframes minuit-confetti-fall { to { transform: translate3d(22px, 116vh, 0) rotate(720deg) } }
 .tbft[data-tbft="minuit"] .cd-wish { max-width: 32rem; margin: 1.1rem auto 0; color: var(--fg); font: italic 1rem/1.5 var(--f-display) }
 .tbft[data-tbft="minuit"] .cd-wish p { margin: 0 }
 .tbft[data-tbft="minuit"] .cd-wish cite { display: block; margin-top: .35rem; color: var(--muted); font: 600 .72rem var(--f-body) }
 .tbft[data-tbft="minuit"] .cd-wish-link { display: inline-block; margin-top: 1rem; color: var(--accent-2); font-size: .8rem; font-weight: 700; text-decoration: underline; text-underline-offset: .2em }
 @container tbft (max-width: 759px) { .tbft[data-tbft="minuit"] .story.minuit-host { grid-template-columns: 1fr } .tbft[data-tbft="minuit"] .minuit-host-signature { text-align: center } }
-@media (prefers-reduced-motion: reduce) { .tbft .minuit-confetti { animation: none; display: none } }
-
 /* ---------- Envol : cérémonie des vœux, ivoire et or ---------- */
 .tbft[data-tbft="envol"] { --f-script: "Cormorant Garamond", Georgia, serif; --f-display: "Cormorant Garamond", Georgia, serif; --f-body: "Geist", "Segoe UI", Arial, sans-serif; --radius: 14px; --radius-sm: 8px }
 .tbft[data-tbft="envol"] .hero-names { font-weight: 600; letter-spacing: -.01em; color: var(--on-accent) }
@@ -978,6 +982,8 @@
 .tbft .inv-card-name { font-family: var(--f-display); font-weight: 700; font-size: 1.55rem; color: var(--accent) }
 .tbft .inv-qr { display: grid; place-items: center; width: 112px; height: 112px; border-radius: 8px; background: #fff; padding: 4px; image-rendering: pixelated }
 .tbft .inv-qr.ph-qr { border: 1px dashed var(--line); background: var(--surface-2); color: var(--muted); font-size: .8rem; font-weight: 600; letter-spacing: .1em }
+.tbft.motion .inv-qr-day-of.in { animation: tbft-qr-breathe 1.8s ease-in-out 1 both }
+@keyframes tbft-qr-breathe { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent) } 50% { transform: scale(1.045); box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 20%, transparent) } }
 .tbft .inv-card-qr { font-size: .82rem }
 .tbft[data-tbft="envol"] .inv-card-section { padding-top: 1.5rem }
 
@@ -1007,5 +1013,5 @@
 .tbft .envol-band { display: block; margin: 0 0 1.6rem }
 
 @media (prefers-reduced-motion: reduce) {
-  .tbft .envol-spin, .tbft .foil, .tbft .live-badge i { animation: none !important }
+  .tbft .envol-spin, .tbft .foil, .tbft .live-badge i, .tbft .inv-qr-day-of { animation: none !important }
 }

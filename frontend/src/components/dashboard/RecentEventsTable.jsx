@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import StatusBadge from '../ui/StatusBadge'
 import { formatEventDate, statusLabel } from '../../utils/eventStatus'
+import { SkeletonRows } from '../ui/Skeleton'
 
 export default function RecentEventsTable({ events, loading }) {
   return (
@@ -27,11 +28,7 @@ export default function RecentEventsTable({ events, loading }) {
         </thead>
         <tbody>
           {loading && (
-            <tr>
-              <td colSpan={4} className="px-6 py-10 text-center text-sm text-faint">
-                Chargement…
-              </td>
-            </tr>
+            <SkeletonRows rows={3} cols={4} />
           )}
           {!loading && events.length === 0 && (
             <tr>

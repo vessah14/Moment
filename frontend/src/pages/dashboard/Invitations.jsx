@@ -113,6 +113,7 @@ export default function Invitations () {
       )
       setSendResult({
         channel,
+        queued: result?.status === 'EnCours',
         emailsSentCount: result?.emailsSentCount ?? 0,
         emailRecipientCount: emailRecipients.length,
         recipientCount: result?.recipientCount ?? guests.length,
@@ -360,7 +361,13 @@ export default function Invitations () {
             livraison finale dépend du fournisseur de messagerie.
           </p>
         )}
-        {sendResult?.channel === 'E-mail' && sendResult.emailsSentCount === 0 && (
+        {sendResult?.queued && (
+          <p role='status' className='mt-3 text-center text-sm text-success'>
+            Envoi en cours à {sendResult.emailRecipientCount} adresse(s). Vous recevrez une
+            notification dans le tableau de bord à la fin de l’envoi.
+          </p>
+        )}
+        {sendResult?.channel === 'E-mail' && !sendResult.queued && sendResult.emailsSentCount === 0 && (
           <p role='alert' className='mt-3 text-center text-sm text-danger'>
             {sendResult.emailRecipientCount === 0
               ? 'Aucun e-mail envoyé : aucun invité ne possède d’adresse e-mail enregistrée.'

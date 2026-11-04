@@ -63,6 +63,9 @@ builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"]);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient();
+// Brevo, Google, Facebook, SasPay… : une API externe lente ne bloque jamais une requête
+// plus de 20 s (100 s par défaut). Le partage garde son propre délai, plus court.
+builder.Services.ConfigureHttpClientDefaults(http => http.ConfigureHttpClient(client => client.Timeout = TimeSpan.FromSeconds(20)));
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -136,6 +139,10 @@ builder.Services.AddRateLimiter(options =>
         ClientIp(context),
         _ => new FixedWindowRateLimiterOptions { PermitLimit = Limit("PublicRead", 60), Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
     // Photos des invités (jusqu’à 10 Mo chacune) : quota plus serré que les formulaires.
+    // Core Web Vitals : une mesure par page visitée, au plus.
+    options.AddPolicy("public-vitals", context => RateLimitPartition.GetFixedWindowLimiter(
+        ClientIp(context),
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = Limit("PublicVitals", 30), Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
     // « Signaler cette page » : chaque signalement part par e-mail aux administrateurs.
     options.AddPolicy("public-report", context => RateLimitPartition.GetFixedWindowLimiter(
         ClientIp(context),
@@ -222,14 +229,17 @@ var adminDataSource = BuildDataSource(adminConnString);
 builder.Services.AddScoped<RlsBypass>();
 builder.Services.AddDbContext<AdminDbContext>((sp, options) =>
     options.UseNpgsql(adminDataSource)
-        .AddInterceptors(new RlsSessionInterceptor(
-            sp.GetRequiredService<IHttpContextAccessor>(), sp.GetRequiredService<RlsBypass>())));
+        .AddInterceptors(
+            new RlsSessionInterceptor(sp.GetRequiredService<IHttpContextAccessor>(), sp.GetRequiredService<RlsBypass>()),
+            // Requêtes lentes : durée dans Prometheus, détail dans les journaux (Loki).
+            new SlowQueryInterceptor(sp.GetRequiredService<IHttpContextAccessor>(), sp.GetRequiredService<ILogger<SlowQueryInterceptor>>())));
 
 // ClientDbContext → rôle app_client
 var clientConnString = GetRequiredConnectionString("ClientConnection");
 var clientDataSource = BuildDataSource(clientConnString);
-builder.Services.AddDbContext<ClientDbContext>(options =>
-    options.UseNpgsql(clientDataSource));
+builder.Services.AddDbContext<ClientDbContext>((sp, options) =>
+    options.UseNpgsql(clientDataSource)
+        .AddInterceptors(new SlowQueryInterceptor(sp.GetRequiredService<IHttpContextAccessor>(), sp.GetRequiredService<ILogger<SlowQueryInterceptor>>())));
 
 // SignupDbContext → rôle app_signup (inscription publique uniquement)
 var signupConnString = GetRequiredConnectionString("SignupConnection");
@@ -267,7 +277,10 @@ builder.Services.AddScoped<IGiftRegistryService, GiftRegistryService>();
 builder.Services.AddScoped<ITicketingService, TicketingService>();
 builder.Services.AddScoped<IConferenceService, ConferenceService>();
 builder.Services.AddScoped<IProgramService, ProgramService>();
-builder.Services.AddScoped<ICampaignService, CampaignService>();
+builder.Services.AddScoped<CampaignService>();
+builder.Services.AddScoped<ICampaignService>(sp => sp.GetRequiredService<CampaignService>());
+builder.Services.AddSingleton<CampaignQueue>();
+builder.Services.AddHostedService<CampaignDispatcher>();
 builder.Services.AddScoped<IGalleryService, GalleryService>();
 builder.Services.AddScoped<IGuestService, GuestService>();
 builder.Services.AddScoped<IPlanService, PlanService>();
@@ -471,7 +484,11 @@ app.UseStaticFiles(new StaticFileOptions
     {
         // Les fichiers téléversés ne doivent jamais pouvoir exécuter de script.
         if (ctx.Context.Request.Path.StartsWithSegments("/uploads"))
+        {
             ctx.Context.Response.Headers["Content-Security-Policy"] = "default-src 'none'; img-src 'self'; sandbox";
+            // Noms de fichiers uniques (GUID), jamais réécrits.
+            ctx.Context.Response.Headers.CacheControl = CloudflareR2UploadStorage.ImmutableCache;
+        }
     }
 });
 app.UseCors("Frontend");

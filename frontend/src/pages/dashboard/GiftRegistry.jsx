@@ -6,6 +6,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout'
 import Button from '../../components/ui/Button'
 import { listEvents } from '../../api/events'
 import { createGiftItem, deleteGiftItem, listGiftItems } from '../../api/giftRegistry'
+import { SkeletonGrid } from '../../components/ui/Skeleton'
 
 export default function GiftRegistry() {
   const [events, setEvents] = useState([])
@@ -177,7 +178,7 @@ export default function GiftRegistry() {
       )}
 
       {loading ? (
-        <p className="mt-8 text-center text-sm text-faint">Chargement…</p>
+        <SkeletonGrid count={6} className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-3" />
       ) : (
         <div className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {gifts.length === 0 && (
