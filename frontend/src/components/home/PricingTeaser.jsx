@@ -3,6 +3,7 @@ import PricingCard from '../pricing/PricingCard'
 import BrandBackdrop from '../ui/BrandBackdrop'
 import { PRICING_PLANS } from '../../data/pricingPlans'
 import SectionHeader from './SectionHeader'
+import { t } from '../../i18n'
 
 const FEATURED = ['Free', 'Premium', 'Business']
 
@@ -14,15 +15,15 @@ export default function PricingTeaser() {
       <BrandBackdrop side="right" />
       <div className="relative mx-auto max-w-7xl px-6 py-20">
         <SectionHeader
-          eyebrow="Tarifs"
-          title="Un plan par usage, pas par événement"
+          eyebrow={t("Tarifs")}
+          title={t("Un plan par usage, pas par événement")}
           action={
             <Link to="/tarifs" className="text-sm font-medium text-brand-purple hover:underline">
-              Voir tous les tarifs
+              {t("Voir tous les tarifs")}
             </Link>
           }
         >
-          Un compte porte tous vos événements. Passez à un plan supérieur seulement si vous en avez besoin.
+          {t("Un compte porte tous vos événements. Passez à un plan supérieur seulement si vous en avez besoin.")}
         </SectionHeader>
 
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

@@ -3,6 +3,7 @@ import { loadThemeFonts } from '../site/themes/themeFonts'
 import { getSiteTheme } from '../site/themes/themeDefs'
 import { monogramOf, parseTitle } from '../site/themes/titleParts'
 import './premiumThumbs.css'
+import { t } from '../../i18n'
 
 // Miniature d'un modèle premium, reprise de la galerie des maquettes : l'ouverture du
 // modèle (enveloppe, fleur, rideau, médaillon, cadeau, soleil Art déco) dessinée en CSS,
@@ -20,7 +21,7 @@ export default function PremiumThumb({ template }) {
     case 'noor':
       return (
         <div className="pthumb pt-noor" aria-hidden="true">
-          <span className="for">Vous êtes invité·e</span>
+          <span className="for">{t('Vous êtes invité·e')}</span>
           <div className="env">
             <span className="seal">{mono}</span>
           </div>
@@ -76,7 +77,7 @@ export default function PremiumThumb({ template }) {
         <div className="pthumb pt-prestige" aria-hidden="true">
           <span className="sun" />
           <b>{info.big ?? '50'}</b>
-          <small>ANS</small>
+          <small>{t('ANS')}</small>
         </div>
       )
     default: {
@@ -89,8 +90,8 @@ export default function PremiumThumb({ template }) {
           aria-hidden="true"
           style={{ '--tb': p.bg, '--ti': p.ink, '--ta': p.accent, '--t2': p.accent2 ?? p.accent }}
         >
-          <span className="sub">{p.eyebrow}</span>
-          <b style={{ fontFamily: p.font }}>{p.title}</b>
+          <span className="sub">{t(p.eyebrow)}</span>
+          <b style={{ fontFamily: p.font }}>{t(p.title)}</b>
           <span className="dots">
             <i />
             <i />

@@ -9,18 +9,19 @@ import { TEMPLATES } from '../../data/templates'
 import Button from '../ui/Button'
 import FestiveBackground from './FestiveBackground'
 import { TRY_TYPES, tryUrl } from '../../utils/tryNames'
+import { t } from '../../i18n'
 
 // En-tête de l'accueil : titre, trois téléphones montrant de vrais modèles et bulles
 // de notifications flottantes.
 
 const PREMIUM_COUNT = TEMPLATES.filter((t) => t.theme).length
 const SHOTS = [
-  { src: toghuShot, alt: 'Modèle Toghu Royal pour une dot' },
-  { src: ndopShot, alt: 'Modèle Ndop pour une dot' },
-  { src: campusShot, alt: 'Modèle Campus pour une journée culturelle' },
-  { src: fiestaShot, alt: 'Modèle Fiesta pour un anniversaire' },
+  { src: toghuShot, alt: t("Modèle Toghu Royal pour une dot") },
+  { src: ndopShot, alt: t("Modèle Ndop pour une dot") },
+  { src: campusShot, alt: t("Modèle Campus pour une journée culturelle") },
+  { src: fiestaShot, alt: t("Modèle Fiesta pour un anniversaire") },
 ]
-const TRUST = ['Gratuit jusqu’à 50 invités', 'Aucune application à installer', 'Orange Money et MTN MoMo']
+const TRUST = [t("Gratuit jusqu’à 50 invités"), t("Aucune application à installer"), t("Orange Money et MTN MoMo")]
 
 // Chaque téléphone ne rend que sa capture active : pas de décodage des images invisibles.
 function Phone({ active, className }) {
@@ -85,40 +86,38 @@ export default function Hero() {
         <div>
           <span className="inline-flex items-center gap-2 rounded-full border border-border-soft bg-surface/70 py-1.5 pr-3 pl-1.5 text-[0.82rem] text-muted">
             <b className="rounded-full bg-[linear-gradient(100deg,#FF7A3D_0%,#E2337E_50%,#6C4BF4_100%)] px-2 py-0.5 text-[0.7rem] font-bold text-white">
-              Nouveau
+              {t("Nouveau")}
             </b>
-            Mariages, dots, écoles, concerts : {PREMIUM_COUNT} modèles premium
+            {t('Mariages, dots, écoles, concerts : {n} modèles premium', { n: PREMIUM_COUNT })}
           </span>
 
           <h1 className="mt-5 text-[clamp(2.5rem,6.4vw,4.6rem)] leading-[1.02] font-extrabold tracking-[-0.045em] text-ink">
-            Vos moments importants méritent{' '}
+            {t('Vos moments importants méritent')}{' '}
             <span className="bg-[linear-gradient(100deg,#FF7A3D_0%,#E2337E_50%,#6C4BF4_100%)] bg-clip-text text-transparent">
-              mieux qu'un flyer.
+              {t("mieux qu'un flyer.")}
             </span>
           </h1>
 
           <p className="mx-auto mt-5 max-w-xl text-[clamp(1.02rem,1.6vw,1.17rem)] text-muted lg:mx-0">
-            Créez en 5 minutes une page qui s'ouvre comme une vraie invitation. Partagez-la sur
-            WhatsApp, voyez qui vient, vendez vos billets par Mobile Money et accueillez vos
-            invités avec un QR code.
+            {t("Créez en 5 minutes une page qui s'ouvre comme une vraie invitation. Partagez-la sur WhatsApp, voyez qui vient, vendez vos billets par Mobile Money et accueillez vos invités avec un QR code.")}
           </p>
 
           <div className="mt-7 flex flex-wrap justify-center gap-3 lg:justify-start">
             <Button as={Link} to="/inscription" variant="gradient" className="rounded-[14px] px-6 py-3.5 text-base shadow-[0_14px_40px_-14px_#E2337E]">
-              Créer mon événement gratuitement
+              {t("Créer mon événement gratuitement")}
             </Button>
             <Button as={Link} to="/modeles" variant="outline" className="rounded-[14px] px-6 py-3.5 text-base">
-              Voir les modèles
+              {t("Voir les modèles")}
             </Button>
           </div>
 
           <TryWithNames />
 
           <ul className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2 text-[0.84rem] text-muted lg:justify-start">
-            {TRUST.map((t) => (
-              <li key={t} className="inline-flex items-center gap-1.5">
+            {TRUST.map((item) => (
+              <li key={item} className="inline-flex items-center gap-1.5">
                 <Check aria-hidden="true" className="h-4 w-4 text-[#3DD68C]" strokeWidth={2.6} />
-                {t}
+                {item}
               </li>
             ))}
           </ul>
@@ -128,9 +127,9 @@ export default function Hero() {
           <Phone active={(k + 1) % SHOTS.length} className="hero-phone-left" />
           <Phone active={(k + 2) % SHOTS.length} className="hero-phone-right" />
           <Phone active={k} className="hero-phone-main" />
-          <Float className="hero-float-1" color="#25A86A" icon={Check} title="Brenda a répondu oui" text="3 personnes · Famille de la mariée" />
-          <Float className="hero-float-2" color="#FF7900" icon={Ticket} title="2 billets Gradins vendus" text="20 000 FCFA · Orange Money" />
-          <Float className="hero-float-3" color="#6C4BF4" icon={QrCode} title="Pass valide" text="Laure Ndjock · 4 places" />
+          <Float className="hero-float-1" color="#25A86A" icon={Check} title={t("Brenda a répondu oui")} text={t("3 personnes · Famille de la mariée")} />
+          <Float className="hero-float-2" color="#FF7900" icon={Ticket} title={t("2 billets Gradins vendus")} text={t("20 000 FCFA · Orange Money")} />
+          <Float className="hero-float-3" color="#6C4BF4" icon={QrCode} title={t("Pass valide")} text={t("Laure Ndjock · 4 places")} />
         </div>
       </div>
 
@@ -144,7 +143,7 @@ function TryWithNames() {
   const navigate = useNavigate()
   const [names, setNames] = useState('')
   const [type, setType] = useState(TRY_TYPES[0].id)
-  const example = TRY_TYPES.find((t) => t.id === type)?.example
+  const example = TRY_TYPES.find((option) => option.id === type)?.example
   return (
     <form
       onSubmit={(e) => {
@@ -154,7 +153,7 @@ function TryWithNames() {
       className="mx-auto mt-6 max-w-xl rounded-2xl border border-border-soft bg-surface/70 p-3 text-left backdrop-blur lg:mx-0"
     >
       <label htmlFor="try-names" className="block px-1 text-sm font-semibold text-ink">
-        Essayez tout de suite avec vos prénoms
+        {t("Essayez tout de suite avec vos prénoms")}
       </label>
       <div className="mt-2 flex flex-wrap gap-2">
         <input
@@ -162,7 +161,7 @@ function TryWithNames() {
           value={names}
           onChange={(e) => setNames(e.target.value)}
           maxLength={40}
-          placeholder={`Ex. ${example}`}
+          placeholder={t('Ex. {example}', { example })}
           autoComplete="off"
           enterKeyHint="go"
           aria-describedby="try-help"
@@ -171,21 +170,21 @@ function TryWithNames() {
         <select
           value={type}
           onChange={(e) => setType(e.target.value)}
-          aria-label="Type d'événement"
+          aria-label={t("Type d'événement")}
           className="flex-[0_1_auto] rounded-lg border border-border-soft bg-bg px-3 py-2.5 text-sm text-ink"
         >
-          {TRY_TYPES.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.label}
+          {TRY_TYPES.map((option) => (
+            <option key={option.id} value={option.id}>
+              {t(option.label)}
             </option>
           ))}
         </select>
         <button type="submit" className="flex-[1_0_auto] rounded-lg bg-brand-purple px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-indigo">
-          Voir mon invitation
+          {t("Voir mon invitation")}
         </button>
       </div>
       <p id="try-help" className="mt-2 px-1 text-xs text-muted">
-        Votre invitation s'ouvre en direct, avec son animation. Sans compte, rien n'est publié.
+        {t("Votre invitation s'ouvre en direct, avec son animation. Sans compte, rien n'est publié.")}
       </p>
     </form>
   )

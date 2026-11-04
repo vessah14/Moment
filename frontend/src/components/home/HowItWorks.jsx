@@ -2,6 +2,7 @@ import { Camera, Check, CheckCircle2, Heart, Sparkles, Star } from 'lucide-react
 import campusShot from '../../assets/home/campus.webp'
 import toghuShot from '../../assets/home/toghu.webp'
 import SectionHeader from './SectionHeader'
+import { t } from '../../i18n'
 
 // « Comment ça marche » (repris du prototype) : trois étapes, texte d'un côté et visuel
 // de l'autre (alternés). Les visuels sont dessinés en HTML : assistant de création,
@@ -53,15 +54,15 @@ function PhoneShot({ src, className = '' }) {
 // 01 · Créer : téléphone et assistant « Type d'événement »
 function CreateVisual() {
   const options = [
-    [Heart, 'Mariage', false],
-    [Sparkles, 'Journée culturelle', true],
-    [Star, 'Remise des diplômes', false],
+    [Heart, t("Mariage"), false],
+    [Sparkles, t("Journée culturelle"), true],
+    [Star, t("Remise des diplômes"), false],
   ]
   return (
     <>
       <PhoneShot src={campusShot} className="-rotate-3" />
       <div className="absolute right-[6%] top-[12%] w-[210px] rounded-2xl bg-white p-3.5 text-[0.78rem] text-[#17123A] shadow-[0_20px_50px_-20px_rgba(0,0,0,.6)] max-sm:top-auto max-sm:right-[3%] max-sm:bottom-[5%] max-sm:w-[180px]">
-        <p className="mb-2 font-bold">Type d'événement</p>
+        <p className="mb-2 font-bold">{t("Type d'événement")}</p>
         {options.map(([Icon, label, on]) => (
           <div
             key={label}
@@ -85,8 +86,8 @@ function ShareVisual() {
       <div className="flex items-center gap-2.5 bg-[#1F2C34] px-3.5 py-3 text-[0.86rem] text-[#E9EDEF]">
         <span className="h-8 w-8 rounded-full bg-[linear-gradient(100deg,#FF7A3D,#E2337E,#6C4BF4)]" />
         <div>
-          <b>Famille Kamdem</b>
-          <small className="block text-[0.72rem] text-[#8696A0]">Tata Odile, Serge, Brenda, vous…</small>
+          <b>{t("Famille Kamdem")}</b>
+          <small className="block text-[0.72rem] text-[#8696A0]">{t("Tata Odile, Serge, Brenda, vous…")}</small>
         </div>
       </div>
       <div className="grid gap-2 px-3 pt-4 pb-5 text-[0.84rem] leading-snug text-[#E9EDEF]">
@@ -94,21 +95,21 @@ function ShareVisual() {
           <div className="mb-1.5 overflow-hidden rounded-lg bg-[#025144]">
             <img src={toghuShot} alt="" className="block aspect-[1200/630] w-full object-cover object-top" loading="lazy" />
             <div className="px-2.5 py-2">
-              <b className="block text-[0.82rem]">Dot de Mireille &amp; Patrick</b>
-              <small className="text-[0.72rem] text-[#B6D8CF]">Samedi 16 janvier 2027 · Bafoussam</small>
+              <b className="block text-[0.82rem]">{t('Dot de Mireille & Patrick')}</b>
+              <small className="text-[0.72rem] text-[#B6D8CF]">{t("Samedi 16 janvier 2027 · Bafoussam")}</small>
             </div>
           </div>
           <span className="px-1.5">
-            Bonjour la famille, voici l'invitation officielle pour la dot. Merci de confirmer votre venue avant le 5 janvier.
+            {t("Bonjour la famille, voici l'invitation officielle pour la dot. Merci de confirmer votre venue avant le 5 janvier.")}
           </span>
           <span className="block pr-1 text-right text-[0.66rem] text-[#C6E4DC]">10:42 ✓✓</span>
         </div>
         <div className="max-w-[88%] rounded-xl rounded-tl bg-[#1F2C34] px-3 py-2">
-          C'est trop beau ! J'ai confirmé pour 3 personnes.
+          {t("C'est trop beau ! J'ai confirmé pour 3 personnes.")}
           <span className="block text-right text-[0.66rem] text-[#B7C7CF]">10:44</span>
         </div>
         <div className="max-w-[88%] rounded-xl rounded-tl bg-[#1F2C34] px-3 py-2">
-          Même la musique 😍 On arrive en force.
+          {t("Même la musique 😍 On arrive en force.")}
           <span className="block text-right text-[0.66rem] text-[#B7C7CF]">10:51</span>
         </div>
       </div>
@@ -118,11 +119,11 @@ function ShareVisual() {
 
 // 03 · Accueillir : tableau de bord et scanner
 const GUESTS = [
-  ['TE', 'Thierry Éwané', 'Peut-être', '#5A8CF0', 4, 'Famille Fokou'],
-  ['RM', 'Rose Mballa', 'Confirmé', '#25A86A', 6, 'Famille Tsafack'],
-  ['MD', 'Mireille Djomo', 'Confirmé', '#25A86A', 5, 'Famille Tsafack'],
-  ['SE', 'Sandrine Etoundi', 'Confirmé', '#25A86A', 4, 'Famille Tsafack'],
-  ['UE', 'Ulrich Eyenga', 'En attente', '#BF850F', 1, 'Famille Fokou'],
+  ['TE', 'Thierry Éwané', t("Peut-être"), '#5A8CF0', 4, t("Famille Fokou")],
+  ['RM', 'Rose Mballa', t("Confirmé"), '#25A86A', 6, t("Famille Tsafack")],
+  ['MD', 'Mireille Djomo', t("Confirmé"), '#25A86A', 5, t("Famille Tsafack")],
+  ['SE', 'Sandrine Etoundi', t("Confirmé"), '#25A86A', 4, t("Famille Tsafack")],
+  ['UE', 'Ulrich Eyenga', t("En attente"), '#BF850F', 1, t("Famille Fokou")],
 ]
 
 function WelcomeVisual() {
@@ -131,15 +132,15 @@ function WelcomeVisual() {
       <div className="w-[84%] overflow-hidden rounded-[14px] max-sm:w-full border border-[#2E2663] bg-[#0F0B2E] p-4 text-[#F2EFFF] shadow-[0_30px_60px_-30px_rgba(0,0,0,.8)]">
         <div className="flex items-center gap-2 text-[0.7rem] font-bold">
           <span className="text-[#E2337E]">M</span> TBF MOMENT
-          <span className="ml-auto rounded-md bg-[#6C4BF4] px-2 py-1 text-[0.62rem]">Scanner les entrées</span>
+          <span className="ml-auto rounded-md bg-[#6C4BF4] px-2 py-1 text-[0.62rem]">{t("Scanner les entrées")}</span>
         </div>
-        <p className="mt-3 font-mono text-[0.58rem] tracking-widest text-[#A8A1D1] uppercase">Mariage coutumier</p>
-        <p className="text-lg font-bold">Dot de Rosine &amp; Arnaud</p>
+        <p className="mt-3 font-mono text-[0.58rem] tracking-widest text-[#A8A1D1] uppercase">{t("Mariage coutumier")}</p>
+        <p className="text-lg font-bold">{t('Dot de Rosine & Arnaud')}</p>
         <div className="mt-3 grid grid-cols-3 gap-2">
           {[
-            ['Personnes attendues', '155'],
-            ['Sans réponse', '12'],
-            ['Taux de réponse', '83 %'],
+            [t("Personnes attendues"), '155'],
+            [t("Sans réponse"), '12'],
+            [t("Taux de réponse"), t("83 %")],
           ].map(([k, v]) => (
             <div key={k} className="rounded-lg border border-[#2E2663] bg-[#19133F] p-2">
               <p className="font-mono text-[0.52rem] tracking-wider text-[#A8A1D1] uppercase">{k}</p>
@@ -170,11 +171,11 @@ function WelcomeVisual() {
             <Camera className="h-7 w-7" />
           </div>
           <div className="flex items-center gap-2 bg-[#1E8F59] px-2.5 py-2 text-[0.66rem] font-bold">
-            <CheckCircle2 className="h-4 w-4" /> Pass valide
+            <CheckCircle2 className="h-4 w-4" /> {t('Pass valide')}
           </div>
           <div className="px-2.5 py-2">
             <p className="text-[0.78rem] font-bold">Laure Ndjock</p>
-            <p className="text-[0.6rem] text-[#A8A1D1]">4 places · Famille Tsafack</p>
+            <p className="text-[0.6rem] text-[#A8A1D1]">{t("4 places · Famille Tsafack")}</p>
           </div>
         </div>
       </div>
@@ -186,34 +187,34 @@ export default function HowItWorks() {
   return (
     <section id="comment" className="relative scroll-mt-20" aria-labelledby="how-heading">
       <div className="mx-auto max-w-7xl px-6 py-20">
-        <SectionHeader id="how-heading" eyebrow="Comment ça marche" title="De l'idée à l'accueil, en trois temps" className="mb-12">
-          Pas besoin de graphiste ni de développeur. Tout se fait depuis votre téléphone.
+        <SectionHeader id="how-heading" eyebrow={t("Comment ça marche")} title={t("De l'idée à l'accueil, en trois temps")} className="mb-12">
+          {t("Pas besoin de graphiste ni de développeur. Tout se fait depuis votre téléphone.")}
         </SectionHeader>
 
         <div className="grid gap-20">
           <Step
             n="01"
-            label="CRÉER"
-            title="Votre page est prête en 5 minutes"
-            text="Répondez à quelques questions : le type d'événement, la date, le lieu. Choisissez un modèle, ajoutez votre logo si vous êtes une école ou une entreprise, et voyez le résultat se construire en direct."
-            ticks={['Ouverture animée, musique, motifs et couleurs', 'Programme, lieux, plan de table, cagnotte, livre d’or', 'Léger, même sur les petits téléphones et en 3G']}
+            label={t("CRÉER")}
+            title={t("Votre page est prête en 5 minutes")}
+            text={t("Répondez à quelques questions : le type d'événement, la date, le lieu. Choisissez un modèle, ajoutez votre logo si vous êtes une école ou une entreprise, et voyez le résultat se construire en direct.")}
+            ticks={[t("Ouverture animée, musique, motifs et couleurs"), t("Programme, lieux, plan de table, cagnotte, livre d’or"), t("Léger, même sur les petits téléphones et en 3G")]}
             visual={<CreateVisual />}
           />
           <Step
             reverse
             n="02"
-            label="PARTAGER"
-            title="Un lien qui donne envie de cliquer"
-            text="Sur WhatsApp, votre lien s'affiche avec une belle image, le titre et la date. Chaque invité peut recevoir son propre lien : il ouvre, il répond en 10 secondes, il reçoit son pass."
-            ticks={['Aperçu WhatsApp soigné pour chaque événement', 'Invitation personnalisée avec le prénom de l’invité', 'Relance de ceux qui n’ont pas répondu, en un geste']}
+            label={t("PARTAGER")}
+            title={t("Un lien qui donne envie de cliquer")}
+            text={t("Sur WhatsApp, votre lien s'affiche avec une belle image, le titre et la date. Chaque invité peut recevoir son propre lien : il ouvre, il répond en 10 secondes, il reçoit son pass.")}
+            ticks={[t("Aperçu WhatsApp soigné pour chaque événement"), t("Invitation personnalisée avec le prénom de l’invité"), t("Relance de ceux qui n’ont pas répondu, en un geste")]}
             visual={<ShareVisual />}
           />
           <Step
             n="03"
-            label="ACCUEILLIR"
-            title="Vous savez qui vient. Et qui est là."
-            text="Le tableau de bord compte les réponses, les places et les billets vendus. Le jour J, votre équipe scanne les pass à l'entrée avec un simple téléphone."
-            ticks={['Réponses par famille, par catégorie de billet', 'Liste des invités exportable', 'Pass déjà utilisé ? Le scanner le signale tout de suite']}
+            label={t("ACCUEILLIR")}
+            title={t("Vous savez qui vient. Et qui est là.")}
+            text={t("Le tableau de bord compte les réponses, les places et les billets vendus. Le jour J, votre équipe scanne les pass à l'entrée avec un simple téléphone.")}
+            ticks={[t("Réponses par famille, par catégorie de billet"), t("Liste des invités exportable"), t("Pass déjà utilisé ? Le scanner le signale tout de suite")]}
             visual={<WelcomeVisual />}
           />
         </div>

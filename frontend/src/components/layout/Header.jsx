@@ -7,11 +7,12 @@ import AccountBadge from './AccountBadge'
 import Button from '../ui/Button'
 import ThemeToggle from '../ui/ThemeToggle'
 import LanguageSwitcher from '../ui/LanguageSwitcher'
+import { t } from '../../i18n'
 
 const NAV_LINKS = [
-  { label: 'Accueil', href: '/' },
-  { label: 'Modèles', href: '/modeles' },
-  { label: 'Tarifs', href: '/tarifs' },
+  { label: t("Accueil"), href: '/' },
+  { label: t("Modèles"), href: '/modeles' },
+  { label: t("Tarifs"), href: '/tarifs' },
 ]
 
 function NavLink({ link, className, activeClassName, onClick }) {
@@ -39,7 +40,7 @@ export default function Header() {
   const user = isAuthenticated() ? getCurrentUser() ?? {} : null
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border-soft/60 bg-bg/80 backdrop-blur">
+    <header translate="no" className="sticky top-0 z-40 border-b border-border-soft/60 bg-bg/80 backdrop-blur">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
         <Link to="/" className="flex items-center">
           <BrandLogo className="h-9 w-auto" />
@@ -67,7 +68,7 @@ export default function Header() {
                 variant="gradient"
                 className="hidden px-5 py-2.5 whitespace-nowrap xl:inline-flex"
               >
-                Créer un événement
+                {t("Créer un événement")}
               </Button>
               <AccountBadge user={user} />
             </>
@@ -79,7 +80,7 @@ export default function Header() {
                 variant="outline"
                 className="hidden px-4 py-2 sm:inline-flex"
               >
-                Se connecter
+                {t("Se connecter")}
               </Button>
               <Button
                 as={Link}
@@ -87,14 +88,14 @@ export default function Header() {
                 variant="gradient"
                 className="px-4 py-2.5 sm:px-5"
               >
-                Créer mon événement
+                {t("Créer mon événement")}
               </Button>
             </>
           )}
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
-            aria-label={menuOpen ? 'Fermer le menu principal' : 'Ouvrir le menu principal'}
+            aria-label={menuOpen ? t("Fermer le menu principal") : t("Ouvrir le menu principal")}
             aria-expanded={menuOpen}
             className="rounded-lg p-1.5 text-ink lg:hidden"
           >
@@ -125,14 +126,14 @@ export default function Header() {
                 onClick={() => setMenuOpen(false)}
                 className="rounded-lg px-3 py-2.5 text-sm font-semibold text-brand-purple hover:bg-surface-2"
               >
-                Mon tableau de bord
+                {t("Mon tableau de bord")}
               </Link>
               <Link
                 to="/dashboard/evenements/nouveau"
                 onClick={() => setMenuOpen(false)}
                 className="rounded-lg px-3 py-2.5 text-sm font-medium text-ink hover:bg-surface-2"
               >
-                Créer un événement
+                {t("Créer un événement")}
               </Link>
             </>
           ) : (
@@ -141,7 +142,7 @@ export default function Header() {
               onClick={() => setMenuOpen(false)}
               className="rounded-lg px-3 py-2.5 text-sm font-medium text-ink hover:bg-surface-2 sm:hidden"
             >
-              Se connecter
+              {t("Se connecter")}
             </Link>
           )}
         </nav>

@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom'
 import Button from '../ui/Button'
 import FestiveBackground from './FestiveBackground'
+import { t } from '../../i18n'
 
 const WHATSAPP_URL = `https://wa.me/237680264060?text=${encodeURIComponent(
-  'Bonjour TBF Moment, j’ai une question sur mon événement',
+  t("Bonjour TBF Moment, j’ai une question sur mon événement"),
 )}`
 
 const CARD_BG =
@@ -20,22 +21,21 @@ export default function FinalCta() {
         <FestiveBackground density={14000} bigM="center" />
         <div className="relative">
           <h2 className="text-4xl leading-[1.05] font-bold tracking-tight text-ink sm:text-5xl">
-            Votre prochain événement
+            {t("Votre prochain événement")}
             <br />
             <span className="bg-[linear-gradient(100deg,#FF7A3D_0%,#E2337E_50%,#6C4BF4_100%)] bg-clip-text text-transparent">
-              commence ici.
+              {t("commence ici.")}
             </span>
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-muted">
-            Créez votre page gratuitement, partagez-la ce soir sur WhatsApp, et voyez les premières
-            réponses arriver.
+            {t("Créez votre page gratuitement, partagez-la ce soir sur WhatsApp, et voyez les premières réponses arriver.")}
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Button as={Link} to="/inscription" variant="gradient">
-              Créer mon événement
+              {t("Créer mon événement")}
             </Button>
             <Button as="a" href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" variant="outline">
-              Nous écrire sur WhatsApp
+              {t("Nous écrire sur WhatsApp")}
             </Button>
           </div>
         </div>

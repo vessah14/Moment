@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { Route, Routes, useLocation } from 'react-router-dom'
 import CookieConsent from './components/layout/CookieConsent'
 import Footer from './components/layout/Footer'
@@ -8,6 +8,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import BrandLoader from './components/ui/BrandLoader'
 import EventLoader from './components/site/EventLoader'
 import { eventSlugFromPath, isGuestPath } from './utils/eventLook'
+import { syncTranslationForRoute } from './utils/translation'
 import PageAnimations from './components/PageAnimations'
 import ScrollToTop from './components/ScrollToTop'
 import BackToTop from './components/layout/BackToTop'
@@ -70,6 +71,8 @@ function SiteLayout ({ children }) {
 function RouteLoader ({ children }) {
   const { pathname } = useLocation()
   const guestPage = isGuestPath(pathname)
+  // Anglais : traduction écrite à la main ici, Google Traduction ailleurs.
+  useEffect(() => syncTranslationForRoute(pathname), [pathname])
   return (
     <Suspense fallback={guestPage ? <EventLoader slug={eventSlugFromPath(pathname)} /> : <BrandLoader />}>
       {children}

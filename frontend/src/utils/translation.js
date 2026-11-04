@@ -1,9 +1,10 @@
-// Traduction automatique du site via Google Traduction, pilotée par notre propre bouton.
+// Langue du site : français (langue d'origine) ou anglais.
 //
-// Le site est écrit en français. Choisir une autre langue enregistre le cookie
-// "googtrans" (lu par le script Google) puis recharge la page : le script n'est chargé
-// QUE si une langue autre que le français est active — un visiteur qui reste en
-// français n'envoie rien à Google.
+// Les pages publiques (accueil, tarifs, modèles, billets, connexion, inscription…) sont
+// traduites à la main (i18n/en.js). Les autres pages (tableau de bord…) passent encore par
+// Google Traduction en anglais, en attendant leur traduction. Choisir une langue enregistre
+// le cookie "googtrans" (lu par le script Google) puis recharge la page ; le script Google
+// n'est chargé que sur une page non traduite à la main, et jamais en français.
 
 import { isGuestPath } from './eventLook'
 
@@ -12,11 +13,15 @@ export const SOURCE_LANGUAGE = 'fr'
 export const LANGUAGES = [
   { code: 'fr', label: 'Français', short: 'FR' },
   { code: 'en', label: 'English', short: 'EN' },
-  { code: 'wo', label: 'Wolof', short: 'WO' },
-  { code: 'es', label: 'Español', short: 'ES' },
-  { code: 'pt', label: 'Português', short: 'PT' },
-  { code: 'ar', label: 'العربية', short: 'AR' },
 ]
+
+// Pages traduites à la main : jamais de Google Traduction dessus.
+const HAND_TRANSLATED = [/^\/$/, /^\/tarifs\/?$/, /^\/modeles\/?$/, /^\/billets\/?$/, /^\/connexion\/?$/, /^\/inscription(\/.*)?$/,
+  /^\/mot-de-passe-oublie\/?$/, /^\/reinitialiser-mot-de-passe\/?$/, /^\/verifier-email\/?$/]
+
+export function isHandTranslatedPath(pathname) {
+  return HAND_TRANSLATED.some((re) => re.test(pathname ?? ''))
+}
 
 const COOKIE = 'googtrans'
 const SCRIPT_ID = 'google-translate-script'
@@ -102,14 +107,21 @@ function loadGoogleTranslate() {
 
 // À appeler une fois au démarrage de l'application.
 export function initTranslation() {
-  const language = getCurrentLanguage()
-  document.documentElement.lang = language
-  // Pas de bascule en droite-à-gauche pour l'arabe : les mises en page ne sont pas
-  // conçues pour, le texte traduit reste lisible dans la mise en page actuelle.
-  if (language === SOURCE_LANGUAGE) return
-  // Pages des invités (site, invitation, cadeaux) : toujours dans la langue de
-  // l'organisateur, sans bouton de traduction ni script Google.
-  if (isGuestPath(window.location.pathname)) return
+  // Ancien choix (wolof, espagnol, portugais, arabe) : ces langues ne sont plus proposées.
+  const value = readCookie(COOKIE)
+  if (value && getCurrentLanguage() === SOURCE_LANGUAGE) writeCookie(null)
+  document.documentElement.lang = getCurrentLanguage()
+  syncTranslationForRoute(window.location.pathname)
+}
+
+// À chaque changement de page : Google Traduction seulement là où il n'y a pas encore de
+// traduction écrite à la main. Les pages des invités (site, invitation, cadeaux) restent
+// toujours dans la langue de l'organisateur.
+export function syncTranslationForRoute(pathname) {
+  if (getCurrentLanguage() === SOURCE_LANGUAGE || isGuestPath(pathname)) return
+  const manual = isHandTranslatedPath(pathname)
+  document.body.classList.toggle('notranslate', manual)
+  if (manual) return
   patchDomForTranslation()
   loadGoogleTranslate()
 }

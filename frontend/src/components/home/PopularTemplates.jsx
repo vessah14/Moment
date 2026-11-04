@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { TEMPLATES } from '../../data/templates'
 import { TEMPLATE_UNIVERSES } from '../../data/templateUniverses'
 import SectionHeader from './SectionHeader'
+import { t } from '../../i18n'
 
 // Accueil : les modèles premium en carrousel (repris du prototype). Onglets par univers,
 // cartes compactes (capture du modèle, nom, type) qui ouvrent la démo, flèches sur
@@ -19,10 +20,10 @@ const SHOTS = Object.fromEntries(
 
 const PREMIUM = TEMPLATES.filter((tpl) => tpl.theme)
 const TABS = [
-  { id: 'tous', label: 'Tous', templates: PREMIUM },
+  { id: 'tous', label: t('Tous'), templates: PREMIUM },
   ...TEMPLATE_UNIVERSES.map((u) => ({
     id: u.id,
-    label: u.label.replace(' et associations', ''),
+    label: t(u.label.replace(' et associations', '')),
     templates: PREMIUM.filter((tpl) => u.categories.includes(tpl.category)),
   })),
 ].filter((tab) => tab.templates.length > 0)
@@ -39,7 +40,7 @@ function RailCard({ template }) {
           {shot && (
             <img
               src={shot}
-              alt={`Modèle ${template.name} : ${template.subtitle ?? template.category}`}
+              alt={t('Modèle {name} : {type}', { name: template.name, type: t(template.subtitle ?? template.category) })}
               loading="lazy"
               width="640"
               height="336"
@@ -47,12 +48,12 @@ function RailCard({ template }) {
             />
           )}
           <span className="absolute inset-x-0 bottom-0 flex translate-y-full items-center justify-center gap-1.5 bg-[linear-gradient(transparent,rgba(0,0,0,.65))] pt-8 pb-3 text-sm font-semibold text-white transition duration-300 group-hover:translate-y-0">
-            Voir la démo <ArrowRight className="h-4 w-4" />
+            {t('Voir la démo')} <ArrowRight className="h-4 w-4" />
           </span>
         </div>
         <div className="flex items-baseline justify-between gap-3 px-4 py-3">
           <b className="text-[0.98rem] text-ink">{template.name}</b>
-          <small className="truncate text-right text-[0.8rem] text-muted">{template.subtitle ?? template.category}</small>
+          <small className="truncate text-right text-[0.8rem] text-muted">{t(template.subtitle ?? template.category)}</small>
         </div>
       </Link>
     </li>
@@ -81,12 +82,11 @@ export default function PopularTemplates() {
   return (
     <section id="modeles" className="relative scroll-mt-20" aria-labelledby="popular-heading">
       <div className="mx-auto max-w-7xl px-6 pt-20">
-        <SectionHeader id="popular-heading" eyebrow="Modèles" title={`${PREMIUM.length} modèles premium, dessinés pour nos fêtes`}>
-          Toghu, Ndop, wax, mosquée, église, campus, stade… Chaque modèle a ses couleurs, son ouverture animée et sa
-          musique.
+        <SectionHeader id="popular-heading" eyebrow={t("Modèles")} title={t('{n} modèles premium, dessinés pour nos fêtes', { n: PREMIUM.length })}>
+          {t("Toghu, Ndop, wax, mosquée, église, campus, stade… Chaque modèle a ses couleurs, son ouverture animée et sa musique.")}
         </SectionHeader>
 
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-2" role="tablist" aria-label="Univers">
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-2" role="tablist" aria-label={t("Univers")}>
           {TABS.map((t) => (
             <button
               key={t.id}
@@ -114,7 +114,7 @@ export default function PopularTemplates() {
         <button
           type="button"
           onClick={() => scrollBy(-1)}
-          aria-label="Modèles précédents"
+          aria-label={t("Modèles précédents")}
           className="absolute top-[calc(50%-1.75rem)] left-3 z-10 hidden h-11 w-11 place-items-center rounded-full border border-border-soft bg-surface/90 text-ink shadow-lg backdrop-blur transition hover:border-brand-purple md:grid"
         >
           <ChevronLeft className="h-5 w-5" />
@@ -122,7 +122,7 @@ export default function PopularTemplates() {
         <button
           type="button"
           onClick={() => scrollBy(1)}
-          aria-label="Modèles suivants"
+          aria-label={t("Modèles suivants")}
           className="absolute top-[calc(50%-1.75rem)] right-3 z-10 hidden h-11 w-11 place-items-center rounded-full border border-border-soft bg-surface/90 text-ink shadow-lg backdrop-blur transition hover:border-brand-purple md:grid"
         >
           <ChevronRight className="h-5 w-5" />
@@ -134,7 +134,7 @@ export default function PopularTemplates() {
           to="/modeles"
           className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border-soft px-5 text-sm font-semibold text-ink transition hover:border-brand-purple"
         >
-          Voir les {TEMPLATES.length} modèles de la galerie <ArrowRight className="h-4 w-4" />
+          {t('Voir les {n} modèles de la galerie', { n: TEMPLATES.length })} <ArrowRight className="h-4 w-4" />
         </Link>
       </p>
     </section>

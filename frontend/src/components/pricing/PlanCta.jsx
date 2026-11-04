@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { isAuthenticated } from '../../api/client'
 import { usePlan } from '../../utils/usePlan'
 import UpgradeDialog from '../plan/UpgradeDialog'
+import { t } from '../../i18n'
 
 // Bouton d'une offre de la page Tarifs. Visiteur : inscription. Client connecté : offre
 // gratuite -> tableau de bord ; offre payante -> paiement de cette offre. Au retour de
@@ -18,7 +19,7 @@ function UpgradeCta({ plan, className }) {
   return (
     <>
       <button type="button" disabled={isCurrent} onClick={() => setOpen(true)} className={`${className} w-full disabled:cursor-default disabled:opacity-60`}>
-        {isCurrent ? 'Votre offre actuelle' : plan.cta}
+        {isCurrent ? t("Votre offre actuelle") : t(plan.cta)}
       </button>
       <UpgradeDialog open={open && !isCurrent} onClose={() => setOpen(false)} plan={current} initialPlanCode={code} />
     </>
@@ -35,13 +36,13 @@ export default function PlanCta({ plan, className }) {
         })}`}
         className={className}
       >
-        {plan.cta}
+        {t(plan.cta)}
       </Link>
     )
   if (!PLAN_CODES[plan.name])
     return (
       <Link to="/dashboard" className={className}>
-        Mon tableau de bord
+        {t("Mon tableau de bord")}
       </Link>
     )
   return <UpgradeCta plan={plan} className={className} />

@@ -1,4 +1,5 @@
 import PremiumThumb from './PremiumThumb'
+import { t } from '../../i18n'
 
 // Miniature d'un site d'événement, dessinée à partir des couleurs du modèle. Utilisée
 // quand un modèle n'a pas de capture d'écran (`image`). Les modèles premium
@@ -25,13 +26,13 @@ export default function TemplatePreview({ preview, minimal = false, template }) 
         }}
       >
         <span className="text-[9px] font-semibold tracking-[0.2em] uppercase" style={{ color: accent }}>
-          {eyebrow}
+          {t(eyebrow)}
         </span>
         <span className="mt-2 text-xl leading-tight font-bold" style={{ fontFamily: titleFont }}>
-          {title}
+          {t(title)}
         </span>
         <span className="mt-1.5 h-px w-10" style={{ backgroundColor: accent }} />
-        <span className="mt-1.5 text-[10px] opacity-70">{date}</span>
+        <span className="mt-1.5 text-[10px] opacity-70">{t(date)}</span>
       </div>
 
       {/* Blocs de contenu */}
@@ -47,7 +48,7 @@ export default function TemplatePreview({ preview, minimal = false, template }) 
           className="mx-auto mt-auto mb-3 rounded-full px-4 py-1.5 text-[10px] font-semibold"
           style={{ backgroundColor: accent, color: bg }}
         >
-          Confirmer ma présence
+          {t('Confirmer ma présence')}
         </div>
       </div>
     </div>

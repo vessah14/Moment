@@ -1,4 +1,5 @@
 import { PRICING_PLANS } from '../data/pricingPlans'
+import { formatNumber } from '../i18n'
 
 // Calculateur de l'accueil : cartons imprimés contre l'offre TBF MOMENT qui suffit pour ce
 // nombre d'invités. Plafonds d'invités par événement : ceux des cartes de tarifs
@@ -25,4 +26,4 @@ export function invitationCost(guests, cardPrice) {
   return { paper, plan, saving: Math.max(0, paper - plan.price) }
 }
 
-export const formatFcfa = (value) => `${new Intl.NumberFormat('fr-FR').format(Math.round(value)).replace(/ | /g, ' ')} FCFA`
+export const formatFcfa = (value) => `${formatNumber(Math.round(value))} FCFA`

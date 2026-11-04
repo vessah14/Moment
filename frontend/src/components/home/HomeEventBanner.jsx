@@ -1,47 +1,48 @@
+import { t } from '../../i18n'
 const OCCASIONS = [
-  'Mariage',
-  'Dot',
-  'Anniversaire',
-  'Baptême',
-  'Baby shower',
-  'Obsèques',
-  'Retrait de deuil',
-  'Remise des diplômes',
-  'Journée culturelle',
-  'Portes ouvertes',
-  'Kermesse',
-  'Conférence',
-  'Séminaire',
-  'Lancement de produit',
-  "Soirée d'entreprise",
-  'Concert',
-  'Tournoi',
-  'Journée citoyenne',
-  'Noël',
-  'Nouvel An',
-  'Saint-Valentin',
-  'Pâques',
-  'Aïd',
-  '20 mai',
-  'Fête des mères',
-  'Réunion familiale',
-  'Crémaillère',
-  'Culte et veillée',
+  t("Mariage"),
+  t("Dot"),
+  t("Anniversaire"),
+  t("Baptême"),
+  t("Baby shower"),
+  t("Obsèques"),
+  t("Retrait de deuil"),
+  t("Remise des diplômes"),
+  t("Journée culturelle"),
+  t("Portes ouvertes"),
+  t("Kermesse"),
+  t("Conférence"),
+  t("Séminaire"),
+  t("Lancement de produit"),
+  t("Soirée d'entreprise"),
+  t("Concert"),
+  t("Tournoi"),
+  t("Journée citoyenne"),
+  t("Noël"),
+  t("Nouvel An"),
+  t("Saint-Valentin"),
+  t("Pâques"),
+  t("Aïd"),
+  t("20 mai"),
+  t("Fête des mères"),
+  t("Réunion familiale"),
+  t("Crémaillère"),
+  t("Culte et veillée"),
 ]
 
 const RIBBON_OCCASIONS = [
-  'Mariage',
-  'Dot',
-  'Anniversaire',
-  'Remise des diplômes',
-  'Conférence',
-  'Concert',
-  'Baptême',
-  'Noël',
-  'Journée culturelle',
-  'Retrait de deuil',
-  '20 mai',
-  'Saint-Valentin',
+  t("Mariage"),
+  t("Dot"),
+  t("Anniversaire"),
+  t("Remise des diplômes"),
+  t("Conférence"),
+  t("Concert"),
+  t("Baptême"),
+  t("Noël"),
+  t("Journée culturelle"),
+  t("Retrait de deuil"),
+  t("20 mai"),
+  t("Saint-Valentin"),
 ]
 
 const PATTERN_TYPES = ['toghu', 'ndop', 'wax', 'kente']
@@ -109,8 +110,8 @@ function OccasionRibbon() {
 export default function HomeEventBanner() {
   return (
     <>
-      <section className='home-event-strip' aria-label="Types d'événements">
-        <p>Un modèle pour chaque occasion</p>
+      <section className='home-event-strip' aria-label={t("Types d'événements")}>
+        <p>{t("Un modèle pour chaque occasion")}</p>
         <div className='home-event-marquee'>
           <div className='home-event-marquee-track'>
             {[...OCCASIONS, ...OCCASIONS].map((occasion, index) => (

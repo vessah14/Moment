@@ -1,5 +1,6 @@
 import { ArrowUp } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { t } from '../../i18n'
 
 export default function BackToTop() {
   const [visible, setVisible] = useState(() => window.scrollY > 400)
@@ -13,7 +14,7 @@ export default function BackToTop() {
   return (
     <button
       type="button"
-      aria-label="Remonter en haut de la page"
+      aria-label={t("Remonter en haut de la page")}
       onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
       className={`fixed right-6 bottom-6 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-brand-purple text-white shadow-lg transition duration-300 hover:-translate-y-0.5 hover:bg-brand-indigo focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-purple ${
         visible ? 'translate-y-0 opacity-100' : 'pointer-events-none invisible translate-y-4 opacity-0'

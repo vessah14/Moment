@@ -2,6 +2,7 @@ import { Check, Languages } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { LANGUAGES, getCurrentLanguage, setLanguage } from '../../utils/translation'
 import { mergeClasses } from '../../utils/mergeClasses'
+import { t } from '../../i18n'
 
 // Bouton de traduction du site. `floating` : pastille fixe en bas de page, pour les
 // pages publiques d'événement qui n'ont pas d'en-tête (mini-site, invitation, cadeaux).
@@ -44,8 +45,8 @@ export default function LanguageSwitcher({ className = '', floating = false, ali
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        aria-label={`Traduire le site (langue actuelle : ${currentLang?.label})`}
-        title="Traduire le site"
+        aria-label={t('Langue du site (actuelle : {lang})', { lang: currentLang?.label })}
+        title={t('Langue du site')}
         className={
           floating
             ? 'flex items-center gap-1.5 rounded-full border border-border-soft bg-surface/90 px-3.5 py-2 text-xs font-semibold text-ink shadow-lg backdrop-blur transition hover:border-brand-purple'
@@ -59,7 +60,7 @@ export default function LanguageSwitcher({ className = '', floating = false, ali
       {open && (
         <ul
           role="listbox"
-          aria-label="Langue du site"
+          aria-label={t('Langue du site')}
           className={`absolute ${menuPosition} z-50 w-48 overflow-hidden rounded-xl border border-border-soft bg-surface py-1 shadow-xl`}
         >
           {LANGUAGES.map((lang) => (
@@ -79,9 +80,6 @@ export default function LanguageSwitcher({ className = '', floating = false, ali
               </button>
             </li>
           ))}
-          <li className="border-t border-border-soft px-3.5 py-2 text-[11px] leading-snug text-faint">
-            Traduction automatique (Google). Version d'origine : français.
-          </li>
         </ul>
       )}
     </div>

@@ -4,6 +4,7 @@ import { consumeReturnPath, requestedReturnPath } from '../../utils/returnPath'
 import { goHomeAfterLogin } from '../../utils/firstEvent'
 import { loginWithGoogle } from '../../api/auth'
 import Button from '../ui/Button'
+import { t } from '../../i18n'
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 const SCRIPT_SRC = 'https://accounts.google.com/gsi/client'
@@ -18,7 +19,7 @@ function loadGoogleScript() {
       script.async = true
       script.defer = true
       script.onload = resolve
-      script.onerror = () => reject(new Error('Impossible de charger Google Sign-In.'))
+      script.onerror = () => reject(new Error(t("Impossible de charger Google Sign-In.")))
       document.head.appendChild(script)
     })
   }
@@ -60,7 +61,7 @@ export default function GoogleSignInButton({ onError }) {
   const handleClick = () => {
     const oauth2 = window.google?.accounts?.oauth2
     if (!oauth2) {
-      onError?.('Google Sign-In se charge encore, réessayez dans un instant.')
+      onError?.(t("Google Sign-In se charge encore, réessayez dans un instant."))
       return
     }
     onError?.('')
@@ -71,7 +72,7 @@ export default function GoogleSignInButton({ onError }) {
       callback: async (response) => {
         if (response.error || !response.access_token) {
           setBusy(false)
-          onError?.('Connexion Google annulée ou refusée.')
+          onError?.(t("Connexion Google annulée ou refusée."))
           return
         }
         try {
@@ -81,7 +82,7 @@ export default function GoogleSignInButton({ onError }) {
           if (target ?? storedReturnPath) navigate(target ?? storedReturnPath, { replace: true })
           else await goHomeAfterLogin(navigate)
         } catch (err) {
-          onError?.(err.message || 'Connexion Google impossible.')
+          onError?.(err.message || t("Connexion Google impossible."))
         } finally {
           setBusy(false)
         }
@@ -90,7 +91,7 @@ export default function GoogleSignInButton({ onError }) {
       error_callback: (err) => {
         setBusy(false)
         if (err?.type === 'popup_failed_to_open')
-          onError?.('Le navigateur a bloqué la fenêtre Google : autorisez les pop-ups pour ce site.')
+          onError?.(t("Le navigateur a bloqué la fenêtre Google : autorisez les pop-ups pour ce site."))
       },
     })
     setBusy(true)
@@ -100,7 +101,7 @@ export default function GoogleSignInButton({ onError }) {
   return (
     <Button type="button" variant="outline" onClick={handleClick} disabled={busy} className="w-full disabled:opacity-60">
       <GoogleLogo />
-      {busy ? 'Connexion à Google…' : 'Continuer avec Google'}
+      {busy ? t('Connexion à Google…') : t('Continuer avec Google')}
     </Button>
   )
 }

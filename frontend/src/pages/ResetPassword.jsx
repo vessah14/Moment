@@ -6,6 +6,7 @@ import logoMark from '../assets/logo-mark.webp'
 import AuthLayout from '../components/layout/AuthLayout'
 import Button from '../components/ui/Button'
 import PasswordStrengthBar from '../components/auth/PasswordStrengthBar'
+import { t } from '../i18n'
 
 export default function ResetPassword() {
   const navigate = useNavigate()
@@ -33,7 +34,7 @@ export default function ResetPassword() {
       // La page de connexion confirme le changement : pas d'attente inutile ici.
       navigate('/connexion', { replace: true, state: { passwordReset: true } })
     } catch (err) {
-      setError(err.message || 'La réinitialisation a échoué.')
+      setError(err.message || t("La réinitialisation a échoué."))
       setLinkDead(err.status === 400 && /lien/i.test(err.message ?? ''))
     } finally {
       setSubmitting(false)
@@ -45,28 +46,28 @@ export default function ResetPassword() {
       <div className="w-full max-w-sm">
         <img src={logoMark} alt="" className="mx-auto h-10 w-10" />
         <h1 className="mt-6 text-center text-2xl font-bold text-ink">
-          Définir un nouveau mot de passe
+          {t("Définir un nouveau mot de passe")}
         </h1>
         <p className="mt-2 text-center text-sm text-muted">
-          Choisissez un nouveau mot de passe pour votre compte.
+          {t("Choisissez un nouveau mot de passe pour votre compte.")}
         </p>
 
         {done ? (
           <p className="mt-6 rounded-lg border border-success/30 bg-success/10 p-4 text-center text-sm text-success">
-            Mot de passe mis à jour. Redirection vers la connexion...
+            {t("Mot de passe mis à jour. Redirection vers la connexion...")}
           </p>
         ) : !token ? (
           <p className="mt-6 rounded-lg border border-danger/30 bg-danger/10 p-4 text-center text-sm text-danger">
-            Ce lien de réinitialisation est invalide.
+            {t("Ce lien de réinitialisation est invalide.")}
             <Link to="/mot-de-passe-oublie" className="mt-1.5 block font-semibold text-brand-purple hover:underline">
-              Recevoir un nouveau lien
+              {t("Recevoir un nouveau lien")}
             </Link>
           </p>
         ) : (
           <form onSubmit={handleSubmit} className="mt-6 space-y-5">
             <label className="block">
               <span className="text-sm font-medium text-ink">
-                Nouveau mot de passe
+                {t("Nouveau mot de passe")}
               </span>
               <span className="relative mt-2 block">
                 <input
@@ -75,7 +76,7 @@ export default function ResetPassword() {
                   minLength={8}
                   autoComplete="new-password"
                   autoFocus
-                  placeholder="8 caractères minimum"
+                  placeholder={t("8 caractères minimum")}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full rounded-lg border border-border bg-surface px-4 py-3 pr-11 text-sm text-ink placeholder:text-faint outline-none focus:border-brand-purple focus:ring-3 focus:ring-brand-purple/30"
@@ -83,7 +84,7 @@ export default function ResetPassword() {
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                  aria-label={showPassword ? t("Masquer le mot de passe") : t("Afficher le mot de passe")}
                   className="absolute top-1/2 right-3 -translate-y-1/2 text-faint hover:text-ink"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -94,7 +95,7 @@ export default function ResetPassword() {
 
             <label className="block">
               <span className="text-sm font-medium text-ink">
-                Confirmer le mot de passe
+                {t("Confirmer le mot de passe")}
               </span>
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -110,7 +111,7 @@ export default function ResetPassword() {
               />
               {mismatch && (
                 <span className="mt-1.5 block text-xs text-danger">
-                  Les mots de passe ne correspondent pas.
+                  {t("Les mots de passe ne correspondent pas.")}
                 </span>
               )}
             </label>
@@ -120,7 +121,7 @@ export default function ResetPassword() {
                 {error}
                 {linkDead && (
                   <Link to="/mot-de-passe-oublie" className="mt-1.5 block font-semibold text-brand-purple hover:underline">
-                    Recevoir un nouveau lien
+                    {t("Recevoir un nouveau lien")}
                   </Link>
                 )}
               </p>
@@ -132,7 +133,7 @@ export default function ResetPassword() {
               disabled={submitting}
               className="w-full disabled:opacity-70"
             >
-              {submitting ? 'Mise à jour...' : 'Mettre à jour le mot de passe'}
+              {submitting ? t("Mise à jour...") : t("Mettre à jour le mot de passe")}
             </Button>
           </form>
         )}
@@ -142,7 +143,7 @@ export default function ResetPassword() {
             to="/connexion"
             className="font-medium text-brand-purple hover:underline"
           >
-            ← Retour à la connexion
+            {t("← Retour à la connexion")}
           </Link>
         </p>
       </div>

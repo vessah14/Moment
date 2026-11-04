@@ -13,6 +13,7 @@ import {
   peekSignupReturnPath,
   returnPathFromSearch,
 } from '../utils/returnPath'
+import { t } from '../i18n'
 
 export default function VerifyEmail() {
   const [searchParams] = useSearchParams()
@@ -29,7 +30,7 @@ export default function VerifyEmail() {
     verifyEmail(token)
       .then((session) => {
         if (!session?.token || !session?.utilisateur) {
-          throw new Error("L'adresse est confirmée, mais la connexion automatique a échoué. Connectez-vous.")
+          throw new Error(t("L'adresse est confirmée, mais la connexion automatique a échoué. Connectez-vous."))
         }
         setToken(session.token)
         setCurrentUser(session.utilisateur)
@@ -39,7 +40,7 @@ export default function VerifyEmail() {
         else return goHomeAfterLogin(navigate)
       })
       .catch((err) => {
-        setError(err.message || 'La vérification a échoué.')
+        setError(err.message || t("La vérification a échoué."))
         setState('invalid')
       })
   }, [token, navigate])
@@ -48,21 +49,21 @@ export default function VerifyEmail() {
     <AuthLayout>
       <div className="w-full max-w-sm text-center">
         <img src={logoMark} alt="" className="mx-auto h-10 w-10" />
-        <h1 className="mt-6 text-2xl font-bold text-ink">Vérification de l'e-mail</h1>
+        <h1 className="mt-6 text-2xl font-bold text-ink">{t("Vérification de l'e-mail")}</h1>
 
-        {state === 'checking' && <p className="mt-6 text-sm text-muted">Vérification en cours…</p>}
+        {state === 'checking' && <p className="mt-6 text-sm text-muted">{t("Vérification en cours…")}</p>}
 
         {state === 'done' && (
           <p className="mt-6 rounded-lg border border-success/30 bg-success/10 p-4 text-sm text-success">
-            Votre adresse e-mail est confirmée. Redirection vers votre tableau de bord…
+            {t("Votre adresse e-mail est confirmée. Redirection vers votre tableau de bord…")}
           </p>
         )}
 
         {state === 'invalid' && (
           <p className="mt-6 rounded-lg border border-danger/30 bg-danger/10 p-4 text-sm text-danger">
             {error ||
-              'Ce lien de vérification est invalide.'}{' '}
-            Pour recevoir un nouveau lien, connectez-vous : il vous sera renvoyé automatiquement.
+              t("Ce lien de vérification est invalide.")}{' '}
+            {t("Pour recevoir un nouveau lien, connectez-vous : il vous sera renvoyé automatiquement.")}
           </p>
         )}
 
@@ -75,7 +76,7 @@ export default function VerifyEmail() {
             variant="gradient"
             className="mt-6 w-full"
           >
-            Aller à la connexion
+            {t("Aller à la connexion")}
           </Button>
         )}
       </div>

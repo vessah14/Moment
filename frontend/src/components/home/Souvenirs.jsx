@@ -7,6 +7,7 @@ import framePhoto from '../../assets/home/souvenir-frame.webp'
 import printPhoto from '../../assets/home/souvenir-print.webp'
 import mugPhoto from '../../assets/home/souvenir-mug.webp'
 import { tbfDigitalOrderUrl } from '../../data/tbfDigital'
+import { t } from '../../i18n'
 
 // « Et après la fête ? » : souvenirs imprimés par TBF DIGITAL, commandés sur WhatsApp.
 const orderUrl = (product) => tbfDigitalOrderUrl(product)
@@ -16,8 +17,8 @@ const ACCENT_2 = '#FF7A3D'
 
 const PRODUCTS = [
   {
-    name: 'Photo sur bois',
-    text: 'Votre plus belle photo de ce jour, imprimée sur bois. Chaleureux, prêt à poser.',
+    name: t("Photo sur bois"),
+    text: t("Votre plus belle photo de ce jour, imprimée sur bois. Chaleureux, prêt à poser."),
     image: portraitPhoto,
     art: (
       <>
@@ -30,8 +31,8 @@ const PRODUCTS = [
     ),
   },
   {
-    name: 'Photo sur plexiglas',
-    text: 'Rendu brillant, effet galerie, à accrocher au salon.',
+    name: t("Photo sur plexiglas"),
+    text: t("Rendu brillant, effet galerie, à accrocher au salon."),
     image: printPhoto,
     art: (
       <>
@@ -43,8 +44,8 @@ const PRODUCTS = [
     ),
   },
   {
-    name: 'Tasse personnalisée',
-    text: 'Avec la photo, les prénoms et la date. Un cadeau parfait pour les témoins et les proches.',
+    name: t("Tasse personnalisée"),
+    text: t("Avec la photo, les prénoms et la date. Un cadeau parfait pour les témoins et les proches."),
     image: mugPhoto,
     art: (
       <>
@@ -56,8 +57,8 @@ const PRODUCTS = [
     ),
   },
   {
-    name: 'Cadre photo connecté',
-    text: 'Un cadre avec puce NFC : on approche le téléphone et la page souvenir s’ouvre, avec photos et messages.',
+    name: t("Cadre photo connecté"),
+    text: t("Un cadre avec puce NFC : on approche le téléphone et la page souvenir s’ouvre, avec photos et messages."),
     image: framePhoto,
     art: (
       <>
@@ -69,8 +70,8 @@ const PRODUCTS = [
     ),
   },
   {
-    name: 'Cartons et faire-part',
-    text: 'Les invitations papier, chacune avec le QR code de l’invité.',
+    name: t("Cartons et faire-part"),
+    text: t("Les invitations papier, chacune avec le QR code de l’invité."),
     image: invitationPhoto,
     art: (
       <>
@@ -91,16 +92,15 @@ export default function Souvenirs() {
     <section id="souvenirs" className="relative overflow-hidden" aria-labelledby="souvenirs-heading">
       <BrandBackdrop side="left" />
       <div className="relative mx-auto max-w-7xl px-6 py-20">
-        <SectionHeader id="souvenirs-heading" eyebrow="Souvenirs · TBF Digital" title="Et après la fête ? On imprime vos souvenirs.">
-          Plus besoin de chercher un imprimeur : photos sur bois ou plexiglas, tasses, cadre connecté et
-          cartons d’invitation, commandés en un message et livrés à Douala.
+        <SectionHeader id="souvenirs-heading" eyebrow={t("Souvenirs · TBF Digital")} title={t("Et après la fête ? On imprime vos souvenirs.")}>
+          {t("Plus besoin de chercher un imprimeur : photos sur bois ou plexiglas, tasses, cadre connecté et cartons d’invitation, commandés en un message et livrés à Douala.")}
         </SectionHeader>
 
         <ul className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-5">
           {PRODUCTS.map((product) => (
             <li key={product.name} className="flex min-w-0 flex-col rounded-2xl border border-border-soft bg-surface p-3 sm:p-4">
               <span className="mb-3 flex h-40 items-center justify-center overflow-hidden rounded-xl bg-[#f4f1fa] p-2 sm:h-44">
-                <img src={product.image} alt={`Exemple de ${product.name.toLowerCase()}`} loading="lazy" className="h-full w-full object-contain" />
+                <img src={product.image} alt={t('Exemple : {product}', { product: product.name.toLowerCase() })} loading="lazy" className="h-full w-full object-contain" />
               </span>
               <h3 className="text-sm font-semibold text-ink sm:text-base">{product.name}</h3>
               <p className="mt-1 flex-1 text-xs text-muted sm:text-sm">{product.text}</p>
@@ -110,7 +110,7 @@ export default function Souvenirs() {
                 rel="noopener noreferrer"
                 className="mt-4 text-sm font-semibold text-brand-purple hover:underline"
               >
-                Commander sur <span className="whitespace-nowrap">WhatsApp →</span>
+                {t('Commander sur')} <span className="whitespace-nowrap">WhatsApp →</span>
               </a>
             </li>
           ))}

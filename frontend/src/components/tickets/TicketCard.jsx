@@ -8,6 +8,7 @@ import { createGuestTicketQr, normalizeGuestTicketId } from '../../utils/ticketQ
 import { EntryStamp, LiveStrip, QrZoom, TableReveal, TicketEnvelope, TicketSouvenir, TicketVoice, useTicketLive } from './TicketLive'
 import '../site/themes/themes.css'
 import './tickets.css'
+import { fill, t as translate } from '../../i18n'
 
 // Billet de l'invité. Le haut reprend l'habillage du site (couleurs, motif, ornement et polices
 // du modèle), le talon clair porte le nom, le QR code et la référence. Le style de billet choisi
@@ -105,34 +106,36 @@ export function ticketColors(palette) {
 }
 
 // Textes selon le format : carte d'invitation, billet d'entrée ou badge.
-export function ticketTexts(style, event, guest, format = 'carte') {
+// tk : traduction des libellés (démos de la page publique /billets) ; ailleurs, le billet
+// reste dans la langue de l'organisateur.
+export function ticketTexts(style, event, guest, format = 'carte', tk = fill) {
   const mark = event.monogram || initials(event.organizer || event.title)
   const n = guest.n || 1
   const couple = event.names?.length === 2
   const byFormat = {
     carte: {
-      kind: "Carte d'invitation",
-      invite: style === 'sobre' ? 'La famille vous remercie de votre présence' : couple ? 'vous invitent à leur célébration' : "Merci d'avoir confirmé votre présence",
-      pill: style === 'sobre' ? 'Présence confirmée' : 'Invitation validée',
-      guestLabel: style === 'sobre' ? 'Au nom de' : 'Votre invité',
-      qrLabel: 'QR invité',
-      download: 'Télécharger la carte',
+      kind: tk("Carte d'invitation"),
+      invite: style === 'sobre' ? tk(tk("La famille vous remercie de votre présence")) : couple ? tk(tk("vous invitent à leur célébration")) : tk("Merci d'avoir confirmé votre présence"),
+      pill: style === 'sobre' ? tk(tk("Présence confirmée")) : tk(tk("Invitation validée")),
+      guestLabel: style === 'sobre' ? tk(tk("Au nom de")) : tk(tk("Votre invité")),
+      qrLabel: tk(tk("QR invité")),
+      download: tk(tk("Télécharger la carte")),
     },
     billet: {
-      kind: "Billet d'entrée",
-      invite: 'Votre billet est validé',
-      pill: 'Billet validé',
-      guestLabel: 'Titulaire',
-      qrLabel: 'QR billet',
-      download: 'Télécharger le billet',
+      kind: tk("Billet d'entrée"),
+      invite: tk(tk("Votre billet est validé")),
+      pill: tk(tk("Billet validé")),
+      guestLabel: tk(tk("Titulaire")),
+      qrLabel: tk(tk("QR billet")),
+      download: tk(tk("Télécharger le billet")),
     },
     badge: {
-      kind: 'Badge',
-      invite: 'Merci pour votre inscription',
-      pill: 'Inscription validée',
-      guestLabel: 'Participant',
-      qrLabel: 'QR badge',
-      download: 'Télécharger le badge',
+      kind: tk('Badge'),
+      invite: tk(tk("Merci pour votre inscription")),
+      pill: tk(tk("Inscription validée")),
+      guestLabel: tk(tk("Participant")),
+      qrLabel: tk(tk("QR badge")),
+      download: tk(tk("Télécharger le badge")),
     },
   }[format] ?? {}
   return {
@@ -141,7 +144,7 @@ export function ticketTexts(style, event, guest, format = 'carte') {
     kicker: event.kicker || '',
     when: [event.dateText, event.timeText].filter(Boolean).join(' · '),
     place: [event.venue, event.venueAddr].filter(Boolean).join(' · '),
-    meta: [`${n} place${n > 1 ? 's' : ''}`, guest.type, guest.table, guest.side].filter(Boolean).join(' · '),
+    meta: [tk(n > 1 ? '{n} places' : '{n} place', { n }), guest.type, guest.table, guest.side].filter(Boolean).join(' · '),
     reference: `${String(mark).replace(/[^A-Z0-9]/gi, '').slice(0, 3).toUpperCase() || 'TB'}-${ticketCode(guest.id).slice(0, 5)}`,
     url: event.slug ? `tbfmoment.com/e/${event.slug}` : 'tbfmoment.com',
     brand: event.brand || 'TBF MOMENT',
@@ -161,7 +164,8 @@ function Ornament({ html, mark, small }) {
   )
 }
 
-export default function TicketCard({ style, note, event, guest, look: lookIn, themeId, paletteId, motif: motifId, accent, downloads = true, live, reveal = false, seat, souvenir, voice, edition, vip = false }) {
+export default function TicketCard({ style, note, event, guest, look: lookIn, themeId, paletteId, motif: motifId, accent, downloads = true, live, reveal = false, seat, souvenir, voice, edition, vip = false, localized = false }) {
+  const tk = localized ? translate : fill
   const root = useRef(null)
   const card = useRef(null)
   const [qrState, setQrState] = useState({ guestId: '', dataUrl: '', error: '' })
@@ -202,10 +206,10 @@ export default function TicketCard({ style, note, event, guest, look: lookIn, th
   useEffect(() => loadThemeFonts(theme), [theme])
 
   const format = ticketFormat(style, Boolean(guest.type))
-  const t = ticketTexts(style, event, guest, format)
+  const t = ticketTexts(style, event, guest, format, tk)
   const c = ticketColors(palette)
   const editionLabel = edition?.number > 0 && edition?.total > 0
-    ? `Invitation n° ${String(edition.number).padStart(3, '0')} / ${String(edition.total).padStart(3, '0')}`
+    ? tk('Invitation n° {number} / {total}', { number: String(edition.number).padStart(3, '0'), total: String(edition.total).padStart(3, '0') })
     : ''
   const motifCss = motifStyle(motif, palette)
   const names =
@@ -233,13 +237,13 @@ export default function TicketCard({ style, note, event, guest, look: lookIn, th
       } else {
         const result = await lib.ticketImage(card.current, options)
         if (result === 'shared')
-          setMsg('Choisissez « Enregistrer l’image » ou « Enregistrer dans Fichiers » pour garder le billet.')
+          setMsg(tk('Choisissez « Enregistrer l’image » ou « Enregistrer dans Fichiers » pour garder le billet.'))
         else if (result === 'downloaded')
-          setMsg('Image du billet téléchargée. Ouvrez-la depuis les téléchargements pour la présenter.')
+          setMsg(tk('Image du billet téléchargée. Ouvrez-la depuis les téléchargements pour la présenter.'))
       }
     } catch (error) {
       if (error?.name === 'AbortError') return
-      setMsg('Le téléchargement a échoué. Vérifiez la connexion et réessayez.')
+      setMsg(tk('Le téléchargement a échoué. Vérifiez la connexion et réessayez.'))
     } finally {
       root.current?.removeAttribute('data-printing')
       setBusy('')
@@ -258,9 +262,9 @@ export default function TicketCard({ style, note, event, guest, look: lookIn, th
   // Touchez le QR code pour l'agrandir devant le téléphone de l'accueil.
   const qrBlock = (
     <div className="tkc-qr">
-      <button type="button" className="qr" onClick={() => qr && setZoom(true)} aria-label={`Agrandir le QR code de ${guest.name}`} disabled={!qr}>
+      <button type="button" className="qr" onClick={() => qr && setZoom(true)} aria-label={tk('Agrandir le QR code de {name}', { name: guest.name })} disabled={!qr}>
         {qr && <img src={qr} alt="" />}
-        {!qr && !qrError && <span className="qr-status">Génération…</span>}
+        {!qr && !qrError && <span className="qr-status">{tk('Génération…')}</span>}
       </button>
       <small>{t.qrLabel}</small>
       {qrError && <span className="qr-error" role="alert">{qrError}</span>}
@@ -276,17 +280,17 @@ export default function TicketCard({ style, note, event, guest, look: lookIn, th
   const downloadButton = downloads && (
     <button type="button" className="tkc-bar tkc-dl" onClick={() => download('img')} disabled={!!busy} data-print-hide>
       <Download aria-hidden="true" style={{ width: 18, height: 18 }} />
-      {busy === 'img' ? 'Préparation…' : 'Garder le billet sur mon téléphone'}
+      {busy === 'img' ? tk('Préparation…') : tk('Garder le billet sur mon téléphone')}
     </button>
   )
   const hint = (
     <p className="tkc-hint" role="status">
-      {msg || note || "Après l’enregistrement, retrouvez le billet dans Photos ou Fichiers."}
+      {msg || note || tk("Après l’enregistrement, retrouvez le billet dans Photos ou Fichiers.")}
       {downloads && !msg && (
         <span data-print-hide>
           {' · '}
           <button type="button" onClick={() => download('pdf')} disabled={!!busy}>
-            {busy === 'pdf' ? 'préparation…' : 'PDF pour impression'}
+            {busy === 'pdf' ? tk('préparation…') : tk('PDF pour impression')}
           </button>
         </span>
       )}
@@ -298,7 +302,7 @@ export default function TicketCard({ style, note, event, guest, look: lookIn, th
     return (
       <div ref={root} className={`tbft tbtk ${vip ? 'vip' : ''} ${liveClass}`} data-tbft={theme?.id} style={vars}>
         {extras}
-        <article ref={card} className={`tkc tkc-billet tks-${style}`} aria-label={`${t.kind} de ${guest.name}`}>
+        <article ref={card} className={`tkc tkc-billet tks-${style}`} aria-label={tk('{kind} de {name}', { kind: t.kind, name: guest.name })}>
           <div className="tkb-main">
             <span className="tkc-motif" style={motifCss} aria-hidden="true" />
             {style === 'concert' && <span className="tkc-holo" aria-hidden="true" />}
@@ -327,7 +331,7 @@ export default function TicketCard({ style, note, event, guest, look: lookIn, th
             {qrBlock}
             <TableReveal seat={seat} state={liveState} code={guest.id} mourn={mourn} />
             <TicketVoice voice={voice} name={guest.name} mourn={mourn} />
-            <span className="tkc-lbl">Référence</span>
+            <span className="tkc-lbl">{tk('Référence')}</span>
             <p className="tkc-ref">{t.reference}</p>
             {editionLabel && <p className="tkc-edition">{editionLabel}</p>}
             <p className="tkb-url" data-print-only>
@@ -351,7 +355,7 @@ export default function TicketCard({ style, note, event, guest, look: lookIn, th
   return (
     <div ref={root} className={`tbft tbtk ${vip ? 'vip' : ''} ${liveClass}`} data-tbft={theme?.id} style={vars}>
       {extras}
-      <article ref={card} className={`tkc tkc-${format} tks-${style}`} aria-label={`${t.kind} de ${guest.name}`}>
+      <article ref={card} className={`tkc tkc-${format} tks-${style}`} aria-label={tk('{kind} de {name}', { kind: t.kind, name: guest.name })}>
         {style === 'pagne' && <span className="tkc-saw top" aria-hidden="true" />}
         <div className="tkc-top">
           <span className="tkc-motif" style={motifCss} aria-hidden="true" />
@@ -384,7 +388,7 @@ export default function TicketCard({ style, note, event, guest, look: lookIn, th
           <TableReveal seat={seat} state={liveState} code={guest.id} mourn={mourn} />
           <TicketVoice voice={voice} name={guest.name} mourn={mourn} />
           <div className="tkc-sep" />
-          <span className="tkc-lbl">Référence</span>
+          <span className="tkc-lbl">{tk('Référence')}</span>
           <p className="tkc-ref">{t.reference}</p>
           {editionLabel && <p className="tkc-edition">{editionLabel}</p>}
           <LiveStrip state={liveState} mourn={mourn} />

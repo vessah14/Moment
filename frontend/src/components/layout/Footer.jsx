@@ -1,31 +1,32 @@
 import { Mail } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import BrandLogo from '../ui/BrandLogo'
+import { t } from '../../i18n'
 
 const COLUMNS = [
   {
-    title: 'Produit',
+    title: t("Produit"),
     links: [
-      { label: 'Fonctionnalités', to: '/#fonctionnalites' },
-      { label: 'Modèles', to: '/modeles' },
-      { label: 'Modèles de billets', to: '/billets' },
-      { label: "Flyer d'honneur", to: '/flyer' },
-      { label: 'Tarifs', to: '/tarifs' }
+      { label: t("Fonctionnalités"), to: '/#fonctionnalites' },
+      { label: t("Modèles"), to: '/modeles' },
+      { label: t("Modèles de billets"), to: '/billets' },
+      { label: t("Flyer d'honneur"), to: '/flyer' },
+      { label: t("Tarifs"), to: '/tarifs' }
     ]
   },
   {
-    title: "Cas d'usage",
+    title: t("Cas d'usage"),
     links: [
-      { label: 'Mariage', to: '/modeles?categorie=Mariage' },
-      { label: 'Conférence', to: '/modeles?categorie=Conférence' },
-      { label: 'Anniversaire', to: '/modeles?categorie=Anniversaire' }
+      { label: t("Mariage"), to: '/modeles?categorie=Mariage' },
+      { label: t("Conférence"), to: '/modeles?categorie=Conférence' },
+      { label: t("Anniversaire"), to: '/modeles?categorie=Anniversaire' }
     ]
   },
   {
-    title: 'Ressources',
+    title: t("Ressources"),
     links: [
-      { label: 'Écosystème TBF', to: '/ecosysteme' },
-      { label: 'Support', to: '/support' }
+      { label: t("Écosystème TBF"), to: '/ecosysteme' },
+      { label: t("Support"), to: '/support' }
     ]
   }
 ]
@@ -34,15 +35,15 @@ export default function Footer () {
   const year = new Date().getFullYear()
 
   return (
-    <footer className='border-t border-border-soft/60 bg-panel/40'>
+    <footer translate='no' className='border-t border-border-soft/60 bg-panel/40'>
       <div className='mx-auto max-w-7xl px-6 py-16'>
         <div className='grid gap-10 lg:grid-cols-[2fr_1fr_1fr_1fr]'>
           <div>
             <BrandLogo className='h-9 w-auto' />
             <p className='mt-4 max-w-xs text-sm text-faint'>
-              Plateforme événementielle de l'écosystème TBF.
+              {t("Plateforme événementielle de l'écosystème TBF.")}
               <br />
-              Vos événements. Votre univers. Votre moment.
+              {t("Vos événements. Votre univers. Votre moment.")}
             </p>
             <a
               href='mailto:contact@tbfmoment.com'
@@ -75,19 +76,19 @@ export default function Footer () {
         </div>
 
         <div className='mt-14 flex flex-col gap-4 border-t border-border-soft/60 pt-6 text-sm text-faint sm:flex-row sm:items-center sm:justify-between'>
-          <p>&copy; {year} TBF Moment. Tous droits réservés.</p>
+          <p>&copy; {year} TBF Moment. {t('Tous droits réservés.')}</p>
           <div className='flex flex-wrap gap-x-6 gap-y-2'>
             <Link to='/mentions-legales' className='transition hover:text-ink'>
-              Mentions légales
+              {t("Mentions légales")}
             </Link>
             <Link to='/cgu' className='transition hover:text-ink'>
-              CGU
+              {t("CGU")}
             </Link>
             <Link to='/confidentialite' className='transition hover:text-ink'>
-              Confidentialité
+              {t("Confidentialité")}
             </Link>
             <Link to='/cookies' className='transition hover:text-ink'>
-              Cookies
+              {t("Cookies")}
             </Link>
           </div>
         </div>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { TEMPLATES } from '../../data/templates'
 import { TEMPLATE_UNIVERSES } from '../../data/templateUniverses'
 import SectionHeader from './SectionHeader'
+import { t } from '../../i18n'
 
 // « Pour qui ? » (repris du prototype) : les quatre univers, chacun ouvre la galerie
 // filtrée sur ses modèles.
@@ -15,9 +16,8 @@ export default function Universes() {
   return (
     <section className="relative" aria-labelledby="universes-heading">
       <div className="mx-auto max-w-7xl px-6 py-20">
-        <SectionHeader id="universes-heading" eyebrow="Pour qui ?" title="Familles, écoles, entreprises : chacun son univers">
-          Choisissez votre univers, puis votre type d'événement. TBF Moment propose le modèle, les
-          sections et les textes adaptés.
+        <SectionHeader id="universes-heading" eyebrow={t("Pour qui ?")} title={t("Familles, écoles, entreprises : chacun son univers")}>
+          {t("Choisissez votre univers, puis votre type d'événement. TBF Moment propose le modèle, les sections et les textes adaptés.")}
         </SectionHeader>
 
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -37,10 +37,10 @@ export default function Universes() {
                 >
                   <Icon className="h-5 w-5" />
                 </span>
-                <h3 className="mt-2 text-lg font-bold text-ink">{u.label}</h3>
-                <p className="text-sm leading-relaxed text-muted">{u.description}</p>
+                <h3 className="mt-2 text-lg font-bold text-ink">{t(u.label)}</h3>
+                <p className="text-sm leading-relaxed text-muted">{t(u.description)}</p>
                 <span className="mt-auto pt-3 text-sm font-semibold text-ink">
-                  {count} modèle{count > 1 ? 's' : ''} →
+                  {t(count > 1 ? '{n} modèles →' : '{n} modèle →', { n: count })}
                 </span>
               </Link>
             )

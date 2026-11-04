@@ -2,6 +2,7 @@ import { ArrowRight, ChevronDown, Eye } from 'lucide-react'
 import { useId, useState } from 'react'
 import { Link } from 'react-router-dom'
 import TemplatePreview, { TemplateBadge } from './TemplatePreview'
+import { t } from '../../i18n'
 
 // Carte d'un modèle, identique pour tous (premium ou classique) : miniature 4/3, nom ·
 // type, description courte, puis les actions. « Voir plus » déplie la description complète
@@ -17,11 +18,11 @@ function classicDetails(template) {
   const tone = template.minimal ? 'sobre' : template.meta?.includes('sombre') ? 'sombre' : 'clair'
   const sections = (template.blocks ?? []).filter((b) => b !== 'Pied de page')
   return {
-    description: `Mise en page classique au fond ${tone}, entièrement personnalisable dans le Builder.`,
+    description: t('Mise en page classique au fond {tone}, entièrement personnalisable dans le Builder.', { tone: t(tone) }),
     features: [
-      { label: 'Style', text: `couleurs du modèle, police ${template.preview?.serif ? 'élégante' : 'moderne'}` },
-      { label: 'Sections', text: sections.join(', ') || 'à composer librement' },
-      { label: 'Catégorie', text: template.category },
+      { label: t('Style'), text: t('couleurs du modèle, police {font}', { font: t(template.preview?.serif ? 'élégante' : 'moderne') }) },
+      { label: t('Sections'), text: sections.map((b) => t(b)).join(', ') || t('à composer librement') },
+      { label: t('Catégorie'), text: t(template.category) },
     ],
   }
 }
@@ -29,7 +30,7 @@ function classicDetails(template) {
 export default function TemplateCard({ template }) {
   const premium = Boolean(template.theme)
   const { description, features } = premium
-    ? { description: template.description, features: template.features ?? [] }
+    ? { description: t(template.description), features: (template.features ?? []).map((f) => ({ label: t(f.label), text: t(f.text) })) }
     : classicDetails(template)
   const [expanded, setExpanded] = useState(false)
   const detailsId = useId()
@@ -46,9 +47,9 @@ export default function TemplateCard({ template }) {
       </div>
 
       <div className="flex flex-1 flex-col gap-3 p-5">
-        <h3 className="truncate text-lg font-bold text-ink" title={`${template.name} · ${template.subtitle ?? template.category}`}>
+        <h3 className="truncate text-lg font-bold text-ink" title={`${template.name} · ${t(template.subtitle ?? template.category)}`}>
           {template.name}
-          <span className="font-medium text-muted"> · {template.subtitle ?? template.category}</span>
+          <span className="font-medium text-muted"> · {t(template.subtitle ?? template.category)}</span>
         </h3>
         <div id={detailsId}>
           <p className={`min-h-[2.85rem] text-sm leading-relaxed text-muted ${expanded ? '' : 'line-clamp-2'}`}>
@@ -60,7 +61,7 @@ export default function TemplateCard({ template }) {
                 <li key={f.label} className="flex items-start gap-2 leading-snug text-ink">
                   <span aria-hidden="true" className="mt-1.5 h-1.5 w-1.5 shrink-0 rotate-45 rounded-[2px] bg-[color:var(--color-gold)]" />
                   <span>
-                    <b className="font-semibold">{f.label} :</b> <span className="text-muted">{f.text}</span>
+                    <b className="font-semibold">{t('{label} :', { label: f.label })}</b> <span className="text-muted">{f.text}</span>
                   </span>
                 </li>
               ))}
@@ -74,7 +75,7 @@ export default function TemplateCard({ template }) {
           onClick={() => setExpanded((v) => !v)}
           className="inline-flex items-center gap-1 self-start text-sm font-semibold text-brand-purple hover:underline"
         >
-          {expanded ? 'Voir moins' : 'Voir plus'}
+          {expanded ? t('Voir moins') : t('Voir plus')}
           <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? 'rotate-180' : ''}`} />
         </button>
 
@@ -85,14 +86,14 @@ export default function TemplateCard({ template }) {
               className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-border px-3 text-sm font-semibold text-ink transition hover:border-brand-purple hover:text-brand-purple"
             >
               <Eye className="h-4 w-4" />
-              Aperçu
+              {t('Aperçu')}
             </Link>
           )}
           <Link
             to={templateUseHref(template.name)}
             className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-[linear-gradient(100deg,#FF7A3D_0%,#E2337E_50%,#6C4BF4_100%)] px-3 text-sm font-semibold text-white shadow-md transition hover:brightness-105"
           >
-            Utiliser
+            {t('Utiliser')}
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>

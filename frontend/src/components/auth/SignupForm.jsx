@@ -9,6 +9,7 @@ import PasswordStrengthBar from './PasswordStrengthBar'
 import { consumeSignupReturnPath, loginPathForReturnPath, rememberSignupReturnPath, requestedReturnPath } from '../../utils/returnPath'
 import { CREATE_EVENT_PATH, FIRST_EVENT_STATE, markFirstEventPrompted } from '../../utils/firstEvent'
 import { PRICING_PLANS } from '../../data/pricingPlans'
+import { t } from '../../i18n'
 
 const GOOGLE_ENABLED = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID)
 const OFFER_CODES = { free: 'Free', premium: 'Premium', business: 'Business', eventpro: 'Event Pro' }
@@ -70,7 +71,7 @@ export default function SignupForm() {
       if (returnPath) params.set('retour', returnPath)
       navigate(`/inscription/verifiez-vos-emails?${params}`)
     } catch (err) {
-      setError(err.message || 'Inscription impossible.')
+      setError(err.message || t("Inscription impossible."))
     } finally {
       setSubmitting(false)
     }
@@ -80,16 +81,16 @@ export default function SignupForm() {
     <div className="w-full max-w-sm">
       <div className="text-center">
         <span className="inline-flex items-center rounded-full border border-border px-4 py-1.5 text-xs font-semibold tracking-widest text-brand-purple uppercase">
-          Inscription
+          {t("Inscription")}
         </span>
         <img src={logoMark} alt="" className="mx-auto mt-6 h-10 w-10" />
-        <h1 className="mt-6 text-3xl font-bold text-ink">Créer un compte</h1>
+        <h1 className="mt-6 text-3xl font-bold text-ink">{t("Créer un compte")}</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-5">
         <div className="grid grid-cols-2 gap-4">
           <label className="block">
-            <span className="text-sm font-medium text-ink">Prénom</span>
+            <span className="text-sm font-medium text-ink">{t("Prénom")}</span>
             <input
               type="text"
               required
@@ -100,7 +101,7 @@ export default function SignupForm() {
             />
           </label>
           <label className="block">
-            <span className="text-sm font-medium text-ink">Nom</span>
+            <span className="text-sm font-medium text-ink">{t("Nom")}</span>
             <input
               type="text"
               required
@@ -114,12 +115,12 @@ export default function SignupForm() {
 
         <label className="block">
           <span className="text-sm font-medium text-ink">
-            Adresse e-mail
+            {t("Adresse e-mail")}
           </span>
           <input
             type="email"
             required
-            placeholder="nom@exemple.com"
+            placeholder={t("nom@exemple.com")}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className={`mt-2 w-full rounded-lg border bg-surface px-4 py-3 text-sm text-ink placeholder:text-faint outline-none focus:ring-3 ${
@@ -130,19 +131,19 @@ export default function SignupForm() {
           />
           {emailIncomplete && (
             <span className="mt-1.5 block text-xs text-danger">
-              Adresse e-mail incomplète
+              {t("Adresse e-mail incomplète")}
             </span>
           )}
         </label>
 
         <label className="block">
-          <span className="text-sm font-medium text-ink">Mot de passe</span>
+          <span className="text-sm font-medium text-ink">{t("Mot de passe")}</span>
           <div className="relative mt-2">
             <input
               type={showPassword ? 'text' : 'password'}
               required
               minLength={8}
-              placeholder="8 caractères minimum"
+              placeholder={t("8 caractères minimum")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded-lg border border-border bg-surface px-4 py-3 pr-11 text-sm text-ink placeholder:text-faint outline-none focus:border-brand-purple focus:ring-3 focus:ring-brand-purple/30"
@@ -151,7 +152,7 @@ export default function SignupForm() {
               type="button"
               onClick={() => setShowPassword((v) => !v)}
               aria-label={
-                showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'
+                showPassword ? t("Masquer le mot de passe") : t("Afficher le mot de passe")
               }
               className="absolute top-1/2 right-3 -translate-y-1/2 text-faint hover:text-ink"
             >
@@ -167,7 +168,7 @@ export default function SignupForm() {
 
         <label className="block">
           <span className="text-sm font-medium text-ink">
-            Confirmer le mot de passe
+            {t("Confirmer le mot de passe")}
           </span>
           <div className="relative mt-2">
             <input
@@ -186,8 +187,8 @@ export default function SignupForm() {
               onClick={() => setShowConfirmPassword((v) => !v)}
               aria-label={
                 showConfirmPassword
-                  ? 'Masquer le mot de passe'
-                  : 'Afficher le mot de passe'
+                  ? t("Masquer le mot de passe")
+                  : t("Afficher le mot de passe")
               }
               className="absolute top-1/2 right-3 -translate-y-1/2 text-faint hover:text-ink"
             >
@@ -200,7 +201,7 @@ export default function SignupForm() {
           </div>
           {passwordMismatch && (
             <span className="mt-1.5 block text-xs text-danger">
-              Les mots de passe ne correspondent pas.
+              {t("Les mots de passe ne correspondent pas.")}
             </span>
           )}
         </label>
@@ -220,13 +221,13 @@ export default function SignupForm() {
             className="mt-0.5 h-4 w-4 shrink-0 rounded border-border accent-brand-purple"
           />
           <span>
-            J'accepte les{' '}
+            {t("J'accepte les")}{' '}
             <Link to="/cgu" className="font-medium text-brand-purple hover:underline">
-              CGU
+              {t('CGU')}
             </Link>{' '}
-            et la{' '}
+            {t('et la')}{' '}
             <Link to="/confidentialite" className="font-medium text-brand-purple hover:underline">
-              politique de confidentialité
+              {t('politique de confidentialité')}
             </Link>
             .
           </span>
@@ -238,7 +239,7 @@ export default function SignupForm() {
           disabled={submitting || !acceptedTerms}
           className="w-full disabled:opacity-70"
         >
-          {submitting ? 'Création...' : 'Créer mon compte'}
+          {submitting ? t('Création...') : t('Créer mon compte')}
         </Button>
       </form>
 
@@ -246,29 +247,29 @@ export default function SignupForm() {
         <>
           <div className="my-6 flex items-center gap-4 text-xs text-faint">
             <span className="h-px flex-1 bg-border-soft" />
-            ou
+            {t('ou')}
             <span className="h-px flex-1 bg-border-soft" />
           </div>
           <div className="flex flex-col items-center gap-3">
             <GoogleSignInButton onError={setError} />
             {/* La case ci-dessus ne s'applique qu'au formulaire : l'inscription Google vaut acceptation. */}
             <p className="text-center text-xs text-faint">
-              En continuant avec Google, vous acceptez les{' '}
-              <Link to="/cgu" className="text-brand-purple hover:underline">CGU</Link> et la{' '}
-              <Link to="/confidentialite" className="text-brand-purple hover:underline">politique de confidentialité</Link>.
+              {t('En continuant avec Google, vous acceptez les')}{' '}
+              <Link to="/cgu" className="text-brand-purple hover:underline">{t('CGU')}</Link> {t('et la')}{' '}
+              <Link to="/confidentialite" className="text-brand-purple hover:underline">{t('politique de confidentialité')}</Link>.
             </p>
           </div>
         </>
       )}
 
       <p className="mt-6 text-center text-sm text-muted">
-        Déjà un compte ?{' '}
+        {t('Déjà un compte ?')}{' '}
         <Link
           to={returnPath ? loginPathForReturnPath(returnPath) : '/connexion'}
           state={location.state}
           className="font-medium text-brand-purple hover:underline"
         >
-          Se connecter
+          {t("Se connecter")}
         </Link>
       </p>
     </div>

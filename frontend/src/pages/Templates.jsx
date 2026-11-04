@@ -8,6 +8,7 @@ import { TEMPLATES } from '../data/templates'
 import { TEMPLATE_UNIVERSES } from '../data/templateUniverses'
 import { routeSeo } from '../data/seoRoutes'
 import { siteUrl, useSeo } from '../utils/seo'
+import { t } from '../i18n'
 
 const PREMIUM_TEMPLATES = TEMPLATES.filter(tpl => tpl.theme)
 
@@ -28,7 +29,7 @@ export default function Templates () {
     return TEMPLATES.filter(tpl => {
       const selectedGroup = TEMPLATE_CATEGORIES.find(group => group.id === category)
       const matchesCategory = !selectedGroup || selectedGroup.categories.includes(tpl.category)
-      const searchableText = `${tpl.name} ${tpl.subtitle ?? ''} ${tpl.category}`.toLowerCase()
+      const searchableText = `${tpl.name} ${tpl.subtitle ?? ''} ${tpl.category} ${t(tpl.subtitle ?? '')} ${t(tpl.category)}`.toLowerCase()
       const matchesQuery = searchableText.includes(query.trim().toLowerCase())
       return matchesCategory && matchesQuery
     })
@@ -42,10 +43,10 @@ export default function Templates () {
         <div className='flex flex-wrap items-start justify-between gap-6'>
           <div>
             <h1 className='text-3xl font-bold text-ink'>
-              {TEMPLATES.length} modèles prêts à publier
+              {t('{n} modèles prêts à publier', { n: TEMPLATES.length })}
             </h1>
             <p className='mt-2 text-muted'>
-              Dupliquez un modèle, il devient le vôtre dans le Builder.
+              {t("Dupliquez un modèle, il devient le vôtre dans le Builder.")}
             </p>
           </div>
 
@@ -55,8 +56,8 @@ export default function Templates () {
               type='search'
               value={query}
               onChange={e => setQuery(e.target.value)}
-              aria-label='Rechercher un modèle par nom ou catégorie'
-              placeholder='Rechercher un modèle'
+              aria-label={t("Rechercher un modèle par nom ou catégorie")}
+              placeholder={t("Rechercher un modèle")}
               className='w-64 rounded-lg border border-border bg-surface py-2.5 pr-4 pl-10 text-sm text-ink placeholder:text-faint outline-none focus:border-brand-purple'
             />
           </div>
@@ -73,7 +74,7 @@ export default function Templates () {
                 : 'border border-border text-muted hover:border-faint hover:text-ink'
             }`}
           >
-            Tous · {TEMPLATES.length}
+            {t('Tous')} · {TEMPLATES.length}
           </button>
           {TEMPLATE_CATEGORIES.map(group => {
             const isActive = group.id === category
@@ -90,7 +91,7 @@ export default function Templates () {
                     : 'border border-border text-muted hover:border-faint hover:text-ink'
                 }`}
               >
-                {group.label} · {count}
+                {t(group.label)} · {count}
               </button>
             )
           })}
@@ -99,7 +100,7 @@ export default function Templates () {
         {filtered.some(tpl => tpl.theme) && (
           <section className='mt-10'>
             <h2 className='text-xs font-semibold tracking-widest text-[color:var(--color-gold)] uppercase'>
-              Modèles premium ({PREMIUM_TEMPLATES.length}) · ouverture animée, fond animé, musique
+              {t('Modèles premium ({n}) · ouverture animée, fond animé, musique', { n: PREMIUM_TEMPLATES.length })}
             </h2>
             <div className='mt-5 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
               {filtered
@@ -113,8 +114,8 @@ export default function Templates () {
 
         {filtered.length === 0 ? (
           <div className='mt-10 rounded-2xl border border-border-soft bg-surface px-6 py-10 text-center' role='status'>
-            <h2 className='text-lg font-semibold text-ink'>Aucun modèle ne correspond à votre recherche</h2>
-            <p className='mt-2 text-sm text-muted'>Essayez un autre nom ou une autre catégorie, ou effacez votre recherche.</p>
+            <h2 className='text-lg font-semibold text-ink'>{t("Aucun modèle ne correspond à votre recherche")}</h2>
+            <p className='mt-2 text-sm text-muted'>{t("Essayez un autre nom ou une autre catégorie, ou effacez votre recherche.")}</p>
             <button
               type='button'
               onClick={() => {
@@ -123,7 +124,7 @@ export default function Templates () {
               }}
               className='mt-5 min-h-11 rounded-full bg-brand-purple px-5 text-sm font-semibold text-white transition hover:bg-brand-indigo'
             >
-              Afficher tous les modèles
+              {t("Afficher tous les modèles")}
             </button>
           </div>
         ) : (
@@ -142,9 +143,9 @@ export default function Templates () {
                 <span className='flex h-10 w-10 items-center justify-center rounded-xl bg-surface-2'>
                   <Plus className='h-5 w-5 text-muted' />
                 </span>
-                <span className='font-semibold text-ink'>Page vierge</span>
+                <span className='font-semibold text-ink'>{t("Page vierge")}</span>
                 <span className='max-w-[10rem] text-xs text-faint'>
-                  Composer librement dans le Builder
+                  {t("Composer librement dans le Builder")}
                 </span>
               </Link>
             )}

@@ -1,5 +1,6 @@
 import { Check } from 'lucide-react'
 import PlanCta from './PlanCta'
+import { t } from '../../i18n'
 
 export default function PricingCard({ plan, variant = 'default' }) {
   const pricingVariant = variant === 'pricing'
@@ -31,7 +32,7 @@ export default function PricingCard({ plan, variant = 'default' }) {
         <span className={`bg-brand-gradient absolute -top-3 rounded-full px-3 py-1 text-[11px] font-bold tracking-wide text-white ${
           pricingVariant ? 'left-4' : 'left-1/2 -translate-x-1/2'
         }`}>
-          {plan.recommendationLabel ?? 'Recommandé'}
+          {t(plan.recommendationLabel ?? 'Recommandé')}
         </span>
       )}
 
@@ -44,27 +45,27 @@ export default function PricingCard({ plan, variant = 'default' }) {
       <p
         className={`mt-3 ${pricingVariant ? 'text-4xl' : 'text-3xl'} font-bold ${plan.enterprise ? 'text-[color:var(--color-gold)]' : 'text-ink'}`}
       >
-        {plan.price}
+        {t(plan.price)}
         {plan.period && (
           <span className="ml-1 text-sm font-normal text-faint">
-            {plan.period}
+            {t(plan.period)}
           </span>
         )}
       </p>
-      <p className="mt-2 text-sm text-muted">{plan.tagline}</p>
+      <p className="mt-2 text-sm text-muted">{t(plan.tagline)}</p>
 
       <ul className="mt-6 flex-1 space-y-3">
         {plan.features.map((feature) => (
           <li key={feature} className="flex items-start gap-2 text-sm text-muted">
             <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand-purple" />
-            {feature}
+            {t(feature)}
           </li>
         ))}
       </ul>
 
       {plan.enterprise ? (
         <a href="mailto:contact@tbfmoment.com?subject=Offre%20Enterprise" className={ctaClassName}>
-          {plan.cta}
+          {t(plan.cta)}
         </a>
       ) : (
         <PlanCta plan={plan} className={ctaClassName} />

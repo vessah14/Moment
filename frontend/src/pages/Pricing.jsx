@@ -8,96 +8,97 @@ import { PRICING_FAQ } from '../data/pricingFaq'
 import { PLAN_EVENT_LIMITS, PRICING_PLANS as PLANS } from '../data/pricingPlans'
 import { routeSeo } from '../data/seoRoutes'
 import { siteUrl, useSeo } from '../utils/seo'
+import { t } from '../i18n'
 
 // Conseil affiché sous les boutons : l'offre recommandée et pourquoi. Les chiffres doivent
 // rester ceux du tableau comparatif ci-dessous.
 const AUDIENCES = [
-  { id: 'mariage', label: 'Mariage ou dot', plan: 'Premium', badge: 'Le plus choisi pour les fêtes',
-    why: 'Premium couvre 500 invités, le plan de table, les pass QR et le scanner. Payez un mois, arrêtez après la fête.' },
-  { id: 'anniversaire', label: 'Petit anniversaire', plan: 'Free', badge: 'Suffisant pour commencer',
-    why: 'Free suffit pour 50 invités : page, réponses et relances WhatsApp. Passez à Premium pour les modèles premium, la musique et les animations.' },
-  { id: 'hommage', label: 'Obsèques ou retrait de deuil', plan: 'Premium', badge: 'Le plus choisi pour les familles',
-    why: 'Premium permet de partager le programme, les lieux et les contributions avec la famille élargie, jusqu’à 500 personnes.' },
-  { id: 'ecole', label: 'École ou université', plan: 'Business', badge: 'Écoles et entreprises',
-    why: 'Business retire la mention TBF Moment, ouvre la billetterie pour la journée culturelle et donne une facture au nom de l’établissement.' },
-  { id: 'entreprise', label: 'Entreprise ou association', plan: 'Business', badge: 'Écoles et entreprises',
-    why: 'Business : page sans la mention TBF Moment, 5 postes d’accueil, la billetterie et une facture au nom de la structure.' },
-  { id: 'concert', label: 'Concert ou soirée payante', plan: 'Business', badge: 'Billetterie Mobile Money',
-    why: 'Business ouvre la billetterie Mobile Money (5 % de commission). Si vous organisez souvent, Event Pro baisse la commission à 3 %.' },
-  { id: 'agence', label: 'Agence ou salle de fêtes', plan: 'Event Pro', badge: 'Pour les organisateurs',
-    why: 'Event Pro : événements et invités illimités, 5 000 photos, rappels automatiques par e-mail et billetterie à 3 %.' },
-  { id: 'institution', label: 'Institution ou grand groupe', plan: 'Enterprise', badge: 'Sur mesure',
-    why: 'Enterprise : modèle créé sur mesure, capacité adaptée, commission négociée et un interlocuteur dédié.' },
+  { id: 'mariage', label: t("Mariage ou dot"), plan: 'Premium', badge: t("Le plus choisi pour les fêtes"),
+    why: t("Premium couvre 500 invités, le plan de table, les pass QR et le scanner. Payez un mois, arrêtez après la fête.") },
+  { id: 'anniversaire', label: t("Petit anniversaire"), plan: 'Free', badge: t("Suffisant pour commencer"),
+    why: t("Free suffit pour 50 invités : page, réponses et relances WhatsApp. Passez à Premium pour les modèles premium, la musique et les animations.") },
+  { id: 'hommage', label: t("Obsèques ou retrait de deuil"), plan: 'Premium', badge: t("Le plus choisi pour les familles"),
+    why: t("Premium permet de partager le programme, les lieux et les contributions avec la famille élargie, jusqu’à 500 personnes.") },
+  { id: 'ecole', label: t("École ou université"), plan: 'Business', badge: t("Écoles et entreprises"),
+    why: t("Business retire la mention TBF Moment, ouvre la billetterie pour la journée culturelle et donne une facture au nom de l’établissement.") },
+  { id: 'entreprise', label: t("Entreprise ou association"), plan: 'Business', badge: t("Écoles et entreprises"),
+    why: t("Business : page sans la mention TBF Moment, 5 postes d’accueil, la billetterie et une facture au nom de la structure.") },
+  { id: 'concert', label: t("Concert ou soirée payante"), plan: 'Business', badge: t("Billetterie Mobile Money"),
+    why: t("Business ouvre la billetterie Mobile Money (5 % de commission). Si vous organisez souvent, Event Pro baisse la commission à 3 %.") },
+  { id: 'agence', label: t("Agence ou salle de fêtes"), plan: 'Event Pro', badge: t("Pour les organisateurs"),
+    why: t("Event Pro : événements et invités illimités, 5 000 photos, rappels automatiques par e-mail et billetterie à 3 %.") },
+  { id: 'institution', label: t("Institution ou grand groupe"), plan: 'Enterprise', badge: t("Sur mesure"),
+    why: t("Enterprise : modèle créé sur mesure, capacité adaptée, commission négociée et un interlocuteur dédié.") },
 ]
 
 const PAYMENT_METHODS = [
   { label: 'Orange Money', color: 'bg-[#ff7900]' },
   { label: 'MTN MoMo', color: 'bg-[#ffcb05]' },
-  { label: 'Paiement sécurisé', color: 'bg-success' },
+  { label: t("Paiement sécurisé"), color: 'bg-success' },
 ]
 
 const COMPARISON_SECTIONS = [
   {
-    name: 'Capacité',
+    name: t("Capacité"),
     rows: [
-      { name: 'Événements en ligne en même temps', values: [String(PLAN_EVENT_LIMITS.free), String(PLAN_EVENT_LIMITS.premium), 'Illimité', 'Illimité', 'Sur mesure'] },
-      { name: 'Invités ou billets par événement', values: ['50', '500', '2 000', 'Illimité', 'Sur mesure'] },
-      { name: 'Photos dans la galerie', values: ['20', '200', '1 000', '5 000', 'Illimité'] },
-      { name: 'Postes d’accueil (scanner)', values: ['—', '1', '5', 'Illimité', 'Illimité'] },
-      { name: 'Commission billetterie (hors frais SasPay)', values: ['—', '—', '5 %', '3 %', 'Négociée'] },
+      { name: t("Événements en ligne en même temps"), values: [String(PLAN_EVENT_LIMITS.free), String(PLAN_EVENT_LIMITS.premium), t("Illimité"), t("Illimité"), t("Sur mesure")] },
+      { name: t("Invités ou billets par événement"), values: ['50', '500', t("2 000"), t("Illimité"), t("Sur mesure")] },
+      { name: t("Photos dans la galerie"), values: ['20', '200', t("1 000"), t("5 000"), t("Illimité")] },
+      { name: t("Postes d’accueil (scanner)"), values: ['—', '1', '5', t("Illimité"), t("Illimité")] },
+      { name: t("Commission billetterie (hors frais SasPay)"), values: ['—', '—', t("5 %"), t("3 %"), t("Négociée")] },
     ],
   },
   {
-    name: 'Invitation',
+    name: t("Invitation"),
     rows: [
-      { name: 'Page d’événement et réponses (RSVP)', values: [true, true, true, true, true] },
-      { name: 'Aperçu soigné dans WhatsApp', values: [true, true, true, true, true] },
-      { name: 'Modèles premium (27 et plus)', values: ['—', true, true, true, true] },
-      { name: 'Ouvertures animées, musique et particules', values: ['Ouverture simple', true, true, true, true] },
+      { name: t("Page d’événement et réponses (RSVP)"), values: [true, true, true, true, true] },
+      { name: t("Aperçu soigné dans WhatsApp"), values: [true, true, true, true, true] },
+      { name: t("Modèles premium (27 et plus)"), values: ['—', true, true, true, true] },
+      { name: t("Ouvertures animées, musique et particules"), values: [t("Ouverture simple"), true, true, true, true] },
     ],
   },
   {
-    name: 'Invités',
+    name: t("Invités"),
     rows: [
-      { name: 'Liens personnels par invité', values: ['—', true, true, true, true] },
-      { name: 'Relances WhatsApp en un geste', values: [true, true, true, true, true] },
-      { name: 'Rappels automatiques par e-mail (J-7, veille, remerciements)', values: ['—', '—', '—', true, true] },
-      { name: 'Export Excel de la liste', values: ['—', true, true, true, true] },
+      { name: t("Liens personnels par invité"), values: ['—', true, true, true, true] },
+      { name: t("Relances WhatsApp en un geste"), values: [true, true, true, true, true] },
+      { name: t("Rappels automatiques par e-mail (J-7, veille, remerciements)"), values: ['—', '—', '—', true, true] },
+      { name: t("Export Excel de la liste"), values: ['—', true, true, true, true] },
     ],
   },
   {
-    name: 'Jour J',
+    name: t("Jour J"),
     rows: [
-      { name: 'Plan de table et « Trouver ma place »', values: ['—', true, true, true, true] },
-      { name: 'Pass d’entrée QR et scanner', values: ['—', true, true, true, true] },
-      { name: 'Billetterie Mobile Money', values: ['—', '—', true, true, true] },
+      { name: t("Plan de table et « Trouver ma place »"), values: ['—', true, true, true, true] },
+      { name: t("Pass d’entrée QR et scanner"), values: ['—', true, true, true, true] },
+      { name: t("Billetterie Mobile Money"), values: ['—', '—', true, true, true] },
     ],
   },
   {
-    name: 'Image',
+    name: t("Image"),
     rows: [
-      { name: 'Logo de l’organisateur', values: [true, true, true, true, true] },
-      { name: 'Sans la mention « Créé avec TBF MOMENT »', values: ['—', '—', true, true, true] },
-      { name: 'Modèle créé sur mesure à vos couleurs', values: ['—', '—', '—', '—', true] },
+      { name: t("Logo de l’organisateur"), values: [true, true, true, true, true] },
+      { name: t("Sans la mention « Créé avec TBF MOMENT »"), values: ['—', '—', true, true, true] },
+      { name: t("Modèle créé sur mesure à vos couleurs"), values: ['—', '—', '—', '—', true] },
     ],
   },
   {
-    name: 'Services',
+    name: t("Services"),
     rows: [
-      { name: 'Facture au nom de la structure', values: ['—', '—', true, true, true] },
+      { name: t("Facture au nom de la structure"), values: ['—', '—', true, true, true] },
     ],
   },
   {
-    name: 'Assistance',
+    name: t("Assistance"),
     rows: [
-      { name: 'Assistance', values: ['E-mail', 'WhatsApp', 'WhatsApp prioritaire', 'Ligne directe le jour J', 'Interlocuteur dédié'] },
+      { name: t("Assistance"), values: [t("E-mail"), 'WhatsApp', t("WhatsApp prioritaire"), t("Ligne directe le jour J"), t("Interlocuteur dédié")] },
     ],
   },
 ]
 
 function ComparisonValue({ value }) {
   if (value === true) {
-    return <Check aria-label="Inclus" className="mx-auto h-4 w-4 text-success" />
+    return <Check aria-label={t("Inclus")} className="mx-auto h-4 w-4 text-success" />
   }
 
   return <span className={value === '—' ? 'text-faint' : 'text-ink'}>{value}</span>
@@ -135,21 +136,20 @@ export default function Pricing() {
       <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-12">
         <header className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-semibold tracking-[0.2em] text-brand-purple uppercase">
-            Tarifs
+            {t("Tarifs")}
           </p>
           <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-ink sm:text-4xl lg:text-5xl">
-            Un prix clair, <span className="bg-brand-gradient bg-clip-text text-transparent">en francs CFA.</span>
+            {t('Un prix clair,')} <span className="bg-brand-gradient bg-clip-text text-transparent">{t('en francs CFA.')}</span>
           </h1>
           <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-muted sm:text-base">
-            Sans engagement : chaque offre dure 30 jours et ne se renouvelle jamais toute seule. Vos invités,
-            eux, n’ont jamais rien à payer pour répondre.
+            {t("Sans engagement : chaque offre dure 30 jours et ne se renouvelle jamais toute seule. Vos invités, eux, n’ont jamais rien à payer pour répondre.")}
           </p>
           {selectedOffer && (
             <p role="status" className="mx-auto mt-4 max-w-xl rounded-lg border border-brand-purple/25 bg-brand-purple/10 px-4 py-3 text-sm text-ink">
-              Vous avez choisi l’offre <b>{selectedOffer.name}</b>.{' '}
+              {t('Vous avez choisi l’offre')} <b>{selectedOffer.name}</b>.{' '}
               {selectedOfferCode === 'free'
-                ? 'Elle est mise en évidence ci-dessous ; sélectionnez-la pour continuer.'
-                : 'Finalisez le paiement pour l’activer, ou sélectionnez-la ci-dessous.'}
+                ? t("Elle est mise en évidence ci-dessous ; sélectionnez-la pour continuer.")
+                : t("Finalisez le paiement pour l’activer, ou sélectionnez-la ci-dessous.")}
             </p>
           )}
 
@@ -168,7 +168,7 @@ export default function Pricing() {
 
         <section className="mt-8" aria-labelledby="audience-heading">
           <h2 id="audience-heading" className="text-center text-[11px] font-semibold tracking-[0.18em] text-faint uppercase">
-            Quel est votre événement ?
+            {t("Quel est votre événement ?")}
           </h2>
           <div className="mt-3 flex flex-wrap justify-center gap-2">
             {AUDIENCES.map((item) => {
@@ -191,11 +191,11 @@ export default function Pricing() {
             })}
           </div>
           <p className="mx-auto mt-4 max-w-2xl text-center text-sm text-muted" aria-live="polite">
-            <b className="text-ink">Notre conseil : {selectedAudience.plan}.</b> {selectedAudience.why}
+            <b className="text-ink">{t('Notre conseil : {plan}.', { plan: selectedAudience.plan })}</b> {selectedAudience.why}
           </p>
         </section>
 
-        <section className="mt-10 grid items-stretch gap-5 sm:grid-cols-2 xl:grid-cols-4" aria-label="Nos offres">
+        <section className="mt-10 grid items-stretch gap-5 sm:grid-cols-2 xl:grid-cols-4" aria-label={t("Nos offres")}>
           {plans.map((plan) => (
             <PricingCard key={plan.name} plan={plan} variant="pricing" />
           ))}
@@ -217,26 +217,26 @@ export default function Pricing() {
               Enterprise
             </h2>
             <p className="mt-2 text-sm text-muted">
-              Grands groupes, institutions, événements à plusieurs sites
+              {t("Grands groupes, institutions, événements à plusieurs sites")}
             </p>
             <p className="mt-5 border-b border-border-soft pb-2 text-2xl font-bold text-ink">
-              Sur devis
+              {t("Sur devis")}
             </p>
             <p className="mt-3 text-xs font-medium tracking-widest text-faint uppercase">
-              Idéal pour
+              {t("Idéal pour")}
             </p>
             <p className="mt-1 text-sm text-ink">
-              Institution, grand groupe, festival
+              {t("Institution, grand groupe, festival")}
             </p>
           </div>
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <ul className="space-y-2 text-sm text-ink">
               {[
-                'Événements et invités sans limite',
-                'Modèle créé sur mesure à vos couleurs',
-                'Facture au nom de la structure',
-                'Commission billetterie négociée',
-                'Interlocuteur dédié',
+                t("Événements et invités sans limite"),
+                t("Modèle créé sur mesure à vos couleurs"),
+                t("Facture au nom de la structure"),
+                t("Commission billetterie négociée"),
+                t("Interlocuteur dédié"),
               ].map((feature) => (
                 <li key={feature} className="flex items-start gap-2">
                   <Check aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-success" />
@@ -248,17 +248,17 @@ export default function Pricing() {
               href="mailto:contact@tbfmoment.com?subject=Offre%20Enterprise"
               className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-brand-purple/40 px-5 text-sm font-semibold text-ink transition hover:border-brand-purple hover:bg-brand-purple/10"
             >
-              Nous contacter
+              {t("Nous contacter")}
             </a>
           </div>
         </section>
 
         <section className="mt-16" aria-labelledby="comparison-heading">
           <h2 id="comparison-heading" className="text-2xl font-bold text-ink">
-            Tout comparer
+            {t("Tout comparer")}
           </h2>
           <p className="mt-2 text-sm text-muted">
-            Les limites s’appliquent à chaque événement. Vous pouvez changer d’offre à tout moment.
+            {t("Les limites s’appliquent à chaque événement. Vous pouvez changer d’offre à tout moment.")}
           </p>
 
           <div className="mt-5 overflow-x-auto rounded-2xl border border-border-soft bg-surface">
@@ -266,7 +266,7 @@ export default function Pricing() {
               <thead>
                 <tr className="bg-surface-2">
                   <th scope="col" className="sticky left-0 z-10 w-36 min-w-36 bg-surface-2 px-3 py-4 sm:w-auto sm:min-w-64 sm:px-4">
-                    Offre
+                    {t("Offre")}
                   </th>
                   {PLANS.map((plan) => {
                     const isRecommended = plan.name === selectedAudience.plan
@@ -278,7 +278,7 @@ export default function Pricing() {
                       >
                         <span className="block font-bold text-ink">{plan.name}</span>
                         <span className="mt-1 block text-xs font-normal text-muted">
-                          {plan.price === '0 FCFA' ? 'Gratuit' : plan.period ? `${plan.price} FCFA ${plan.period}` : plan.price}
+                          {plan.price === '0 FCFA' ? t('Gratuit') : plan.period ? `${t(plan.price)} FCFA ${t(plan.period)}` : t(plan.price)}
                         </span>
                       </th>
                     )
@@ -321,12 +321,12 @@ export default function Pricing() {
 
         <section className="mt-16" aria-labelledby="pricing-faq-heading">
           <h2 id="pricing-faq-heading" className="text-2xl font-bold text-ink">
-            Questions fréquentes
+            {t("Questions fréquentes")}
           </h2>
           <p className="mt-2 text-sm text-muted">
-            Une autre question ? Écrivez-nous sur{' '}
+            {t('Une autre question ? Écrivez-nous sur')}{' '}
             <a href="https://wa.me/237680264060" target="_blank" rel="noopener noreferrer" className="font-semibold text-ink underline">
-              WhatsApp au +237 680 26 40 60
+              {t("WhatsApp au +237 680 26 40 60")}
             </a>
             .
           </p>
@@ -334,11 +334,11 @@ export default function Pricing() {
             {PRICING_FAQ.map((item) => (
               <details key={item.q} className="group rounded-2xl border border-border-soft bg-surface px-5 open:border-brand-purple/50">
                 <summary className="flex cursor-pointer list-none items-start justify-between gap-4 py-4 font-semibold text-ink [&::-webkit-details-marker]:hidden">
-                  {item.q}
+                  {t(item.q)}
                   <span aria-hidden="true" className="font-mono text-muted group-open:hidden">+</span>
                   <span aria-hidden="true" className="hidden font-mono text-muted group-open:inline">−</span>
                 </summary>
-                <p className="pb-4 text-sm leading-relaxed text-muted">{item.a}</p>
+                <p className="pb-4 text-sm leading-relaxed text-muted">{t(item.a)}</p>
               </details>
             ))}
           </div>

@@ -7,6 +7,7 @@ import { goHomeAfterLogin } from '../../utils/firstEvent'
 import logoMark from '../../assets/logo-mark.webp'
 import Button from '../ui/Button'
 import GoogleSignInButton from './GoogleSignInButton'
+import { t } from '../../i18n'
 
 const GOOGLE_ENABLED = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID)
 
@@ -36,7 +37,7 @@ export default function LoginForm() {
       if (returnPath ?? storedReturnPath) navigate(returnPath ?? storedReturnPath, { replace: true })
       else await goHomeAfterLogin(navigate)
     } catch (err) {
-      setError(err.message || 'Connexion impossible.')
+      setError(err.message || t("Connexion impossible."))
     } finally {
       setSubmitting(false)
     }
@@ -46,24 +47,24 @@ export default function LoginForm() {
     <div className="w-full max-w-sm">
       <div className="text-center">
         <span className="inline-flex items-center rounded-full border border-border px-4 py-1.5 text-xs font-semibold tracking-widest text-brand-purple uppercase">
-          Connexion
+          {t("Connexion")}
         </span>
         <img src={logoMark} alt="" className="mx-auto mt-6 h-10 w-10" />
-        <h1 className="mt-6 text-3xl font-bold text-ink">Bon retour</h1>
+        <h1 className="mt-6 text-3xl font-bold text-ink">{t("Bon retour")}</h1>
         <p className="mt-2 text-sm text-muted">
-          Retrouvez vos événements et vos invités.
+          {t("Retrouvez vos événements et vos invités.")}
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-5">
         <label className="block">
           <span className="text-sm font-medium text-ink">
-            Adresse e-mail
+            {t("Adresse e-mail")}
           </span>
           <input
             type="email"
             required
-            placeholder="nom@exemple.com"
+            placeholder={t("nom@exemple.com")}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="mt-2 w-full rounded-lg border border-border bg-surface px-4 py-3 text-sm text-ink placeholder:text-faint outline-none focus:border-brand-purple focus:ring-3 focus:ring-brand-purple/30"
@@ -71,7 +72,7 @@ export default function LoginForm() {
         </label>
 
         <label className="block">
-          <span className="text-sm font-medium text-ink">Mot de passe</span>
+          <span className="text-sm font-medium text-ink">{t("Mot de passe")}</span>
           <div className="relative mt-2">
             <input
               type={showPassword ? 'text' : 'password'}
@@ -84,7 +85,7 @@ export default function LoginForm() {
               type="button"
               onClick={() => setShowPassword((v) => !v)}
               aria-label={
-                showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'
+                showPassword ? t("Masquer le mot de passe") : t("Afficher le mot de passe")
               }
               className="absolute top-1/2 right-3 -translate-y-1/2 text-faint hover:text-ink"
             >
@@ -99,7 +100,7 @@ export default function LoginForm() {
 
         {passwordReset && (
           <p role="status" className="rounded-lg border border-success/30 bg-success/10 px-4 py-2.5 text-sm text-success">
-            Mot de passe mis à jour. Connectez-vous avec le nouveau.
+            {t("Mot de passe mis à jour. Connectez-vous avec le nouveau.")}
           </p>
         )}
         {error && (
@@ -116,13 +117,13 @@ export default function LoginForm() {
               onChange={(e) => setRemember(e.target.checked)}
               className="h-4 w-4 rounded border-border accent-brand-purple"
             />
-            <span title="Décochez sur un ordinateur partagé : la session se fermera avec le navigateur.">Se souvenir de moi</span>
+            <span title={t('Décochez sur un ordinateur partagé : la session se fermera avec le navigateur.')}>{t('Se souvenir de moi')}</span>
           </label>
           <Link
             to={email.trim() ? `/mot-de-passe-oublie?email=${encodeURIComponent(email.trim())}` : '/mot-de-passe-oublie'}
             className="text-brand-purple hover:underline"
           >
-            Mot de passe oublié ?
+            {t("Mot de passe oublié ?")}
           </Link>
         </div>
 
@@ -132,7 +133,7 @@ export default function LoginForm() {
           disabled={submitting}
           className="w-full disabled:opacity-70"
         >
-          {submitting ? 'Connexion...' : 'Se connecter'}
+          {submitting ? t('Connexion...') : t('Se connecter')}
         </Button>
       </form>
 
@@ -140,29 +141,29 @@ export default function LoginForm() {
         <>
           <div className="my-6 flex items-center gap-4 text-xs text-faint">
             <span className="h-px flex-1 bg-border-soft" />
-            ou
+            {t('ou')}
             <span className="h-px flex-1 bg-border-soft" />
           </div>
           <div className="flex flex-col items-center gap-3">
             <GoogleSignInButton onError={setError} />
             {/* Un premier passage par Google crée le compte : il vaut acceptation des conditions. */}
             <p className="text-center text-xs text-faint">
-              En continuant avec Google, vous acceptez les{' '}
-              <Link to="/cgu" className="text-brand-purple hover:underline">CGU</Link> et la{' '}
-              <Link to="/confidentialite" className="text-brand-purple hover:underline">politique de confidentialité</Link>.
+              {t('En continuant avec Google, vous acceptez les')}{' '}
+              <Link to="/cgu" className="text-brand-purple hover:underline">{t('CGU')}</Link> {t('et la')}{' '}
+              <Link to="/confidentialite" className="text-brand-purple hover:underline">{t('politique de confidentialité')}</Link>.
             </p>
           </div>
         </>
       )}
 
       <p className="mt-8 text-center text-sm text-muted">
-        Pas encore de compte ?{' '}
+        {t('Pas encore de compte ?')}{' '}
         <Link
           to={returnPath ? loginPathForReturnPath(returnPath).replace('/connexion?', '/inscription?') : '/inscription'}
           state={location.state}
           className="font-medium text-brand-purple hover:underline"
         >
-          Créer un compte
+          {t("Créer un compte")}
         </Link>
       </p>
     </div>
