@@ -96,8 +96,8 @@
   min-height: 100svh;
   place-items: center;
   overflow: hidden;
-  background: #0b1020;
-  color: #f8f9fc;
+  background: var(--color-bg);
+  color: var(--color-ink);
 }
 
 .brand-loader-content {
@@ -135,7 +135,7 @@
 }
 
 .brand-loader-wordmark {
-  color: #f0efff;
+  color: var(--color-ink);
   font-family: var(--font-heading);
   font-size: 1.15rem;
   font-weight: 700;

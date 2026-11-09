@@ -13,11 +13,14 @@ function resolveTheme(mode) {
 // petit script bloquant dans index.html applique déjà la bonne valeur avant
 // le premier rendu pour éviter un flash du mauvais thème.
 export function useTheme() {
-  const [mode, setMode] = useLocalStorageState('tbf_theme', 'dark')
+  const [mode, setMode] = useLocalStorageState('tbf_theme', 'light')
 
   useEffect(() => {
     const apply = () => {
-      document.documentElement.setAttribute('data-theme', resolveTheme(mode))
+      const theme = resolveTheme(mode)
+      document.documentElement.setAttribute('data-theme', theme)
+      document.querySelector('meta[name="theme-color"]')
+        ?.setAttribute('content', theme === 'light' ? '#f6f7fb' : '#0b1020')
     }
     apply()
 
