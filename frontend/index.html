@@ -19,7 +19,7 @@
       content="Créez en quelques minutes le site de votre événement (mariage, anniversaire, conférence, concert…) : invitations, confirmations de présence, programme, billetterie et livre d'or."
     />
     <meta name="robots" content="index, follow, max-image-preview:large" />
-    <meta name="theme-color" content="#0b1020" />
+    <meta name="theme-color" content="#f6f7fb" />
     <meta name="application-name" content="TBF Moment" />
     <meta property="og:site_name" content="TBF Moment" />
     <meta property="og:locale" content="fr_FR" />
@@ -52,8 +52,12 @@
               ? 'light'
               : mode === 'auto'
                 ? 'dark'
-                : 'dark';
+                : 'light';
         document.documentElement.setAttribute('data-theme', resolved);
+        document.querySelector('meta[name="theme-color"]').setAttribute(
+          'content',
+          resolved === 'light' ? '#f6f7fb' : '#0b1020',
+        );
         // Pages des invités (site, invitation, cadeaux) et démo d'un modèle dans le téléphone
         // d'aperçu (?cadre=1) : pas d'écran d'accueil TBF Moment, masqué avant le premier
         // affichage pour qu'il n'apparaisse même pas un instant.
@@ -81,6 +85,12 @@
         color: #f8f9fc;
         opacity: 1;
         transition: opacity 250ms ease;
+      }
+      :root[data-theme="light"] #startup-splash {
+        background:
+          radial-gradient(ellipse at 50% 42%, #6c4bf426, transparent 48%),
+          #f6f7fb;
+        color: #12172a;
       }
       #startup-splash.is-hidden {
         opacity: 0;
@@ -127,6 +137,9 @@
         margin: 0;
         color: #9ba3c2;
         font-size: 0.9rem;
+      }
+      :root[data-theme="light"] .startup-splash-caption {
+        color: #4b5170;
       }
       @keyframes startup-splash-draw {
         to { stroke-dashoffset: 0; }
