@@ -274,6 +274,127 @@ function SectionHead({ eyebrow, title, ornament }) {
   )
 }
 
+// ---------- Arch Image Carousel ----------
+// Affiche les photos de la galerie en éventail arqué :
+// l'image centrale est grande et frontale ; les voisines sont réduites,
+// décalées en arc et légèrement inclinées. Clic sur une latérale → elle
+// passe au centre. Clic sur la centrale → visionneuse plein écran.
+function ArchCarousel({ items, editable, uploading, onOpen, onUpload }) {
+  const [active, setActive] = useState(0)
+  const total = items.length
+  const count = Math.min(total, 5) // nombre de slots visibles (max 5)
+
+  // Navigation clavier
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'ArrowLeft') setActive((a) => (a - 1 + total) % total)
+      if (e.key === 'ArrowRight') setActive((a) => (a + 1) % total)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [total])
+
+  // Les positions visibles autour de l'actif : [-2, -1, 0, +1, +2]
+  const slots = Array.from({ length: count }, (_, k) => k - Math.floor(count / 2))
+
+  return (
+    <div className="arch-carousel rv" aria-label="Galerie photos">
+      <div className="arch-track">
+        {slots.map((offset) => {
+          const idx = ((active + offset) % total + total) % total
+          const item = items[idx]
+          const isCenter = offset === 0
+          // arc : inclinaison et translation verticale en fonction du décalage
+          const rot = offset * 10          // degrés de rotation
+          const ty = Math.abs(offset) * 22 // descente en px (arc)
+          const scale = isCenter ? 1 : 1 - Math.abs(offset) * 0.14
+          const zIndex = count - Math.abs(offset)
+          const style = {
+            transform: `rotate(${rot}deg) translateY(${ty}px) scale(${scale})`,
+            zIndex,
+          }
+          return (
+            <div
+              key={item.id}
+              className={`arch-item${isCenter ? ' arch-active' : ''}`}
+              style={style}
+              onClick={() => {
+                if (!isCenter) { setActive(idx); return }
+                if (item.url) onOpen(active)
+              }}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (!isCenter) setActive(idx); else if (item.url) onOpen(active) } }}
+              aria-label={isCenter ? (item.caption || `Photo ${idx + 1}`) : `Voir photo ${idx + 1}`}
+            >
+              {item.url ? (
+                <img src={item.url} alt={item.caption ?? ''} loading="lazy" decoding="async" />
+              ) : (
+                <span className="art-svg" dangerouslySetInnerHTML={{ __html: item.svg }} aria-hidden="true" />
+              )}
+              {isCenter && item.caption && (
+                <p className="arch-caption">{item.caption}</p>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Boutons de navigation */}
+      {total > 1 && (
+        <div className="arch-nav">
+          <button
+            type="button"
+            className="arch-btn"
+            aria-label="Photo précédente"
+            onClick={() => setActive((a) => (a - 1 + total) % total)}
+          >
+            <ChevronLeft />
+          </button>
+          <span className="arch-dots" aria-hidden="true">
+            {Array.from({ length: Math.min(total, 7) }, (_, i) => {
+              const dotIdx = total <= 7 ? i : Math.round(i * (total - 1) / 6)
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  className={`arch-dot${dotIdx === active ? ' on' : ''}`}
+                  onClick={() => setActive(dotIdx)}
+                  aria-label={`Photo ${dotIdx + 1}`}
+                />
+              )
+            })}
+          </span>
+          <button
+            type="button"
+            className="arch-btn"
+            aria-label="Photo suivante"
+            onClick={() => setActive((a) => (a + 1) % total)}
+          >
+            <ChevronRight />
+          </button>
+        </div>
+      )}
+
+      {/* Bouton upload en mode éditeur */}
+      {editable && (
+        <label className="arch-upload" onClick={(e) => e.stopPropagation()}>
+          <ImagePlus />
+          {uploading ? 'Envoi…' : 'Ajouter des photos'}
+          <input
+            type="file"
+            className="sr"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            multiple
+            disabled={uploading}
+            onChange={(e) => { onUpload([...(e.target.files ?? [])]); e.target.value = '' }}
+          />
+        </label>
+      )}
+    </div>
+  )
+}
+
 function Lightbox({ photos, index, onClose, onMove }) {
   useEffect(() => {
     const onKey = (e) => {
@@ -1010,32 +1131,28 @@ export default function ThemedSitePage({
         // Album des invités : ouvert sauf si l'organisateur l'a fermé (guestUploads: false).
         const guestUploads = !editable && Boolean(data.slug) && content.guestUploads !== false
         if (!photos.length && !editable && !tiles.length && !guestUploads) return null
+
+        // Arch Image Carousel — remplace la grille masonry quand il y a des vraies photos.
+        const allItems = photos.length
+          ? photos.map((p, i) => ({ id: p.id ?? i, url: mediaUrl(p.url), caption: p.caption ?? '' }))
+          : tiles.map((svg, i) => ({ id: `tile-${i}`, svg, label: data.galleryLabels?.[i] }))
+
         return sectionShell(
           block,
           index,
           <>
             {headFor(block, content)}
-            <div className="gal rv">
-              {photos.map((photo, i) => (
-                <button
-                  key={photo.id}
-                  type="button"
-                  aria-label={`Agrandir la photo ${i + 1}`}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    if (!editable) setLightboxIndex(i)
-                  }}
-                >
-                  <img src={mediaUrl(photo.url)} alt={photo.caption ?? ''} loading="lazy" />
-                </button>
-              ))}
-              {tiles.map((svg, i) => (
-                <div key={i} className="ph art" aria-hidden="true">
-                  <span className="art-svg" dangerouslySetInnerHTML={{ __html: svg }} />
-                  {data.galleryLabels?.[i] && <span className="art-label">{data.galleryLabels[i]}</span>}
-                </div>
-              ))}
-              {editable && (
+            {allItems.length > 0 ? (
+              <ArchCarousel
+                items={allItems}
+                editable={editable}
+                uploading={editor.uploading}
+                onOpen={(i) => { if (!editable) setLightboxIndex(i) }}
+                onUpload={(files) => { editor.onUploadGalleryPhotos?.(files) }}
+              />
+            ) : null}
+            {editable && (
+              <div className="gal-upload-row">
                 <label className="add" onClick={(e) => e.stopPropagation()}>
                   <ImagePlus />
                   {editor.uploading ? 'Envoi…' : 'Ajouter des photos'}
@@ -1051,8 +1168,9 @@ export default function ThemedSitePage({
                     }}
                   />
                 </label>
-              )}
-            </div>
+              </div>
+            )}
+            
             {!photos.length && !data.galleryLabels?.length && (
               <p className="form-note muted" style={{ textAlign: 'center' }}>
                 <Images style={{ width: 16, height: 16, display: 'inline', verticalAlign: '-3px' }} />{' '}

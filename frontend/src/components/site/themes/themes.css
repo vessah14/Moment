@@ -244,7 +244,66 @@
 .tbft .venue .when svg { width: 16px; height: 16px; color: var(--accent) }
 .tbft .map { width: 100%; min-height: 280px; height: 100%; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-2) }
 
-/* Galerie */
+/* ---------- Arch Image Carousel (galerie) ---------- */
+.tbft .arch-carousel { display: flex; flex-direction: column; align-items: center; gap: 2rem; padding: 1rem 0 2rem }
+.tbft .arch-track {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  height: clamp(260px, 50vw, 420px);
+  width: 100%;
+  overflow: visible;
+}
+.tbft .arch-item {
+  position: absolute;
+  width: clamp(160px, 30vw, 280px);
+  aspect-ratio: 3 / 4;
+  border-radius: var(--radius);
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--surface-2);
+  box-shadow: var(--shadow);
+  transition:
+    transform 0.55s cubic-bezier(.22, 1, .36, 1),
+    box-shadow 0.4s ease,
+    z-index 0s;
+}
+.tbft .arch-item img,
+.tbft .arch-item .art-svg { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.5s var(--ease-out) }
+.tbft .arch-item:not(.arch-active):hover img { transform: scale(1.04) }
+.tbft .arch-active {
+  box-shadow: 0 30px 70px -20px rgba(0, 0, 0, .45), 0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent);
+  cursor: zoom-in;
+}
+.tbft .arch-active:hover img { transform: scale(1.03) }
+.tbft .arch-caption {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  margin: 0;
+  padding: .5rem .8rem;
+  background: linear-gradient(transparent, rgba(0,0,0,.55));
+  color: #fff;
+  font-size: .82rem;
+  text-align: center;
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+/* Navigation */
+.tbft .arch-nav { display: flex; align-items: center; gap: 1rem }
+.tbft .arch-btn { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 80%, transparent); color: var(--fg); cursor: pointer; transition: background .2s, transform .2s }
+.tbft .arch-btn:hover { background: var(--accent); color: var(--on-accent); transform: scale(1.07) }
+.tbft .arch-btn svg { width: 20px; height: 20px }
+.tbft .arch-dots { display: flex; align-items: center; gap: .4rem }
+.tbft .arch-dot { width: 7px; height: 7px; border-radius: 50%; border: 0; background: var(--line); padding: 0; cursor: pointer; transition: background .25s, transform .25s }
+.tbft .arch-dot.on { background: var(--accent); transform: scale(1.3) }
+/* Upload éditeur */
+.tbft .arch-upload { display: inline-flex; align-items: center; gap: .5rem; padding: .6rem 1.2rem; border-radius: 999px; border: 2px dashed var(--line); background: transparent; color: var(--muted); font-size: .88rem; font-weight: 600; cursor: pointer; transition: border-color .2s, color .2s }
+.tbft .arch-upload:hover { border-color: var(--accent); color: var(--accent) }
+.tbft .arch-upload svg { width: 18px; height: 18px }
+/* Upload rangé sous le carousel (éditeur, sans photos) */
+.tbft .gal-upload-row { display: flex; justify-content: center; margin-top: 1rem }
+
+/* ---------- Galerie (grille masonry) ---------- */
 .tbft .gal { display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 170px; gap: 10px }
 .tbft .gal > * { position: relative; border: 0; padding: 0; border-radius: var(--radius-sm); overflow: hidden; background: var(--surface-2) }
 .tbft .gal button { cursor: zoom-in }
