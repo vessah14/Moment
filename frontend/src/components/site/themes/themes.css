@@ -14,7 +14,7 @@
   --bg: #fff; --surface: #fff; --surface-2: #f5f5f5; --fg: #111; --muted: #555;
   --accent: #6c4bf4; --accent-2: #ff7a3d; --on-accent: #fff; --line: #e5e5e5; --motif: #ccc;
   --motif-opacity: .18; --radius: 18px; --radius-sm: 12px;
-  --f-script: Georgia, serif; --f-display: Georgia, serif; --f-body: system-ui, sans-serif;
+  --f-script: "Cormorant Garamond", "Palatino Linotype", Georgia, serif; --f-display: "Playfair Display", "Plus Jakarta Sans", Georgia, serif; --f-body: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
   --shadow: 0 18px 50px -24px rgba(0, 0, 0, .35);
   --ease-out: cubic-bezier(.22, 1, .36, 1); --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
   position: relative; isolation: isolate; overflow-x: clip;
