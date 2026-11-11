@@ -9,7 +9,7 @@ namespace backend_EventMoment.Interfaces
         Task<AdminAccountDto?> GetByIdAsync(Guid id);
         Task<List<AdminAccountDto>> GetAllAsync();
         Task<bool> DeactivateAsync(Guid id, Guid currentAdminId);
-        Task<AdminLoginResponseDto> LoginAsync(LoginDto dto);
+        Task<LoginResponseDto> LoginAsync(LoginDto dto);
         Task<LoginResponseDto> CompleteMfaLoginAsync(AdminMfaLoginDto dto);
         Task RequestMfaRecoveryAsync(string email);
         Task CompleteMfaRecoveryAsync(AdminMfaRecoveryDto dto);

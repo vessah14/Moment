@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using backend_EventMoment.Data;
+using backend_EventMoment.Dtos;
 using backend_EventMoment.Dtos.User;
 using backend_EventMoment.Models;
 using backend_EventMoment.Services;
@@ -73,7 +74,7 @@ public class SecurityHardeningTests
     }
 
     [Fact]
-    public async Task AdminLogin_RequiresValidMfaBeforeIssuingAdminSession()
+    public async Task AdminLogin_IssuesSessionWithoutMfaEvenWhenConfigured()
     {
         var (service, context, admin, dataProtection, _) = AdminSetup();
         const string secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
@@ -85,55 +86,61 @@ public class SecurityHardeningTests
         });
         await context.SaveChangesAsync();
 
-        var challenge = await service.LoginAsync(new LoginDto { Email = "boss@tbfmoment.com", Password = "AdminPass123" });
-
-        Assert.True(challenge.MfaRequired);
-        Assert.False(challenge.MfaSetupRequired);
-        Assert.False(string.IsNullOrWhiteSpace(challenge.MfaToken));
-        var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
-        var challengeClaims = handler.ReadJwtToken(challenge.MfaToken).Claims;
-        Assert.Contains(challengeClaims, claim => claim.Type == "type" && claim.Value == "admin_mfa");
-        Assert.DoesNotContain(challengeClaims, claim => claim.Type == ClaimTypes.Email);
-
-        var code = Totp.Code(secret, Totp.CurrentStep(DateTimeOffset.UtcNow));
-        var session = await service.CompleteMfaLoginAsync(new AdminMfaLoginDto
-        {
-            MfaToken = challenge.MfaToken!,
-            Code = code,
-        });
+        var session = await service.LoginAsync(new LoginDto { Email = "boss@tbfmoment.com", Password = "AdminPass123" });
 
         Assert.False(string.IsNullOrWhiteSpace(session.Token));
         Assert.True(session.Expiration > DateTimeOffset.UtcNow);
+        var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
         var claims = handler.ReadJwtToken(session.Token).Claims;
         Assert.Contains(claims, claim => claim.Type == "type" && claim.Value == "admin");
         Assert.Contains(claims, claim => claim.Type == ClaimTypes.Email && claim.Value == admin.Email);
-
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            service.CompleteMfaLoginAsync(new AdminMfaLoginDto { MfaToken = challenge.MfaToken!, Code = code }));
+        Assert.Equal(admin.Email, ((AdminAccountDto)session.Utilisateur).Email);
     }
 
     [Fact]
-    public async Task AdminLogin_RequiresFirstTotpCodeToEnableMfa()
+    public async Task AdminLogin_DoesNotSetUpMfaForNewAccount()
     {
         var (service, context, admin, _, _) = AdminSetup();
 
-        var challenge = await service.LoginAsync(new LoginDto { Email = admin.Email, Password = "AdminPass123" });
-
-        Assert.True(challenge.MfaRequired);
-        Assert.True(challenge.MfaSetupRequired);
-        Assert.NotNull(challenge.OtpAuthUri);
-        Assert.False(string.IsNullOrWhiteSpace(challenge.MfaSecret));
-        Assert.Null((await context.AdminMfas.FindAsync(admin.Id))!.EnabledAt);
-
-        var code = Totp.Code(challenge.MfaSecret!, Totp.CurrentStep(DateTimeOffset.UtcNow));
-        var session = await service.CompleteMfaLoginAsync(new AdminMfaLoginDto
-        {
-            MfaToken = challenge.MfaToken!,
-            Code = code,
-        });
+        var session = await service.LoginAsync(new LoginDto { Email = admin.Email, Password = "AdminPass123" });
 
         Assert.False(string.IsNullOrWhiteSpace(session.Token));
-        Assert.NotNull((await context.AdminMfas.FindAsync(admin.Id))!.EnabledAt);
+        Assert.Null(await context.AdminMfas.FindAsync(admin.Id));
+    }
+
+    [Fact]
+    public async Task AdminLogin_ReturnsTheAccountMatchingTheSubmittedEmail()
+    {
+        var (service, context, _, _, _) = AdminSetup();
+        var expectedAdmin = new AdminAccount
+        {
+            Id = Guid.NewGuid(),
+            Email = "second@tbfmoment.com",
+            FullName = "Second Admin",
+            Role = AdminRole.Support,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("SecondPass123"),
+            IsActive = true,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow,
+        };
+        context.AdminAccounts.Add(expectedAdmin);
+        await context.SaveChangesAsync();
+
+        var session = await service.LoginAsync(new LoginDto
+        {
+            Email = expectedAdmin.Email,
+            Password = "SecondPass123",
+        });
+
+        var loggedInAdmin = Assert.IsType<AdminAccountDto>(session.Utilisateur);
+        Assert.Equal(expectedAdmin.Id, loggedInAdmin.Id);
+        Assert.Equal(expectedAdmin.FullName, loggedInAdmin.FullName);
+        Assert.Equal(expectedAdmin.Role, loggedInAdmin.Role);
+
+        var claims = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler()
+            .ReadJwtToken(session.Token).Claims;
+        Assert.Contains(claims, claim =>
+            claim.Type == ClaimTypes.NameIdentifier && claim.Value == expectedAdmin.Id.ToString());
     }
 
     [Fact]

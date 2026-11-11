@@ -105,7 +105,7 @@ namespace backend_EventMoment.Services
             return true;
         }
 
-        public async Task<AdminLoginResponseDto> LoginAsync(LoginDto dto)
+        public async Task<LoginResponseDto> LoginAsync(LoginDto dto)
         {
             _throttle?.EnsureNotLocked("admin", dto.Email);
 
@@ -125,48 +125,12 @@ namespace backend_EventMoment.Services
             if (!admin.IsActive)
                 throw new AccountInactiveException();
 
-            var mfa = await _context.AdminMfas.FirstOrDefaultAsync(m => m.AdminId == admin.Id);
-            var (mfaToken, _) = _jwtService.GenerateAdminMfaToken(admin);
-            if (mfa?.EnabledAt != null)
-                return new AdminLoginResponseDto
-                {
-                    MfaRequired = true,
-                    MfaToken = mfaToken,
-                };
-
-            string secret;
-            if (mfa == null)
+            var (token, expiration) = _jwtService.GenerateAdminToken(admin);
+            return new LoginResponseDto
             {
-                secret = Totp.GenerateSecret();
-                mfa = new AdminMfa
-                {
-                    AdminId = admin.Id,
-                    SecretProtected = _mfaProtector.Protect(secret),
-                };
-                _context.AdminMfas.Add(mfa);
-            }
-            else
-            {
-                try
-                {
-                    secret = _mfaProtector.Unprotect(mfa.SecretProtected);
-                }
-                catch (CryptographicException)
-                {
-                    secret = Totp.GenerateSecret();
-                    mfa.SecretProtected = _mfaProtector.Protect(secret);
-                    mfa.LastUsedStep = 0;
-                }
-            }
-            await _context.SaveChangesAsync();
-
-            return new AdminLoginResponseDto
-            {
-                MfaRequired = true,
-                MfaSetupRequired = true,
-                MfaToken = mfaToken,
-                MfaSecret = secret,
-                OtpAuthUri = Totp.ProvisioningUri(admin.Email, secret),
+                Token = token,
+                Expiration = expiration,
+                Utilisateur = ToDto(admin),
             };
         }
 
