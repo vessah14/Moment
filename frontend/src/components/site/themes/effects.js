@@ -250,7 +250,60 @@ const STYLES = {
   recueil: { bpm: 54, root: 50, prog: [0, 5, 9, 7], q: [0, 0, 1, 0], arp: [0, null, 2, null, 1, null, 3, null], decay: 2.8, bright: 2, pad: true },
 }
 
-export function createMusic(styleId, onChange) {
+export function createMusic(styleId, onChange, customAudioUrl) {
+  if (styleId === 'custom' || customAudioUrl) {
+    let audio = null
+    let playing = false
+
+    const setPlaying = (value) => {
+      playing = value
+      onChange?.(value)
+    }
+
+    const onVisibility = () => {
+      if (!audio || !playing) return
+      if (document.hidden) audio.pause()
+      else audio.play().catch(() => {})
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+
+    return {
+      available: Boolean(customAudioUrl),
+      play() {
+        if (!customAudioUrl) return
+        try {
+          if (!audio) {
+            audio = new Audio(customAudioUrl)
+            audio.loop = true
+            audio.addEventListener('play', () => setPlaying(true))
+            audio.addEventListener('pause', () => setPlaying(false))
+            audio.addEventListener('ended', () => setPlaying(false))
+          }
+          audio.play().then(() => setPlaying(true)).catch(() => setPlaying(false))
+        } catch {
+          setPlaying(false)
+        }
+      },
+      pause() {
+        if (!audio) return
+        audio.pause()
+        setPlaying(false)
+      },
+      toggle() {
+        if (playing) this.pause()
+        else this.play()
+      },
+      destroy() {
+        document.removeEventListener('visibilitychange', onVisibility)
+        if (audio) {
+          audio.pause()
+          audio.src = ''
+          audio = null
+        }
+      },
+    }
+  }
+
   const s = STYLES[styleId]
   let ac
   let out

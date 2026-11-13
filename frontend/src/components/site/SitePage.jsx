@@ -18,7 +18,7 @@ import {
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
-import { eventShareUrl, mediaUrl } from '../../api/client'
+import { eventShareUrl, mediaUrl, musicUrl } from '../../api/client'
 import { googleCalendarUrl, handleAddToCalendar } from '../../utils/calendar'
 import logoMark from '../../assets/logo-mark.webp'
 import {
@@ -1020,12 +1020,12 @@ function renderBlockBody({ block, content, data, editable, editor, fullPage, ani
 // Musique d'ambiance des modèles classiques (générée en direct, aucun fichier audio). Les
 // navigateurs n'autorisent le son qu'après un geste : elle démarre au premier toucher ou clic
 // sur la page, et ce bouton la coupe ou la relance.
-function SiteMusicButton({ styleId }) {
+function SiteMusicButton({ styleId, customAudioUrl }) {
   const [playing, setPlaying] = useState(false)
   const musicRef = useRef(null)
 
   useEffect(() => {
-    const music = createMusic(styleId, setPlaying)
+    const music = createMusic(styleId, setPlaying, customAudioUrl ? musicUrl(customAudioUrl) : null)
     musicRef.current = music
     let started = false
     const startOnce = (e) => {
@@ -1043,7 +1043,7 @@ function SiteMusicButton({ styleId }) {
       window.removeEventListener('keydown', startOnce)
       music.destroy()
     }
-  }, [styleId])
+  }, [styleId, customAudioUrl])
 
   return (
     <button
@@ -1525,7 +1525,7 @@ function ClassicSitePage({
           onHero={onImage}
         />
       )}
-      {fullPage && !editable && heroStyle.musicStyle && <SiteMusicButton styleId={heroStyle.musicStyle} />}
+      {fullPage && !editable && heroStyle.musicStyle && <SiteMusicButton styleId={heroStyle.musicStyle} customAudioUrl={heroStyle.musicUrl} />}
       {passOpen && hasPass && (
         <PassDialog onClose={() => setPassOpen(false)}>
           <GuestPass

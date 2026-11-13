@@ -53,6 +53,12 @@ export function voiceUrl(path) {
   return path.startsWith('/uploads/voices/') ? `${API_ORIGIN}${path}` : ''
 }
 
+// URL de lecture de la musique personnalisée téléversée pour un événement.
+// Même format de stockage que les messages vocaux (voices/{eventId}/{Guid}.ext).
+export function musicUrl(path) {
+  return voiceUrl(path)
+}
+
 // Où vit la session : localStorage pour « Se souvenir de moi » (jeton de 30 jours,
 // renouvelable jusqu'à 90 jours), sessionStorage pour le navigateur courant. Le compte
 // (USER_KEY) suit toujours le jeton dans le même stockage.

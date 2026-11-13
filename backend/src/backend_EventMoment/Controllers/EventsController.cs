@@ -65,6 +65,32 @@ namespace backend_EventMoment.Controllers
             return Ok(new { url });
         }
 
+        // Musique personnalisée de l'organisateur pour son site d'événement.
+        // L'URL renvoyée est rangée dans le contenu du bloc Hero (heroStyle.musicUrl).
+        private const long MaxSiteMusicBytes = 15 * 1024 * 1024; // 15 Mo (~4 min en MP3 128 kbps)
+
+        [HttpPost("{id:guid}/site-music")]
+        [RequestSizeLimit(MaxSiteMusicBytes + 64 * 1024)]
+        public async Task<IActionResult> UploadSiteMusic(Guid id, [FromForm] IFormFile file)
+        {
+            if (!TryGetOrganizerId(out var organizerId))
+                return Unauthorized();
+
+            await _service.GetByIdAsync(id, organizerId);
+
+            if (file == null || file.Length == 0)
+                return BadRequest(new { error = "Aucun fichier fourni." });
+            if (file.Length > MaxSiteMusicBytes)
+                return BadRequest(new { error = "Fichier trop volumineux (15 Mo maximum)." });
+
+            var extension = Path.GetExtension(file.FileName);
+            if (!VoiceFiles.Extensions.Contains(extension) || !await AudioFileValidator.HasValidSignatureAsync(file, extension))
+                return BadRequest(new { error = "Format non pris en charge. Utilisez MP3, M4A, OGG ou WebM." });
+
+            var url = await _uploads.SaveVoiceAsync(file, id, extension);
+            return Ok(new { url });
+        }
+
         private async Task<IActionResult> SaveEventImageAsync(Guid id, IFormFile file, UploadFolder folder)
         {
             if (!TryGetOrganizerId(out var organizerId))

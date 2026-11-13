@@ -14,6 +14,9 @@ export const MUSIC_STYLES = [
 // Valeur enregistrée pour « pas de musique » (une valeur vide veut dire « automatique »).
 export const NO_MUSIC = 'none'
 
+// Valeur enregistrée quand l'organisateur a importé son propre fichier audio.
+export const CUSTOM_MUSIC = 'custom'
+
 const BY_EVENT_TYPE = {
   mariage: 'harpe',
   noces: 'harpe',
@@ -45,6 +48,7 @@ const isStyle = (value) => MUSIC_STYLES.some((style) => style.id === value)
 
 export function resolveEventMusic({ choice, themeMusic, eventType } = {}) {
   if (choice === NO_MUSIC) return null
+  if (choice === CUSTOM_MUSIC) return CUSTOM_MUSIC
   if (isStyle(choice)) return choice
   if (isStyle(themeMusic)) return themeMusic
   return BY_EVENT_TYPE[eventType] ?? 'lounge'

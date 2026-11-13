@@ -13,6 +13,7 @@ import {
   updateEvent as updateEventApi,
   uploadEventBlockImage,
   uploadEventVoiceMessage,
+  uploadEventSiteMusic,
 } from '../api/events'
 import { listEventCategories } from '../api/eventCategories'
 import { listEventLocations } from '../api/eventLocations'
@@ -113,6 +114,8 @@ export default function Builder() {
     monogram: '',
     // Musique d'ambiance : '' = automatique, 'none' = aucune, sinon un style (utils/eventMusic).
     music: '',
+    // URL du fichier audio importé par l'organisateur (music === 'custom').
+    musicUrl: '',
   })
 
   // Photos publiées de la galerie : ce sont elles que le bloc Galerie affiche en ligne.
@@ -218,6 +221,7 @@ export default function Builder() {
           logoUrl: heroContent.logoUrl ?? '',
           monogram: heroContent.monogram ?? '',
           music: heroContent.music ?? '',
+          musicUrl: heroContent.musicUrl ?? '',
           blockHeight: heroContent.blockHeight ?? 72,
           darkOverlay: heroContent.darkOverlay ?? true,
           entryAnimation: heroContent.entryAnimation ?? false,
@@ -482,6 +486,20 @@ export default function Builder() {
     }
   }
 
+  const handleUploadSiteMusic = async (file) => {
+    if (!file) return
+    setUploading(true)
+    setSaveError('')
+    try {
+      const { url } = await uploadEventSiteMusic(eventId, file)
+      setHeroStyle((prev) => ({ ...prev, music: 'custom', musicUrl: url }))
+    } catch (err) {
+      setSaveError(err.message || "La musique n'a pas pu être envoyée.")
+    } finally {
+      setUploading(false)
+    }
+  }
+
   // Les photos ajoutées ici vont directement dans la galerie de l'événement (publiées).
   const handleUploadGalleryPhotos = async (files) => {
     if (!files?.length) return
@@ -543,6 +561,7 @@ export default function Builder() {
         logoUrl: heroStyle.logoUrl,
         monogram: heroStyle.monogram,
         music: heroStyle.music,
+        musicUrl: heroStyle.musicUrl,
       })
       // Toute la page en un seul appel, tout ou rien (l'ancienne suite d'appels bloc par
       // bloc pouvait laisser la page à moitié enregistrée : « Conflit de données »).
@@ -852,6 +871,7 @@ export default function Builder() {
             onChangeHeroStyle={handleChangeHeroStyle}
             uploading={uploading}
             onUploadSiteLogo={handleUploadSiteLogo}
+            onUploadSiteMusic={handleUploadSiteMusic}
             selectedBlock={selectedBlock}
             blockContent={blockContent}
             onChangeBlockContent={updateBlockContent}
@@ -905,6 +925,7 @@ export default function Builder() {
             onChangeHeroStyle={handleChangeHeroStyle}
             uploading={uploading}
             onUploadSiteLogo={handleUploadSiteLogo}
+            onUploadSiteMusic={handleUploadSiteMusic}
             selectedBlock={selectedBlock}
             blockContent={blockContent}
             onChangeBlockContent={updateBlockContent}

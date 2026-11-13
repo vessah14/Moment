@@ -28,7 +28,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
-import { eventShareUrl, mediaUrl } from '../../../api/client'
+import { eventShareUrl, mediaUrl, musicUrl } from '../../../api/client'
 import { signPublicGuestBook } from '../../../api/publicEvents'
 import { safeBlockImagePath, safeCoverPath, siteBlockDomId } from '../../../utils/sitePage'
 import BlockToolbar from '../BlockToolbar'
@@ -718,8 +718,15 @@ export default function ThemedSitePage({
 
   // Musique (créée à la demande, coupée en quittant la page).
   useEffect(() => () => musicRef.current?.destroy(), [])
+  useEffect(() => {
+    musicRef.current?.destroy()
+    musicRef.current = null
+  }, [musicStyle, heroStyle.musicUrl])
   const music = () => {
-    if (!musicRef.current) musicRef.current = createMusic(musicStyle, setMusicOn)
+    if (!musicRef.current) {
+      const customUrl = heroStyle.musicUrl ? musicUrl(heroStyle.musicUrl) : null
+      musicRef.current = createMusic(musicStyle, setMusicOn, customUrl)
+    }
     return musicRef.current
   }
 
