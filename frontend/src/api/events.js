@@ -48,3 +48,11 @@ export function uploadEventVoiceMessage(id, file) {
   formData.append('file', file)
   return apiFetch(`/events/${id}/voice-message`, { method: 'POST', body: formData })
 }
+
+// Musique personnalisée du site de l'événement (onglet Style du Builder) : renvoie { url }
+// à ranger dans le bloc Hero (heroStyle.musicUrl).
+export function uploadEventSiteMusic(id, file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return apiFetch(`/events/${id}/site-music`, { method: 'POST', body: formData })
+}

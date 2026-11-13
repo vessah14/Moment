@@ -458,6 +458,7 @@ export default function MiniSite () {
           logoUrl: heroContent.logoUrl,
           monogram: heroContent.monogram,
           musicStyle,
+          musicUrl: heroContent.musicUrl,
           title: heroTitle,
           subtitle:
             heroContent.subtitle || event.tagline || defaultSubtitle(event)

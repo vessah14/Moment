@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { Check, ImagePlus, Trash2 } from 'lucide-react'
-import { mediaUrl } from '../../api/client'
+import { Check, ImagePlus, Music, Trash2 } from 'lucide-react'
+import { mediaUrl, musicUrl } from '../../api/client'
 import { safeBlockImagePath } from '../../utils/sitePage'
 import { customMonogram, monogramOf, parseTitle } from '../site/themes/titleParts'
-import { MUSIC_STYLES, NO_MUSIC } from '../../utils/eventMusic'
+import { CUSTOM_MUSIC, MUSIC_STYLES, NO_MUSIC } from '../../utils/eventMusic'
 import TemplatePreview from '../templates/TemplatePreview'
 import { getSiteTheme } from '../site/themes/themeDefs'
 import FaqEditor from './FaqEditor'
@@ -23,6 +23,7 @@ export default function StylePanel({
   onChangeHeroStyle,
   uploading = false,
   onUploadSiteLogo,
+  onUploadSiteMusic,
   selectedBlock,
   blockContent,
   onChangeBlockContent,
@@ -81,23 +82,85 @@ export default function StylePanel({
       )}
 
       {tab === 'Style' && (
-        <label className="mt-4 block rounded-xl border border-border-soft p-4">
-          <span className="text-sm font-medium text-ink">Musique d’ambiance</span>
-          <span className="mt-1 block text-xs text-faint">
-            Jouée sur la page de l’événement ; l’invité peut la couper à tout moment.
-          </span>
-          <select
-            value={heroStyle.music ?? ''}
-            onChange={(e) => update({ music: e.target.value })}
-            className="mt-2 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-brand-purple"
-          >
-            <option value="">Automatique (selon le modèle et l’événement)</option>
-            {MUSIC_STYLES.map((style) => (
-              <option key={style.id} value={style.id}>{style.label}</option>
-            ))}
-            <option value={NO_MUSIC}>Aucune musique</option>
-          </select>
-        </label>
+        <div className="mt-4 rounded-xl border border-border-soft p-4">
+          <label className="block">
+            <span className="text-sm font-medium text-ink">Musique d’ambiance</span>
+            <span className="mt-1 block text-xs text-faint">
+              Jouée sur la page de l’événement ; l’invité peut la couper à tout moment.
+            </span>
+            <select
+              value={heroStyle.music ?? ''}
+              onChange={(e) => update({ music: e.target.value })}
+              className="mt-2 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-brand-purple"
+            >
+              <option value="">Automatique (selon le modèle et l’événement)</option>
+              {MUSIC_STYLES.map((style) => (
+                <option key={style.id} value={style.id}>{style.label}</option>
+              ))}
+              <option value={CUSTOM_MUSIC}>Importer ma propre musique (MP3, M4A...)</option>
+              <option value={NO_MUSIC}>Aucune musique</option>
+            </select>
+          </label>
+
+          {heroStyle.music === CUSTOM_MUSIC && (
+            <div className="mt-3 pt-3 border-t border-border-soft/60 space-y-2.5">
+              <span className="text-xs font-medium text-muted block">Morceau personnalisé</span>
+              {heroStyle.musicUrl ? (
+                <div className="space-y-2">
+                  <audio
+                    controls
+                    src={musicUrl(heroStyle.musicUrl)}
+                    className="w-full h-9 rounded"
+                  />
+                  <div className="flex items-center justify-between gap-2">
+                    <label className={`inline-flex items-center gap-1.5 rounded-lg border border-border-soft bg-surface px-2.5 py-1.5 text-xs font-medium text-ink transition hover:border-brand-purple cursor-pointer ${uploading ? 'pointer-events-none opacity-60' : ''}`}>
+                      <Music className="h-3.5 w-3.5 text-brand-purple" />
+                      {uploading ? 'Envoi…' : 'Changer de musique'}
+                      <input
+                        type="file"
+                        accept=".mp3,.m4a,.ogg,.webm,audio/mpeg,audio/mp4,audio/ogg,audio/webm"
+                        className="sr-only"
+                        disabled={uploading}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) onUploadSiteMusic?.(file)
+                          e.target.value = ''
+                        }}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => update({ musicUrl: '', music: '' })}
+                      className="inline-flex items-center gap-1 text-xs text-red-500 hover:text-red-700"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Retirer
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <label className={`flex flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-border-soft bg-surface/50 p-4 text-center cursor-pointer hover:border-brand-purple transition ${uploading ? 'pointer-events-none opacity-60' : ''}`}>
+                  <Music className="h-6 w-6 text-faint" />
+                  <span className="text-xs font-medium text-ink">
+                    {uploading ? 'Envoi en cours…' : 'Choisir un fichier audio'}
+                  </span>
+                  <span className="text-[11px] text-faint">MP3, M4A, OGG ou WebM (max 15 Mo)</span>
+                  <input
+                    type="file"
+                    accept=".mp3,.m4a,.ogg,.webm,audio/mpeg,audio/mp4,audio/ogg,audio/webm"
+                    className="sr-only"
+                    disabled={uploading}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) onUploadSiteMusic?.(file)
+                      e.target.value = ''
+                    }}
+                  />
+                </label>
+              )}
+            </div>
+          )}
+        </div>
       )}
 
       {tab === 'Style' && premiumTheme && (
