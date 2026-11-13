@@ -2,10 +2,58 @@
 
 Ce Compose démarre le site organisateur, la console admin, une API .NET répliquée derrière Nginx, PostgreSQL, Prometheus, Loki et Grafana. Il est destiné aux essais locaux, pas à une mise en production.
 
+## Tester sans Docker (Windows)
+
+Cette méthode lance directement l'API et la console admin. Elle nécessite .NET 8 ou plus récent, Node.js et PostgreSQL en local. Si PostgreSQL et la base de l'application existent déjà, ne crée pas une deuxième base et ne rejoue pas les scripts SQL ci-dessous.
+
+1. Démarrer le service PostgreSQL depuis Windows si nécessaire. Pour une base déjà configurée, repérer son nom, son port et l'utilisateur/mot de passe utilisés ; les exemples suivants supposent `eventsaas`, le port `5432` et l'utilisateur `postgres`.
+2. **Uniquement pour une base neuve et vide**, créer la base et charger le schéma puis les données de démonstration. Chaque commande PostgreSQL peut demander le mot de passe de l'utilisateur local `postgres` :
+
+   ```powershell
+   $psql = "C:\Program Files\PostgreSQL\18\bin\psql.exe"
+   & $psql -h localhost -U postgres -d postgres -c "CREATE DATABASE eventsaas;"
+   & $psql -h localhost -U postgres -d eventsaas -v ON_ERROR_STOP=1 -f "database\docker\01-schema.sql"
+   & $psql -h localhost -U postgres -d eventsaas -v ON_ERROR_STOP=1 -f "database\docker\02-seed.sql"
+   ```
+
+   Ne lance pas ces commandes si la base locale contient déjà les données de l'application : elles ne sont pas nécessaires pour une base existante. Vérifie seulement que les migrations et tables attendues par la version actuelle de l'API sont présentes.
+
+3. Configurer les secrets de développement pour l'API. Utilise le nom de ta base, son port, ainsi que l'utilisateur et le mot de passe réellement configurés localement :
+
+   ```powershell
+   Set-Location "backend\src\backend_EventMoment"
+   dotnet user-secrets set "ConnectionStrings:AdminConnection" "Host=localhost;Port=5432;Database=eventsaas;Username=postgres;Password=VOTRE_MOT_DE_PASSE_POSTGRES"
+   dotnet user-secrets set "ConnectionStrings:ClientConnection" "Host=localhost;Port=5432;Database=eventsaas;Username=postgres;Password=VOTRE_MOT_DE_PASSE_POSTGRES"
+   dotnet user-secrets set "ConnectionStrings:SignupConnection" "Host=localhost;Port=5432;Database=eventsaas;Username=postgres;Password=VOTRE_MOT_DE_PASSE_POSTGRES"
+   dotnet user-secrets set "Jwt:Key" "local-testing-signing-key-change-me-2026"
+   dotnet user-secrets set "AdminBootstrap:Email" "admin@tbfmoment.local"
+   dotnet user-secrets set "AdminBootstrap:Password" "moment_admin_dev_only"
+   dotnet user-secrets set "AdminBootstrap:FullName" "Administrateur local"
+   ```
+
+   Remplace `eventsaas`, `5432`, `postgres` et `VOTRE_MOT_DE_PASSE_POSTGRES` par les paramètres de ta base existante. Si tu as déjà configuré ces trois chaînes de connexion dans les secrets du projet, ne les remplace pas.
+
+   Le superadmin de démonstration n'est créé que si la base ne contient encore aucun compte admin. Si elle en contient déjà, conserve les identifiants existants ou connecte-toi avec un compte admin déjà créé. Ne supprime pas de comptes ni de données pour suivre ce guide.
+
+4. Lancer l'API dans ce terminal :
+
+   ```powershell
+   dotnet run --launch-profile http
+   ```
+
+5. Dans un deuxième terminal, depuis la racine du dépôt, démarrer la console admin :
+
+   ```powershell
+   Set-Location "admin"
+   npm run dev
+   ```
+
+6. Ouvrir <http://localhost:5174/admin/connexion> et se connecter avec `admin@tbfmoment.local` / `moment_admin_dev_only`. L'API répond sur <http://localhost:5146/swagger>. Le compte n'est créé que si aucun compte admin n'existe dans la base.
+
 ## Démarrer
 
 1. Installer et démarrer Docker Desktop.
-2. Les valeurs de démonstration sont déjà définies dans Compose : aucun fichier `.env` n'est requis. Pour utiliser le fichier fourni explicitement, lance la commande avec `--env-file .env.docker.example`. Pour personnaliser les identifiants, copier ce fichier vers `.env` à la racine du dépôt et garder les mots de passe des rôles PostgreSQL cohérents avec `database/docker/00-roles.sql`.
+2. Pour créer le compte superadmin local de démonstration, utiliser le fichier fourni avec `--env-file .env.docker.example`. Il configure `admin@tbfmoment.local` / `moment_admin_dev_only`. Pour personnaliser ces identifiants, copier le fichier vers `.env` à la racine du dépôt et modifier `APP_ADMIN_EMAIL`, `APP_ADMIN_PASSWORD` et éventuellement `APP_ADMIN_FULL_NAME`. Sans ces variables, aucun compte superadmin n'est créé. Les valeurs du fichier d'exemple sont réservées aux essais locaux ; ne pas les utiliser en production.
 3. Lancer :
 
    ```powershell
@@ -29,7 +77,7 @@ Ce Compose démarre le site organisateur, la console admin, une API .NET répliq
 
 Nginx répartit les requêtes entre les réplicas et applique des limites de débit partagées par adresse IP : 5 tentatives/minute sur les connexions (avec une tolérance aux pointes), 10 écritures publiques/minute et 60 requêtes API/minute. L'API conserve aussi ses limites applicatives. L'endpoint Prometheus `/metrics` n'est pas exposé par le proxy public local.
 
-L'API utilise PostgreSQL en conteneur. Au premier démarrage du volume, les tables sont créées depuis `database/docker/01-schema.sql`, puis les catégories et offres de démonstration sont chargées depuis `database/docker/02-seed.sql`. L'export contient uniquement le schéma, les catégories et les offres, sans comptes organisateurs, événements, invités ni clés du fournisseur. SasPay, SMTP, Google et Facebook sont désactivés ou non configurés par défaut. Les coordonnées de contribution des sites restent des informations saisies par l'organisateur ; aucun paiement de contribution n'est lancé.
+L'API utilise PostgreSQL en conteneur. Au premier démarrage du volume, les tables sont créées depuis `database/docker/01-schema.sql`, puis les catégories et offres de démonstration sont chargées depuis `database/docker/02-seed.sql`. Le premier superadmin est créé par l'API depuis `APP_ADMIN_EMAIL` et `APP_ADMIN_PASSWORD` si aucun compte admin n'existe ; les démarrages suivants ne modifient pas les comptes existants. L'export contient uniquement le schéma, les catégories et les offres, sans comptes organisateurs, événements, invités ni clés du fournisseur. SasPay, SMTP, Google et Facebook sont désactivés ou non configurés par défaut. Les coordonnées de contribution des sites restent des informations saisies par l'organisateur ; aucun paiement de contribution n'est lancé.
 
 Les logs structurés de l'API sont envoyés à la console et à Loki. Le dashboard Grafana présente le débit, la latence p95, les réponses HTTP en erreur, l'activité du load balancer et les logs de l'API. Les métriques API sont collectées sur chaque réplica. Les données Prometheus, Loki et Grafana persistent dans des volumes dédiés.
 

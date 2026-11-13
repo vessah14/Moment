@@ -604,6 +604,21 @@ app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.Health
     Predicate = check => check.Tags.Contains("ready")
 }).AllowAnonymous();
 
+var bootstrapEmail = app.Configuration["AdminBootstrap:Email"];
+var bootstrapPassword = app.Configuration["AdminBootstrap:Password"];
+if (!string.IsNullOrWhiteSpace(bootstrapEmail) || !string.IsNullOrWhiteSpace(bootstrapPassword))
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var context = scope.ServiceProvider.GetRequiredService<AdminDbContext>();
+    var created = await AdminAccountBootstrapper.EnsureInitialSuperadminAsync(
+        context,
+        bootstrapEmail ?? string.Empty,
+        bootstrapPassword ?? string.Empty,
+        app.Configuration["AdminBootstrap:FullName"] ?? "Administrateur principal");
+    if (created)
+        app.Logger.LogInformation("Le compte superadmin initial a été créé.");
+}
+
 app.Run();
 
 // Vrai si l'exception vient de notre code (services, contrôleurs) et non du framework.

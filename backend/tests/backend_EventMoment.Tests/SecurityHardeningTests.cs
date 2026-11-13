@@ -74,6 +74,39 @@ public class SecurityHardeningTests
     }
 
     [Fact]
+    public async Task AdminBootstrap_CreatesOnlyTheInitialSuperadmin()
+    {
+        var context = TestDbContextFactory.CreateAdminContext();
+
+        var created = await AdminAccountBootstrapper.EnsureInitialSuperadminAsync(
+            context, "admin@example.com", "InitialPass123", "Initial Admin");
+        var createdAgain = await AdminAccountBootstrapper.EnsureInitialSuperadminAsync(
+            context, "another@example.com", "AnotherPass123", "Another Admin");
+
+        var admin = await context.AdminAccounts.SingleAsync();
+        Assert.True(created);
+        Assert.False(createdAgain);
+        Assert.Equal("admin@example.com", admin.Email);
+        Assert.Equal("Initial Admin", admin.FullName);
+        Assert.Equal(AdminRole.Superadmin, admin.Role);
+        Assert.True(BCrypt.Net.BCrypt.Verify("InitialPass123", admin.PasswordHash));
+    }
+
+    [Theory]
+    [InlineData("", "InitialPass123")]
+    [InlineData("not-an-email", "InitialPass123")]
+    [InlineData("admin@example.com", "short")]
+    public async Task AdminBootstrap_RejectsInvalidCredentials(string email, string password)
+    {
+        var context = TestDbContextFactory.CreateAdminContext();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            AdminAccountBootstrapper.EnsureInitialSuperadminAsync(context, email, password, "Initial Admin"));
+
+        Assert.Empty(await context.AdminAccounts.ToListAsync());
+    }
+
+    [Fact]
     public async Task AdminLogin_IssuesSessionWithoutMfaEvenWhenConfigured()
     {
         var (service, context, admin, dataProtection, _) = AdminSetup();
