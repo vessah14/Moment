@@ -37,6 +37,9 @@ services:
       ConnectionStrings__SignupConnection: Host=db;Port=5432;Database=eventsaas;Username=app_signup;Password=${APP_SIGNUP_PASSWORD:-moment_signup_dev_only}
       Cors__AllowedOrigins__0: http://localhost:5173
       Cors__AllowedOrigins__1: http://localhost:5174
+      AdminBootstrap__Email: ${APP_ADMIN_EMAIL:-}
+      AdminBootstrap__Password: ${APP_ADMIN_PASSWORD:-}
+      AdminBootstrap__FullName: ${APP_ADMIN_FULL_NAME:-Administrateur principal}
       Payments__SasPay__Enabled: ${SASPAY_ENABLED:-false}
       SasPay__SecretKey: ${SASPAY_SECRET_KEY:-}
       SasPay__WebhookSecret: ${SASPAY_WEBHOOK_SECRET:-}
