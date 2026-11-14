@@ -1148,14 +1148,20 @@ export default function ThemedSitePage({
           block,
           index,
           <>
-            {headFor(block, content)}
+           {headFor(block, content)}
             {allItems.length > 0 ? (
               <ArchCarousel
                 items={allItems}
                 editable={editable}
-                uploading={editor.uploading}
-                onOpen={(i) => { if (!editable) setLightboxIndex(i) }}
-                onUpload={(files) => { editor.onUploadGalleryPhotos?.(files) }}
+                uploading={editor?.uploading ?? false}
+                onOpen={(i) => {
+                  if (!editable) {
+                    setLightboxIndex(i);
+                  }
+                }}
+                onUpload={(files) => {
+                  editor?.onUploadGalleryPhotos?.(files);
+                }}
               />
             ) : null}
             {editable && (
