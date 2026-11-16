@@ -6,6 +6,7 @@ export default {
   "Tarifs": "Pricing",
   "Créer un événement": "Create an event",
   "Se connecter": "Log in",
+  "Créer": "Create",
   "Créer mon événement": "Create my event",
   "Fermer le menu principal": "Close main menu",
   "Ouvrir le menu principal": "Open main menu",

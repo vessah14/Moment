@@ -35,9 +35,9 @@ export default function Footer () {
 
   return (
     <footer translate='no' className='border-t border-border-soft/60 bg-panel/40'>
-      <div className='mx-auto max-w-7xl px-6 py-16'>
-        <div className='grid gap-10 lg:grid-cols-[2fr_1fr_1fr_1fr]'>
-          <div>
+      <div className='mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16'>
+        <div className='grid grid-cols-2 gap-8 sm:grid-cols-3 sm:gap-10 lg:grid-cols-[2fr_1fr_1fr_1fr]'>
+          <div className='col-span-2 sm:col-span-3 lg:col-span-1'>
             <BrandLogo className='h-9 w-auto' />
             <p className='mt-4 max-w-xs text-sm text-faint'>
               {t("Plateforme événementielle de l'écosystème TBF.")}

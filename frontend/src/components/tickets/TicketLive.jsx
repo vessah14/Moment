@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { markEnvelopeSeen, envelopeSeen, ticketLiveState } from '../../utils/ticketLive'
 
@@ -243,25 +243,29 @@ export function TicketSouvenir({ state, souvenir, title, name, mourn }) {
 
 // Enveloppe : à la première ouverture, le billet sort d'une enveloppe scellée aux couleurs du
 // thème, avec le nom de l'invité. Touchez pour passer ; jamais rejouée sur ce téléphone.
-export function TicketEnvelope({ code, name, mark, mourn, vars, motifCss }) {
+export function TicketEnvelope({ code, name, mark, mourn, vars, motifCss, onFinish }) {
   const [open, setOpen] = useState(() => Boolean(code) && !envelopeSeen(code) && !reducedMotion())
   const skip = useRef(null)
+  const finish = useCallback(() => {
+    setOpen(false)
+    onFinish?.()
+  }, [onFinish])
   useEffect(() => {
     if (!code) return
     markEnvelopeSeen(code)
     if (!open) return
     skip.current?.focus({ preventScroll: true })
-    const t = setTimeout(() => setOpen(false), 3300)
-    const onKey = (e) => (e.key === 'Escape' || e.key === 'Enter') && setOpen(false)
+    const t = setTimeout(finish, 3300)
+    const onKey = (e) => (e.key === 'Escape' || e.key === 'Enter') && finish()
     document.addEventListener('keydown', onKey)
     return () => {
       clearTimeout(t)
       document.removeEventListener('keydown', onKey)
     }
-  }, [code, open])
+  }, [code, open, finish])
   if (!open) return null
   return createPortal(
-    <div className={`tk-env ${mourn ? 'mourn' : ''}`} style={vars} onClick={() => setOpen(false)}>
+    <div className={`tk-env ${mourn ? 'mourn' : ''}`} style={vars} onClick={finish}>
       <div className="tk-env-box" aria-hidden="true">
         <div className="tk-env-back">
           <span className="tkc-motif" style={motifCss} />
