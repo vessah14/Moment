@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import Button from '../ui/Button'
 import { listMySubscriptions } from '../../api/subscriptions'
 import { SkeletonList } from '../ui/Skeleton'
+import { locale as uiLocale } from '../../i18n'
 
 export default function SubscriptionTab() {
   const [subscriptions, setSubscriptions] = useState([])
@@ -57,8 +58,8 @@ export default function SubscriptionTab() {
             {formatCents(active.priceCents)} · {active.billing === 'Gratuit' ? 'Gratuit' : active.billing === 'Mensuel' ? '30 jours, sans renouvellement' : 'par an'}
           </p>
           <p className="mt-1 text-xs text-faint">
-            Débuté le {new Date(active.startedAt).toLocaleDateString('fr-FR')}
-            {active.endsAt && ` · résilié le ${new Date(active.endsAt).toLocaleDateString('fr-FR')}`}
+            Débuté le {new Date(active.startedAt).toLocaleDateString(uiLocale)}
+            {active.endsAt && ` · résilié le ${new Date(active.endsAt).toLocaleDateString(uiLocale)}`}
           </p>
         </div>
       )}

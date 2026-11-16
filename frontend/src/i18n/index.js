@@ -2,7 +2,7 @@ import { getCurrentLanguage } from '../utils/translation'
 import EN_PAGES from './en'
 import EN_TEMPLATES from './en-templates'
 
-const EN = { ...EN_TEMPLATES, ...EN_PAGES }
+export const EN = { ...EN_TEMPLATES, ...EN_PAGES }
 
 // Traduction écrite à la main des pages publiques (accueil, tarifs, modèles, billets,
 // connexion, inscription, en-tête, pied de page). Le texte français sert de clé :

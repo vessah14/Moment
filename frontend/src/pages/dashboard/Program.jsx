@@ -13,6 +13,7 @@ import {
   toggleProgramItemNotify,
   updateProgramItem,
 } from '../../api/program'
+import { locale as uiLocale } from '../../i18n'
 
 const ROOMS = ['Salle principale', 'Salle B', 'Jardin', 'Terrasse']
 
@@ -210,7 +211,7 @@ export default function Program() {
                   : 'border border-border text-muted hover:border-faint hover:text-ink'
               }`}
             >
-              {new Date(`${d}T00:00:00`).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long' })}
+              {new Date(`${d}T00:00:00`).toLocaleDateString(uiLocale, { day: '2-digit', month: 'long' })}
             </button>
           ))}
         </div>

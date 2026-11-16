@@ -177,7 +177,9 @@ function Demo({ theme }) {
     },
   }
 
+  // translate="no" : la page de démo reste en français, comme pour les vrais invités.
   const page = (
+    <div translate="no" className="contents">
     <SitePage
       fullPage
       startOpen={live}
@@ -187,6 +189,7 @@ function Demo({ theme }) {
       blockContent={blockContent}
       data={data}
     />
+    </div>
   )
 
   if (embedded) return <main className="min-h-svh">{page}</main>

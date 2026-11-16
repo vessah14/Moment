@@ -48,6 +48,7 @@ import {
 import { useSeo } from '../utils/seo'
 import { defaultTicketStyle, ticketFromCustomFields } from '../utils/ticketStyles'
 import { ticketEventInfo } from '../components/tickets/TicketCard'
+import { locale as uiLocale } from '../i18n'
 
 // Identifiant de l'invité fictif de l'aperçu (jamais envoyé au serveur).
 const PREVIEW_GUEST_ID = '00000000-0000-4000-8000-000000000002'
@@ -810,7 +811,7 @@ export default function Builder() {
         <div role="status" className="flex flex-wrap items-center gap-3 border-b border-brand-orange/30 bg-brand-orange/10 px-4 py-2.5 text-sm text-ink sm:px-6">
           <span className="flex-1">
             Des modifications non enregistrées du{' '}
-            {new Date(pendingDraft.savedAt).toLocaleString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}{' '}
+            {new Date(pendingDraft.savedAt).toLocaleString(uiLocale, { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}{' '}
             ont été retrouvées sur cet appareil.
           </span>
           <Button variant="gradient" className="px-4 py-1.5 text-xs" onClick={restoreDraft}>

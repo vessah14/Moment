@@ -12,6 +12,7 @@ import {
   listTicketTypes,
   recordTicketSale,
 } from '../../api/ticketing'
+import { locale as uiLocale } from '../../i18n'
 
 const TicketSalesChart = lazy(() => import('../../components/billing/TicketSalesChart'))
 
@@ -124,7 +125,7 @@ export default function Ticketing() {
 
   const STATS = [
     { label: 'Billets vendus', value: String(totalSold), hint: totalQuota ? `${Math.round((totalSold / totalQuota) * 100)}% des ${totalQuota} places` : '' },
-    { label: 'Recettes', value: Math.round(totalRevenueCents / 100).toLocaleString('fr-FR'), hint: 'FCFA' },
+    { label: 'Recettes', value: Math.round(totalRevenueCents / 100).toLocaleString(uiLocale), hint: 'FCFA' },
     { label: 'Types de billets', value: String(ticketTypes.length) },
   ]
 
@@ -245,7 +246,7 @@ export default function Ticketing() {
                       <tr className="border-b border-border-soft last:border-b-0">
                         <td className="px-6 py-4 font-medium text-ink">{ticket.name}</td>
                         <td className="px-3 py-4 font-mono text-muted">
-                          {Math.round(ticket.priceCents / 100).toLocaleString('fr-FR')}
+                          {Math.round(ticket.priceCents / 100).toLocaleString(uiLocale)}
                         </td>
                         <td className="px-3 py-4">
                           <p className="font-mono text-ink">
@@ -342,7 +343,7 @@ export default function Ticketing() {
                     <p className="text-xs text-faint">{sale.ticketTypeName}</p>
                   </div>
                   <span className="text-xs text-faint">
-                    {new Date(sale.createdAt).toLocaleDateString('fr-FR')}
+                    {new Date(sale.createdAt).toLocaleDateString(uiLocale)}
                   </span>
                 </div>
               ))}

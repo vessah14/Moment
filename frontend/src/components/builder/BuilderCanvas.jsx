@@ -35,6 +35,8 @@ export default function BuilderCanvas({
         tbfmoment.com/{slug}
       </p>
 
+      {/* translate="no" : l'aperçu de la page invité reste dans la langue des invités. */}
+      <div translate="no" className="contents">
       <SitePage
         template={template}
         heroStyle={heroStyle}
@@ -60,6 +62,7 @@ export default function BuilderCanvas({
               }
         }
       />
+      </div>
     </div>
   )
 }

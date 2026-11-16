@@ -35,10 +35,11 @@ import {
 import Pagination from '../../components/ui/Pagination'
 import { usePagination } from '../../utils/pagination'
 import { useToast } from '../../utils/useToast'
+import { locale as uiLocale } from '../../i18n'
 
 function formatTime (value) {
   if (!value) return '—'
-  return new Date(value).toLocaleTimeString('fr-FR', {
+  return new Date(value).toLocaleTimeString(uiLocale, {
     hour: '2-digit',
     minute: '2-digit'
   })
@@ -67,7 +68,7 @@ function eventDateLabel (event) {
   const tomorrowKey = `${tomorrow.getFullYear()}-${tomorrow.getMonth()}-${tomorrow.getDate()}`
   if (dateKey === todayKey) return "Aujourd'hui"
   if (dateKey === tomorrowKey) return 'Demain'
-  return date.toLocaleDateString('fr-FR', {
+  return date.toLocaleDateString(uiLocale, {
     weekday: 'long',
     day: 'numeric',
     month: 'long'

@@ -1,12 +1,16 @@
 // Langue du site : français (langue d'origine) ou anglais.
 //
-// Les pages publiques (accueil, tarifs, modèles, billets, connexion, inscription…) sont
-// traduites à la main (i18n/en.js). Les autres pages (tableau de bord…) passent encore par
-// Google Traduction en anglais, en attendant leur traduction. Choisir une langue enregistre
-// le cookie "googtrans" (lu par le script Google) puis recharge la page ; le script Google
-// n'est chargé que sur une page non traduite à la main, et jamais en français.
+// Pages publiques (accueil, tarifs, modèles, billets, connexion…) : traduites dans le code
+// avec t() (i18n/en.js). Autres pages (tableau de bord, éditeur, création d'événement,
+// pages légales…) : même dictionnaire, appliqué au texte affiché par i18n/domTranslate.js
+// (dictionnaire i18n/en-app.js). Les pages des invités (site, invitation, cadeaux) restent
+// toujours dans la langue de l'organisateur.
+//
+// Le choix est gardé dans le cookie "googtrans" (nom hérité de l'ancienne traduction
+// Google, conservé pour garder le choix des visiteurs) ; en changer recharge la page.
 
 import { isGuestPath } from './eventLook'
+import { setDomTranslation } from '../i18n/domTranslate'
 
 export const SOURCE_LANGUAGE = 'fr'
 
@@ -15,17 +19,7 @@ export const LANGUAGES = [
   { code: 'en', label: 'English', short: 'EN' },
 ]
 
-// Pages traduites à la main : jamais de Google Traduction dessus.
-const HAND_TRANSLATED = [/^\/$/, /^\/tarifs\/?$/, /^\/modeles\/?$/, /^\/billets\/?$/, /^\/connexion\/?$/, /^\/inscription(\/.*)?$/,
-  /^\/mot-de-passe-oublie\/?$/, /^\/reinitialiser-mot-de-passe\/?$/, /^\/verifier-email\/?$/]
-
-export function isHandTranslatedPath(pathname) {
-  return HAND_TRANSLATED.some((re) => re.test(pathname ?? ''))
-}
-
 const COOKIE = 'googtrans'
-const SCRIPT_ID = 'google-translate-script'
-const CONTAINER_ID = 'google_translate_element'
 
 function readCookie(name) {
   if (typeof document === 'undefined') return null
@@ -59,50 +53,8 @@ export function setLanguage(code) {
   } catch {
     // stockage indisponible : le cookie suffit
   }
-  // Recharger est la seule façon fiable de repartir d'une page propre (retour au
-  // français) ou de laisser le script traduire toute la page d'un coup.
+  // La langue est fixe pendant une visite : on recharge pour repartir d'une page propre.
   window.location.reload()
-}
-
-// React met à jour le texte en retirant/insérant des nœuds ; Google Traduction les a
-// remplacés par ses propres <font>, ce qui fait planter React ("removeChild... not a
-// child of this node"). Correctif connu : ignorer silencieusement ces cas.
-function patchDomForTranslation() {
-  if (typeof Node === 'undefined' || Node.prototype.__tbfTranslatePatched) return
-  const originalRemoveChild = Node.prototype.removeChild
-  Node.prototype.removeChild = function removeChild(child) {
-    if (child.parentNode !== this) return child
-    return originalRemoveChild.call(this, child)
-  }
-  const originalInsertBefore = Node.prototype.insertBefore
-  Node.prototype.insertBefore = function insertBefore(newNode, referenceNode) {
-    if (referenceNode && referenceNode.parentNode !== this) return newNode
-    return originalInsertBefore.call(this, newNode, referenceNode)
-  }
-  Node.prototype.__tbfTranslatePatched = true
-}
-
-function loadGoogleTranslate() {
-  if (document.getElementById(SCRIPT_ID)) return
-
-  const container = document.createElement('div')
-  container.id = CONTAINER_ID
-  container.style.display = 'none'
-  document.body.appendChild(container)
-
-  window.googleTranslateElementInit = () => {
-    // eslint-disable-next-line no-new
-    new window.google.translate.TranslateElement(
-      { pageLanguage: SOURCE_LANGUAGE, autoDisplay: false },
-      CONTAINER_ID,
-    )
-  }
-
-  const script = document.createElement('script')
-  script.id = SCRIPT_ID
-  script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit'
-  script.async = true
-  document.body.appendChild(script)
 }
 
 // À appeler une fois au démarrage de l'application.
@@ -114,14 +66,8 @@ export function initTranslation() {
   syncTranslationForRoute(window.location.pathname)
 }
 
-// À chaque changement de page : Google Traduction seulement là où il n'y a pas encore de
-// traduction écrite à la main. Les pages des invités (site, invitation, cadeaux) restent
-// toujours dans la langue de l'organisateur.
+// À chaque changement de page : traduction partout sauf sur les pages des invités.
 export function syncTranslationForRoute(pathname) {
-  if (getCurrentLanguage() === SOURCE_LANGUAGE || isGuestPath(pathname)) return
-  const manual = isHandTranslatedPath(pathname)
-  document.body.classList.toggle('notranslate', manual)
-  if (manual) return
-  patchDomForTranslation()
-  loadGoogleTranslate()
+  if (getCurrentLanguage() === SOURCE_LANGUAGE) return
+  setDomTranslation(!isGuestPath(pathname))
 }

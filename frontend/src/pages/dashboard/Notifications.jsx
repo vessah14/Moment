@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import Button from '../../components/ui/Button'
 import { useDashboardNotifications } from '../../components/layout/DashboardNotificationsContext'
+import { locale as uiLocale } from '../../i18n'
 
 const ICONS = {
   guestbook: BookHeart,
@@ -17,7 +18,7 @@ const ICONS = {
 function notificationTime(value) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return ''
-  return new Intl.DateTimeFormat('fr-FR', {
+  return new Intl.DateTimeFormat(uiLocale, {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(date)

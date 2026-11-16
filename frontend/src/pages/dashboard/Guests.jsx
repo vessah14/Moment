@@ -22,6 +22,7 @@ import { notifyGuestsChanged } from '../../utils/guestEvents'
 import { usePagination } from '../../utils/pagination'
 import { useToast } from '../../utils/useToast'
 import { SkeletonList, SkeletonRows } from '../../components/ui/Skeleton'
+import { locale as uiLocale } from '../../i18n'
 
 const FILTERS = ['Tous', 'Confirmés', 'En attente', 'Refus']
 
@@ -742,7 +743,7 @@ export default function Guests() {
                   <p className="truncate font-medium text-ink">{guest.fullName}{guest.seats > 1 && <span className="ml-1.5 text-xs font-normal text-faint">· {guest.seats} places</span>}{guest.isVip && <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">VIP</span>}</p>
                   <p className="break-all text-xs text-muted">{guest.email || 'Aucun e-mail'}</p>
                   <p className="font-mono text-xs text-faint">{guest.phone ? maskPhone(guest.phone) : 'Aucun téléphone'}</p>
-                  {guest.enRouteAt && <p className="mt-1 text-xs font-semibold text-brand-orange">En route · {new Date(guest.enRouteAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>}
+                  {guest.enRouteAt && <p className="mt-1 text-xs font-semibold text-brand-orange">En route · {new Date(guest.enRouteAt).toLocaleTimeString(uiLocale, { hour: '2-digit', minute: '2-digit' })}</p>}
                 </div>
                 <StatusBadge status={guestStatusLabel(guest.status)} />
               </div>
@@ -853,7 +854,7 @@ export default function Guests() {
                         <Avatar name={guest.fullName} />
                         <div>
                           <p className="font-medium text-ink">{guest.fullName}{guest.seats > 1 && <span className="ml-1.5 text-xs font-normal text-faint">· {guest.seats} places</span>}{guest.isVip && <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">VIP</span>}</p>
-                          {guest.enRouteAt && <p className="mt-1 text-xs font-semibold text-brand-orange">En route · {new Date(guest.enRouteAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>}
+                          {guest.enRouteAt && <p className="mt-1 text-xs font-semibold text-brand-orange">En route · {new Date(guest.enRouteAt).toLocaleTimeString(uiLocale, { hour: '2-digit', minute: '2-digit' })}</p>}
                           {sideByGuest[guest.id] && <p className="text-xs text-faint">{sideByGuest[guest.id]}</p>}
                           {maybeGuests.has(guest.id) && <p className="text-xs text-brand-orange">A répondu « Peut-être »</p>}
                         </div>
@@ -986,16 +987,16 @@ export default function Guests() {
 function InvitationStatus({ guest, published }) {
   if (guest.invitationOpenedAt)
     return (
-      <span className="inline-flex items-center gap-1 text-brand-purple" title={`Lien ouvert le ${new Date(guest.invitationOpenedAt).toLocaleString('fr-FR')}`}>
+      <span className="inline-flex items-center gap-1 text-brand-purple" title={`Lien ouvert le ${new Date(guest.invitationOpenedAt).toLocaleString(uiLocale)}`}>
         <Eye className="h-3.5 w-3.5" />
         Vue
       </span>
     )
   if (guest.invitationSentAt)
     return (
-      <span className="inline-flex items-center gap-1 text-success" title={new Date(guest.invitationSentAt).toLocaleString('fr-FR')}>
+      <span className="inline-flex items-center gap-1 text-success" title={new Date(guest.invitationSentAt).toLocaleString(uiLocale)}>
         <Mail className="h-3.5 w-3.5" />
-        Envoyée le {new Date(guest.invitationSentAt).toLocaleDateString('fr-FR')}
+        Envoyée le {new Date(guest.invitationSentAt).toLocaleDateString(uiLocale)}
       </span>
     )
   if (guest.invitationPending)
@@ -1012,7 +1013,7 @@ function InvitationStatus({ guest, published }) {
     )
   if (guest.invitationSharedAt)
     return (
-      <span className="inline-flex items-center gap-1 text-success" title={new Date(guest.invitationSharedAt).toLocaleString('fr-FR')}>
+      <span className="inline-flex items-center gap-1 text-success" title={new Date(guest.invitationSharedAt).toLocaleString(uiLocale)}>
         <MessageCircle className="h-3.5 w-3.5" />
         Envoyée (WhatsApp)
       </span>
