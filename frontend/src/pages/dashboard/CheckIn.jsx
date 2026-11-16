@@ -1,5 +1,7 @@
 import jsQR from 'jsqr'
 import {
+  CalendarDays,
+  ChevronDown,
   FileDown,
   Flashlight,
   QrCode,
@@ -9,10 +11,10 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Avatar from '../../components/ui/Avatar'
-import StatCard from '../../components/dashboard/StatCard'
 import StatusBadge from '../../components/ui/StatusBadge'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import { listEvents } from '../../api/events'
+import { eventType as getEventType } from '../../data/eventTypes'
 import { checkInGuest, listGuests, undoCheckInGuest } from '../../api/guests'
 import { guestStatusLabel } from '../../utils/guestStatus'
 import {
@@ -30,7 +32,6 @@ import {
   downloadAttendanceCsv,
   downloadAttendancePdf
 } from '../../utils/attendanceSheet'
-import { SkeletonRows } from '../../components/ui/Skeleton'
 import Pagination from '../../components/ui/Pagination'
 import { usePagination } from '../../utils/pagination'
 import { useToast } from '../../utils/useToast'
@@ -40,6 +41,36 @@ function formatTime (value) {
   return new Date(value).toLocaleTimeString('fr-FR', {
     hour: '2-digit',
     minute: '2-digit'
+  })
+}
+
+function eventTypeOf (event) {
+  try {
+    const fields = typeof event?.customFields === 'string'
+      ? JSON.parse(event.customFields || '{}')
+      : event?.customFields
+    return getEventType(fields?.eventType)
+  } catch {
+    return null
+  }
+}
+
+function eventDateLabel (event) {
+  if (!event?.eventDate) return 'Date à définir'
+  const date = new Date(`${event.eventDate}T00:00:00`)
+  if (Number.isNaN(date.getTime())) return event.eventDate
+  const today = new Date()
+  const todayKey = `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`
+  const dateKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
+  const tomorrow = new Date(today)
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  const tomorrowKey = `${tomorrow.getFullYear()}-${tomorrow.getMonth()}-${tomorrow.getDate()}`
+  if (dateKey === todayKey) return "Aujourd'hui"
+  if (dateKey === tomorrowKey) return 'Demain'
+  return date.toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long'
   })
 }
 
@@ -121,6 +152,7 @@ export default function CheckIn () {
   const toast = useToast()
   const [events, setEvents] = useState([])
   const [selectedEventId, setSelectedEventId] = useState('')
+  const [eventTypeFilter, setEventTypeFilter] = useState('all')
   const [guests, setGuests] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -239,6 +271,22 @@ export default function CheckIn () {
     selectedEventId
   )
   const expected = guests.filter(g => g.status !== 'Absent')
+  const eventTypeOptions = useMemo(() => {
+    const seen = new Map()
+    events.forEach(event => {
+      const type = eventTypeOf(event)
+      if (type && !seen.has(type.id)) seen.set(type.id, type)
+    })
+    return [...seen.values()]
+  }, [events])
+  const visibleEvents = eventTypeFilter === 'all'
+    ? events
+    : events.filter(event => eventTypeOf(event)?.id === eventTypeFilter)
+  const selectedEvent = events.find(event => event.id === selectedEventId)
+  const selectedEventType = selectedEvent ? eventTypeOf(selectedEvent) : null
+  const arrivalProgress = expected.length
+    ? Math.min(100, (attended.length / expected.length) * 100)
+    : 0
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -293,6 +341,19 @@ export default function CheckIn () {
     }
   }
 
+  const selectEventType = typeId => {
+    setEventTypeFilter(typeId)
+    if (typeId === 'all') return
+    const firstEvent = events.find(event => eventTypeOf(event)?.id === typeId)
+    if (firstEvent) setSelectedEventId(firstEvent.id)
+  }
+
+  const selectEvent = eventId => {
+    setSelectedEventId(eventId)
+    const type = eventTypeOf(events.find(event => event.id === eventId))
+    setEventTypeFilter(type?.id ?? 'all')
+  }
+
   const handleUndo = async guest => {
     // Entrée pas encore envoyée : on la retire simplement de la file du téléphone.
     if (guest.pendingSync) {
@@ -307,6 +368,7 @@ export default function CheckIn () {
       if (result?.guest?.id === guest.id) setResult(null)
       return
     }
+
     setCheckingId(guest.id)
     setError('')
     try {
@@ -388,13 +450,8 @@ export default function CheckIn () {
         video: { facingMode: facing }
       })
       streamRef.current = stream
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-        await videoRef.current.play()
-      }
       setFacingMode(facing)
       setScanning(true)
-      rafRef.current = requestAnimationFrame(tick)
       // Lampe : seulement si le téléphone la propose pour cette caméra (Chrome Android).
       const track = stream.getVideoTracks()[0]
       setTorch({
@@ -414,8 +471,31 @@ export default function CheckIn () {
     }
   }
 
+  useEffect(() => {
+    if (!scanning || !streamRef.current || !videoRef.current) return undefined
+    const video = videoRef.current
+    const stream = streamRef.current
+    let cancelled = false
+    video.srcObject = stream
+    video.play()
+      .then(() => {
+        if (!cancelled) rafRef.current = requestAnimationFrame(tick)
+      })
+      .catch(() => {
+        setScanError(
+          "Impossible de démarrer la caméra. Vérifiez les autorisations de votre navigateur."
+        )
+        stopScan()
+      })
+    return () => {
+      cancelled = true
+      if (video.srcObject === stream) video.srcObject = null
+    }
+  }, [scanning, stopScan, tick])
+
   const flipCamera = () => {
     releaseCamera()
+    setScanning(false)
     startScan(facingMode === 'environment' ? 'user' : 'environment')
   }
 
@@ -436,15 +516,6 @@ export default function CheckIn () {
     stopScan()
   }, [selectedEventId, stopScan])
 
-  const STATS = [
-    { label: 'Arrivés', value: String(attended.length), valueStyle: 'brand' },
-    { label: 'Attendus', value: String(expected.length), hint: 'hors refus' },
-    {
-      label: 'Pas encore arrivés',
-      value: String(pending.filter(g => g.status !== 'Absent').length)
-    }
-  ]
-
   if (!loading && events.length === 0) {
     return (
       <DashboardLayout>
@@ -458,102 +529,273 @@ export default function CheckIn () {
 
   return (
     <DashboardLayout>
-      <div className='flex flex-wrap items-start justify-between gap-4'>
-        <div>
-          <h1 className='text-2xl font-bold text-ink'>Check-in</h1>
-          <p className='mt-1.5 text-sm text-muted'>
-            Scannez le QR d'un invité ou recherchez-le par nom, email ou
-            téléphone pour valider son entrée.
+      <div className='mx-auto max-w-5xl'>
+        <div className='flex flex-wrap items-start justify-between gap-4'>
+          <div>
+            <h1 className='text-2xl font-bold text-ink'>Check-in</h1>
+            <p className='mt-1.5 text-sm text-muted'>
+              Accueillez vos invités en un scan ou retrouvez-les par leur nom.
+            </p>
+          </div>
+          <div className='flex gap-2'>
+            <button
+              type='button'
+              disabled={!guests.length}
+              onClick={() =>
+                downloadAttendancePdf(selectedEvent?.name, guests)
+              }
+              className='inline-flex min-h-10 items-center gap-2 rounded-xl border border-border-soft bg-surface px-3 text-sm font-medium text-ink transition hover:border-brand-purple disabled:opacity-40'
+            >
+              <FileDown className='h-4 w-4' />
+              <span className='hidden sm:inline'>Feuille PDF</span>
+              <span className='sm:hidden'>PDF</span>
+            </button>
+            <button
+              type='button'
+              disabled={!guests.length}
+              onClick={() =>
+                downloadAttendanceCsv(selectedEvent?.name, guests)
+              }
+              className='inline-flex min-h-10 items-center gap-2 rounded-xl border border-border-soft bg-surface px-3 text-sm font-medium text-ink transition hover:border-brand-purple disabled:opacity-40'
+              title='Fichier CSV, ouvert directement par Excel'
+            >
+              <FileDown className='h-4 w-4' />
+              <span className='hidden sm:inline'>Excel</span>
+              <span className='sm:hidden'>CSV</span>
+            </button>
+          </div>
+        </div>
+
+        {offlineSince && (
+          <p
+            role='status'
+            className='mt-6 rounded-xl border border-brand-orange/30 bg-brand-orange/10 px-4 py-3 text-sm text-ink'
+          >
+            Pas de réseau : liste des invités gardée sur ce téléphone
+            (enregistrée à {arrivalTime(offlineSince)}). Les QR restent
+            vérifiés ; les entrées seront envoyées au retour du réseau.
           </p>
-        </div>
-        <div className='flex flex-wrap gap-2'>
-          <button
-            type='button'
-            disabled={!guests.length}
-            onClick={() =>
-              downloadAttendancePdf(
-                events.find(ev => ev.id === selectedEventId)?.name,
-                guests
-              )
-            }
-            className='inline-flex min-h-10 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-ink hover:border-brand-purple disabled:opacity-40'
+        )}
+        {error && (
+          <p className='mt-6 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger'>
+            {error}
+          </p>
+        )}
+        {queuedCount > 0 && (
+          <p
+            role='status'
+            className='mt-4 rounded-xl border border-brand-orange/30 bg-brand-orange/10 px-4 py-3 text-sm text-ink'
           >
-            <FileDown className='h-4 w-4' />
-            Feuille d'émargement (PDF)
-          </button>
-          <button
-            type='button'
-            disabled={!guests.length}
-            onClick={() =>
-              downloadAttendanceCsv(
-                events.find(ev => ev.id === selectedEventId)?.name,
-                guests
-              )
-            }
-            className='inline-flex min-h-10 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-ink hover:border-brand-purple disabled:opacity-40'
-            title='Fichier CSV, ouvert directement par Excel'
-          >
-            <FileDown className='h-4 w-4' />
-            Liste de présence (Excel)
-          </button>
-          <select
-            value={selectedEventId}
-            onChange={e => setSelectedEventId(e.target.value)}
-            className='rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-brand-purple'
-          >
-            {events.map(ev => (
-              <option key={ev.id} value={ev.id}>
-                {ev.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+            Pas de réseau : {queuedCount} entrée{queuedCount > 1 ? 's' : ''}{' '}
+            gardée{queuedCount > 1 ? 's' : ''} sur ce téléphone. Continuez à
+            scanner ; l’envoi se fera dès le retour du réseau. Ne fermez pas
+            cette page.
+          </p>
+        )}
 
-      {offlineSince && (
-        <p
-          role='status'
-          className='mt-6 rounded-lg border border-brand-orange/30 bg-brand-orange/10 px-4 py-2.5 text-sm text-ink'
+        <section
+          aria-label="Filtrer par type d'événement"
+          className='mt-7 rounded-2xl border border-brand-purple/15 bg-brand-purple/5 p-3 sm:p-4'
         >
-          Pas de réseau : liste des invités gardée sur ce téléphone (enregistrée
-          à {arrivalTime(offlineSince)}). Les QR restent vérifiés ; les entrées
-          seront envoyées au retour du réseau.
-        </p>
-      )}
-      {error && (
-        <p className='mt-6 rounded-lg border border-danger/30 bg-danger/10 px-4 py-2.5 text-sm text-danger'>
-          {error}
-        </p>
-      )}
-      {queuedCount > 0 && (
-        <p
-          role='status'
-          className='mt-6 rounded-lg border border-brand-orange/30 bg-brand-orange/10 px-4 py-2.5 text-sm text-ink'
-        >
-          Pas de réseau : {queuedCount} entrée{queuedCount > 1 ? 's' : ''}{' '}
-          gardée{queuedCount > 1 ? 's' : ''} sur ce téléphone. Continuez à
-          scanner ; l’envoi se fera dès le retour du réseau. Ne fermez pas cette
-          page.
-        </p>
-      )}
+          <p className='mb-2 px-1 text-xs font-semibold tracking-wide text-brand-purple'>
+            Type d'événement
+          </p>
+          <div className='flex gap-2 overflow-x-auto pb-1'>
+            <button
+              type='button'
+              aria-pressed={eventTypeFilter === 'all'}
+              onClick={() => selectEventType('all')}
+              className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                eventTypeFilter === 'all'
+                  ? 'bg-brand-purple text-white shadow-sm'
+                  : 'border border-border-soft bg-surface text-muted hover:border-brand-purple'
+              }`}
+            >
+              Tous
+            </button>
+            {eventTypeOptions.map(type => {
+              const label = type.label.split(/[·,]/)[0].split(' et ')[0]
+              return (
+                <button
+                  key={type.id}
+                  type='button'
+                  aria-pressed={eventTypeFilter === type.id}
+                  onClick={() => selectEventType(type.id)}
+                  className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                    eventTypeFilter === type.id
+                      ? 'bg-brand-purple text-white shadow-sm'
+                      : 'border border-border-soft bg-surface text-muted hover:border-brand-purple'
+                  }`}
+                >
+                  {label}
+                </button>
+              )
+            })}
+          </div>
+        </section>
 
-      <div className='mt-8 grid gap-6 lg:grid-cols-[380px_1fr]'>
-        <div className='rounded-2xl border border-border-soft bg-panel p-5'>
+        <section className='mt-4 rounded-2xl border border-border-soft bg-surface p-4 shadow-sm sm:p-5'>
+          <div className='flex items-center gap-3'>
+            <span className='grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-purple/10 text-brand-purple'>
+              <CalendarDays className='h-5 w-5' />
+            </span>
+            <div className='min-w-0 flex-1'>
+              <p className='text-xs font-semibold text-brand-purple'>
+                {selectedEventType?.label ?? "Événement d'accueil"}
+              </p>
+              <p className='truncate text-base font-bold text-ink'>
+                {selectedEvent?.name ?? 'Choisissez un événement'}
+              </p>
+              <p className='mt-0.5 text-sm text-muted'>
+                {[
+                  eventDateLabel(selectedEvent),
+                  selectedEvent?.startTime &&
+                    `${String(selectedEvent.startTime).slice(0, 5)}`
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </p>
+            </div>
+            <ChevronDown
+              className='h-5 w-5 shrink-0 text-faint'
+              aria-hidden='true'
+            />
+          </div>
+          <label className='mt-3 block'>
+            <span className='sr-only'>Choisir un événement</span>
+            <select
+              value={selectedEventId}
+              onChange={e => selectEvent(e.target.value)}
+              className='w-full appearance-none rounded-xl border border-border-soft bg-panel px-3 py-2.5 text-sm font-medium text-ink outline-none transition focus:border-brand-purple'
+            >
+              {visibleEvents.map(event => (
+                <option key={event.id} value={event.id}>
+                  {event.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </section>
+
+        <section className='mt-4'>
+          {!scanning ? (
+            <button
+              type='button'
+              disabled={loading || !selectedEventId}
+              onClick={() => startScan()}
+              className='flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-[linear-gradient(100deg,#FF7A3D_0%,#E2337E_50%,#6C4BF4_100%)] px-5 py-4 text-base font-bold text-white shadow-md transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50'
+            >
+              <QrCode className='h-6 w-6' />
+              Scanner les billets
+            </button>
+          ) : (
+            <div className='relative overflow-hidden rounded-2xl bg-black'>
+              <video
+                ref={videoRef}
+                muted
+                playsInline
+                className='aspect-[4/3] max-h-[480px] w-full object-cover'
+              />
+              <button
+                type='button'
+                onClick={stopScan}
+                className='absolute top-3 right-3 rounded-full bg-black/60 p-2 text-white hover:bg-black/80'
+                aria-label='Arrêter le scan'
+              >
+                <X className='h-5 w-5' />
+              </button>
+              {(torch.available || canFlip) && (
+                <div className='absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-2'>
+                  {torch.available && (
+                    <button
+                      type='button'
+                      onClick={toggleTorch}
+                      aria-pressed={torch.on}
+                      aria-label={
+                        torch.on ? 'Éteindre la lampe' : 'Allumer la lampe'
+                      }
+                      className={`rounded-full p-3 ${
+                        torch.on
+                          ? 'bg-amber-300 text-black'
+                          : 'bg-black/60 text-white hover:bg-black/80'
+                      }`}
+                    >
+                      <Flashlight className='h-5 w-5' />
+                    </button>
+                  )}
+                  {canFlip && (
+                    <button
+                      type='button'
+                      onClick={flipCamera}
+                      aria-label='Changer de caméra'
+                      className='rounded-full bg-black/60 p-3 text-white hover:bg-black/80'
+                    >
+                      <SwitchCamera className='h-5 w-5' />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+          <canvas ref={canvasRef} className='hidden' />
+          {scanError && (
+            <p className='mt-2 text-center text-sm text-danger'>{scanError}</p>
+          )}
+          <div role='status' aria-live='polite' className='mt-3'>
+            {result && <ScanResult result={result} />}
+          </div>
+        </section>
+
+        <section
+          aria-label='Progression des arrivées'
+          className='mt-4 rounded-2xl border border-border-soft bg-surface p-5 shadow-sm'
+        >
+          <div className='flex items-end justify-between gap-4'>
+            <p className='text-3xl font-bold leading-none text-ink'>
+              {attended.length}
+              <span className='ml-1 text-lg font-medium text-faint'>
+                / {expected.length}
+              </span>
+            </p>
+            <p className='text-right text-sm text-muted'>
+              <span className='font-semibold text-ink'>
+                {pending.filter(g => g.status !== 'Absent').length}
+              </span>{' '}
+              encore attendus
+            </p>
+          </div>
+          <div
+            className='mt-4 h-2.5 overflow-hidden rounded-full bg-border-soft'
+            role='progressbar'
+            aria-label='Invités entrés'
+            aria-valuemin={0}
+            aria-valuemax={expected.length}
+            aria-valuenow={Math.min(attended.length, expected.length)}
+          >
+            <div
+              className='h-full rounded-full bg-brand-gradient transition-[width] duration-500'
+              style={{ width: `${arrivalProgress}%` }}
+            />
+          </div>
+          <p className='mt-2 text-xs text-muted'>personnes entrées</p>
+        </section>
+
+        <section className='mt-4'>
           <div className='relative'>
-            <Search className='pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-faint' />
+            <Search className='pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-faint' />
             <input
               type='search'
               value={query}
               onChange={e => setQuery(e.target.value)}
-              placeholder='Nom, email ou téléphone…'
-              className='w-full rounded-lg border border-border bg-surface py-2.5 pr-4 pl-10 text-sm text-ink placeholder:text-faint outline-none focus:border-brand-purple'
+              placeholder='Nom, téléphone ou e-mail'
+              aria-label='Rechercher un invité par nom, téléphone ou e-mail'
+              className='w-full rounded-2xl border border-border-soft bg-surface py-3 pl-11 pr-4 text-sm text-ink shadow-sm outline-none transition placeholder:text-faint focus:border-brand-purple'
             />
           </div>
-
           {query.trim() && (
-            <div className='mt-3 space-y-1.5'>
+            <div className='mt-2 space-y-1.5 rounded-2xl border border-border-soft bg-surface p-2'>
               {results.length === 0 && (
-                <p className='px-2 py-3 text-sm text-faint'>
+                <p className='px-3 py-3 text-sm text-faint'>
                   Aucun invité en attente ne correspond.
                 </p>
               )}
@@ -563,175 +805,89 @@ export default function CheckIn () {
                   type='button'
                   disabled={checkingId === guest.id}
                   onClick={() => handleCheckIn(guest)}
-                  className='flex w-full items-center gap-3 rounded-lg border border-border-soft px-3 py-2.5 text-left transition hover:border-brand-purple disabled:opacity-60'
+                  className='flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-panel disabled:opacity-60'
                 >
                   <Avatar name={guest.fullName} />
                   <div className='min-w-0 flex-1'>
-                    <p className='truncate text-sm font-medium text-ink'>
+                    <p className='truncate text-sm font-semibold text-ink'>
                       {guest.fullName}
                       {guest.seats > 1 && ` · ${guest.seats} places`}
                     </p>
                     <p className='truncate text-xs text-faint'>{guest.email}</p>
                   </div>
-                  <span className='shrink-0 text-xs font-medium text-brand-purple'>
+                  <span className='shrink-0 text-xs font-semibold text-brand-purple'>
                     {checkingId === guest.id ? '…' : 'Valider'}
                   </span>
                 </button>
               ))}
             </div>
           )}
+        </section>
 
-          <div className='mt-4 border-t border-border-soft pt-4'>
-            {!scanning ? (
-              <button
-                type='button'
-                onClick={() => startScan()}
-                className='flex w-full items-center justify-center gap-2 rounded-lg border border-border-soft px-3 py-2.5 text-sm font-medium text-ink transition hover:border-brand-purple'
-              >
-                <QrCode className='h-4 w-4' />
-                Scanner le QR d'un billet
-              </button>
-            ) : (
-              <div>
-                <div className='relative overflow-hidden rounded-lg bg-black'>
-                  <video
-                    ref={videoRef}
-                    muted
-                    playsInline
-                    className='aspect-square w-full object-cover'
-                  />
-                  <button
-                    type='button'
-                    onClick={stopScan}
-                    className='absolute top-2 right-2 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80'
-                    aria-label='Arrêter le scan'
-                  >
-                    <X className='h-4 w-4' />
-                  </button>
-                  {(torch.available || canFlip) && (
-                    <div className='absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-2'>
-                      {torch.available && (
-                        <button
-                          type='button'
-                          onClick={toggleTorch}
-                          aria-pressed={torch.on}
-                          aria-label={
-                            torch.on ? 'Éteindre la lampe' : 'Allumer la lampe'
-                          }
-                          className={`rounded-full p-2.5 ${
-                            torch.on
-                              ? 'bg-amber-300 text-black'
-                              : 'bg-black/60 text-white hover:bg-black/80'
-                          }`}
-                        >
-                          <Flashlight className='h-5 w-5' />
-                        </button>
-                      )}
-                      {canFlip && (
-                        <button
-                          type='button'
-                          onClick={flipCamera}
-                          aria-label='Changer de caméra'
-                          className='rounded-full bg-black/60 p-2.5 text-white hover:bg-black/80'
-                        >
-                          <SwitchCamera className='h-5 w-5' />
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <canvas ref={canvasRef} className='hidden' />
-              </div>
-            )}
-            {scanError && (
-              <p className='mt-2 text-center text-xs text-danger'>
-                {scanError}
+        <section className='mt-6 overflow-hidden rounded-2xl border border-border-soft bg-surface shadow-sm'>
+          <div className='flex items-center justify-between border-b border-border-soft px-4 py-4 sm:px-5'>
+            <div>
+              <h2 className='font-semibold text-ink'>Dernières arrivées</h2>
+              <p className='mt-0.5 text-xs text-muted'>
+                {attended.length} / {expected.length} personnes entrées
               </p>
-            )}
-          </div>
-
-          <div role='status' aria-live='polite' className='mt-4'>
-            {result && <ScanResult result={result} />}
-          </div>
-        </div>
-
-        <div>
-          <div className='grid grid-cols-2 gap-4 lg:grid-cols-3'>
-            {STATS.map(stat => (
-              <StatCard key={stat.label} {...stat} />
-            ))}
-          </div>
-
-          <div className='mt-6 overflow-hidden rounded-2xl border border-border-soft bg-surface'>
-            <div className='flex items-center justify-between px-6 py-4'>
-              <h2 className='font-semibold text-ink'>Invités arrivés</h2>
-              <span className='text-xs text-faint'>
-                {attended.length} / {expected.length}
-              </span>
             </div>
-            <div className='overflow-x-auto'>
-              <table className='w-full min-w-[480px] text-left text-sm'>
-                <thead>
-                  <tr className='border-y border-border-soft text-xs tracking-wider text-faint uppercase'>
-                    <th className='px-6 py-3 font-medium'>Invité</th>
-                    <th className='px-3 py-3 font-medium'>Arrivée</th>
-                    <th className='px-3 py-3 font-medium'>RSVP</th>
-                    <th className='px-3 py-3' />
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading && <SkeletonRows rows={4} cols={4} />}
-                  {!loading && attended.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={4}
-                        className='px-6 py-10 text-center text-sm text-faint'
-                      >
-                        Aucun invité pointé pour le moment.
-                      </td>
-                    </tr>
-                  )}
-                  {!loading &&
-                    arrivedPage.items.map(guest => (
-                      <tr
-                        key={guest.id}
-                        className='border-b border-border-soft last:border-b-0'
-                      >
-                        <td className='px-6 py-3'>
-                          <div className='flex items-center gap-3'>
-                            <Avatar name={guest.fullName} />
-                            <span className='font-medium text-ink'>
-                              {guest.fullName}
-                            </span>
-                          </div>
-                        </td>
-                        <td className='px-3 py-3 font-mono text-muted'>
-                          {formatTime(guest.checkedInAt)}
-                        </td>
-                        <td className='px-3 py-3'>
-                          <StatusBadge
-                            status={guestStatusLabel(guest.status)}
-                          />
-                        </td>
-                        <td className='px-3 py-3 text-right'>
-                          <button
-                            type='button'
-                            disabled={checkingId === guest.id}
-                            onClick={() => handleUndo(guest)}
-                            className='text-xs text-faint hover:text-danger disabled:opacity-50'
-                            title='Annuler le pointage (erreur de saisie)'
-                          >
-                            Annuler
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-            <Pagination pagination={arrivedPage} label='arrivées' />
+            <span className='text-xs font-medium uppercase tracking-wide text-faint'>
+              {attended.length === 1 ? '1 arrivée' : `${attended.length} arrivées`}
+            </span>
           </div>
-        </div>
+          {loading && (
+            <div className='space-y-3 p-4'>
+              {[0, 1, 2].map(item => (
+                <div
+                  key={item}
+                  className='h-14 animate-pulse rounded-xl bg-panel'
+                />
+              ))}
+            </div>
+          )}
+          {!loading && attended.length === 0 && (
+            <p className='px-5 py-10 text-center text-sm text-faint'>
+              Aucune arrivée pour le moment. Scannez un billet ou recherchez un invité.
+            </p>
+          )}
+          {!loading && attended.length > 0 && (
+            <div className='divide-y divide-border-soft'>
+              {arrivedPage.items.map(guest => (
+                <div
+                  key={guest.id}
+                  className='flex items-center gap-3 px-4 py-3 sm:px-5'
+                >
+                  <Avatar name={guest.fullName} />
+                  <div className='min-w-0 flex-1'>
+                    <p className='truncate text-sm font-semibold text-ink'>
+                      {guest.fullName}
+                    </p>
+                    <p className='mt-0.5 text-xs text-muted'>
+                      {formatTime(guest.checkedInAt)}
+                      {guest.seats > 1 && ` · ${guest.seats} places`}
+                      {guest.side && ` · ${guest.side}`}
+                      {guest.pendingSync && ' · En attente de synchronisation'}
+                    </p>
+                  </div>
+                  <div className='flex shrink-0 items-center gap-2'>
+                    <StatusBadge status={guestStatusLabel(guest.status)} />
+                    <button
+                      type='button'
+                      disabled={checkingId === guest.id}
+                      onClick={() => handleUndo(guest)}
+                      className='rounded-lg px-2 py-1 text-xs font-medium text-faint transition hover:bg-danger/10 hover:text-danger disabled:opacity-50'
+                      title='Annuler le pointage (erreur de saisie)'
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <Pagination pagination={arrivedPage} label='arrivées' />
+        </section>
       </div>
     </DashboardLayout>
   )
