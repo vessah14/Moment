@@ -102,7 +102,7 @@ export default function AdminTopbar({ onMenuClick }) {
           title={admin?.fullName}
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-danger/20 text-sm font-semibold text-danger"
         >
-          {initials(admin?.fullName)}
+          {admin?.role?.toLowerCase() === 'superadmin' ? 'S' : initials(admin?.fullName)}
         </div>
       </div>
     </div>
