@@ -10,6 +10,7 @@ import BrandLoader from './components/ui/BrandLoader'
 import EventLoader from './components/site/EventLoader'
 import { eventSlugFromPath, isGuestPath } from './utils/eventLook'
 import { syncTranslationForRoute } from './utils/translation'
+import { trackPageView } from './utils/tagManager'
 import PageAnimations from './components/PageAnimations'
 import ScrollToTop from './components/ScrollToTop'
 import BackToTop from './components/layout/BackToTop'
@@ -83,8 +84,10 @@ function RouteLoader ({ children }) {
       clearPrefetchedPublicSite(eventSlug)
     }
   }, [eventSlug])
-  // Anglais : traduction écrite à la main ici, Google Traduction ailleurs.
+  // Anglais : traduction partout sauf sur les pages des invités.
   useEffect(() => syncTranslationForRoute(pathname), [pathname])
+  // Mesure d'audience (seulement si les cookies optionnels sont acceptés).
+  useEffect(() => trackPageView(pathname), [pathname])
   return (
     <Suspense fallback={guestPage ? <EventLoader slug={eventSlugFromPath(pathname)} /> : <BrandLoader />}>
       {children}

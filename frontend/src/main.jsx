@@ -8,9 +8,12 @@ import { initTranslation } from './utils/translation.js'
 import { EN, isEnglish } from './i18n'
 import { setDictionary } from './i18n/domTranslate.js'
 import { startWebVitals } from './utils/webVitals.js'
+import { initTagManager } from './utils/tagManager.js'
 
 // Vitesse réelle des visiteurs (Core Web Vitals), envoyée au backend.
 startWebVitals()
+// Google Tag Manager : seulement après accord pour les cookies optionnels.
+initTagManager()
 
 function start() {
   initTranslation()

@@ -24,5 +24,8 @@ export default {
   'a participé à': 'took part in',
   'Questions': 'Questions',
   'la date à confirmer': 'date to be confirmed',
+  // Politique de confidentialité : mesure d'audience
+  'Google Tag Manager et Google Analytics': 'Google Tag Manager and Google Analytics',
+  ', pour la mesure d’audience, uniquement si vous acceptez les cookies optionnels ;': ', for audience measurement, only if you accept optional cookies;',
   'lieu à préciser': 'venue to be confirmed',
 }
