@@ -105,17 +105,19 @@ public class EnvolTests
                 new() { FullName = "Paul E.", Service = "Commercial", Phone = "677123456" },   // même numéro
                 new() { FullName = "Marie Ngo", Service = "Commercial", Phone = "699 00 00 08" },
                 new() { FullName = "marie  ngo", Service = "commercial" },                     // sans numéro : même nom, doublon
-                new() { FullName = "Aïcha Bello", Service = "Finances" },
+                new() { FullName = "Aïcha Bello", Service = "Finances", Email = "aicha@example.com" },
+                new() { FullName = "Aïcha bis", Phone = "698000000", Email = "AICHA@example.com" }, // même e-mail
                 new() { FullName = "  ", Service = "Finances" },
             },
         }, evt.OrganizerId);
 
         Assert.Equal(2, result.Added);
-        Assert.Equal(3, result.Skipped);
+        Assert.Equal(4, result.Skipped);
         Assert.Equal(2, result.Groups);
         var marie = context.Guests.Single(g => g.FullName == "Marie Ngo");
         Assert.Equal("Commercial", context.GuestGroups.Single(g => g.Id == marie.GroupId).Label);
         Assert.NotNull(marie.ImportBatchId);
+        Assert.Equal("aicha@example.com", context.Guests.Single(g => g.FullName == "Aïcha Bello").Email);
     }
 
     [Fact]

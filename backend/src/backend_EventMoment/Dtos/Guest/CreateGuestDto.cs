@@ -37,6 +37,9 @@ namespace backend_EventMoment.Models
         [MaxLength(255)]
         public string FullName { get; set; } = string.Empty;
 
+        [MaxLength(255)]
+        public string? Email { get; set; }
+
         // Service, filière ou département : devient un groupe d'invités de l'événement.
         [MaxLength(100)]
         public string? Service { get; set; }

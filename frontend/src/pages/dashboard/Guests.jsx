@@ -1,4 +1,4 @@
-import { Eye, Link2, Mail, MessageCircle, Pencil, Plus, Printer, Search, Send, Trash2, Upload } from 'lucide-react'
+import { Eye, Link2, Mail, MessageCircle, Pencil, Plus, Printer, Search, Send, Trash2, Upload, Users } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import Avatar from '../../components/ui/Avatar'
@@ -10,7 +10,7 @@ import GuestEditDialog from '../../components/guests/GuestEditDialog'
 import PrintTicketsDialog from '../../components/guests/PrintTicketsDialog'
 import { ConfirmDialog } from '../../components/ui/Dialog'
 import { createGuest, deleteGuest, importGuests, listGuests, sendGuestInvitation, sendPendingInvitations, updateGuest } from '../../api/guests'
-import { maskPhone, readGuestFile } from '../../utils/guestImport'
+import { contactRowsFromPicker, maskPhone, readGuestFile } from '../../utils/guestImport'
 import { createGuestGroup, listGuestGroups } from '../../api/guestGroups'
 import { listEvents } from '../../api/events'
 import { listRsvps } from '../../api/rsvps'
@@ -52,6 +52,10 @@ export default function Guests() {
   const [deletingGuest, setDeletingGuest] = useState(null)
   const [deleteBusy, setDeleteBusy] = useState(false)
   const [printOpen, setPrintOpen] = useState(false)
+  const contactsAvailable =
+    typeof navigator !== 'undefined' &&
+    'contacts' in navigator &&
+    typeof navigator.contacts?.select === 'function'
 
   useEffect(() => {
     listEvents()
@@ -205,6 +209,41 @@ export default function Guests() {
     } finally {
       setImporting(false)
       if (importInput.current) importInput.current.value = ''
+    }
+  }
+
+  const handleChooseContacts = async () => {
+    if (!contactsAvailable || !selectedEventId || importing) return
+    const eventId = selectedEventId
+    setImporting(true)
+    setError('')
+    try {
+      const contacts = await navigator.contacts.select(['name', 'tel', 'email'], { multiple: true })
+      const { rows, skipped: locallySkipped } = contactRowsFromPicker(contacts, guests)
+      if (!rows.length) {
+        if (locallySkipped) {
+          toast(`${locallySkipped} contact${locallySkipped > 1 ? 's' : ''} déjà présent${locallySkipped > 1 ? 's' : ''} ou sans nom ignoré${locallySkipped > 1 ? 's' : ''}`)
+        }
+        return
+      }
+
+      const result = await importGuests(eventId, rows)
+      const [fresh, freshGroups] = await Promise.all([listGuests(eventId), listGuestGroups(eventId)])
+      setGuests(fresh ?? [])
+      setGroups(freshGroups ?? [])
+      notifyGuestsChanged()
+
+      const skipped = (result.skipped ?? 0) + locallySkipped
+      const added = result.added ?? 0
+      const parts = [`${added} contact${added > 1 ? 's' : ''} ajouté${added > 1 ? 's' : ''}`]
+      if (skipped) parts.push(`${skipped} doublon${skipped > 1 ? 's' : ''} ou contact${skipped > 1 ? 's' : ''} sans nom ignoré${skipped > 1 ? 's' : ''}`)
+      toast(parts.join(' · '))
+      if (result.limitReached) setError(result.limitReached)
+    } catch (err) {
+      if (err?.name === 'AbortError') return
+      setError(err.message || "Les contacts n'ont pas pu être ajoutés.")
+    } finally {
+      setImporting(false)
     }
   }
 
@@ -443,6 +482,17 @@ export default function Guests() {
             <Upload className="h-4 w-4" />
             {importing ? 'Import…' : 'Importer la liste (Excel)'}
           </Button>
+          {contactsAvailable && (
+            <Button
+              variant="outline"
+              onClick={handleChooseContacts}
+              disabled={!selectedEventId || loading || importing}
+              title="Disponible sur les navigateurs compatibles, notamment Chrome sur Android"
+            >
+              <Users className="h-4 w-4" />
+              {importing ? 'Import…' : 'Choisir dans mes contacts'}
+            </Button>
+          )}
           <Button variant="outline" onClick={() => setPrintOpen(true)} disabled={guests.length === 0}>
             <Printer className="h-4 w-4" />
             Imprimer les billets

@@ -1,3 +1,5 @@
+import { internationalNumber } from './whatsapp'
+
 // Import d'une liste d'invités (Excel ou CSV) : colonnes nom, service, téléphone. Le
 // fichier est lu dans le navigateur ; le serveur ignore les doublons et range chaque
 // service dans un groupe d'invités.
@@ -26,6 +28,42 @@ function columnsOf(row) {
 }
 
 const cellText = (value) => (value === null || value === undefined ? '' : String(value).trim())
+
+const firstContactValue = (values) =>
+  Array.isArray(values) ? String(values.find((value) => String(value ?? '').trim()) ?? '').trim() : ''
+
+// Contacts du sélecteur natif → format attendu par l'import en lot.
+export function contactRowsFromPicker(contacts, existingGuests = []) {
+  const phones = new Set(existingGuests.map((guest) => internationalNumber(guest.phone)).filter(Boolean))
+  const emails = new Set(existingGuests.map((guest) => String(guest.email ?? '').trim().toLowerCase()).filter(Boolean))
+  const names = new Set(existingGuests.map((guest) => guest.fullName?.trim().toLowerCase().replace(/\s+/g, ' ')).filter(Boolean))
+  const rows = []
+  let skipped = 0
+
+  for (const contact of Array.isArray(contacts) ? contacts : []) {
+    const fullName = firstContactValue(contact?.name).replace(/\s+/g, ' ').slice(0, 255)
+    if (!fullName) {
+      skipped++
+      continue
+    }
+
+    const phone = internationalNumber(firstContactValue(contact?.tel)) ?? ''
+    const email = firstContactValue(contact?.email).slice(0, 255)
+    const emailKey = email.toLowerCase()
+    const nameKey = fullName.toLowerCase()
+    if ((phone && phones.has(phone)) || (emailKey && emails.has(emailKey)) || (!phone && !emailKey && names.has(nameKey))) {
+      skipped++
+      continue
+    }
+
+    rows.push({ fullName, service: '', phone, email })
+    if (phone) phones.add(phone)
+    if (emailKey) emails.add(emailKey)
+    if (!phone && !emailKey) names.add(nameKey)
+  }
+
+  return { rows, skipped }
+}
 
 // Lignes du tableau → [{ fullName, service, phone }]. La ligne d'en-tête (cherchée dans
 // les 5 premières) donne l'ordre des colonnes ; sans en-tête : nom, service, téléphone.

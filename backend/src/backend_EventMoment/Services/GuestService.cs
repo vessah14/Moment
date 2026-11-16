@@ -288,9 +288,9 @@ namespace backend_EventMoment.Services
             return guests.Count;
         }
 
-        // Import d'une liste : une ligne par invité (nom, service, téléphone). Les doublons
-        // (même téléphone, ou même nom quand il n'y a pas de téléphone) sont ignorés, dans la
-        // liste comme dans l'événement ; chaque service devient un groupe d'invités.
+        // Import d'une liste : une ligne par invité (nom, service, téléphone, e-mail). Les doublons
+        // (même téléphone ou e-mail, ou même nom sans coordonnées) sont ignorés ; chaque service
+        // devient un groupe d'invités.
         public async Task<ImportGuestsResultDto> ImportAsync(Guid eventId, ImportGuestsDto dto, Guid organizerId)
         {
             if (!await _context.Events.AnyAsync(e => e.Id == eventId && e.OrganizerId == organizerId))
@@ -298,9 +298,10 @@ namespace backend_EventMoment.Services
 
             var existing = await _context.Guests.AsNoTracking()
                 .Where(g => g.EventId == eventId)
-                .Select(g => new { g.FullName, g.Phone })
+                .Select(g => new { g.FullName, g.Phone, g.Email })
                 .ToListAsync();
             var phones = existing.Select(g => PhoneKey(g.Phone)).OfType<string>().ToHashSet();
+            var emails = existing.Select(g => EmailKey(g.Email)).OfType<string>().ToHashSet();
             var names = existing.Select(g => NameKey(g.FullName)).ToHashSet();
             var groups = (await _context.GuestGroups.Where(g => g.EventId == eventId).ToListAsync())
                 .GroupBy(g => NameKey(g.Label))
@@ -317,8 +318,12 @@ namespace backend_EventMoment.Services
                 var fullName = row.FullName?.Trim() ?? string.Empty;
                 var phone = string.IsNullOrWhiteSpace(row.Phone) ? null : row.Phone.Trim();
                 var phoneKey = PhoneKey(phone);
+                var email = string.IsNullOrWhiteSpace(row.Email) ? null : row.Email.Trim();
+                var emailKey = EmailKey(email);
                 if (fullName.Length == 0
-                    || (phoneKey != null ? phones.Contains(phoneKey) : names.Contains(NameKey(fullName))))
+                    || (phoneKey != null && phones.Contains(phoneKey))
+                    || (emailKey != null && emails.Contains(emailKey))
+                    || (phoneKey == null && emailKey == null && names.Contains(NameKey(fullName))))
                 {
                     result.Skipped++;
                     continue;
@@ -359,7 +364,7 @@ namespace backend_EventMoment.Services
                     GroupId = groupId,
                     FullName = fullName,
                     Phone = phone,
-                    Email = string.Empty,
+                    Email = email ?? string.Empty,
                     EditionNumber = ++editionNumber,
                     Status = GuestStatus.EnAttente,
                     ImportBatchId = batchId,
@@ -369,6 +374,7 @@ namespace backend_EventMoment.Services
                 // Enregistré ligne par ligne : la limite de l'offre compte les invités en base.
                 await _context.SaveChangesAsync();
                 if (phoneKey != null) phones.Add(phoneKey);
+                if (emailKey != null) emails.Add(emailKey);
                 names.Add(NameKey(fullName));
                 result.Added++;
             }
@@ -379,6 +385,9 @@ namespace backend_EventMoment.Services
 
         private static string NameKey(string? name) =>
             string.Join(' ', (name ?? string.Empty).Trim().ToLowerInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries));
+
+        private static string? EmailKey(string? email) =>
+            string.IsNullOrWhiteSpace(email) ? null : email.Trim().ToLowerInvariant();
 
         public async Task<GuestDTO> MarkSharedAsync(Guid id, Guid organizerId)
         {

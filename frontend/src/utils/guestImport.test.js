@@ -1,5 +1,29 @@
 import { describe, expect, it } from 'vitest'
-import { guestRowsFromSheet, maskPhone, parseCsv } from './guestImport'
+import { contactRowsFromPicker, guestRowsFromSheet, maskPhone, parseCsv } from './guestImport'
+
+describe('contactRowsFromPicker', () => {
+  it('normalizes phone numbers, keeps emails and skips existing or repeated contacts', () => {
+    const result = contactRowsFromPicker(
+      [
+        { name: ['Aïcha Bello'], tel: ['+237 6 90 00 00 01'], email: ['aicha@example.com'] },
+        { name: ['Aïcha bis'], tel: ['690000001'] },
+        { name: ['Paul Ekané'], tel: ['677 12 34 56'] },
+        { name: ['Paul again'], tel: ['+237 677 12 34 56'] },
+        { name: ['Sans téléphone'], email: [] },
+        { name: [], tel: ['699 00 00 00'] },
+      ],
+      [{ fullName: 'Paul Ekané', phone: '+237677123456', email: '' }],
+    )
+
+    expect(result).toEqual({
+      rows: [
+        { fullName: 'Aïcha Bello', service: '', phone: '237690000001', email: 'aicha@example.com' },
+        { fullName: 'Sans téléphone', service: '', phone: '', email: '' },
+      ],
+      skipped: 4,
+    })
+  })
+})
 
 describe('guestRowsFromSheet', () => {
   it('reads the columns from the header row, in any order and with accents', () => {
