@@ -510,6 +510,8 @@ CREATE TABLE public.guests (
     seats smallint,
     edition_number integer NOT NULL,
     is_vip boolean DEFAULT false NOT NULL,
+    whatsapp_reminders_consented boolean DEFAULT false NOT NULL,
+    whatsapp_reminders_consented_at timestamp with time zone,
     en_route_at timestamp with time zone,
     import_batch_id uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL,

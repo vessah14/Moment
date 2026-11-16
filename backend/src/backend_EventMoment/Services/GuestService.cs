@@ -816,6 +816,52 @@ namespace backend_EventMoment.Services
             return created;
         }
 
+        public async Task<bool> RegisterPublicGuestAsync(string slug, PublicGuestRegistrationDto dto)
+        {
+            var eventEntity = await _context.Events.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(e => e.Slug == slug && e.Status == EventStatus.Publie
+                    && !_context.EventModerations.Any(m => m.EventId == e.Id));
+            if (eventEntity == null) return false;
+
+            var fullName = dto.FullName.Trim();
+            var phone = dto.Phone.Trim();
+            var email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim();
+            if (fullName.Length == 0)
+                throw new InvalidOperationException("Veuillez indiquer votre nom.");
+
+            await using var transaction = await OrganizerLock.BeginAsync(_context, eventEntity.OrganizerId);
+            if (await FindListedGuestAsync(eventEntity.Id, phone, email) != null)
+                return true;
+
+            if (_plans != null)
+                await _plans.EnsureCanAddGuestAsync(eventEntity.OrganizerId, eventEntity.Id);
+
+            var now = DateTimeOffset.UtcNow;
+            var editionNumber = (await _context.Guests
+                .Where(g => g.EventId == eventEntity.Id)
+                .MaxAsync(g => (int?)g.EditionNumber) ?? 0) + 1;
+            _context.Guests.Add(new Guest
+            {
+                Id = Guid.NewGuid(),
+                EventId = eventEntity.Id,
+                FullName = fullName,
+                Phone = phone,
+                Email = email ?? string.Empty,
+                Seats = dto.Seats,
+                EditionNumber = editionNumber,
+                Status = GuestStatus.EnAttente,
+                WhatsAppRemindersConsented = dto.WhatsAppRemindersConsent,
+                WhatsAppRemindersConsentedAt = dto.WhatsAppRemindersConsent ? now : null,
+                CreatedAt = now,
+                UpdatedAt = now,
+            });
+
+            await _context.SaveChangesAsync();
+            if (transaction != null)
+                await transaction.CommitAsync();
+            return true;
+        }
+
         // Invité de l'événement au même e-mail, ou au même numéro (9 derniers chiffres : le
         // même numéro s'écrit « 690… », « +237 690… » ou « 00237 690… »).
         private async Task<Guest?> FindListedGuestAsync(Guid eventId, string? phone, string? email)
@@ -908,6 +954,8 @@ namespace backend_EventMoment.Services
             Seats = entity.Seats,
             EditionNumber = entity.EditionNumber,
             IsVip = entity.IsVip,
+            WhatsAppRemindersConsented = entity.WhatsAppRemindersConsented,
+            WhatsAppRemindersConsentedAt = entity.WhatsAppRemindersConsentedAt,
             Status = entity.Status,
             InvitationOpenedAt = entity.InvitationOpenedAt,
             InvitationSharedAt = entity.InvitationSharedAt,

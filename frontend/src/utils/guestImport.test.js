@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { contactRowsFromPicker, guestRowsFromSheet, maskPhone, parseCsv } from './guestImport'
+import { contactRowsFromPicker, guestRowsFromSheet, maskPhone, parseCsv, parsePastedGuestList } from './guestImport'
 
 describe('contactRowsFromPicker', () => {
   it('normalizes phone numbers, keeps emails and skips existing or repeated contacts', () => {
@@ -22,6 +22,31 @@ describe('contactRowsFromPicker', () => {
       ],
       skipped: 4,
     })
+  })
+})
+
+describe('parsePastedGuestList', () => {
+  it('parses Cameroon numbers, emails, numbered lines, and flags duplicates or missing details', () => {
+    const result = parsePastedGuestList(
+      '1. Paul 675 12 34 72\nJean-Paul — +237 690 00 00 01\n+237 690 00 00 01\nMarie marie@example.com\n',
+      [{ fullName: 'Paul Déjà', phone: '+237675123472' }],
+    )
+
+    expect(result.truncated).toBe(false)
+    expect(result.rows).toEqual([
+      { fullName: 'Paul', phone: '237675123472', email: '', service: '', line: 1, duplicate: true },
+      { fullName: 'Jean-Paul', phone: '237690000001', email: '', service: '', line: 2, duplicate: false },
+      { fullName: '', phone: '237690000001', email: '', service: '', line: 3, duplicate: true },
+      { fullName: 'Marie', phone: '', email: 'marie@example.com', service: '', line: 4, duplicate: false },
+    ])
+  })
+
+  it('requires a name when a line contains only a phone number', () => {
+    const { rows } = parsePastedGuestList('690 00 00 01')
+
+    expect(rows).toEqual([
+      { fullName: '', phone: '237690000001', email: '', service: '', line: 1, duplicate: false },
+    ])
   })
 })
 

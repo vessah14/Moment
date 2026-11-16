@@ -1,4 +1,4 @@
-import { Eye, Link2, Mail, MessageCircle, Pencil, Plus, Printer, Search, Send, Trash2, Upload, Users } from 'lucide-react'
+import { Eye, Link2, Mail, MessageCircle, Pencil, Plus, Printer, Search, Send, Share2, Trash2, Upload, Users } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import Avatar from '../../components/ui/Avatar'
@@ -13,6 +13,7 @@ import { createGuest, deleteGuest, importGuests, listGuests, sendGuestInvitation
 import { contactRowsFromPicker, maskPhone, readGuestFile } from '../../utils/guestImport'
 import { createGuestGroup, listGuestGroups } from '../../api/guestGroups'
 import { listEvents } from '../../api/events'
+import { eventShareUrl } from '../../api/client'
 import { listRsvps } from '../../api/rsvps'
 import { downloadCsv } from '../../utils/csv'
 import { GUEST_STATUS_BY_FILTER, guestStatusLabel, hasGuestStatus } from '../../utils/guestStatus'
@@ -166,7 +167,19 @@ export default function Guests() {
 
   const selectedEvent = events.find((e) => e.id === selectedEventId)
   const eventPublished = selectedEvent?.status === 'Publie'
+  const registrationUrl = eventPublished && selectedEvent?.slug
+    ? `${eventShareUrl(selectedEvent.slug)}/inscription`
+    : ''
   const notInvited = guests.filter((g) => g.email && !g.invitationSentAt && !g.invitationPending)
+
+  const handleCopyRegistrationLink = async () => {
+    try {
+      await navigator.clipboard.writeText(registrationUrl)
+      toast('Lien d’inscription copié')
+    } catch {
+      setError('Copie impossible : sélectionnez et copiez le lien affiché.')
+    }
+  }
 
   // Les invitations partent en quelques secondes : la liste se met à jour seule tant
   // qu'il en reste en cours d'envoi (événement publié).
@@ -505,6 +518,31 @@ export default function Guests() {
           </Button>
         </div>
       </div>
+
+      {registrationUrl && (
+        <section className="mt-5 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-brand-purple/25 bg-brand-purple/5 p-4 sm:p-5">
+          <div className="min-w-0 flex-1">
+            <h2 className="font-semibold text-ink">Lien d’inscription pour vos invités</h2>
+            <p className="mt-1 text-sm text-muted">Partagez-le : chaque personne pourra s’ajouter à la liste de l’événement.</p>
+            <p className="mt-2 break-all font-mono text-xs text-ink">{registrationUrl}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={handleCopyRegistrationLink}>
+              <Link2 className="h-4 w-4" />
+              Copier le lien
+            </Button>
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(`Inscrivez-vous à ${selectedEvent.name} ici : ${registrationUrl}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-11 items-center gap-2 rounded-full bg-brand-gradient px-4 text-sm font-semibold text-white hover:opacity-90"
+            >
+              <Share2 className="h-4 w-4" aria-hidden="true" />
+              WhatsApp
+            </a>
+          </div>
+        </section>
+      )}
 
       <PrintTicketsDialog
         open={printOpen}

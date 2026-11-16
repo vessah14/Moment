@@ -65,6 +65,51 @@ export function contactRowsFromPicker(contacts, existingGuests = []) {
   return { rows, skipped }
 }
 
+const phoneInText = /(?:\+?237[\s().-]*|00237[\s().-]*)?[26](?:[\s().-]*\d){8}/
+const emailInText = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i
+const guestNameKey = (name) => String(name ?? '').trim().toLowerCase().replace(/\s+/g, ' ')
+
+// Une personne par ligne, depuis WhatsApp ou les notes. Les doublons sont signalés avant
+// l'envoi ; les numéros seuls restent modifiables pour demander le nom manquant.
+export function parsePastedGuestList(text, existingGuests = []) {
+  const lines = String(text ?? '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
+  const phoneKeys = new Set(existingGuests.map((guest) => internationalNumber(guest.phone)).filter(Boolean))
+  const emailKeys = new Set(existingGuests.map((guest) => String(guest.email ?? '').trim().toLowerCase()).filter(Boolean))
+  const nameKeys = new Set(existingGuests.map((guest) => guestNameKey(guest.fullName)).filter(Boolean))
+  const rows = lines.slice(0, MAX_IMPORT_ROWS).map((rawLine, index) => {
+    const line = rawLine.replace(/^\s*(?:\d+\s*[.)-]|[-*•])\s*/, '')
+    const phoneMatch = line.match(phoneInText)
+    const emailMatch = line.match(emailInText)
+    const phone = internationalNumber(phoneMatch?.[0]) ?? ''
+    const email = emailMatch?.[0] ?? ''
+    const fullName = line
+      .replace(phoneMatch?.[0] ?? '', ' ')
+      .replace(email, ' ')
+      .replace(/[\s,;|:–—]+/g, ' ')
+      .replace(/(^|\s)-(\s|$)/g, ' ')
+      .trim()
+      .replace(/\s+/g, ' ')
+      .slice(0, 255)
+    const phoneKey = internationalNumber(phone)
+    const emailKey = email.trim().toLowerCase()
+    const nameKey = guestNameKey(fullName)
+    const duplicate =
+      (phoneKey && phoneKeys.has(phoneKey)) ||
+      (emailKey && emailKeys.has(emailKey)) ||
+      (!phoneKey && !emailKey && nameKey && nameKeys.has(nameKey))
+
+    if (!duplicate) {
+      if (phoneKey) phoneKeys.add(phoneKey)
+      if (emailKey) emailKeys.add(emailKey)
+      if (!phoneKey && !emailKey && nameKey) nameKeys.add(nameKey)
+    }
+
+    return { fullName, phone, email, service: '', line: index + 1, duplicate: Boolean(duplicate) }
+  })
+
+  return { rows, truncated: lines.length > MAX_IMPORT_ROWS }
+}
+
 // Lignes du tableau → [{ fullName, service, phone }]. La ligne d'en-tête (cherchée dans
 // les 5 premières) donne l'ordre des colonnes ; sans en-tête : nom, service, téléphone.
 export function guestRowsFromSheet(rows) {

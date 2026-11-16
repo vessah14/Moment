@@ -1,4 +1,5 @@
 using backend_EventMoment;
+using backend_EventMoment.Dtos;
 using backend_EventMoment.Models;
 using backend_EventMoment.Services;
 using System.ComponentModel.DataAnnotations;
@@ -497,6 +498,75 @@ public class GuestServiceTests
         });
 
         Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task RegisterPublicGuestAsync_AddsPendingGuest_AndRecordsOptionalConsent()
+    {
+        var context = TestDbContextFactory.CreateAdminContext();
+        var (_, _, evt) = SeedEvent(context);
+        var service = new GuestService(context);
+
+        var registered = await service.RegisterPublicGuestAsync(evt.Slug, new PublicGuestRegistrationDto
+        {
+            FullName = "  Aïcha Bello  ",
+            Phone = "+237 675 12 34 72",
+            Seats = 3,
+            WhatsAppRemindersConsent = true,
+        });
+
+        var guest = Assert.Single(context.Guests.IgnoreQueryFilters().ToList());
+        Assert.True(registered);
+        Assert.Equal("Aïcha Bello", guest.FullName);
+        Assert.Equal(GuestStatus.EnAttente, guest.Status);
+        Assert.Equal((short)3, guest.Seats);
+        Assert.True(guest.WhatsAppRemindersConsented);
+        Assert.NotNull(guest.WhatsAppRemindersConsentedAt);
+        Assert.Empty(context.RsvpResponses.IgnoreQueryFilters());
+    }
+
+    [Fact]
+    public async Task RegisterPublicGuestAsync_IsIdempotent_ForExistingPhone()
+    {
+        var context = TestDbContextFactory.CreateAdminContext();
+        var (_, _, evt) = SeedEvent(context);
+        context.Guests.Add(new Guest
+        {
+            Id = Guid.NewGuid(),
+            EventId = evt.Id,
+            FullName = "Déjà inscrit",
+            Phone = "+237 675 12 34 72",
+            EditionNumber = 1,
+            Status = GuestStatus.EnAttente,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow,
+        });
+        await context.SaveChangesAsync();
+
+        var registered = await new GuestService(context).RegisterPublicGuestAsync(evt.Slug, new PublicGuestRegistrationDto
+        {
+            FullName = "Aïcha Bello",
+            Phone = "675123472",
+        });
+
+        Assert.True(registered);
+        Assert.Single(context.Guests.IgnoreQueryFilters());
+    }
+
+    [Fact]
+    public async Task RegisterPublicGuestAsync_ReturnsFalse_ForUnpublishedEvent()
+    {
+        var context = TestDbContextFactory.CreateAdminContext();
+        var (_, _, evt) = SeedEvent(context, EventStatus.Brouillon);
+
+        var registered = await new GuestService(context).RegisterPublicGuestAsync(evt.Slug, new PublicGuestRegistrationDto
+        {
+            FullName = "Aïcha Bello",
+            Phone = "+237 675 12 34 72",
+        });
+
+        Assert.False(registered);
+        Assert.Empty(context.Guests.IgnoreQueryFilters());
     }
 
     [Fact]

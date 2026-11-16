@@ -151,16 +151,18 @@ export default function Invitations () {
     ? guestMessageUrl(channel, selectedGuest.phone, personalizedPreview)
     : ''
   const sentCount = shareGuests.filter(guest => sentIds.has(guest.id)).length
-  // Message ouvert pour cet invité : il est noté « envoyé » et le suivant s'affiche.
-  const markSentAndNext = () => {
+  // Message ouvert pour cet invité : il est noté « envoyé », sans changer le destinataire.
+  const markSent = () => {
     if (!selectedGuest) return
     const ids = new Set(sentIds).add(selectedGuest.id)
     saveSent(ids)
     // Noté aussi sur le serveur : statut « Envoyée » visible depuis tous les appareils.
     markInvitationShared(selectedGuest.id).catch(() => {})
-    const next = nextUnsent(shareGuests, ids, selectedGuest.id)
-    if (next) setSelectedGuestId(next.id)
   }
+  const nextGuest =
+    selectedGuest && sentIds.has(selectedGuest.id)
+      ? nextUnsent(shareGuests, sentIds, selectedGuest.id)
+      : null
   const stats = [
     { label: 'Invités ciblés', value: audienceGuests.length },
     {
@@ -302,7 +304,7 @@ export default function Invitations () {
                   href={shareUrl}
                   target='_blank'
                   rel='noopener noreferrer'
-                  onClick={markSentAndNext}
+                  onClick={markSent}
                   className={`block rounded-lg px-4 py-3 text-center text-sm font-semibold text-white ${channel === 'WhatsApp' ? 'bg-[#25D366]' : 'bg-brand-purple'}`}
                 >
                   Envoyer à {selectedGuest.fullName} {channel === 'WhatsApp' ? 'sur WhatsApp' : 'par SMS'}
@@ -315,7 +317,7 @@ export default function Invitations () {
               )}
               <p className='flex flex-wrap items-center justify-between gap-2 text-xs text-muted'>
                 <span>
-                  {sentCount} / {shareGuests.length} invité{shareGuests.length > 1 ? 's' : ''} contacté{sentCount > 1 ? 's' : ''} · le suivant s’affiche tout seul
+                  {sentCount} / {shareGuests.length} invité{shareGuests.length > 1 ? 's' : ''} contacté{sentCount > 1 ? 's' : ''} · le destinataire reste sélectionné
                 </span>
                 {sentCount > 0 && (
                   <button type='button' onClick={() => saveSent(new Set())} className='font-medium text-brand-purple hover:underline'>
@@ -323,6 +325,15 @@ export default function Invitations () {
                   </button>
                 )}
               </p>
+              {nextGuest && (
+                <button
+                  type='button'
+                  onClick={() => setSelectedGuestId(nextGuest.id)}
+                  className='mt-2 text-xs font-medium text-brand-purple hover:underline'
+                >
+                  Choisir le prochain : {nextGuest.fullName}
+                </button>
+              )}
             </div>
           )}
         </div>

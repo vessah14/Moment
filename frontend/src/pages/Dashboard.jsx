@@ -19,7 +19,7 @@ function nextStepFor(event, stats) {
   if (event.status !== 'Publie')
     return { icon: Share2, title: `Publiez la page de ${name}`, text: 'Vérifiez-la, puis publiez-la pour pouvoir la partager.', cta: 'Terminer ma page', to: `/builder/${event.id}` }
   if (!stats?.totalCount)
-    return { icon: UserPlus, title: `Ajoutez vos invités à ${name}`, text: 'Un par un ou en important votre liste Excel. Chacun aura son lien personnel et son pass.', cta: 'Ajouter mes invités', to: `/dashboard/participants?eventId=${encodeURIComponent(event.id)}&add=1` }
+    return { icon: UserPlus, title: `${name} n’a encore aucun invité`, text: 'Ajoutez-les un par un, importez vos contacts ou partagez un lien pour qu’ils s’inscrivent eux-mêmes.', cta: 'Ajouter mes invités', to: `/dashboard/participants?eventId=${encodeURIComponent(event.id)}&add=1` }
   if (stats.pendingCount > 0)
     return { icon: Send, title: `${stats.pendingCount} invité${stats.pendingCount > 1 ? 's n’ont' : ' n’a'} pas encore répondu`, text: 'Envoyez à chacun son invitation sur WhatsApp, en un geste par invité.', cta: 'Envoyer les invitations', to: '/dashboard/invitations' }
   return { icon: CalendarPlus, title: `Tout est prêt pour ${name}`, text: 'Le jour J, scannez les pass à l’entrée depuis votre téléphone.', cta: 'Préparer l’accueil', to: '/dashboard/checkin' }
@@ -126,7 +126,7 @@ export default function Dashboard() {
           <ol className="mx-auto mt-8 grid max-w-xl gap-3 text-left">
             {[
               ['Créez votre page', 'Type d’événement, date, lieu, modèle : 5 minutes.'],
-              ['Ajoutez vos invités', 'Un par un ou en important votre liste Excel.'],
+              ['Ajoutez vos invités', 'Choisissez vos contacts, collez une liste ou partagez un lien d’inscription.'],
               ['Envoyez les invitations sur WhatsApp', 'Chacun répond en un clic et reçoit son pass.'],
             ].map(([title, text], i) => (
               <li key={title} className="flex gap-4 rounded-2xl border border-border-soft bg-surface p-4">

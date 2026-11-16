@@ -57,4 +57,23 @@ namespace backend_EventMoment.Models
         // Import arrêté par la limite d'invités de l'offre : message à afficher.
         public string? LimitReached { get; set; }
     }
+
+    public class PublicGuestRegistrationDto
+    {
+        [Required, MaxLength(255)]
+        public string FullName { get; set; } = string.Empty;
+
+        [Required, Phone, MaxLength(40)]
+        public string Phone { get; set; } = string.Empty;
+
+        [EmailAddress, MaxLength(254)]
+        public string? Email { get; set; }
+
+        // Nombre de places réservées, invité compris.
+        [Range(1, 50)]
+        public short Seats { get; set; } = 1;
+
+        // Consentement explicite et facultatif aux rappels liés à l'événement sur WhatsApp.
+        public bool WhatsAppRemindersConsent { get; set; }
+    }
 }

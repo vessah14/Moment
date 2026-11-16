@@ -46,6 +46,7 @@ const MiniSite = lazy(() => import('./pages/MiniSite'))
 const EventWall = lazy(() => import('./pages/EventWall'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 const Pricing = lazy(() => import('./pages/Pricing'))
+const PublicGuestRegistration = lazy(() => import('./pages/PublicGuestRegistration'))
 const TicketModels = lazy(() => import('./pages/TicketModels'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
@@ -139,6 +140,7 @@ function App () {
           />
           <Route path='/invitation/:code' element={<GuestInvitation />} />
           <Route path='/cadeaux/:code' element={<GiftRegistryPublic />} />
+          <Route path='/e/:slug/inscription' element={<PublicGuestRegistration />} />
           <Route path='/e/:slug' element={<MiniSite />} />
           <Route path='/e/:slug/mur' element={<EventWall />} />
           <Route path='/e/:slug/projection' element={<EventWall />} />
