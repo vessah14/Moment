@@ -1,6 +1,6 @@
 import { Eye, Link2, Mail, MessageCircle, Pencil, Plus, Printer, Search, Send, Share2, Trash2, Upload, Users } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Avatar from '../../components/ui/Avatar'
 import Button from '../../components/ui/Button'
 import Pagination from '../../components/ui/Pagination'
@@ -15,6 +15,7 @@ import { createGuestGroup, listGuestGroups } from '../../api/guestGroups'
 import { listEvents } from '../../api/events'
 import { eventShareUrl } from '../../api/client'
 import { listRsvps } from '../../api/rsvps'
+import GuestOnboardingStep from '../../components/wizard/GuestOnboardingStep'
 import { downloadCsv } from '../../utils/csv'
 import { GUEST_STATUS_BY_FILTER, guestStatusLabel, hasGuestStatus } from '../../utils/guestStatus'
 import { notifyGuestsChanged } from '../../utils/guestEvents'
@@ -27,6 +28,7 @@ const FILTERS = ['Tous', 'Confirmés', 'En attente', 'Refus']
 export default function Guests() {
   const toast = useToast()
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const requestedEventId = searchParams.get('eventId')
   const [events, setEvents] = useState([])
   const [selectedEventId, setSelectedEventId] = useState(requestedEventId || '')
@@ -434,6 +436,23 @@ export default function Guests() {
         <p className="mt-8 rounded-2xl border border-dashed border-border-soft py-10 text-center text-sm text-faint">
           Créez d'abord un événement pour pouvoir y ajouter des invités.
         </p>
+      </DashboardLayout>
+    )
+  }
+
+  if (searchParams.get('onboarding') === '1' && selectedEvent) {
+    return (
+      <DashboardLayout>
+        <Link
+          to={`/dashboard/participants?eventId=${encodeURIComponent(selectedEvent.id)}`}
+          className="mb-5 inline-flex min-h-10 items-center text-sm font-semibold text-muted hover:text-ink"
+        >
+          ← Retour à mes invités
+        </Link>
+        <GuestOnboardingStep
+          event={selectedEvent}
+          onSkip={() => navigate(`/dashboard/participants?eventId=${encodeURIComponent(selectedEvent.id)}`)}
+        />
       </DashboardLayout>
     )
   }

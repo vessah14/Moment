@@ -126,7 +126,7 @@ export default function PublicGuestRegistration() {
                   />
                 </label>
                 <label className="grid gap-1.5 text-sm font-medium">
-                  Téléphone
+                  Votre numéro WhatsApp
                   <input
                     className="min-h-11 rounded-xl border border-border bg-bg px-3 text-ink outline-none focus:border-brand-purple"
                     type="tel"
@@ -134,6 +134,7 @@ export default function PublicGuestRegistration() {
                     maxLength={40}
                     required
                     value={form.phone}
+                    placeholder="Ex. 675 12 34 72"
                     onChange={(e) => update({ phone: e.target.value })}
                   />
                 </label>
@@ -150,15 +151,27 @@ export default function PublicGuestRegistration() {
                 </label>
                 <label className="grid gap-1.5 text-sm font-medium">
                   Nombre de personnes, vous compris
-                  <input
-                    className="min-h-11 rounded-xl border border-border bg-bg px-3 text-ink outline-none focus:border-brand-purple"
-                    type="number"
-                    min="1"
-                    max="50"
-                    required
-                    value={form.seats}
-                    onChange={(e) => update({ seats: e.target.value })}
-                  />
+                  <span className="flex min-h-12 items-center justify-between rounded-xl border border-border bg-bg p-1.5">
+                    <button
+                      type="button"
+                      aria-label="Une personne de moins"
+                      onClick={() => update({ seats: Math.max(1, Number(form.seats) - 1) })}
+                      disabled={Number(form.seats) <= 1}
+                      className="grid h-10 w-10 place-items-center rounded-lg text-lg font-semibold text-ink hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      −
+                    </button>
+                    <span className="min-w-10 text-center text-base font-semibold" aria-live="polite">{form.seats}</span>
+                    <button
+                      type="button"
+                      aria-label="Une personne de plus"
+                      onClick={() => update({ seats: Math.min(50, Number(form.seats) + 1) })}
+                      disabled={Number(form.seats) >= 50}
+                      className="grid h-10 w-10 place-items-center rounded-lg text-lg font-semibold text-ink hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      +
+                    </button>
+                  </span>
                 </label>
                 <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border-soft bg-bg p-3 text-sm">
                   <input

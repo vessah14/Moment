@@ -38,6 +38,7 @@ export function contactRowsFromPicker(contacts, existingGuests = []) {
   const emails = new Set(existingGuests.map((guest) => String(guest.email ?? '').trim().toLowerCase()).filter(Boolean))
   const names = new Set(existingGuests.map((guest) => guest.fullName?.trim().toLowerCase().replace(/\s+/g, ' ')).filter(Boolean))
   const rows = []
+  const previewRows = []
   let skipped = 0
 
   for (const contact of Array.isArray(contacts) ? contacts : []) {
@@ -51,7 +52,13 @@ export function contactRowsFromPicker(contacts, existingGuests = []) {
     const email = firstContactValue(contact?.email).slice(0, 255)
     const emailKey = email.toLowerCase()
     const nameKey = fullName.toLowerCase()
-    if ((phone && phones.has(phone)) || (emailKey && emails.has(emailKey)) || (!phone && !emailKey && names.has(nameKey))) {
+    const duplicate =
+      (phone && phones.has(phone)) ||
+      (emailKey && emails.has(emailKey)) ||
+      (!phone && !emailKey && names.has(nameKey))
+    const row = { fullName, service: '', phone, email, duplicate: Boolean(duplicate) }
+    previewRows.push(row)
+    if (duplicate) {
       skipped++
       continue
     }
@@ -62,7 +69,7 @@ export function contactRowsFromPicker(contacts, existingGuests = []) {
     if (!phone && !emailKey) names.add(nameKey)
   }
 
-  return { rows, skipped }
+  return { rows, skipped, previewRows }
 }
 
 const phoneInText = /(?:\+?237[\s().-]*|00237[\s().-]*)?[26](?:[\s().-]*\d){8}/

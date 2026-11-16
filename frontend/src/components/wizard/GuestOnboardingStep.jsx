@@ -1,4 +1,5 @@
-import { ClipboardPaste, Copy, Link2, Users } from 'lucide-react'
+import QRCode from 'qrcode'
+import { ArrowLeft, ClipboardPaste, Copy, Link2, Share2, Users } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { eventShareUrl } from '../../api/client'
 import { importGuests, listGuests } from '../../api/guests'
@@ -6,16 +7,28 @@ import { contactRowsFromPicker, parsePastedGuestList } from '../../utils/guestIm
 import { useToast } from '../../utils/useToast'
 import Button from '../ui/Button'
 
-export default function GuestOnboardingStep({ event }) {
+function displayPhone(phone) {
+  const digits = String(phone ?? '').replace(/\D/g, '')
+  if (digits.length === 12 && digits.startsWith('237')) {
+    return `+237 ${digits.slice(3, 6)} ${digits.slice(6, 8)} ${digits.slice(8, 10)} ${digits.slice(10)}`
+  }
+  return phone || 'Aucun numéro trouvé'
+}
+
+export default function GuestOnboardingStep({ event, onSkip, isPublishing = false }) {
   const toast = useToast()
   const [guests, setGuests] = useState([])
   const [loadingGuests, setLoadingGuests] = useState(true)
   const [guestsReady, setGuestsReady] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [mode, setMode] = useState('choose')
   const [pasteText, setPasteText] = useState('')
-  const [previewRows, setPreviewRows] = useState([])
+  const [reviewRows, setReviewRows] = useState([])
+  const [reviewSkipped, setReviewSkipped] = useState(0)
   const [truncated, setTruncated] = useState(false)
+  const [qr, setQr] = useState('')
+  const [qrError, setQrError] = useState('')
   const contactsAvailable =
     typeof navigator !== 'undefined' &&
     'contacts' in navigator &&
@@ -25,11 +38,12 @@ export default function GuestOnboardingStep({ event }) {
     ? `${eventShareUrl(event.slug)}/inscription`
     : ''
   const importableRows = useMemo(
-    () => previewRows
-      .filter((row) => !row.duplicate && row.fullName.trim())
+    () => reviewRows
+      .filter((row) => row.selected && !row.duplicate && row.fullName.trim())
       .map(({ fullName, phone, email, service }) => ({ fullName: fullName.trim(), phone, email, service })),
-    [previewRows],
+    [reviewRows],
   )
+  const actionBusy = busy || isPublishing
 
   const fetchGuests = useCallback(async (isCancelled = () => false) => {
     try {
@@ -63,11 +77,25 @@ export default function GuestOnboardingStep({ event }) {
     }
   }, [fetchGuests])
 
-  const addRows = async (rows, skipped = 0) => {
-    if (!rows.length) {
-      if (skipped) toast(`${skipped} contact${skipped > 1 ? 's' : ''} déjà présent${skipped > 1 ? 's' : ''} ou sans nom ignoré${skipped > 1 ? 's' : ''}`)
-      return false
+  useEffect(() => {
+    if (!registrationUrl) return undefined
+    let cancelled = false
+    setQr('')
+    setQrError('')
+    QRCode.toDataURL(registrationUrl, { margin: 1, width: 360, color: { dark: '#111111', light: '#ffffff' } })
+      .then((data) => {
+        if (!cancelled) setQr(data)
+      })
+      .catch(() => {
+        if (!cancelled) setQrError('Le QR code n’a pas pu être généré. Le lien reste disponible.')
+      })
+    return () => {
+      cancelled = true
     }
+  }, [registrationUrl])
+
+  const addRows = async (rows, skipped = 0) => {
+    if (!rows.length || actionBusy) return false
 
     setBusy(true)
     setError('')
@@ -89,30 +117,44 @@ export default function GuestOnboardingStep({ event }) {
   }
 
   const chooseContacts = async () => {
-    if (!contactsAvailable || busy || !guestsReady) return
+    if (!contactsAvailable || actionBusy || !guestsReady) return
     setError('')
     try {
       const contacts = await navigator.contacts.select(['name', 'tel', 'email'], { multiple: true })
-      const { rows, skipped } = contactRowsFromPicker(contacts, guests)
-      await addRows(rows, skipped)
+      const result = contactRowsFromPicker(contacts, guests)
+      if (!result.previewRows.length) {
+        setError(result.skipped ? 'Les contacts sélectionnés sont déjà dans la liste ou sans nom.' : 'Aucun contact sélectionné.')
+        return
+      }
+      setReviewRows(result.previewRows.map((row) => ({ ...row, selected: !row.duplicate })))
+      setReviewSkipped(result.skipped)
+      setMode('contacts-review')
     } catch (err) {
-      if (err?.name !== 'AbortError') setError(err.message || "Les contacts n'ont pas pu être ajoutés.")
+      if (err?.name !== 'AbortError') setError(err.message || "Les contacts n'ont pas pu être lus.")
     }
   }
 
   const previewPaste = () => {
     const result = parsePastedGuestList(pasteText, guests)
-    setPreviewRows(result.rows)
+    if (!result.rows.length) {
+      setError('Collez une personne par ligne pour afficher l’aperçu.')
+      return
+    }
+    setReviewRows(result.rows.map((row) => ({ ...row, selected: !row.duplicate })))
+    setReviewSkipped(result.rows.filter((row) => row.duplicate).length)
     setTruncated(result.truncated)
-    setError(result.rows.length ? '' : 'Collez une personne par ligne pour afficher l’aperçu.')
+    setError('')
+    setMode('paste-review')
   }
 
-  const importPasted = async () => {
-    const added = await addRows(importableRows)
+  const importReviewedRows = async () => {
+    const added = await addRows(importableRows, reviewSkipped)
     if (!added) return
-    setPasteText('')
-    setPreviewRows([])
+    setReviewRows([])
+    setReviewSkipped(0)
     setTruncated(false)
+    if (mode === 'paste-review') setPasteText('')
+    setMode('choose')
   }
 
   const copyRegistrationLink = async () => {
@@ -124,109 +166,240 @@ export default function GuestOnboardingStep({ event }) {
     }
   }
 
+  const shareRegistrationLink = async () => {
+    if (typeof navigator.share !== 'function') {
+      setError('Le partage direct n’est pas disponible. Copiez le lien ou partagez-le sur WhatsApp.')
+      return
+    }
+    try {
+      await navigator.share({
+        title: `Inscription · ${event.name}`,
+        text: `Inscrivez-vous à ${event.name}`,
+        url: registrationUrl,
+      })
+    } catch (err) {
+      if (err?.name !== 'AbortError') setError(err.message || 'Le partage du lien a échoué.')
+    }
+  }
+
+  const backToChoices = () => {
+    setError('')
+    setMode('choose')
+  }
+
+  const toggleReviewRow = (index) => {
+    setReviewRows((current) => current.map((row, i) => (
+      i === index && !row.duplicate ? { ...row, selected: !row.selected } : row
+    )))
+  }
+
+  const review = mode === 'contacts-review' || mode === 'paste-review'
+
   return (
     <div className="mx-auto max-w-3xl">
-      <p className="text-sm font-semibold tracking-wide text-brand-purple uppercase">Étape 6 · Avant la publication</p>
-      <h2 className="mt-2 text-2xl font-bold text-ink">Ajoutez vos invités</h2>
-      <p className="mt-2 text-sm leading-relaxed text-muted">
-        Ajoutez-les maintenant ou publiez votre page et revenez plus tard. Les inscriptions par lien seront ouvertes après la publication.
-      </p>
+      {mode === 'choose' ? (
+        <>
+          <p className="text-sm font-semibold tracking-wide text-brand-purple uppercase">Étape 6 · Avant la publication</p>
+          <h2 className="mt-2 text-2xl font-bold text-ink">Ajoutez vos invités</h2>
+          <p className="mt-2 text-sm leading-relaxed text-muted">
+            {event?.name ? <>« {event.name} » est créé. </> : null}
+            Ajoutez vos invités maintenant ou publiez votre page et revenez plus tard.
+          </p>
 
-      <div className="mt-5 rounded-xl border border-border-soft bg-surface px-4 py-3 text-sm text-ink" role="status">
-        {loadingGuests ? 'Chargement de la liste…' : `${guests.length} invité${guests.length > 1 ? 's' : ''} dans la liste`}
-        {!loadingGuests && !guestsReady && (
-          <Button type="button" variant="outline" className="ml-3" onClick={() => reloadGuests()} disabled={busy}>
-            Réessayer
-          </Button>
-        )}
-      </div>
+          <div className="mt-5 flex items-center gap-3 rounded-xl border border-border-soft bg-surface px-4 py-3 text-sm text-ink" role="status">
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-brand-purple/10 font-semibold text-brand-purple">
+              {loadingGuests ? '…' : guests.length}
+            </span>
+            <span>{loadingGuests ? 'Chargement de la liste…' : `invité${guests.length > 1 ? 's' : ''} dans la liste`}</span>
+            {!loadingGuests && !guestsReady && (
+              <Button type="button" variant="outline" className="ml-auto px-4 py-2" onClick={() => reloadGuests()} disabled={actionBusy}>
+                Réessayer
+              </Button>
+            )}
+          </div>
 
-      <div className="mt-4 grid gap-4">
-        {contactsAvailable && (
-          <section className="rounded-2xl border border-border-soft bg-surface p-5">
-            <h3 className="font-semibold text-ink">Choisir dans mes contacts</h3>
-            <p className="mt-1 text-sm text-muted">Sélectionnez plusieurs contacts sur votre téléphone. Les doublons sont ignorés.</p>
-            <Button type="button" variant="outline" className="mt-4" onClick={chooseContacts} disabled={busy || loadingGuests || !guestsReady}>
-              <Users className="h-4 w-4" aria-hidden="true" />
-              {busy ? 'Ajout…' : 'Ouvrir mes contacts'}
-            </Button>
-          </section>
-        )}
+          <div className="mt-4 grid gap-3">
+            {contactsAvailable && (
+              <button
+                type="button"
+                onClick={chooseContacts}
+                disabled={actionBusy || loadingGuests || !guestsReady}
+                className="flex min-h-24 w-full items-center gap-4 rounded-2xl border border-border-soft bg-surface p-4 text-left transition hover:border-brand-purple disabled:cursor-not-allowed disabled:opacity-60 sm:p-5"
+              >
+                <span className="grid h-12 w-12 flex-none place-items-center rounded-xl bg-brand-purple/10 text-brand-purple">
+                  <Users className="h-6 w-6" aria-hidden="true" />
+                </span>
+                <span className="min-w-0">
+                  <span className="flex flex-wrap items-center gap-2 font-semibold text-ink">
+                    Choisir dans mes contacts
+                    <span className="rounded-full bg-brand-purple/10 px-2 py-0.5 text-xs text-brand-purple">Le plus rapide</span>
+                  </span>
+                  <span className="mt-1 block text-sm text-muted">Cochez les personnes dans le répertoire. Vérifiez les noms et numéros avant de les ajouter.</span>
+                </span>
+              </button>
+            )}
 
-        <section className="rounded-2xl border border-border-soft bg-surface p-5">
-          <h3 className="font-semibold text-ink">Coller une liste</h3>
-          <p className="mt-1 text-sm text-muted">Une personne par ligne, par exemple « Paul 675 12 34 72 ». Les lignes sans numéro restent importables.</p>
-          <textarea
-            className="mt-3 min-h-28 w-full rounded-xl border border-border bg-bg p-3 text-sm text-ink outline-none focus:border-brand-purple"
-            value={pasteText}
-            onChange={(e) => {
-              setPasteText(e.target.value)
-              setPreviewRows([])
-              setError('')
-            }}
-            placeholder={'Paul 675 12 34 72\nAïcha +237 690 00 00 01'}
-            maxLength={100000}
-          />
-          <Button type="button" variant="outline" className="mt-3" onClick={previewPaste} disabled={!pasteText.trim() || busy}>
-            <ClipboardPaste className="h-4 w-4" aria-hidden="true" />
-            Prévisualiser
-          </Button>
+            <button
+              type="button"
+              onClick={() => setMode('link')}
+              disabled={!registrationUrl || actionBusy}
+              className="flex min-h-24 w-full items-center gap-4 rounded-2xl border border-border-soft bg-surface p-4 text-left transition hover:border-brand-purple disabled:cursor-not-allowed disabled:opacity-60 sm:p-5"
+            >
+              <span className="grid h-12 w-12 flex-none place-items-center rounded-xl bg-brand-pink/10 text-brand-pink">
+                <Link2 className="h-6 w-6" aria-hidden="true" />
+              </span>
+              <span className="min-w-0">
+                <span className="block font-semibold text-ink">Partager un lien d’inscription</span>
+                <span className="mt-1 block text-sm text-muted">Un seul lien dans vos groupes WhatsApp : chaque invité s’inscrit lui-même.</span>
+              </span>
+            </button>
 
-          {previewRows.length > 0 && (
-            <div className="mt-4 grid gap-2">
-              <p className="text-sm font-semibold text-ink">
-                Aperçu · {importableRows.length} ligne{importableRows.length > 1 ? 's' : ''} prête{importableRows.length > 1 ? 's' : ''} à importer
+            <button
+              type="button"
+              onClick={() => {
+                setError('')
+                setMode('paste')
+              }}
+              className="flex min-h-24 w-full items-center gap-4 rounded-2xl border border-border-soft bg-surface p-4 text-left transition hover:border-brand-purple sm:p-5"
+              disabled={actionBusy}
+            >
+              <span className="grid h-12 w-12 flex-none place-items-center rounded-xl bg-brand-orange/10 text-brand-orange">
+                <ClipboardPaste className="h-6 w-6" aria-hidden="true" />
+              </span>
+              <span className="min-w-0">
+                <span className="block font-semibold text-ink">Coller une liste</span>
+                <span className="mt-1 block text-sm text-muted">Copiée depuis WhatsApp ou vos notes : un nom et un numéro par ligne.</span>
+              </span>
+            </button>
+          </div>
+
+          {!contactsAvailable && (
+            <p className="mt-4 text-sm text-muted">
+              « Choisir dans mes contacts » apparaît sur Android (Chrome). Sur iPhone, utilisez le lien ou collez une liste.
+            </p>
+          )}
+
+          {onSkip && (
+            <button type="button" onClick={onSkip} disabled={actionBusy} className="mt-5 text-sm font-semibold text-muted underline underline-offset-4 hover:text-ink">
+              Je le ferai plus tard
+            </button>
+          )}
+        </>
+      ) : (
+        <>
+          <button
+            type="button"
+            onClick={review ? () => setMode(mode === 'contacts-review' ? 'choose' : 'paste') : backToChoices}
+            className="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-muted hover:text-ink"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            Retour
+          </button>
+
+          {mode === 'paste' ? (
+            <>
+              <h2 className="mt-3 text-2xl font-bold text-ink">Coller une liste</h2>
+              <p className="mt-2 text-sm text-muted">Un invité par ligne, le nom et le numéro dans l’ordre que vous voulez.</p>
+              <textarea
+                className="mt-4 min-h-36 w-full rounded-xl border border-border bg-surface p-3 text-sm text-ink outline-none focus:border-brand-purple"
+                value={pasteText}
+                onChange={(e) => {
+                  setPasteText(e.target.value)
+                  setError('')
+                }}
+                placeholder={'Paul Ewane 675 12 34 72\nMireille - 677 00 11 22\nJean-Paul Mbarga, 699.11.22.33'}
+                maxLength={100000}
+                aria-label="Un invité par ligne, le nom et le numéro dans l’ordre que vous voulez."
+              />
+              <Button type="button" className="mt-4 w-full sm:w-auto" onClick={previewPaste} disabled={!pasteText.trim() || actionBusy || loadingGuests || !guestsReady}>
+                Prévisualiser la liste
+              </Button>
+            </>
+          ) : mode === 'link' ? (
+            <>
+              <h2 className="mt-3 text-2xl font-bold text-ink">Lien d’inscription</h2>
+              <p className="mt-2 text-sm text-muted">Partagez-le dans vos groupes, votre statut ou par SMS. Chaque inscrit apparaît dans votre liste d’invités en attente.</p>
+              <div className="mt-5 grid justify-items-center gap-4 rounded-2xl border border-border-soft bg-surface p-5 text-center sm:p-7">
+                <div className="grid h-48 w-48 place-items-center rounded-xl bg-white p-2 shadow-sm">
+                  {qr ? <img src={qr} alt="QR du lien d’inscription" className="h-full w-full" /> : <span className="text-sm text-muted">Génération du QR…</span>}
+                </div>
+                {qrError && <p className="text-sm text-brand-orange" role="status">{qrError}</p>}
+                <p className="w-full break-all font-mono text-sm text-ink">{registrationUrl}</p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  <Button type="button" variant="outline" onClick={copyRegistrationLink}>
+                    <Copy className="h-4 w-4" aria-hidden="true" />
+                    Copier
+                  </Button>
+                  <Button type="button" variant="outline" onClick={shareRegistrationLink}>
+                    <Share2 className="h-4 w-4" aria-hidden="true" />
+                    Partager
+                  </Button>
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(`Inscrivez-vous à ${event.name} ici : ${registrationUrl}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-11 items-center gap-2 rounded-full bg-brand-gradient px-5 text-sm font-semibold text-white hover:opacity-90"
+                  >
+                    <Link2 className="h-4 w-4" aria-hidden="true" />
+                    WhatsApp
+                  </a>
+                </div>
+              </div>
+              <p className="mt-3 text-xs text-muted">Le formulaire sera accessible dès que la page de l’événement sera publiée.</p>
+            </>
+          ) : (
+            <>
+              <h2 className="mt-3 text-2xl font-bold text-ink">
+                {mode === 'contacts-review' ? 'Vérifiez avant d’ajouter' : 'Vérifiez votre liste'}
+              </h2>
+              <p className="mt-2 text-sm text-muted">
+                {mode === 'contacts-review'
+                  ? `${reviewRows.length} contact${reviewRows.length > 1 ? 's' : ''} choisi${reviewRows.length > 1 ? 's' : ''} dans le répertoire.`
+                  : 'Cochez les personnes à ajouter et complétez les noms manquants.'}
               </p>
-              {truncated && <p className="text-sm text-brand-orange">Seules les 2 000 premières lignes sont affichées.</p>}
-              <div className="max-h-64 overflow-y-auto rounded-xl border border-border-soft">
-                {previewRows.map((row, index) => (
-                  <div key={`${row.line}-${index}`} className="grid gap-2 border-b border-border-soft p-3 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_minmax(8rem,0.8fr)_auto] sm:items-center">
+              {truncated && <p className="mt-2 text-sm text-brand-orange">Seules les 2 000 premières lignes sont affichées.</p>}
+              <div className="mt-4 grid gap-2">
+                {reviewRows.map((row, index) => (
+                  <div key={`${row.line ?? row.fullName}-${index}`} className="flex items-start gap-3 rounded-xl border border-border-soft bg-surface p-3">
                     <input
-                      className="min-h-10 min-w-0 rounded-lg border border-border bg-bg px-2 text-sm text-ink outline-none focus:border-brand-purple"
-                      aria-label={`Nom de la ligne ${row.line}`}
-                      placeholder={row.phone ? 'Nom requis pour ce numéro' : 'Nom complet'}
-                      maxLength={255}
-                      required={!row.duplicate}
-                      value={row.fullName}
-                      onChange={(e) => setPreviewRows((current) => current.map((item, i) => i === index ? { ...item, fullName: e.target.value } : item))}
+                      type="checkbox"
+                      checked={Boolean(row.selected)}
+                      disabled={row.duplicate}
+                      aria-label={`Ajouter ${row.fullName || `la ligne ${row.line}`}`}
+                      onChange={() => toggleReviewRow(index)}
+                      className="mt-3 h-4 w-4 accent-brand-purple"
                     />
-                    <span className="truncate text-sm text-muted">{row.phone || row.email || 'Aucun numéro'}</span>
-                    <span className={`text-xs font-semibold ${row.duplicate ? 'text-danger' : !row.phone ? 'text-brand-orange' : 'text-success'}`}>
-                      {row.duplicate ? 'Doublon · ignoré' : !row.fullName.trim() ? 'Nom requis' : !row.phone ? 'Sans numéro' : 'Prêt'}
-                    </span>
+                    <div className="min-w-0 flex-1">
+                      <input
+                        className="min-h-10 w-full rounded-lg border border-border bg-bg px-2 text-sm font-semibold text-ink outline-none focus:border-brand-purple"
+                        aria-label={`Nom de ${row.fullName || `la ligne ${row.line}`}`}
+                        placeholder="Nom complet"
+                        maxLength={255}
+                        value={row.fullName}
+                        onChange={(e) => setReviewRows((current) => current.map((item, i) => i === index ? { ...item, fullName: e.target.value } : item))}
+                      />
+                      <p className="mt-1 text-sm text-muted">{displayPhone(row.phone || row.email)}</p>
+                    </div>
+                    {row.duplicate && <span className="mt-2 shrink-0 text-xs font-semibold text-muted">Déjà dans la liste</span>}
+                    {!row.duplicate && !row.fullName.trim() && <span className="mt-2 shrink-0 text-xs font-semibold text-brand-orange">Nom requis</span>}
                   </div>
                 ))}
               </div>
-              <Button type="button" onClick={importPasted} disabled={!importableRows.length || busy || loadingGuests || !guestsReady}>
+              {reviewSkipped > 0 && (
+                <p className="mt-3 text-sm text-muted">{reviewSkipped} doublon{reviewSkipped > 1 ? 's' : ''} ou contact sans nom ignoré{reviewSkipped > 1 ? 's' : ''}.</p>
+              )}
+              <Button
+                type="button"
+                className="mt-4 w-full sm:w-auto"
+                onClick={importReviewedRows}
+                disabled={!importableRows.length || actionBusy || loadingGuests || !guestsReady}
+              >
                 {busy ? 'Ajout…' : `Ajouter ${importableRows.length} invité${importableRows.length > 1 ? 's' : ''}`}
               </Button>
-            </div>
+            </>
           )}
-        </section>
-
-        <section className="rounded-2xl border border-border-soft bg-surface p-5">
-          <h3 className="font-semibold text-ink">Partager un lien d’inscription</h3>
-          <p className="mt-1 text-sm text-muted">
-            Chaque invité pourra s’inscrire lui-même. Le lien fonctionnera dès que votre page sera publiée.
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-border-soft bg-bg p-2 pl-3">
-            <span className="min-w-0 flex-1 break-all font-mono text-xs text-ink">{registrationUrl}</span>
-            <button type="button" onClick={copyRegistrationLink} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-border px-3 text-sm font-semibold text-ink hover:border-brand-purple">
-              <Copy className="h-4 w-4" aria-hidden="true" />
-              Copier
-            </button>
-          </div>
-          <a
-            href={`https://wa.me/?text=${encodeURIComponent(`Inscrivez-vous à ${event.name} ici : ${registrationUrl}`)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-full bg-brand-gradient px-5 text-sm font-semibold text-white hover:opacity-90"
-          >
-            <Link2 className="h-4 w-4" aria-hidden="true" />
-            Préparer le partage WhatsApp
-          </a>
-        </section>
-      </div>
+        </>
+      )}
 
       {error && <p className="mt-4 rounded-lg border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger" role="alert">{error}</p>}
     </div>

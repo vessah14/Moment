@@ -644,7 +644,11 @@ export default function CreateEvent() {
         onSearchable={(searchable) => update({ searchable })}
       />
     ) : step === 5 && preparedEvent ? (
-      <GuestOnboardingStep event={{ ...preparedEvent, name: form.name.trim() }} />
+      <GuestOnboardingStep
+        event={{ ...preparedEvent, name: form.name.trim() }}
+        onSkip={() => publish('publish')}
+        isPublishing={Boolean(publishing)}
+      />
     ) : null
 
   return (
@@ -784,7 +788,7 @@ export default function CreateEvent() {
                         : emailPending
                         ? 'Enregistrer ma page'
                         : step === 5
-                          ? 'Publier'
+                          ? 'Continuer vers la publication'
                           : isEditMode
                           ? 'Enregistrer et publier'
                           : 'Publier'}

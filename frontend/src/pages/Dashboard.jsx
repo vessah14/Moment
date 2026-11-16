@@ -19,7 +19,7 @@ function nextStepFor(event, stats) {
   if (event.status !== 'Publie')
     return { icon: Share2, title: `Publiez la page de ${name}`, text: 'Vérifiez-la, puis publiez-la pour pouvoir la partager.', cta: 'Terminer ma page', to: `/builder/${event.id}` }
   if (!stats?.totalCount)
-    return { icon: UserPlus, title: `${name} n’a encore aucun invité`, text: 'Ajoutez-les un par un, importez vos contacts ou partagez un lien pour qu’ils s’inscrivent eux-mêmes.', cta: 'Ajouter mes invités', to: `/dashboard/participants?eventId=${encodeURIComponent(event.id)}&add=1` }
+    return { icon: UserPlus, title: 'Votre événement n’a encore aucun invité', text: 'Il est publié, mais personne n’a reçu d’invitation. Ajoutez vos invités ou partagez votre lien d’inscription.', cta: 'Ajouter mes invités', to: `/dashboard/participants?eventId=${encodeURIComponent(event.id)}&onboarding=1` }
   if (stats.pendingCount > 0)
     return { icon: Send, title: `${stats.pendingCount} invité${stats.pendingCount > 1 ? 's n’ont' : ' n’a'} pas encore répondu`, text: 'Envoyez à chacun son invitation sur WhatsApp, en un geste par invité.', cta: 'Envoyer les invitations', to: '/dashboard/invitations' }
   return { icon: CalendarPlus, title: `Tout est prêt pour ${name}`, text: 'Le jour J, scannez les pass à l’entrée depuis votre téléphone.', cta: 'Préparer l’accueil', to: '/dashboard/checkin' }

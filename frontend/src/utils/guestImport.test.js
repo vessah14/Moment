@@ -21,6 +21,13 @@ describe('contactRowsFromPicker', () => {
         { fullName: 'Sans téléphone', service: '', phone: '', email: '' },
       ],
       skipped: 4,
+      previewRows: [
+        { fullName: 'Aïcha Bello', service: '', phone: '237690000001', email: 'aicha@example.com', duplicate: false },
+        { fullName: 'Aïcha bis', service: '', phone: '237690000001', email: '', duplicate: true },
+        { fullName: 'Paul Ekané', service: '', phone: '237677123456', email: '', duplicate: true },
+        { fullName: 'Paul again', service: '', phone: '237677123456', email: '', duplicate: true },
+        { fullName: 'Sans téléphone', service: '', phone: '', email: '', duplicate: false },
+      ],
     })
   })
 })
