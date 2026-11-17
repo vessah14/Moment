@@ -283,35 +283,91 @@ function ArchCarousel({ items, editable, uploading, onOpen, onUpload }) {
   const [active, setActive] = useState(0)
   const total = items.length
   const count = Math.min(total, 5) // nombre de slots visibles (max 5)
+  const autoRef = useRef(null)
+  const touchRef = useRef({ startX: 0, startY: 0, moving: false })
+
+  // Auto-play : avance toutes les 2 secondes (pausé en mode éditeur)
+  useEffect(() => {
+    if (editable || total <= 1) return
+    autoRef.current = setInterval(() => {
+      setActive((a) => (a + 1) % total)
+    }, 2000)
+    return () => clearInterval(autoRef.current)
+  }, [total, editable])
+
+  // Pause l'auto-play quand l'utilisateur interagit, reprend après 4 s
+  const pauseAuto = () => {
+    if (autoRef.current) clearInterval(autoRef.current)
+    if (editable || total <= 1) return
+    autoRef.current = setTimeout(() => {
+      autoRef.current = setInterval(() => {
+        setActive((a) => (a + 1) % total)
+      }, 2000)
+    }, 4000)
+  }
+
+  // Nettoyage du timer au démontage
+  useEffect(() => () => clearInterval(autoRef.current), [])
 
   // Navigation clavier
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key === 'ArrowLeft') setActive((a) => (a - 1 + total) % total)
-      if (e.key === 'ArrowRight') setActive((a) => (a + 1) % total)
+      if (e.key === 'ArrowLeft') { setActive((a) => (a - 1 + total) % total); pauseAuto() }
+      if (e.key === 'ArrowRight') { setActive((a) => (a + 1) % total); pauseAuto() }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [total])
 
+  // Swipe tactile (mobile)
+  const onTouchStart = (e) => {
+    const t = e.touches[0]
+    touchRef.current = { startX: t.clientX, startY: t.clientY, moving: true }
+  }
+  const onTouchMove = (e) => {
+    if (!touchRef.current.moving) return
+    const dx = e.touches[0].clientX - touchRef.current.startX
+    const dy = Math.abs(e.touches[0].clientY - touchRef.current.startY)
+    // Si le geste est plus vertical que horizontal, laisser le scroll normal
+    if (dy > Math.abs(dx)) { touchRef.current.moving = false; return }
+    if (Math.abs(dx) > 30) e.preventDefault()
+  }
+  const onTouchEnd = (e) => {
+    if (!touchRef.current.moving) return
+    touchRef.current.moving = false
+    const dx = e.changedTouches[0].clientX - touchRef.current.startX
+    if (Math.abs(dx) < 30) return
+    pauseAuto()
+    if (dx < 0) setActive((a) => (a + 1) % total)
+    else setActive((a) => (a - 1 + total) % total)
+  }
+
   // Les positions visibles autour de l'actif : [-2, -1, 0, +1, +2]
   const slots = Array.from({ length: count }, (_, k) => k - Math.floor(count / 2))
 
   return (
-    <div className="arch-carousel rv" aria-label="Galerie photos">
+    <div
+      className="arch-carousel rv"
+      aria-label="Galerie photos"
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
       <div className="arch-track">
         {slots.map((offset) => {
           const idx = ((active + offset) % total + total) % total
           const item = items[idx]
           const isCenter = offset === 0
           // arc : inclinaison et translation verticale en fonction du décalage
-          const rot = offset * 10          // degrés de rotation
-          const ty = Math.abs(offset) * 22 // descente en px (arc)
-          const scale = isCenter ? 1 : 1 - Math.abs(offset) * 0.14
+          const rot = offset * 8            // degrés de rotation (réduit pour mieux voir)
+          const ty = Math.abs(offset) * 18  // descente en px (arc)
+          const scale = isCenter ? 1 : 1 - Math.abs(offset) * 0.1
+          const opacity = isCenter ? 1 : Math.abs(offset) === 1 ? 0.85 : 0.55
           const zIndex = count - Math.abs(offset)
           const style = {
             transform: `rotate(${rot}deg) translateY(${ty}px) scale(${scale})`,
             zIndex,
+            opacity,
           }
           return (
             <div
@@ -319,12 +375,13 @@ function ArchCarousel({ items, editable, uploading, onOpen, onUpload }) {
               className={`arch-item${isCenter ? ' arch-active' : ''}`}
               style={style}
               onClick={() => {
+                pauseAuto()
                 if (!isCenter) { setActive(idx); return }
                 if (item.url) onOpen(active)
               }}
               role="button"
               tabIndex={0}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (!isCenter) setActive(idx); else if (item.url) onOpen(active) } }}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pauseAuto(); if (!isCenter) setActive(idx); else if (item.url) onOpen(active) } }}
               aria-label={isCenter ? (item.caption || `Photo ${idx + 1}`) : `Voir photo ${idx + 1}`}
             >
               {item.url ? (
@@ -347,7 +404,7 @@ function ArchCarousel({ items, editable, uploading, onOpen, onUpload }) {
             type="button"
             className="arch-btn"
             aria-label="Photo précédente"
-            onClick={() => setActive((a) => (a - 1 + total) % total)}
+            onClick={() => { pauseAuto(); setActive((a) => (a - 1 + total) % total) }}
           >
             <ChevronLeft />
           </button>
@@ -359,7 +416,7 @@ function ArchCarousel({ items, editable, uploading, onOpen, onUpload }) {
                   key={i}
                   type="button"
                   className={`arch-dot${dotIdx === active ? ' on' : ''}`}
-                  onClick={() => setActive(dotIdx)}
+                  onClick={() => { pauseAuto(); setActive(dotIdx) }}
                   aria-label={`Photo ${dotIdx + 1}`}
                 />
               )
@@ -369,7 +426,7 @@ function ArchCarousel({ items, editable, uploading, onOpen, onUpload }) {
             type="button"
             className="arch-btn"
             aria-label="Photo suivante"
-            onClick={() => setActive((a) => (a + 1) % total)}
+            onClick={() => { pauseAuto(); setActive((a) => (a + 1) % total) }}
           >
             <ChevronRight />
           </button>

@@ -245,7 +245,7 @@
 .tbft .map { width: 100%; min-height: 280px; height: 100%; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-2) }
 
 /* ---------- Arch Image Carousel (galerie) ---------- */
-.tbft .arch-carousel { display: flex; flex-direction: column; align-items: center; gap: 2rem; padding: 1rem 0 2rem }
+.tbft .arch-carousel { display: flex; flex-direction: column; align-items: center; gap: 2rem; padding: 1rem 0 2rem; touch-action: pan-y; -webkit-user-select: none; user-select: none }
 .tbft .arch-track {
   position: relative;
   display: flex;
@@ -267,6 +267,7 @@
   transition:
     transform 0.55s cubic-bezier(.22, 1, .36, 1),
     box-shadow 0.4s ease,
+    opacity 0.45s ease,
     z-index 0s;
 }
 .tbft .arch-item img,
