@@ -177,6 +177,17 @@ namespace backend_EventMoment.Controllers
             return result == null ? NotFound() : Ok(result);
         }
 
+        [HttpPost("~/api/public/events/{slug}/registrations")]
+        [AllowAnonymous]
+        [EnableRateLimiting("public-write")]
+        public async Task<IActionResult> RegisterPublicGuest(string slug, [FromBody] PublicGuestRegistrationDto dto)
+        {
+            var registered = await _service.RegisterPublicGuestAsync(slug, dto);
+            return registered
+                ? Ok(new { received = true })
+                : NotFound();
+        }
+
         private bool TryGetOrganizerId(out Guid organizerId)
         {
             organizerId = Guid.Empty;

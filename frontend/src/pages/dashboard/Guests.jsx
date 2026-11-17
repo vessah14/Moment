@@ -1,6 +1,6 @@
-import { Eye, Link2, Mail, MessageCircle, Pencil, Plus, Printer, Search, Send, Trash2, Upload } from 'lucide-react'
+import { Eye, Link2, Mail, MessageCircle, Pencil, Plus, Printer, Search, Send, Share2, Trash2, Upload, Users } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Avatar from '../../components/ui/Avatar'
 import Button from '../../components/ui/Button'
 import Pagination from '../../components/ui/Pagination'
@@ -10,22 +10,26 @@ import GuestEditDialog from '../../components/guests/GuestEditDialog'
 import PrintTicketsDialog from '../../components/guests/PrintTicketsDialog'
 import { ConfirmDialog } from '../../components/ui/Dialog'
 import { createGuest, deleteGuest, importGuests, listGuests, sendGuestInvitation, sendPendingInvitations, updateGuest } from '../../api/guests'
-import { maskPhone, readGuestFile } from '../../utils/guestImport'
+import { contactRowsFromPicker, maskPhone, readGuestFile } from '../../utils/guestImport'
 import { createGuestGroup, listGuestGroups } from '../../api/guestGroups'
 import { listEvents } from '../../api/events'
+import { eventShareUrl } from '../../api/client'
 import { listRsvps } from '../../api/rsvps'
+import GuestOnboardingStep from '../../components/wizard/GuestOnboardingStep'
 import { downloadCsv } from '../../utils/csv'
 import { GUEST_STATUS_BY_FILTER, guestStatusLabel, hasGuestStatus } from '../../utils/guestStatus'
 import { notifyGuestsChanged } from '../../utils/guestEvents'
 import { usePagination } from '../../utils/pagination'
 import { useToast } from '../../utils/useToast'
 import { SkeletonList, SkeletonRows } from '../../components/ui/Skeleton'
+import { locale as uiLocale } from '../../i18n'
 
 const FILTERS = ['Tous', 'Confirmés', 'En attente', 'Refus']
 
 export default function Guests() {
   const toast = useToast()
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const requestedEventId = searchParams.get('eventId')
   const [events, setEvents] = useState([])
   const [selectedEventId, setSelectedEventId] = useState(requestedEventId || '')
@@ -52,6 +56,10 @@ export default function Guests() {
   const [deletingGuest, setDeletingGuest] = useState(null)
   const [deleteBusy, setDeleteBusy] = useState(false)
   const [printOpen, setPrintOpen] = useState(false)
+  const contactsAvailable =
+    typeof navigator !== 'undefined' &&
+    'contacts' in navigator &&
+    typeof navigator.contacts?.select === 'function'
 
   useEffect(() => {
     listEvents()
@@ -162,7 +170,19 @@ export default function Guests() {
 
   const selectedEvent = events.find((e) => e.id === selectedEventId)
   const eventPublished = selectedEvent?.status === 'Publie'
+  const registrationUrl = eventPublished && selectedEvent?.slug
+    ? `${eventShareUrl(selectedEvent.slug)}/inscription`
+    : ''
   const notInvited = guests.filter((g) => g.email && !g.invitationSentAt && !g.invitationPending)
+
+  const handleCopyRegistrationLink = async () => {
+    try {
+      await navigator.clipboard.writeText(registrationUrl)
+      toast('Lien d’inscription copié')
+    } catch {
+      setError('Copie impossible : sélectionnez et copiez le lien affiché.')
+    }
+  }
 
   // Les invitations partent en quelques secondes : la liste se met à jour seule tant
   // qu'il en reste en cours d'envoi (événement publié).
@@ -205,6 +225,41 @@ export default function Guests() {
     } finally {
       setImporting(false)
       if (importInput.current) importInput.current.value = ''
+    }
+  }
+
+  const handleChooseContacts = async () => {
+    if (!contactsAvailable || !selectedEventId || importing) return
+    const eventId = selectedEventId
+    setImporting(true)
+    setError('')
+    try {
+      const contacts = await navigator.contacts.select(['name', 'tel', 'email'], { multiple: true })
+      const { rows, skipped: locallySkipped } = contactRowsFromPicker(contacts, guests)
+      if (!rows.length) {
+        if (locallySkipped) {
+          toast(`${locallySkipped} contact${locallySkipped > 1 ? 's' : ''} déjà présent${locallySkipped > 1 ? 's' : ''} ou sans nom ignoré${locallySkipped > 1 ? 's' : ''}`)
+        }
+        return
+      }
+
+      const result = await importGuests(eventId, rows)
+      const [fresh, freshGroups] = await Promise.all([listGuests(eventId), listGuestGroups(eventId)])
+      setGuests(fresh ?? [])
+      setGroups(freshGroups ?? [])
+      notifyGuestsChanged()
+
+      const skipped = (result.skipped ?? 0) + locallySkipped
+      const added = result.added ?? 0
+      const parts = [`${added} contact${added > 1 ? 's' : ''} ajouté${added > 1 ? 's' : ''}`]
+      if (skipped) parts.push(`${skipped} doublon${skipped > 1 ? 's' : ''} ou contact${skipped > 1 ? 's' : ''} sans nom ignoré${skipped > 1 ? 's' : ''}`)
+      toast(parts.join(' · '))
+      if (result.limitReached) setError(result.limitReached)
+    } catch (err) {
+      if (err?.name === 'AbortError') return
+      setError(err.message || "Les contacts n'ont pas pu être ajoutés.")
+    } finally {
+      setImporting(false)
     }
   }
 
@@ -386,6 +441,23 @@ export default function Guests() {
     )
   }
 
+  if (searchParams.get('onboarding') === '1' && selectedEvent) {
+    return (
+      <DashboardLayout>
+        <Link
+          to={`/dashboard/participants?eventId=${encodeURIComponent(selectedEvent.id)}`}
+          className="mb-5 inline-flex min-h-10 items-center text-sm font-semibold text-muted hover:text-ink"
+        >
+          ← Retour à mes invités
+        </Link>
+        <GuestOnboardingStep
+          event={selectedEvent}
+          onSkip={() => navigate(`/dashboard/participants?eventId=${encodeURIComponent(selectedEvent.id)}`)}
+        />
+      </DashboardLayout>
+    )
+  }
+
   return (
     <DashboardLayout>
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -443,6 +515,17 @@ export default function Guests() {
             <Upload className="h-4 w-4" />
             {importing ? 'Import…' : 'Importer la liste (Excel)'}
           </Button>
+          {contactsAvailable && (
+            <Button
+              variant="outline"
+              onClick={handleChooseContacts}
+              disabled={!selectedEventId || loading || importing}
+              title="Disponible sur les navigateurs compatibles, notamment Chrome sur Android"
+            >
+              <Users className="h-4 w-4" />
+              {importing ? 'Import…' : 'Choisir dans mes contacts'}
+            </Button>
+          )}
           <Button variant="outline" onClick={() => setPrintOpen(true)} disabled={guests.length === 0}>
             <Printer className="h-4 w-4" />
             Imprimer les billets
@@ -455,6 +538,31 @@ export default function Guests() {
           </Button>
         </div>
       </div>
+
+      {registrationUrl && (
+        <section className="mt-5 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-brand-purple/25 bg-brand-purple/5 p-4 sm:p-5">
+          <div className="min-w-0 flex-1">
+            <h2 className="font-semibold text-ink">Lien d’inscription pour vos invités</h2>
+            <p className="mt-1 text-sm text-muted">Partagez-le : chaque personne pourra s’ajouter à la liste de l’événement.</p>
+            <p className="mt-2 break-all font-mono text-xs text-ink">{registrationUrl}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={handleCopyRegistrationLink}>
+              <Link2 className="h-4 w-4" />
+              Copier le lien
+            </Button>
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(`Inscrivez-vous à ${selectedEvent.name} ici : ${registrationUrl}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-11 items-center gap-2 rounded-full bg-brand-gradient px-4 text-sm font-semibold text-white hover:opacity-90"
+            >
+              <Share2 className="h-4 w-4" aria-hidden="true" />
+              WhatsApp
+            </a>
+          </div>
+        </section>
+      )}
 
       <PrintTicketsDialog
         open={printOpen}
@@ -635,7 +743,7 @@ export default function Guests() {
                   <p className="truncate font-medium text-ink">{guest.fullName}{guest.seats > 1 && <span className="ml-1.5 text-xs font-normal text-faint">· {guest.seats} places</span>}{guest.isVip && <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">VIP</span>}</p>
                   <p className="break-all text-xs text-muted">{guest.email || 'Aucun e-mail'}</p>
                   <p className="font-mono text-xs text-faint">{guest.phone ? maskPhone(guest.phone) : 'Aucun téléphone'}</p>
-                  {guest.enRouteAt && <p className="mt-1 text-xs font-semibold text-brand-orange">En route · {new Date(guest.enRouteAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>}
+                  {guest.enRouteAt && <p className="mt-1 text-xs font-semibold text-brand-orange">En route · {new Date(guest.enRouteAt).toLocaleTimeString(uiLocale, { hour: '2-digit', minute: '2-digit' })}</p>}
                 </div>
                 <StatusBadge status={guestStatusLabel(guest.status)} />
               </div>
@@ -746,7 +854,7 @@ export default function Guests() {
                         <Avatar name={guest.fullName} />
                         <div>
                           <p className="font-medium text-ink">{guest.fullName}{guest.seats > 1 && <span className="ml-1.5 text-xs font-normal text-faint">· {guest.seats} places</span>}{guest.isVip && <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">VIP</span>}</p>
-                          {guest.enRouteAt && <p className="mt-1 text-xs font-semibold text-brand-orange">En route · {new Date(guest.enRouteAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>}
+                          {guest.enRouteAt && <p className="mt-1 text-xs font-semibold text-brand-orange">En route · {new Date(guest.enRouteAt).toLocaleTimeString(uiLocale, { hour: '2-digit', minute: '2-digit' })}</p>}
                           {sideByGuest[guest.id] && <p className="text-xs text-faint">{sideByGuest[guest.id]}</p>}
                           {maybeGuests.has(guest.id) && <p className="text-xs text-brand-orange">A répondu « Peut-être »</p>}
                         </div>
@@ -879,16 +987,16 @@ export default function Guests() {
 function InvitationStatus({ guest, published }) {
   if (guest.invitationOpenedAt)
     return (
-      <span className="inline-flex items-center gap-1 text-brand-purple" title={`Lien ouvert le ${new Date(guest.invitationOpenedAt).toLocaleString('fr-FR')}`}>
+      <span className="inline-flex items-center gap-1 text-brand-purple" title={`Lien ouvert le ${new Date(guest.invitationOpenedAt).toLocaleString(uiLocale)}`}>
         <Eye className="h-3.5 w-3.5" />
         Vue
       </span>
     )
   if (guest.invitationSentAt)
     return (
-      <span className="inline-flex items-center gap-1 text-success" title={new Date(guest.invitationSentAt).toLocaleString('fr-FR')}>
+      <span className="inline-flex items-center gap-1 text-success" title={new Date(guest.invitationSentAt).toLocaleString(uiLocale)}>
         <Mail className="h-3.5 w-3.5" />
-        Envoyée le {new Date(guest.invitationSentAt).toLocaleDateString('fr-FR')}
+        Envoyée le {new Date(guest.invitationSentAt).toLocaleDateString(uiLocale)}
       </span>
     )
   if (guest.invitationPending)
@@ -905,7 +1013,7 @@ function InvitationStatus({ guest, published }) {
     )
   if (guest.invitationSharedAt)
     return (
-      <span className="inline-flex items-center gap-1 text-success" title={new Date(guest.invitationSharedAt).toLocaleString('fr-FR')}>
+      <span className="inline-flex items-center gap-1 text-success" title={new Date(guest.invitationSharedAt).toLocaleString(uiLocale)}>
         <MessageCircle className="h-3.5 w-3.5" />
         Envoyée (WhatsApp)
       </span>

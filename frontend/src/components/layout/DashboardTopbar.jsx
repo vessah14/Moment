@@ -1,4 +1,4 @@
-import { Bell, LogOut, Menu, Settings } from 'lucide-react'
+import { Bell, LogOut, Menu, Plus, Settings } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { logout } from '../../api/auth'
@@ -70,24 +70,26 @@ export default function DashboardTopbar({ onMenuClick }) {
   }
 
   return (
-    <div className="flex items-center gap-3 border-b border-border-soft/60 px-4 py-4 sm:gap-4 sm:px-8 sm:py-5">
+    <div className="flex min-w-0 flex-wrap items-center gap-2 border-b border-border-soft/60 px-3 py-3 sm:flex-nowrap sm:gap-4 sm:px-8 sm:py-5">
       <button
         type="button"
         onClick={onMenuClick}
         aria-label="Ouvrir le menu du tableau de bord"
-        className="rounded-lg p-2 text-muted hover:bg-surface-2 hover:text-ink lg:hidden"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-surface-2 hover:text-ink lg:hidden"
       >
         <Menu className="h-5 w-5" />
       </button>
 
-      <GlobalSearch
-        placeholder="Rechercher un événement, un invité..."
-        buildIndex={() => buildDashboardSearchIndex(searchData.events, searchData.guests)}
-        onActivate={loadSearchData}
-      />
+      <div className="order-last w-full sm:order-none sm:min-w-0 sm:flex-1">
+        <GlobalSearch
+          placeholder="Rechercher un événement, un invité..."
+          buildIndex={() => buildDashboardSearchIndex(searchData.events, searchData.guests)}
+          onActivate={loadSearchData}
+        />
+      </div>
 
-      <div className="ml-auto flex items-center gap-3 sm:gap-5">
-        <LanguageSwitcher />
+      <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-5">
+        <LanguageSwitcher className="shrink-0" />
         <ThemeToggle className="hidden md:inline-flex" showLabels={false} />
 
         <div className="relative">
@@ -96,7 +98,7 @@ export default function DashboardTopbar({ onMenuClick }) {
             onClick={() => setNotifOpen((v) => !v)}
             aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} non lues` : 'Notifications'}
             aria-expanded={notifOpen}
-            className="relative text-muted hover:text-ink"
+            className="relative flex h-10 w-10 shrink-0 items-center justify-center text-muted hover:text-ink"
           >
             <Bell className="h-5 w-5" />
             {unreadCount > 0 && (
@@ -157,10 +159,11 @@ export default function DashboardTopbar({ onMenuClick }) {
           as={Link}
           to="/dashboard/evenements/nouveau"
           variant="gradient"
-          className="px-3 text-xs sm:px-6 sm:text-sm"
+          className="h-10 w-10 shrink-0 px-0 py-0 sm:h-auto sm:w-auto sm:px-6 sm:py-3 sm:text-sm"
+          title="Créer un événement"
         >
-          <span className="hidden sm:inline">Nouvel événement</span>
-          <span className="sm:hidden">Nouvel</span>
+          <Plus className="h-4 w-4 sm:hidden" aria-hidden="true" />
+          <span className="sr-only sm:not-sr-only">Nouvel événement</span>
         </Button>
 
         <div className="relative">

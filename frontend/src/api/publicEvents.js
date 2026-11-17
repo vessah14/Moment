@@ -179,6 +179,14 @@ export function submitPublicEventRsvp(slug, dto) {
   return apiFetch(`/public/events/${encodeURIComponent(slug)}/rsvp`, { method: 'POST', body: dto, auth: false })
 }
 
+export function registerPublicGuest(slug, dto) {
+  return apiFetch(`/public/events/${encodeURIComponent(slug)}/registrations`, {
+    method: 'POST',
+    body: dto,
+    auth: false,
+  })
+}
+
 // Message d'un invité dans le livre d'or : publié seulement après validation de l'organisateur.
 export function signPublicGuestBook(slug, dto) {
   return apiFetch(`/public/events/${encodeURIComponent(slug)}/guest-book`, { method: 'POST', body: dto, auth: false })

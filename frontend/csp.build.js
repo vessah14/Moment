@@ -22,7 +22,16 @@ export default function cspPlugin(env) {
     "https://www.gstatic.com",
   ];
 
-  const r2 = "https://pub-257afd578b1248d788d7302dfdb7c4ef.r2.dev";
+  // Google Tag Manager et Google Analytics (chargés seulement après accord cookies).
+  const gtmScripts = ["https://www.googletagmanager.com"];
+  const gtmConnect = [
+    "https://www.googletagmanager.com",
+    "https://www.google-analytics.com",
+    "https://*.google-analytics.com",
+    "https://*.analytics.google.com",
+  ];
+
+  const r2 ="https://pub-257afd578b1248d788d7302dfdb7c4ef.r2.dev";
   const cloudinary = "https://res.cloudinary.com";
 
   return {
@@ -54,6 +63,7 @@ export default function cspPlugin(env) {
           `script-src 'self' ${hashes.join(" ")} ${[
             ...google,
             ...translate,
+            ...gtmScripts,
           ].join(" ")}`,
 
           // Styles
@@ -75,6 +85,7 @@ export default function cspPlugin(env) {
           `connect-src 'self' ${apiOrigin} https://fonts.googleapis.com https://fonts.gstatic.com ${[
             ...google,
             ...translate,
+            ...gtmConnect,
           ].join(" ")}`,
 
           // Iframes

@@ -31,6 +31,7 @@ import BrandLogo from '../ui/BrandLogo'
 import logoMark from '../../assets/logo-mark.webp'
 import { useLocalStorageState } from '../../utils/useLocalStorageState'
 import { useDashboardNotifications } from './DashboardNotificationsContext'
+import { locale as uiLocale } from '../../i18n'
 
 // Menu groupé par moment de l'organisation : on trouve vite ce qui sert maintenant.
 const NAV_SECTIONS = [
@@ -276,7 +277,7 @@ export default function DashboardSidebar({ open, onClose }) {
             </div>
           )}
           {plan?.endsAt && (
-            <p className="mt-1.5 text-xs text-faint">Jusqu'au {new Date(plan.endsAt).toLocaleDateString('fr-FR')}</p>
+            <p className="mt-1.5 text-xs text-faint">Jusqu'au {new Date(plan.endsAt).toLocaleDateString(uiLocale)}</p>
           )}
           {plan?.pendingRequest && (
             <p className="mt-2 text-xs font-medium text-brand-orange">Demande {plan.pendingRequest.planLabel} en cours</p>

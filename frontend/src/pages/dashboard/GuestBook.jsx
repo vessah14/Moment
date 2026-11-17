@@ -16,6 +16,7 @@ import {
   updateGuestBookStatus,
 } from '../../api/guestBook'
 import { SkeletonList } from '../../components/ui/Skeleton'
+import { locale as uiLocale } from '../../i18n'
 
 const STATUS_LABELS = { EnAttente: 'À valider', Publie: 'Publié', Masque: 'Masqué', Signale: 'Signalé' }
 const ACTIONS_BY_STATUS = {
@@ -363,7 +364,7 @@ export default function GuestBook() {
                       {msg.service && <span className="ml-1.5 text-xs font-normal text-faint">· {msg.service}</span>}
                     </p>
                     <p className="text-xs text-faint">
-                      {new Date(msg.createdAt).toLocaleString('fr-FR')}
+                      {new Date(msg.createdAt).toLocaleString(uiLocale)}
                     </p>
                   </div>
                 </div>
@@ -463,7 +464,7 @@ function AlertChip({ text }) {
 }
 
 const timeOf = (iso) =>
-  new Intl.DateTimeFormat('fr-FR', { timeZone: 'Africa/Douala', hour: '2-digit', minute: '2-digit' }).format(new Date(iso))
+  new Intl.DateTimeFormat(uiLocale, { timeZone: 'Africa/Douala', hour: '2-digit', minute: '2-digit' }).format(new Date(iso))
 
 // Mur des vœux (modèle Envol) : à gauche les vœux à valider, à droite ceux qui passent à
 // l'écran de la salle.

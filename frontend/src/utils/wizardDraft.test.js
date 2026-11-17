@@ -37,4 +37,12 @@ describe('brouillon de l’assistant de création', () => {
     clearWizardDraft('u1', storage)
     expect(readWizardDraft('u1', storage)).toBeNull()
   })
+
+  it('restores the prepared draft event at the guest step', () => {
+    const storage = memoryStorage()
+    const preparedEvent = { id: 'event-1', slug: 'mariage-awa' }
+    writeWizardDraft('u1', { form, pageContent: {}, step: 5, preparedEvent }, storage)
+
+    expect(readWizardDraft('u1', storage)).toMatchObject({ step: 5, preparedEvent })
+  })
 })

@@ -14,6 +14,7 @@ import { TypeStep, UniversStep } from '../components/wizard/EventKindSteps'
 import InfoStep, { infoErrors } from '../components/wizard/InfoStep'
 import ContentStep from '../components/wizard/ContentStep'
 import CreatedStep from '../components/wizard/CreatedStep'
+import GuestOnboardingStep from '../components/wizard/GuestOnboardingStep'
 import LivePreview from '../components/wizard/LivePreview'
 import ModelStep, { modelsForType } from '../components/wizard/ModelStep'
 import { releasePhoto } from '../components/wizard/PhotoSlot'
@@ -37,12 +38,9 @@ import {
   templateBlockDefaults,
 } from '../utils/templateTheme'
 
-// Assistant de création en 5 étapes (repris du prototype creer.html) : univers, type,
-// informations (logo compris), contenu, puis modèle et publication. L'aperçu à droite
-// montre la vraie page de l'invité. Une fois publié, l'organisateur est ramené à « Mes
-// événements » avec une notification ; le reste (invités, billets…) se règle ensuite dans
-// le Builder et le tableau de bord.
-const STEPS = ['Univers', 'Type', 'Informations', 'Contenu', 'Modèle']
+// Création en 6 étapes : les invités sont proposés après l'enregistrement du brouillon,
+// avant la publication. L'organisateur peut aussi publier tout de suite et revenir plus tard.
+const STEPS = ['Univers', 'Type', 'Informations', 'Contenu', 'Modèle', 'Invités']
 
 // Sections ajoutées à une nouvelle page si le modèle ne les a pas (réponse et programme).
 const DEFAULT_OPTIONS = { checkin: true, program: true, gallery: false, ticketing: false, guestbook: false, searchable: false }
@@ -134,9 +132,10 @@ export default function CreateEvent() {
   const [form, setForm] = useState(() =>
     isEditMode ? EMPTY_FORM : restored ? { ...EMPTY_FORM, ...restored.form } : initialForm(presetTemplate, location.state?.onboarding),
   )
+  const [preparedEvent, setPreparedEvent] = useState(() => restored?.preparedEvent ?? null)
   const [pageContent, setPageContent] = useState(() => restored?.pageContent ?? newEventBlockDefaults(findTemplate(form.template)))
   const [step, setStep] = useState(() =>
-    restored ? Math.min(restored.step ?? 0, maxReachableFor(form)) : isEditMode || form.type ? 2 : form.univers ? 1 : 0,
+    restored?.preparedEvent ? 5 : restored ? Math.min(restored.step ?? 0, maxReachableFor(form)) : isEditMode || form.type ? 2 : form.univers ? 1 : 0,
   )
   const [errors, setErrors] = useState({})
   const [nudge, setNudge] = useState('')
@@ -176,19 +175,21 @@ export default function CreateEvent() {
   const [templatePicked, setTemplatePicked] = useState(() => isEditMode || Boolean(presetTemplate) || Boolean(restored?.templatePicked))
   // Événement déjà créé côté serveur lors d'un essai précédent (la suite avait échoué) : un
   // nouvel essai le complète au lieu d'en créer un second.
-  const createdRef = useRef(null)
+  const createdRef = useRef(restored?.preparedEvent ?? null)
 
   // Sauvegarde continue de la saisie (création uniquement), effacée une fois l'événement créé.
   useEffect(() => {
     if (isEditMode || created) return
-    writeWizardDraft(userId, { form, pageContent, step, templatePicked, hadPhotos: hasPhotos(photos) })
-  }, [isEditMode, created, userId, form, pageContent, step, templatePicked, photos])
+    writeWizardDraft(userId, { form, pageContent, step, templatePicked, hadPhotos: hasPhotos(photos), preparedEvent })
+  }, [isEditMode, created, userId, form, pageContent, step, templatePicked, photos, preparedEvent])
 
   const startOver = () => {
     clearWizardDraft(userId)
     setRestored(null)
     setForm(EMPTY_FORM)
     setPageContent(newEventBlockDefaults(null))
+    setPreparedEvent(null)
+    createdRef.current = null
     setPhotos((prev) => {
       for (const photo of [prev.cover, prev.invitation, prev.story, ...prev.gallery]) releasePhoto(photo)
       return NO_PHOTOS
@@ -308,7 +309,7 @@ export default function CreateEvent() {
     }
   }, [draft, pageContent, photos, invitationDefaults])
 
-  const maxReachable = maxReachableFor(form)
+  const maxReachable = preparedEvent ? 5 : maxReachableFor(form)
 
   // focusId : champ à remettre sous les yeux une fois l'étape affichée (ex. la date manquante).
   const goTo = (n, focusId) => {
@@ -369,7 +370,8 @@ export default function CreateEvent() {
       const first = Object.keys(errs)[0]
       if (first) return document.getElementById(first === 'logo' ? 'f-logo' : `f-${first}`)?.focus()
     }
-    if (step === 4) return publish('publish')
+    if (step === 4) return publish(isEditMode ? 'publish' : 'prepare')
+    if (step === 5) return publish('publish')
     goTo(Math.min(4, step + 1))
   }
 
@@ -388,7 +390,7 @@ export default function CreateEvent() {
     // Adresse pas encore confirmée : l'API refuserait la publication. On enregistre le
     // brouillon (sinon un nouvel essai créerait un second événement) et on explique pourquoi.
     const mustConfirmEmail = requested === 'publish' && getCurrentUser()?.emailVerified === false
-    const status = mustConfirmEmail ? 'draft' : requested
+    const status = mustConfirmEmail || requested === 'prepare' ? 'draft' : requested
     if (status === 'publish' && !form.date) {
       // Le champ est à l'étape « Informations » : on y retourne, sur la date.
       setErrors((prev) => ({ ...prev, date: 'Ajoutez la date pour publier. Sans date, enregistrez un brouillon.' }))
@@ -535,9 +537,16 @@ export default function CreateEvent() {
       if (!isEditMode) notifyPlanChanged()
       const name = form.name.trim()
       const published = status === 'publish'
+      if (!isEditMode && requested === 'prepare') {
+        setPreparedEvent({ id: targetId, slug: createdEvent.slug })
+        for (const warning of warnings) toast(warning, { variant: 'warning', duration: 10000 })
+        goTo(5)
+        return
+      }
       // Création : écran de fin avec la suite (partager, invités…) plutôt que la liste.
       if (!isEditMode) {
         clearWizardDraft(userId)
+        setPreparedEvent(null)
         for (const warning of warnings.slice(mustConfirmEmail ? 1 : 0)) toast(warning, { variant: 'warning', duration: 10000 })
         setCreated({
           published,
@@ -634,6 +643,12 @@ export default function CreateEvent() {
         searchable={form.searchable}
         onSearchable={(searchable) => update({ searchable })}
       />
+    ) : step === 5 && preparedEvent ? (
+      <GuestOnboardingStep
+        event={{ ...preparedEvent, name: form.name.trim() }}
+        onSkip={() => publish('publish')}
+        isPublishing={Boolean(publishing)}
+      />
     ) : null
 
   return (
@@ -653,9 +668,11 @@ export default function CreateEvent() {
             )}
           </p>
           <span className="flex gap-2">
-            <Button variant="ghost" onClick={startOver} className="px-4 py-2">
-              Recommencer à zéro
-            </Button>
+            {!preparedEvent && (
+              <Button variant="ghost" onClick={startOver} className="px-4 py-2">
+                Recommencer à zéro
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setRestored(null)} className="px-4 py-2">
               Compris
             </Button>
@@ -678,7 +695,7 @@ export default function CreateEvent() {
       <div className="mx-auto grid max-w-295 items-start gap-10 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0">
           <div className="mb-5 flex items-start gap-3">
-            {/* Téléphone : les cinq libellés ne tiennent pas, on résume l'avancement. */}
+            {/* Téléphone : les libellés ne tiennent pas, on résume l'avancement. */}
             <div className="min-w-0 flex-1 sm:hidden">
               <p className="font-mono text-[0.68rem] tracking-[0.06em] text-muted uppercase">
                 Étape {step + 1} sur {STEPS.length}
@@ -738,7 +755,7 @@ export default function CreateEvent() {
                 {publishError}
               </p>
             )}
-            {step === 4 && emailPending && (
+            {(step === 4 || step === 5) && emailPending && (
               <p className="mb-4 flex gap-2.5 rounded-lg border border-brand-orange/30 bg-brand-orange/10 px-4 py-3 text-sm text-ink">
                 <MailCheck className="mt-0.5 h-4 w-4 flex-none text-brand-orange" aria-hidden="true" />
                 <span>
@@ -757,14 +774,22 @@ export default function CreateEvent() {
                     {publishing === 'draft' ? 'Enregistrement…' : 'Enregistrer en brouillon'}
                   </Button>
                 )}
-                <Button variant="gradient" onClick={next} disabled={Boolean(publishing) || (step === 4 && limitReached)}>
-                  {step !== 4
+                <Button
+                  variant="gradient"
+                  onClick={next}
+                  disabled={Boolean(publishing) || (step === 4 && limitReached && !preparedEvent) || (step === 5 && !preparedEvent)}
+                >
+                  {step < 4
                     ? 'Continuer'
                     : publishing
                       ? 'Enregistrement…'
-                      : emailPending
+                      : step === 4 && !isEditMode
+                        ? 'Ajouter mes invités'
+                        : emailPending
                         ? 'Enregistrer ma page'
-                        : isEditMode
+                        : step === 5
+                          ? 'Continuer vers la publication'
+                          : isEditMode
                           ? 'Enregistrer et publier'
                           : 'Publier'}
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />

@@ -288,9 +288,9 @@ namespace backend_EventMoment.Services
             return guests.Count;
         }
 
-        // Import d'une liste : une ligne par invité (nom, service, téléphone). Les doublons
-        // (même téléphone, ou même nom quand il n'y a pas de téléphone) sont ignorés, dans la
-        // liste comme dans l'événement ; chaque service devient un groupe d'invités.
+        // Import d'une liste : une ligne par invité (nom, service, téléphone, e-mail). Les doublons
+        // (même téléphone ou e-mail, ou même nom sans coordonnées) sont ignorés ; chaque service
+        // devient un groupe d'invités.
         public async Task<ImportGuestsResultDto> ImportAsync(Guid eventId, ImportGuestsDto dto, Guid organizerId)
         {
             if (!await _context.Events.AnyAsync(e => e.Id == eventId && e.OrganizerId == organizerId))
@@ -298,9 +298,10 @@ namespace backend_EventMoment.Services
 
             var existing = await _context.Guests.AsNoTracking()
                 .Where(g => g.EventId == eventId)
-                .Select(g => new { g.FullName, g.Phone })
+                .Select(g => new { g.FullName, g.Phone, g.Email })
                 .ToListAsync();
             var phones = existing.Select(g => PhoneKey(g.Phone)).OfType<string>().ToHashSet();
+            var emails = existing.Select(g => EmailKey(g.Email)).OfType<string>().ToHashSet();
             var names = existing.Select(g => NameKey(g.FullName)).ToHashSet();
             var groups = (await _context.GuestGroups.Where(g => g.EventId == eventId).ToListAsync())
                 .GroupBy(g => NameKey(g.Label))
@@ -317,8 +318,12 @@ namespace backend_EventMoment.Services
                 var fullName = row.FullName?.Trim() ?? string.Empty;
                 var phone = string.IsNullOrWhiteSpace(row.Phone) ? null : row.Phone.Trim();
                 var phoneKey = PhoneKey(phone);
+                var email = string.IsNullOrWhiteSpace(row.Email) ? null : row.Email.Trim();
+                var emailKey = EmailKey(email);
                 if (fullName.Length == 0
-                    || (phoneKey != null ? phones.Contains(phoneKey) : names.Contains(NameKey(fullName))))
+                    || (phoneKey != null && phones.Contains(phoneKey))
+                    || (emailKey != null && emails.Contains(emailKey))
+                    || (phoneKey == null && emailKey == null && names.Contains(NameKey(fullName))))
                 {
                     result.Skipped++;
                     continue;
@@ -359,7 +364,7 @@ namespace backend_EventMoment.Services
                     GroupId = groupId,
                     FullName = fullName,
                     Phone = phone,
-                    Email = string.Empty,
+                    Email = email ?? string.Empty,
                     EditionNumber = ++editionNumber,
                     Status = GuestStatus.EnAttente,
                     ImportBatchId = batchId,
@@ -369,6 +374,7 @@ namespace backend_EventMoment.Services
                 // Enregistré ligne par ligne : la limite de l'offre compte les invités en base.
                 await _context.SaveChangesAsync();
                 if (phoneKey != null) phones.Add(phoneKey);
+                if (emailKey != null) emails.Add(emailKey);
                 names.Add(NameKey(fullName));
                 result.Added++;
             }
@@ -379,6 +385,9 @@ namespace backend_EventMoment.Services
 
         private static string NameKey(string? name) =>
             string.Join(' ', (name ?? string.Empty).Trim().ToLowerInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries));
+
+        private static string? EmailKey(string? email) =>
+            string.IsNullOrWhiteSpace(email) ? null : email.Trim().ToLowerInvariant();
 
         public async Task<GuestDTO> MarkSharedAsync(Guid id, Guid organizerId)
         {
@@ -807,6 +816,52 @@ namespace backend_EventMoment.Services
             return created;
         }
 
+        public async Task<bool> RegisterPublicGuestAsync(string slug, PublicGuestRegistrationDto dto)
+        {
+            var eventEntity = await _context.Events.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(e => e.Slug == slug && e.Status == EventStatus.Publie
+                    && !_context.EventModerations.Any(m => m.EventId == e.Id));
+            if (eventEntity == null) return false;
+
+            var fullName = dto.FullName.Trim();
+            var phone = dto.Phone.Trim();
+            var email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim();
+            if (fullName.Length == 0)
+                throw new InvalidOperationException("Veuillez indiquer votre nom.");
+
+            await using var transaction = await OrganizerLock.BeginAsync(_context, eventEntity.OrganizerId);
+            if (await FindListedGuestAsync(eventEntity.Id, phone, email) != null)
+                return true;
+
+            if (_plans != null)
+                await _plans.EnsureCanAddGuestAsync(eventEntity.OrganizerId, eventEntity.Id);
+
+            var now = DateTimeOffset.UtcNow;
+            var editionNumber = (await _context.Guests
+                .Where(g => g.EventId == eventEntity.Id)
+                .MaxAsync(g => (int?)g.EditionNumber) ?? 0) + 1;
+            _context.Guests.Add(new Guest
+            {
+                Id = Guid.NewGuid(),
+                EventId = eventEntity.Id,
+                FullName = fullName,
+                Phone = phone,
+                Email = email ?? string.Empty,
+                Seats = dto.Seats,
+                EditionNumber = editionNumber,
+                Status = GuestStatus.EnAttente,
+                WhatsAppRemindersConsented = dto.WhatsAppRemindersConsent,
+                WhatsAppRemindersConsentedAt = dto.WhatsAppRemindersConsent ? now : null,
+                CreatedAt = now,
+                UpdatedAt = now,
+            });
+
+            await _context.SaveChangesAsync();
+            if (transaction != null)
+                await transaction.CommitAsync();
+            return true;
+        }
+
         // Invité de l'événement au même e-mail, ou au même numéro (9 derniers chiffres : le
         // même numéro s'écrit « 690… », « +237 690… » ou « 00237 690… »).
         private async Task<Guest?> FindListedGuestAsync(Guid eventId, string? phone, string? email)
@@ -899,6 +954,8 @@ namespace backend_EventMoment.Services
             Seats = entity.Seats,
             EditionNumber = entity.EditionNumber,
             IsVip = entity.IsVip,
+            WhatsAppRemindersConsented = entity.WhatsAppRemindersConsented,
+            WhatsAppRemindersConsentedAt = entity.WhatsAppRemindersConsentedAt,
             Status = entity.Status,
             InvitationOpenedAt = entity.InvitationOpenedAt,
             InvitationSharedAt = entity.InvitationSharedAt,

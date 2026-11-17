@@ -22,5 +22,6 @@ namespace backend_EventMoment.Interfaces
         Task<PublicInvitationDto?> MarkEnRouteAsync(Guid guestId);
         Task<PublicInvitationDto?> SubmitPublicRsvpAsync(Guid guestId, SubmitPublicRsvpDto dto);
         Task<PublicInvitationDto?> SubmitPublicEventRsvpAsync(string slug, SubmitPublicEventRsvpDto dto);
+        Task<bool> RegisterPublicGuestAsync(string slug, PublicGuestRegistrationDto dto);
     }
 }

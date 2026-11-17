@@ -3,6 +3,7 @@ import { CHANNELS } from '../../data/communicationChannels'
 import Pagination from '../ui/Pagination'
 import StatusBadge from '../ui/StatusBadge'
 import { usePagination } from '../../utils/pagination'
+import { locale as uiLocale } from '../../i18n'
 
 const STATUS_LABELS = { Brouillon: 'Brouillon', Programmee: 'Programmée', Envoyee: 'Envoyée', EnCours: 'Envoi en cours' }
 
@@ -55,7 +56,7 @@ export default function CampaignsList({ campaigns, onEdit, onDelete }) {
                   </td>
                   <td className="px-3 py-4 text-muted">{c.audience}</td>
                   <td className="px-3 py-4 font-mono text-xs text-muted">
-                    {new Date(c.sentAt ?? c.createdAt).toLocaleDateString('fr-FR')}
+                    {new Date(c.sentAt ?? c.createdAt).toLocaleDateString(uiLocale)}
                   </td>
                   <td className="px-3 py-4">
                     <StatusBadge status={STATUS_LABELS[c.status] ?? c.status} />

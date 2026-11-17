@@ -103,6 +103,7 @@ export default function PrivacyPolicy () {
         <li><strong>Brevo</strong>, pour l’envoi des e-mails (confirmation, invitations, rappels) ;</li>
         <li><strong>Cloudinary</strong>, pour le stockage des photos et logos ;</li>
         <li><strong>Google</strong>, uniquement si vous l’utilisez pour vous connecter ;</li>
+        <li><strong>Google Tag Manager et Google Analytics</strong>, pour la mesure d’audience, uniquement si vous acceptez les cookies optionnels ;</li>
         <li><strong>Google Traduction</strong>, uniquement si un visiteur utilise le bouton de traduction ;</li>
         <li>nos hébergeurs (serveurs et base de données) ;</li>
         <li>les autorités, seulement sur demande légale.</li>

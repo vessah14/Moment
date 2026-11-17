@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Toggle from '../builder/Toggle'
 import { listEventReminders, setEventReminder } from '../../api/events'
 import { useToast } from '../../utils/useToast'
+import { locale as uiLocale } from '../../i18n'
 
 const REMINDER_INFO = {
   non_respondents: {
@@ -75,7 +76,7 @@ export default function AutoReminders({ eventId }) {
                 <p className="mt-0.5 text-xs text-faint">
                   {info.hint}
                   {reminder.lastSentAt &&
-                    ` · envoyé le ${new Date(reminder.lastSentAt).toLocaleDateString('fr-FR')}`}
+                    ` · envoyé le ${new Date(reminder.lastSentAt).toLocaleDateString(uiLocale)}`}
                 </p>
               </div>
               <Toggle checked={reminder.enabled} onChange={() => toggle(reminder)} />

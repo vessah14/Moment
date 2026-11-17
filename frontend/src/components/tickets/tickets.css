@@ -2,8 +2,13 @@
    du modèle de site (variables de .tbft[data-tbft]), le talon est clair. --deco : cadre, surtitre,
    pastille ; --stub-bg / --stub-ink : talon. */
 .tbft.tbtk { display: grid; justify-items: center; width: 100%; overflow: visible; line-height: 1.5; color: var(--fg); container-type: inline-size }
-
+.tbtk.tk-envelope-opening > * { visibility: hidden }
 .tbtk .tkc { position: relative; width: min(100%, 380px); margin: 1.2rem auto 0; text-align: center; filter: drop-shadow(0 26px 40px rgba(0, 0, 0, .35)) }
+.tbtk .tkc-emerging { transform-origin: center; animation: tk-ticket-emerge .75s cubic-bezier(.2, .8, .2, 1) both }
+@keyframes tk-ticket-emerge {
+  from { opacity: .8; transform: translate(var(--tk-from-x), var(--tk-from-y)) scale(var(--tk-from-scale, .6)) }
+  to { opacity: 1; transform: none }
+}
 
 /* ---------- Haut : panneau de l'événement ---------- */
 .tbtk .tkc-top { position: relative; overflow: hidden; padding: 16px; background: var(--bg); color: var(--fg); border-radius: 22px 22px 0 0 }
@@ -218,7 +223,7 @@
 @keyframes tk-env-z { to { z-index: 1 } }
 @keyframes tk-env-card { to { transform: translateY(-70%) } }
 @keyframes tk-env-out { to { opacity: 0; visibility: hidden } }
-@media (prefers-reduced-motion: reduce) { .tk-env { display: none } .tbtk .lv-dot, .tbtk .tkc-stamp, .tbtk .tkc-table.fresh, .tbtk .tkc-table.fresh b { animation: none } }
+@media (prefers-reduced-motion: reduce) { .tk-env { display: none } .tbtk .tkc-emerging, .tbtk .lv-dot, .tbtk .tkc-stamp, .tbtk .tkc-table.fresh, .tbtk .tkc-table.fresh b { animation: none } }
 
 /* Message vocal des hôtes */
 .tbtk .tkc-voice { display: flex; align-items: center; gap: .7rem; margin: .8rem 0 .1rem; padding: .6rem .75rem; border-radius: 14px; text-align: left; color: var(--stub-ink);

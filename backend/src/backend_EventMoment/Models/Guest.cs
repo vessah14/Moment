@@ -54,6 +54,12 @@ namespace backend_EventMoment.Models
         [Column("is_vip")]
         public bool IsVip { get; set; }
 
+        [Column("whatsapp_reminders_consented")]
+        public bool WhatsAppRemindersConsented { get; set; }
+
+        [Column("whatsapp_reminders_consented_at")]
+        public DateTimeOffset? WhatsAppRemindersConsentedAt { get; set; }
+
         [Column("en_route_at")]
         public DateTimeOffset? EnRouteAt { get; set; }
 

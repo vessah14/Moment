@@ -10,6 +10,7 @@ import BrandLoader from './components/ui/BrandLoader'
 import EventLoader from './components/site/EventLoader'
 import { eventSlugFromPath, isGuestPath } from './utils/eventLook'
 import { syncTranslationForRoute } from './utils/translation'
+import { trackPageView } from './utils/tagManager'
 import PageAnimations from './components/PageAnimations'
 import ScrollToTop from './components/ScrollToTop'
 import BackToTop from './components/layout/BackToTop'
@@ -46,6 +47,7 @@ const MiniSite = lazy(() => import('./pages/MiniSite'))
 const EventWall = lazy(() => import('./pages/EventWall'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 const Pricing = lazy(() => import('./pages/Pricing'))
+const PublicGuestRegistration = lazy(() => import('./pages/PublicGuestRegistration'))
 const TicketModels = lazy(() => import('./pages/TicketModels'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
@@ -82,8 +84,10 @@ function RouteLoader ({ children }) {
       clearPrefetchedPublicSite(eventSlug)
     }
   }, [eventSlug])
-  // Anglais : traduction écrite à la main ici, Google Traduction ailleurs.
+  // Anglais : traduction partout sauf sur les pages des invités.
   useEffect(() => syncTranslationForRoute(pathname), [pathname])
+  // Mesure d'audience (seulement si les cookies optionnels sont acceptés).
+  useEffect(() => trackPageView(pathname), [pathname])
   return (
     <Suspense fallback={guestPage ? <EventLoader slug={eventSlugFromPath(pathname)} /> : <BrandLoader />}>
       {children}
@@ -139,6 +143,7 @@ function App () {
           />
           <Route path='/invitation/:code' element={<GuestInvitation />} />
           <Route path='/cadeaux/:code' element={<GiftRegistryPublic />} />
+          <Route path='/e/:slug/inscription' element={<PublicGuestRegistration />} />
           <Route path='/e/:slug' element={<MiniSite />} />
           <Route path='/e/:slug/mur' element={<EventWall />} />
           <Route path='/e/:slug/projection' element={<EventWall />} />

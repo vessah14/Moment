@@ -24,7 +24,10 @@ export default function LivePreview({ template, draft, shown }) {
           {template?.theme ? (
             <ThemedFrame key={template.theme} theme={template.theme} name={template.name} draft={draft} />
           ) : template ? (
-            <ClassicScreen template={template} draft={draft} />
+            // translate="no" : la page invité reste dans la langue des invités.
+            <div translate="no" className="contents">
+              <ClassicScreen template={template} draft={draft} />
+            </div>
           ) : (
             <div className="grid h-full place-items-center px-6 text-center text-sm text-white/70">
               Choisissez un type d'événement pour voir votre page.

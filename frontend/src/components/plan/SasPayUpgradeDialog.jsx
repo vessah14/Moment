@@ -6,9 +6,10 @@ import {
   listSubscriptionPlans
 } from '../../api/subscriptions'
 import { PRICING_PLANS } from '../../data/pricingPlans'
+import { locale as uiLocale } from '../../i18n'
 
 const formatFcfa = cents =>
-  `${Math.round(cents / 100).toLocaleString('fr-FR')} FCFA`
+  `${Math.round(cents / 100).toLocaleString(uiLocale)} FCFA`
 
 export default function SasPayUpgradeDialog ({
   open,

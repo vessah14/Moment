@@ -1,10 +1,11 @@
 import { Download } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { motifStyle } from '../site/themes/motifs'
 import { getSiteTheme, themeMotif, themePalette } from '../site/themes/themeDefs'
 import { loadThemeFonts } from '../site/themes/themeFonts'
 import { ticketCode, ticketFormat } from '../../utils/ticketStyles'
 import { createGuestTicketQr, normalizeGuestTicketId } from '../../utils/ticketQr'
+import { envelopeSeen } from '../../utils/ticketLive'
 import { EntryStamp, LiveStrip, QrZoom, TableReveal, TicketEnvelope, TicketSouvenir, TicketVoice, useTicketLive } from './TicketLive'
 import '../site/themes/themes.css'
 import './tickets.css'
@@ -21,6 +22,7 @@ import { fill, t as translate } from '../../i18n'
 // voice = { url, from } : message vocal des hôtes, à écouter depuis le billet.
 
 const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
+const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
 // Infos d'affichage d'un événement à partir des champs de l'API (date « 2027-01-16 », heure « 10:00:00 »).
 export function ticketEventInfo({ name, eventDate, startTime, locationLabel, locationAddress, slug, organizer, category, kicker, brand }) {
@@ -170,10 +172,28 @@ export default function TicketCard({ style, note, event, guest, look: lookIn, th
   const card = useRef(null)
   const [qrState, setQrState] = useState({ guestId: '', dataUrl: '', error: '' })
   const [zoom, setZoom] = useState(false)
+  const [ticketOrigin, setTicketOrigin] = useState(null)
+  const [envelopeOpening, setEnvelopeOpening] = useState(
+    () => Boolean(reveal && guest?.id && !envelopeSeen(guest.id) && !reducedMotion()),
+  )
   const liveState = useTicketLive(live)
   const [busy, setBusy] = useState('')
   const [msg, setMsg] = useState('')
   const { theme, palette, motif } = ticketLook({ themeId, paletteId, motif: motifId, accent, ...lookIn })
+  const finishEnvelope = useCallback(() => {
+    const bounds = card.current?.getBoundingClientRect()
+    if (!bounds?.width || reducedMotion()) {
+      setEnvelopeOpening(false)
+      return
+    }
+    const envelopeWidth = Math.min(window.innerWidth * 0.86, 360)
+    setTicketOrigin({
+      x: window.innerWidth / 2 - (bounds.left + bounds.width / 2),
+      y: window.innerHeight / 2 - (bounds.top + bounds.height / 2),
+      scale: Math.min(1, (envelopeWidth * 0.88) / bounds.width),
+    })
+    setEnvelopeOpening(false)
+  }, [])
 
   const qrGuestId = (() => {
     try {
@@ -258,6 +278,13 @@ export default function TicketCard({ style, note, event, guest, look: lookIn, th
     '--stub-ink': c.stubInk,
     background: 'transparent',
   }
+  const ticketMotionStyle = {
+    ...(ticketOrigin ? {
+      '--tk-from-x': `${ticketOrigin.x}px`,
+      '--tk-from-y': `${ticketOrigin.y}px`,
+      '--tk-from-scale': ticketOrigin.scale,
+    } : {}),
+  }
 
   // Touchez le QR code pour l'agrandir devant le téléphone de l'accueil.
   const qrBlock = (
@@ -273,7 +300,7 @@ export default function TicketCard({ style, note, event, guest, look: lookIn, th
   const extras = (
     <>
       {zoom && <QrZoom src={qr} code={ticketCode(guest.id)} onClose={() => setZoom(false)} />}
-      {reveal && <TicketEnvelope code={guest.id} name={guest.name} mark={t.mark} mourn={mourn} vars={vars} motifCss={motifCss} />}
+      {reveal && <TicketEnvelope code={guest.id} name={guest.name} mark={t.mark} mourn={mourn} vars={vars} motifCss={motifCss} onFinish={finishEnvelope} />}
       <TicketSouvenir state={liveState} souvenir={souvenir} title={event.title} name={guest.name} mourn={mourn} />
     </>
   )
@@ -300,9 +327,14 @@ export default function TicketCard({ style, note, event, guest, look: lookIn, th
   // ---------- Billet d'entrée : horizontal, talon détachable à droite ----------
   if (format === 'billet') {
     return (
-      <div ref={root} className={`tbft tbtk ${vip ? 'vip' : ''} ${liveClass}`} data-tbft={theme?.id} style={vars}>
+      <div ref={root} className={`tbft tbtk ${vip ? 'vip' : ''} ${liveClass} ${envelopeOpening ? 'tk-envelope-opening' : ''}`} data-tbft={theme?.id} style={vars}>
         {extras}
-        <article ref={card} className={`tkc tkc-billet tks-${style}`} aria-label={tk('{kind} de {name}', { kind: t.kind, name: guest.name })}>
+        <article
+          ref={card}
+          className={`tkc tkc-billet tks-${style} ${ticketOrigin ? 'tkc-emerging' : ''}`}
+          style={ticketMotionStyle}
+          aria-label={tk('{kind} de {name}', { kind: t.kind, name: guest.name })}
+        >
           <div className="tkb-main">
             <span className="tkc-motif" style={motifCss} aria-hidden="true" />
             {style === 'concert' && <span className="tkc-holo" aria-hidden="true" />}
@@ -353,9 +385,14 @@ export default function TicketCard({ style, note, event, guest, look: lookIn, th
 
   // ---------- Carte d'invitation et badge : verticaux, talon en bas ----------
   return (
-    <div ref={root} className={`tbft tbtk ${vip ? 'vip' : ''} ${liveClass}`} data-tbft={theme?.id} style={vars}>
+    <div ref={root} className={`tbft tbtk ${vip ? 'vip' : ''} ${liveClass} ${envelopeOpening ? 'tk-envelope-opening' : ''}`} data-tbft={theme?.id} style={vars}>
       {extras}
-      <article ref={card} className={`tkc tkc-${format} tks-${style}`} aria-label={tk('{kind} de {name}', { kind: t.kind, name: guest.name })}>
+      <article
+        ref={card}
+        className={`tkc tkc-${format} tks-${style} ${ticketOrigin ? 'tkc-emerging' : ''}`}
+        style={ticketMotionStyle}
+        aria-label={tk('{kind} de {name}', { kind: t.kind, name: guest.name })}
+      >
         {style === 'pagne' && <span className="tkc-saw top" aria-hidden="true" />}
         <div className="tkc-top">
           <span className="tkc-motif" style={motifCss} aria-hidden="true" />

@@ -7,6 +7,7 @@ import { listSubscriptionPlans } from '../../api/subscriptions'
 import { PRICING_PLANS } from '../../data/pricingPlans'
 import { notifyPlanChanged } from '../../utils/usePlan'
 import SasPayUpgradeDialog from './SasPayUpgradeDialog'
+import { locale as uiLocale } from '../../i18n'
 
 // Paiement SasPay désactivé par défaut. VITE_SASPAY_ENABLED=true pour l'activer.
 const SASPAY_ENABLED = import.meta.env.VITE_SASPAY_ENABLED === 'true'
@@ -14,7 +15,7 @@ const SASPAY_ENABLED = import.meta.env.VITE_SASPAY_ENABLED === 'true'
 // Quand SasPay est désactivé, l'organisateur choisit une offre et l'équipe TBF le contacte.
 
 const formatFcfa = cents =>
-  `${Math.round(cents / 100).toLocaleString('fr-FR')} FCFA`
+  `${Math.round(cents / 100).toLocaleString(uiLocale)} FCFA`
 const inputClass =
   'mt-1.5 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-ink placeholder:text-faint outline-none focus:border-brand-purple focus:ring-3 focus:ring-brand-purple/30'
 
@@ -165,7 +166,7 @@ function RequestUpgradeDialog ({ open, onClose, plan, initialPlanCode }) {
             </p>
             <p className='mt-1 text-sm text-muted'>
               Envoyée le{' '}
-              {new Date(pending.createdAt).toLocaleDateString('fr-FR')}. Notre
+              {new Date(pending.createdAt).toLocaleDateString(uiLocale)}. Notre
               équipe vous contacte au {pending.phone} pour le paiement ; l'offre
               sera activée dès réception.
             </p>

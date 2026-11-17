@@ -41,9 +41,9 @@ export default function Header() {
 
   return (
     <header translate="no" className="sticky top-0 z-40 border-b border-border-soft/60 bg-bg/80 backdrop-blur">
-      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 px-4 sm:h-20 sm:px-6">
         <Link to="/" className="flex items-center">
-          <BrandLogo className="h-9 w-auto" />
+          <BrandLogo className="h-8 w-auto sm:h-9" />
         </Link>
 
         <nav className="hidden items-center gap-8 lg:flex">
@@ -57,7 +57,7 @@ export default function Header() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-4">
           <LanguageSwitcher className="hidden lg:inline-flex" />
           <ThemeToggle className="hidden lg:inline-flex" showLabels={false} />
           {user ? (
@@ -86,9 +86,10 @@ export default function Header() {
                 as={Link}
                 to="/inscription"
                 variant="gradient"
-                className="px-4 py-2.5 sm:px-5"
+                className="shrink-0 px-3 py-2 text-xs sm:px-5 sm:py-2.5 sm:text-sm"
               >
-                {t("Créer mon événement")}
+                <span className="sm:hidden">{t("Créer")}</span>
+                <span className="hidden sm:inline">{t("Créer mon événement")}</span>
               </Button>
             </>
           )}
@@ -97,7 +98,7 @@ export default function Header() {
             onClick={() => setMenuOpen((v) => !v)}
             aria-label={menuOpen ? t("Fermer le menu principal") : t("Ouvrir le menu principal")}
             aria-expanded={menuOpen}
-            className="rounded-lg p-1.5 text-ink lg:hidden"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-ink lg:hidden"
           >
             {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -105,7 +106,7 @@ export default function Header() {
       </div>
 
       {menuOpen && (
-        <nav className="flex flex-col gap-1 border-t border-border-soft/60 px-6 py-4 lg:hidden">
+        <nav className="flex flex-col gap-1 border-t border-border-soft/60 px-4 py-4 sm:px-6 lg:hidden">
           <div className="mb-2 flex items-center gap-3">
             <ThemeToggle className="w-fit" />
             <LanguageSwitcher align="left" />

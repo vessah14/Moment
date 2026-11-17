@@ -19,6 +19,10 @@ namespace backend_EventMoment.Models
 
         public bool IsVip { get; set; }
 
+        public bool WhatsAppRemindersConsented { get; set; }
+
+        public DateTimeOffset? WhatsAppRemindersConsentedAt { get; set; }
+
         // Réponse RSVP de l'invité.
         public GuestStatus Status { get; set; }
 
