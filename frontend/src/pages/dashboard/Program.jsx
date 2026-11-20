@@ -109,7 +109,8 @@ export default function Program() {
       setActiveDate(values.date)
       reload(selectedEventId)
     } catch (err) {
-      setError(err.message || "L'ajout a échoué.")
+      // Affichée dans la fenêtre « Nouvelle activité », qui reste ouverte.
+      throw new Error(err.message || "L'ajout a échoué.")
     }
   }
 

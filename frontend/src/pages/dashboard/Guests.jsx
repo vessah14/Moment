@@ -8,7 +8,7 @@ import StatusBadge from '../../components/ui/StatusBadge'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import GuestEditDialog from '../../components/guests/GuestEditDialog'
 import PrintTicketsDialog from '../../components/guests/PrintTicketsDialog'
-import { ConfirmDialog } from '../../components/ui/Dialog'
+import Dialog, { ConfirmDialog } from '../../components/ui/Dialog'
 import { createGuest, deleteGuest, importGuests, listGuests, sendGuestInvitation, sendPendingInvitations, updateGuest } from '../../api/guests'
 import { contactRowsFromPicker, maskPhone, readGuestFile } from '../../utils/guestImport'
 import { createGuestGroup, listGuestGroups } from '../../api/guestGroups'
@@ -51,6 +51,8 @@ export default function Guests() {
   const [selected, setSelected] = useState(() => new Set())
   const [addFormOpen, setAddFormOpen] = useState(() => searchParams.get('add') === '1')
   const [newGroupName, setNewGroupName] = useState('')
+  const [addError, setAddError] = useState('')
+  const [addSaving, setAddSaving] = useState(false)
   const [bulkGroupTarget, setBulkGroupTarget] = useState('')
   const [editingGuest, setEditingGuest] = useState(null)
   const [deletingGuest, setDeletingGuest] = useState(null)
@@ -377,9 +379,11 @@ export default function Guests() {
     const seats = Number(form.get('seats')) || null
     const isVip = form.get('isVip') === 'on'
     const sendInvitation = form.get('sendInvitation') === 'on' && Boolean(email)
-    if (!fullName) return
+    if (!fullName || addSaving) return
 
-    setError('')
+    const formElement = e.target
+    setAddError('')
+    setAddSaving(true)
     try {
       await createGuest({ fullName, phone, email, seats, isVip, sendInvitation }, { eventId: selectedEventId, groupId })
       await reloadGuests()
@@ -392,26 +396,37 @@ export default function Guests() {
             ? `${fullName} ajouté(e) : son lien d'invitation part par e-mail`
             : `${fullName} ajouté(e) : l'invitation partira à la publication de l'événement`,
       )
-      setAddFormOpen(false)
-      e.target.reset()
+      formElement.reset()
+      closeAddForm()
     } catch (err) {
-      setError(err.message || "L'ajout a échoué.")
+      setAddError(err.message || "L'ajout a échoué.")
+    } finally {
+      setAddSaving(false)
     }
+  }
+
+  const closeAddForm = () => {
+    setAddFormOpen(false)
+    setAddError('')
+    setNewGroupName('')
   }
 
   const handleCreateGroup = async () => {
     const name = newGroupName.trim()
     if (!name || !selectedEventId) return
-    setError('')
+    setAddError('')
     try {
       await createGuestGroup({ name }, selectedEventId)
       const fresh = await listGuestGroups(selectedEventId)
       setGroups(fresh ?? [])
       setNewGroupName('')
     } catch (err) {
-      setError(err.message || 'La création du groupe a échoué.')
+      setAddError(err.message || 'La création du groupe a échoué.')
     }
   }
+
+  const addFieldClass =
+    'mt-1.5 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-brand-purple'
 
   const handleExport = () => {
     downloadCsv(
@@ -533,7 +548,7 @@ export default function Guests() {
           <Button variant="outline" onClick={handleExport} disabled={guests.length === 0}>
             Exporter
           </Button>
-          <Button variant="gradient" onClick={() => setAddFormOpen((v) => !v)}>
+          <Button variant="gradient" onClick={() => setAddFormOpen(true)}>
             Ajouter un invité
           </Button>
         </div>
@@ -584,98 +599,80 @@ export default function Guests() {
         </p>
       )}
 
-      {addFormOpen && (
-        <form
-          onSubmit={handleAddGuest}
-          className="mt-6 flex flex-wrap items-end gap-3 rounded-2xl border border-brand-purple/40 bg-surface p-5"
-        >
+      <Dialog open={addFormOpen} title="Ajouter un invité" onClose={closeAddForm}>
+        <form onSubmit={handleAddGuest} className="space-y-4">
           <label className="block">
             <span className="text-xs font-medium text-ink">Nom complet</span>
-            <input
-              name="name"
-              required
-              className="mt-1.5 w-40 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-brand-purple"
-            />
+            <input name="name" required maxLength={255} className={addFieldClass} />
           </label>
-          <label className="flex items-center gap-2 self-center text-xs font-medium text-ink">
-            <input type="checkbox" name="isVip" className="h-4 w-4 rounded border-border accent-brand-purple" />
-            Billet VIP doré
-          </label>
-          <label className="block">
-            <span className="text-xs font-medium text-ink">Téléphone (facultatif)</span>
-            <input
-              name="phone"
-              type="tel"
-              placeholder="+237 6 90 00 00 00"
-              className="mt-1.5 w-40 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-brand-purple"
-            />
-          </label>
-          <label className="block">
-            <span className="text-xs font-medium text-ink">E-mail (facultatif)</span>
-            <input
-              name="email"
-              type="email"
-              className="mt-1.5 w-48 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-brand-purple"
-            />
-          </label>
-          <label className="block">
-            <span className="text-xs font-medium text-ink">Places</span>
-            <input
-              name="seats"
-              type="number"
-              min={1}
-              max={50}
-              placeholder="Auto"
-              title="Places pour cette invitation, invité compris (ex. 2 pour un couple). Vide : règle du formulaire de réponse."
-              className="mt-1.5 w-20 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-brand-purple"
-            />
-          </label>
-          <label className="block">
-            <span className="text-xs font-medium text-ink">Groupe</span>
-            <select
-              name="group"
-              defaultValue=""
-              className="mt-1.5 w-36 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-brand-purple"
-            >
-              <option value="">Sans groupe</option>
-              {groups.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex items-center gap-2 self-center text-xs font-medium text-ink">
-            <input type="checkbox" name="sendInvitation" defaultChecked className="h-4 w-4 rounded border-border accent-brand-purple" />
-            Envoyer le lien par e-mail
-          </label>
-          <Button type="submit" variant="gradient">
-            Ajouter
-          </Button>
-          <p className="w-full text-xs text-faint">
-            {!eventPublished
-              ? "L'e-mail d'invitation partira dès la publication de l'événement."
-              : "L'invité reçoit son lien personnel par e-mail. Sans e-mail, vous pouvez ajouter son nom puis partager son lien depuis sa fiche."}
-          </p>
-
-          <div className="flex w-full items-center gap-2 border-t border-border-soft pt-3">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-xs font-medium text-ink">Téléphone (facultatif)</span>
+              <input name="phone" type="tel" inputMode="tel" placeholder="+237 6 90 00 00 00" className={addFieldClass} />
+            </label>
+            <label className="block">
+              <span className="text-xs font-medium text-ink">E-mail (facultatif)</span>
+              <input name="email" type="email" className={addFieldClass} />
+            </label>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-xs font-medium text-ink">Places pour cette invitation (facultatif)</span>
+              <input name="seats" type="number" min={1} max={50} placeholder="Auto" className={addFieldClass} />
+              <span className="mt-1 block text-xs text-faint">Invité compris, ex. 2 pour un couple</span>
+            </label>
+            <label className="block">
+              <span className="text-xs font-medium text-ink">Groupe</span>
+              <select name="group" defaultValue="" className={addFieldClass}>
+                <option value="">Sans groupe</option>
+                {groups.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div className="flex items-center gap-2">
             <input
               value={newGroupName}
               onChange={(e) => setNewGroupName(e.target.value)}
               placeholder="Nouveau groupe (ex: Famille)"
-              className="w-48 rounded-lg border border-border bg-surface px-3 py-2 text-xs text-ink outline-none focus:border-brand-purple"
+              className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-xs text-ink outline-none focus:border-brand-purple"
             />
             <button
               type="button"
               onClick={handleCreateGroup}
-              className="flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-xs font-medium text-muted hover:border-faint hover:text-ink"
+              className="flex shrink-0 items-center gap-1 rounded-lg border border-border px-3 py-2 text-xs font-medium text-muted hover:border-faint hover:text-ink"
             >
               <Plus className="h-3.5 w-3.5" />
               Créer le groupe
             </button>
           </div>
+          <label className="flex items-center gap-2 text-sm text-ink">
+            <input type="checkbox" name="isVip" className="h-4 w-4 rounded border-border accent-brand-purple" />
+            Billet VIP doré
+          </label>
+          <label className="flex items-center gap-2 text-sm text-ink">
+            <input type="checkbox" name="sendInvitation" defaultChecked className="h-4 w-4 rounded border-border accent-brand-purple" />
+            Envoyer le lien par e-mail
+          </label>
+          <p className="text-xs text-faint">
+            {!eventPublished
+              ? "L'e-mail d'invitation partira dès la publication de l'événement."
+              : "L'invité reçoit son lien personnel par e-mail. Sans e-mail, vous pouvez ajouter son nom puis partager son lien depuis sa fiche."}
+          </p>
+          {addError && <p className="rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">{addError}</p>}
+          <div className="flex flex-wrap justify-end gap-3 pt-2">
+            <button type="button" onClick={closeAddForm} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-muted hover:text-ink">
+              Annuler
+            </button>
+            <Button type="submit" variant="gradient" disabled={addSaving}>
+              {addSaving ? 'Ajout…' : 'Ajouter'}
+            </Button>
+          </div>
         </form>
-      )}
+      </Dialog>
 
       <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3">

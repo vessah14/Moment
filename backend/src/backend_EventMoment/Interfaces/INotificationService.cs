@@ -34,5 +34,7 @@ namespace backend_EventMoment.Interfaces
     {
         Task NotifyNewRsvpAsync(Guid eventId, string guestName, bool? confirmed, int accompanyingCount);
         Task NotifyNewGuestbookEntryAsync(Guid eventId, string authorName);
+        // E-mail qui accompagne une notification du tableau de bord (autre que RSVP et livre d'or).
+        Task NotifyActivityAsync(Guid eventId, string type, string title, string message, string link);
     }
 }

@@ -24,6 +24,74 @@ namespace backend_EventMoment.Services
             _logger = logger;
         }
 
+        // E-mail qui double une notification du tableau de bord (photo à valider, invité en
+        // route, cadeau réservé, campagne envoyée…). Les réponses RSVP et le livre d'or ont
+        // leur propre e-mail ci-dessous. Préférence appliquée selon le type :
+        //   photo d'invité -> « livre d'or », invité en route -> « réponse RSVP »,
+        //   cadeau réservé -> « paiement reçu », campagne -> toujours (action de l'organisateur).
+        public async Task NotifyActivityAsync(Guid eventId, string type, string title, string message, string link)
+        {
+            var target = await _context.Events.IgnoreQueryFilters().AsNoTracking()
+                .Where(e => e.Id == eventId)
+                .Select(e => new { e.Name, e.OrganizerId, OrganizerEmail = e.Utilisateur.Email, OrganizerName = e.Utilisateur.FullName })
+                .FirstOrDefaultAsync();
+            if (target == null || string.IsNullOrWhiteSpace(target.OrganizerEmail))
+                return;
+
+            var settings = await _context.OrganizerNotificationSettings.AsNoTracking()
+                .FirstOrDefaultAsync(s => s.OrganizerId == target.OrganizerId)
+                ?? new Models.OrganizerNotificationSettings();
+            var wanted = type switch
+            {
+                "guest_photo" => settings.Guestbook,
+                "guest_en_route" => settings.NewRsvp,
+                "gift_reserved" => settings.Payments,
+                _ => true,
+            };
+            if (!wanted)
+                return;
+
+            var kicker = type switch
+            {
+                "guest_photo" => "Galerie",
+                "guest_en_route" => "Jour J",
+                "gift_reserved" => "Liste de cadeaux",
+                "campaign_sent" or "campaign_failed" => "Messages aux invités",
+                _ => "Notification",
+            };
+            // Lien interne du tableau de bord uniquement (jamais une adresse externe).
+            var path = link.StartsWith('/') && !link.StartsWith("//") ? link : "/dashboard/notifications";
+            var baseUrl = (_config["Frontend:BaseUrl"] ?? "http://localhost:5173").TrimEnd('/');
+
+            var html = EmailLayout.Render(new EmailMessage
+            {
+                Preheader = message,
+                Kicker = kicker,
+                Title = title,
+                Subtitle = target.Name,
+                BodyHtml = EmailLayout.P($"Bonjour {EmailLayout.E(target.OrganizerName)},")
+                    + EmailLayout.P($"{EmailLayout.E(message)}"),
+                ButtonText = "Voir dans mon tableau de bord",
+                ButtonUrl = $"{baseUrl}{path}",
+                NoteHtml = NotificationSettingsNote,
+                FooterReason = "Vous recevez cet e-mail car vous organisez cet événement sur TBF MOMENT.",
+            });
+
+            try
+            {
+                await _emailSender.SendAsync(target.OrganizerEmail, SingleLine($"{title} — {target.Name}"), html);
+            }
+            catch (Exception ex)
+            {
+                // L'activité est déjà enregistrée : un échec d'envoi ne doit pas la faire échouer.
+                _logger.LogWarning(ex, "E-mail de notification {Type} non envoyé pour l'événement {EventId}", type, eventId);
+            }
+        }
+
+        // Objet d'e-mail sur une seule ligne (un nom saisi ne doit pas y glisser d'en-tête).
+        private static string SingleLine(string value) =>
+            string.Join(' ', value.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)).Trim();
+
         public async Task NotifyNewGuestbookEntryAsync(Guid eventId, string authorName)
         {
             var target = await _context.Events.IgnoreQueryFilters().AsNoTracking()

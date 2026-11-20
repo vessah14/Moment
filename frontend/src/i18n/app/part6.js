@@ -28,4 +28,9 @@ export default {
   'Google Tag Manager et Google Analytics': 'Google Tag Manager and Google Analytics',
   ', pour la mesure d’audience, uniquement si vous acceptez les cookies optionnels ;': ', for audience measurement, only if you accept optional cookies;',
   'lieu à préciser': 'venue to be confirmed',
+  // Paramètres › Notifications
+  'À chaque confirmation ou refus reçu, et quand un invité prévient qu’il arrive.': 'For every confirmation or decline received, and when a guest says they are on the way.',
+  'Quand un message ou une photo d’invité attend votre validation.': 'When a guest message or photo is awaiting your approval.',
+  'Paiements et cadeaux': 'Payments and gifts',
+  'Vente de billet, don confirmé ou cadeau réservé.': 'Ticket sale, confirmed donation or reserved gift.',
 }

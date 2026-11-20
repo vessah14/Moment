@@ -10,11 +10,16 @@ namespace backend_EventMoment.Services
     {
         private readonly AdminDbContext _context;
         private readonly ILogger<InAppNotificationService> _logger;
+        private readonly IOrganizerNotifier? _emailNotifier;
 
-        public InAppNotificationService(AdminDbContext context, ILogger<InAppNotificationService> logger)
+        // Types qui ont déjà leur propre e-mail (OrganizerNotifier, appelé par le service métier).
+        private static readonly HashSet<string> TypesWithDedicatedEmail = new() { "rsvp", "guestbook" };
+
+        public InAppNotificationService(AdminDbContext context, ILogger<InAppNotificationService> logger, IOrganizerNotifier? emailNotifier = null)
         {
             _context = context;
             _logger = logger;
+            _emailNotifier = emailNotifier;
         }
 
         public async Task<NotificationFeedDto> GetAsync(Guid organizerId)
@@ -169,6 +174,19 @@ namespace backend_EventMoment.Services
                 // L'activité métier est déjà enregistrée; une défaillance de notification ne
                 // doit pas faire croire à l'invité que son envoi a échoué.
                 _logger.LogError(exception, "Impossible d'enregistrer la notification {Type} pour l'événement {EventId}.", type, eventId);
+            }
+
+            // Chaque notification du tableau de bord part aussi par e-mail (selon les préférences).
+            if (_emailNotifier != null && !TypesWithDedicatedEmail.Contains(type))
+            {
+                try
+                {
+                    await _emailNotifier.NotifyActivityAsync(eventId, type, title, message, link);
+                }
+                catch (Exception exception)
+                {
+                    _logger.LogWarning(exception, "E-mail de la notification {Type} non envoyé pour l'événement {EventId}.", type, eventId);
+                }
             }
         }
 

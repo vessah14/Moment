@@ -8,17 +8,17 @@ const PREFS = [
   {
     key: 'newRsvp',
     label: 'Nouvelle réponse RSVP',
-    hint: 'À chaque confirmation ou refus reçu.',
+    hint: 'À chaque confirmation ou refus reçu, et quand un invité prévient qu’il arrive.',
   },
   {
     key: 'guestbook',
     label: "Nouveau message dans le livre d'or",
-    hint: 'Quand un message attend votre modération.',
+    hint: 'Quand un message ou une photo d’invité attend votre validation.',
   },
   {
     key: 'payments',
-    label: 'Paiement reçu',
-    hint: 'Vente de billet ou don confirmé.',
+    label: 'Paiements et cadeaux',
+    hint: 'Vente de billet, don confirmé ou cadeau réservé.',
   },
   {
     key: 'reminders',
