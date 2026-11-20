@@ -9,6 +9,20 @@ namespace backend_EventMoment.Tests;
 
 public class UserServiceTests
 {
+    [Fact]
+    public async Task ResendVerificationEmailAsync_ReportsDeliveryFailure()
+    {
+        var (service, adminContext, emailSender, _) = CreateService();
+        var organizer = SeedOrganizer(adminContext, "pending@example.com", verified: false);
+        emailSender.Delivered = false;
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => service.ResendVerificationEmailAsync(organizer.Id));
+
+        Assert.Single(emailSender.Sent);
+        Assert.Contains("pending@example.com", emailSender.Sent[0].To);
+    }
+
     private static SignupDbContext CreateSignupContext(string? databaseName = null)
     {
         var options = new DbContextOptionsBuilder<SignupDbContext>()

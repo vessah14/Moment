@@ -194,7 +194,7 @@ export default function Guests() {
     const timer = setInterval(() => {
       listGuests(selectedEventId).then((fresh) => setGuests(fresh ?? [])).catch(() => {})
     }, 5000)
-    const stop = setTimeout(() => clearInterval(timer), 120000)
+    const stop = setTimeout(() => clearInterval(timer), 600000)
     return () => {
       clearInterval(timer)
       clearTimeout(stop)

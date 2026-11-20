@@ -19,6 +19,7 @@ namespace backend_EventMoment.Services
         private readonly IGoogleAuthService? _googleAuthService;
         private readonly LoginThrottle? _loginThrottle;
         private readonly IUploadStorage? _uploadStorage;
+        private readonly ILogger<UserService> _logger;
 
         public UserService(
             AdminDbContext adminContext,
@@ -29,10 +30,12 @@ namespace backend_EventMoment.Services
             IFacebookAuthService facebookAuthService,
             IGoogleAuthService? googleAuthService = null,
             LoginThrottle? loginThrottle = null,
-            IUploadStorage? uploadStorage = null)
+            IUploadStorage? uploadStorage = null,
+            ILogger<UserService>? logger = null)
         {
             _loginThrottle = loginThrottle;
             _uploadStorage = uploadStorage;
+            _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<UserService>.Instance;
             _adminContext = adminContext;
             _signupContext = signupContext;
             _jwtService = jwtService;
@@ -452,7 +455,7 @@ namespace backend_EventMoment.Services
             }
         }
 
-        private async Task SendVerificationEmailAsync(Utilisateur organizer)
+        private async Task<bool> SendVerificationEmailAsync(Utilisateur organizer)
         {
             var (token, _) = _jwtService.GenerateEmailVerificationToken(organizer);
             var baseUrl = _config["Frontend:BaseUrl"] ?? "http://localhost:5173";
@@ -476,12 +479,26 @@ namespace backend_EventMoment.Services
 
             try
             {
-                await _emailSender.SendAsync(organizer.Email, "Confirmez votre adresse e-mail TBF Moment", html);
+                var delivered = await _emailSender.SendAsync(
+                    organizer.Email,
+                    "Confirmez votre adresse e-mail TBF Moment",
+                    html);
+                if (!delivered)
+                {
+                    _logger.LogWarning(
+                        "E-mail de vérification non livré à {Email} : fournisseur non configuré ou en échec.",
+                        organizer.Email);
+                }
+                return delivered;
             }
-            catch
+            catch (Exception exception)
             {
-                // L'inscription ne doit pas échouer parce que le SMTP est indisponible :
-                // l'utilisateur peut redemander le lien depuis ses paramètres.
+                // L'inscription reste possible, mais l'échec doit rester visible dans les logs
+                // pour diagnostiquer Brevo/SMTP sans exposer les secrets ni la clé API.
+                _logger.LogError(exception,
+                    "Impossible d'envoyer l'e-mail de vérification à {Email}.",
+                    organizer.Email);
+                return false;
             }
         }
 
@@ -542,7 +559,8 @@ namespace backend_EventMoment.Services
             if (await IsEmailVerifiedAsync(organizerId))
                 throw new InvalidOperationException("Votre adresse e-mail est déjà vérifiée.");
 
-            await SendVerificationEmailAsync(organizer);
+            if (!await SendVerificationEmailAsync(organizer))
+                throw new InvalidOperationException("L'e-mail de vérification n'a pas pu être envoyé. Réessayez plus tard.");
         }
 
         private LoginResponseDto BuildLoginResponse(Utilisateur organizer)

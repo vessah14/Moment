@@ -113,4 +113,15 @@ public class GuestInvitationTests
         Assert.Contains("Mariage &lt;Awa &amp; Ibrahim&gt;", html);
         Assert.DoesNotContain("<script>", html);
     }
+
+    [Fact]
+    public void PermanentBrevoFailure_IsRecognized()
+    {
+        Assert.True(InvitationDispatcher.IsPermanentBrevoFailure(
+            "Refus du service d'e-mail : unauthorized"));
+        Assert.True(InvitationDispatcher.IsPermanentBrevoFailure(
+            "Refus du service d'e-mail : sender email is not validated"));
+        Assert.False(InvitationDispatcher.IsPermanentBrevoFailure(
+            "Refus du service d'e-mail : service temporarily unavailable"));
+    }
 }

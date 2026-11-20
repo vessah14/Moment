@@ -152,17 +152,30 @@ namespace backend_EventMoment.Services
                 }
                 else
                 {
+                    var permanentFailure =
+                        error == "Le service d'e-mail n'est pas configuré."
+                        || IsPermanentBrevoFailure(error);
+                    var attemptsForUpdate = permanentFailure ? (short)MaxAttempts : (short)attempt;
                     // Nouvel essai plus tard (10 min, puis 20…), jusqu'à MaxAttempts.
                     var retryAt = DateTimeOffset.UtcNow.AddMinutes(10 * attempt);
                     var message = error.Length > 300 ? error[..300] : error;
                     await db.GuestInvitations.Where(i => i.GuestId == item.GuestId)
                         .ExecuteUpdateAsync(s => s
                             .SetProperty(i => i.LastError, message)
-                            .SetProperty(i => i.QueuedAt, retryAt), ct);
+                            .SetProperty(i => i.QueuedAt, retryAt)
+                            .SetProperty(i => i.Attempts, attemptsForUpdate), ct);
                 }
             }
             return pending.Count;
         }
+
+        public static bool IsPermanentBrevoFailure(string error) =>
+            error.StartsWith("Refus du service d'e-mail :", StringComparison.Ordinal)
+            && (error.Contains("unauthorized", StringComparison.OrdinalIgnoreCase)
+                || error.Contains("forbidden", StringComparison.OrdinalIgnoreCase)
+                || error.Contains("sender", StringComparison.OrdinalIgnoreCase)
+                || error.Contains("recipient", StringComparison.OrdinalIgnoreCase)
+                || error.Contains("invalid", StringComparison.OrdinalIgnoreCase));
 
         public static (string Subject, string Html) BuildMessage(string guestName, string eventName, DateOnly? date, TimeOnly? time,
             string? location, string organizerName, string link)
