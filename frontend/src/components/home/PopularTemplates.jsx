@@ -47,7 +47,7 @@ function RailCard({ template }) {
               className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
             />
           )}
-          <span className="absolute inset-x-0 bottom-0 flex translate-y-full items-center justify-center gap-1.5 bg-[linear-gradient(transparent,rgba(0,0,0,.65))] pt-8 pb-3 text-sm font-semibold text-white transition duration-300 group-hover:translate-y-0">
+          <span className="absolute inset-x-0 bottom-0 flex translate-y-full items-center justify-center gap-1.5 bg-[linear-gradient(transparent,rgba(0,0,0,.65))] pt-8 pb-3 text-sm font-semibold text-white transition-transform duration-300 group-hover:translate-y-0 group-focus-visible:translate-y-0 [@media(hover:none)]:translate-y-0">
             {t('Voir la démo')} <ArrowRight className="h-4 w-4" />
           </span>
         </div>

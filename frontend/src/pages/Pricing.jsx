@@ -260,12 +260,13 @@ export default function Pricing() {
           <p className="mt-2 text-sm text-muted">
             {t("Les limites s’appliquent à chaque événement. Vous pouvez changer d’offre à tout moment.")}
           </p>
+          <p className="mt-1 text-xs text-muted sm:hidden">{t("Faites glisser le tableau pour voir les 4 offres.")}</p>
 
           <div className="mt-5 overflow-x-auto rounded-2xl border border-border-soft bg-surface">
-            <table className="w-full min-w-[900px] border-collapse text-left text-sm">
+            <table className="w-full min-w-[540px] border-collapse text-left text-sm sm:min-w-[900px]">
               <thead>
                 <tr className="bg-surface-2">
-                  <th scope="col" className="sticky left-0 z-10 w-36 min-w-36 bg-surface-2 px-3 py-4 sm:w-auto sm:min-w-64 sm:px-4">
+                  <th scope="col" className="sticky left-0 z-10 w-28 min-w-28 bg-surface-2 px-3 py-4 sm:w-auto sm:min-w-64 sm:px-4">
                     {t("Offre")}
                   </th>
                   {PLANS.map((plan) => {
@@ -274,7 +275,7 @@ export default function Pricing() {
                       <th
                         key={plan.name}
                         scope="col"
-                        className={`min-w-36 px-4 py-4 text-center ${isRecommended ? 'bg-brand-purple/20' : ''}`}
+                        className={`min-w-26 px-2 py-4 text-center sm:min-w-36 sm:px-4 ${isRecommended ? 'bg-brand-purple/20' : ''}`}
                       >
                         <span className="block font-bold text-ink">{plan.name}</span>
                         <span className="mt-1 block text-xs font-normal text-muted">
@@ -292,7 +293,7 @@ export default function Pricing() {
                       <th
                         scope="colgroup"
                         colSpan={PLANS.length + 1}
-                        className="px-4 pt-5 pb-2 text-xs font-bold tracking-widest text-[color:var(--color-gold)] uppercase"
+                        className="px-4 pt-5 pb-2 text-xs font-bold tracking-widest text-[color:var(--color-gold-text)] uppercase"
                       >
                         {section.name}
                       </th>
@@ -305,7 +306,7 @@ export default function Pricing() {
                         {row.values.map((value, index) => (
                           <td
                             key={PLANS[index].name}
-                            className={`px-4 py-3 text-center ${PLANS[index].name === selectedAudience.plan ? 'bg-brand-purple/10' : ''}`}
+                            className={`px-2 py-3 text-center sm:px-4 ${PLANS[index].name === selectedAudience.plan ? 'bg-brand-purple/10' : ''}`}
                           >
                             <ComparisonValue value={value} />
                           </td>

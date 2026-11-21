@@ -5,7 +5,7 @@ import Button from '../ui/Button'
 import { useToast } from '../../utils/useToast'
 
 const TIER_STYLES = {
-  Platine: 'border-[color:var(--color-gold)]/60 text-[color:var(--color-gold)]',
+  Platine: 'border-[color:var(--color-gold)]/60 text-[color:var(--color-gold-text)]',
   Or: 'border-brand-orange/50 text-brand-orange',
   Argent: 'border-border text-muted',
   Bronze: 'border-border text-faint',

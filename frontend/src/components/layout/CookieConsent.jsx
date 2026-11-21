@@ -36,31 +36,33 @@ export default function CookieConsent () {
     <aside
       translate='no'
       aria-label={t("Préférences de cookies")}
-      className='fixed inset-x-4 bottom-4 z-50 mx-auto max-w-4xl rounded-xl border border-border bg-surface p-5 shadow-2xl sm:inset-x-6 sm:p-6'
+      className='fixed inset-x-3 bottom-3 z-50 mx-auto max-w-5xl rounded-xl border border-border bg-surface px-4 py-3 shadow-2xl sm:inset-x-6 sm:px-5'
     >
-      <div className='flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between'>
-        <div className='max-w-2xl'>
-          <h2 className='text-base font-semibold text-ink'>
+      <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6'>
+        <div className='max-w-3xl'>
+          <h2 className='sr-only'>
             {t("Vos préférences de cookies")}
           </h2>
-          <p className='mt-1 text-sm leading-relaxed text-muted'>
+          <p className='text-xs leading-relaxed text-muted sm:text-sm'>
             {t("Les cookies nécessaires assurent le fonctionnement du site. Choisissez si vous autorisez les cookies optionnels de mesure d’audience. Vous pourrez modifier votre choix à tout moment depuis la page Cookies.")}
           </p>
         </div>
-        <div className='flex shrink-0 flex-col gap-2 sm:flex-row'>
+        <div className='flex shrink-0 gap-2'>
           <button
             type='button'
             onClick={() => saveCookieConsent('refused')}
-            className='rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-panel'
+            aria-label={t("Refuser les cookies optionnels")}
+            className='flex-1 whitespace-nowrap rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-panel focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-purple sm:flex-none'
           >
-            {t("Refuser les cookies optionnels")}
+            {t("Refuser")}
           </button>
           <button
             type='button'
             onClick={() => saveCookieConsent('accepted')}
-            className='rounded-lg bg-brand-purple px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90'
+            aria-label={t("Accepter les cookies optionnels")}
+            className='flex-1 whitespace-nowrap rounded-lg bg-brand-purple px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-purple sm:flex-none'
           >
-            {t("Accepter les cookies optionnels")}
+            {t("Accepter")}
           </button>
         </div>
       </div>

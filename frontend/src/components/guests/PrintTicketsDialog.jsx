@@ -289,7 +289,7 @@ export default function PrintTicketsDialog({ open, onClose, event, guests, visib
         rel="noopener noreferrer"
         className="mt-4 flex items-center gap-3 rounded-xl border border-[color:var(--color-gold)]/50 bg-[color:var(--color-gold)]/10 px-4 py-3 text-sm transition hover:border-[color:var(--color-gold)]"
       >
-        <Printer className="h-5 w-5 flex-none text-[color:var(--color-gold)]" aria-hidden="true" />
+        <Printer className="h-5 w-5 flex-none text-[color:var(--color-gold-text)]" aria-hidden="true" />
         <span>
           <b className="block text-ink">Faire imprimer par TBF DIGITAL</b>
           <span className="text-xs text-muted">Papier épais, finitions soignées, livraison à Douala. Devis sur WhatsApp.</span>

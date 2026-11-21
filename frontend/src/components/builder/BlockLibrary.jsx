@@ -69,10 +69,10 @@ export default function BlockLibrary({
               className={`relative rounded-lg border px-3 py-2.5 text-left text-xs font-medium transition ${
                 isSelected
                   ? isPremium
-                    ? 'border-[color:var(--color-gold)] bg-[color:var(--color-gold)]/10 text-[color:var(--color-gold)]'
+                    ? 'border-[color:var(--color-gold)] bg-[color:var(--color-gold)]/10 text-[color:var(--color-gold-text)]'
                     : 'border-brand-purple bg-brand-purple/10 text-ink'
                   : isPremium
-                    ? 'border-[color:var(--color-gold)]/60 text-[color:var(--color-gold)] hover:border-[color:var(--color-gold)]'
+                    ? 'border-[color:var(--color-gold)]/60 text-[color:var(--color-gold-text)] hover:border-[color:var(--color-gold)]'
                     : 'border-border-soft text-muted hover:border-faint hover:text-ink'
               }`}
             >

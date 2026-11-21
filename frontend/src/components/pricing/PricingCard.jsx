@@ -37,13 +37,13 @@ export default function PricingCard({ plan, variant = 'default' }) {
       )}
 
       <p
-        className={`font-semibold ${plan.enterprise ? 'text-[color:var(--color-gold)]' : 'text-ink'}`}
+        className={`font-semibold ${plan.enterprise ? 'text-[color:var(--color-gold-text)]' : 'text-ink'}`}
       >
         {plan.name}
       </p>
 
       <p
-        className={`mt-3 ${pricingVariant ? 'text-4xl' : 'text-3xl'} font-bold ${plan.enterprise ? 'text-[color:var(--color-gold)]' : 'text-ink'}`}
+        className={`mt-3 ${pricingVariant ? 'text-4xl' : 'text-3xl'} font-bold ${plan.enterprise ? 'text-[color:var(--color-gold-text)]' : 'text-ink'}`}
       >
         {t(plan.price)}
         {plan.period && (

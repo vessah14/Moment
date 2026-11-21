@@ -552,7 +552,7 @@ function TicketTab({ ticket, recommended, onChange, event, accent, themeId, pale
             <span className="flex items-center justify-between gap-2 text-sm font-semibold text-ink">
               {s.label}
               {s.id === recommended && (
-                <span className="rounded-full bg-[color:var(--color-gold)]/20 px-2 py-0.5 text-[10px] font-bold text-[color:var(--color-gold)]">
+                <span className="rounded-full bg-[color:var(--color-gold)]/20 px-2 py-0.5 text-[10px] font-bold text-[color:var(--color-gold-text)]">
                   Conseillé
                 </span>
               )}

@@ -99,7 +99,7 @@ export default function Templates () {
 
         {filtered.some(tpl => tpl.theme) && (
           <section className='mt-10'>
-            <h2 className='text-xs font-semibold tracking-widest text-[color:var(--color-gold)] uppercase'>
+            <h2 className='text-xs font-semibold tracking-widest text-[color:var(--color-gold-text)] uppercase'>
               {t('Modèles premium ({n}) · ouverture animée, fond animé, musique', { n: PREMIUM_TEMPLATES.length })}
             </h2>
             <div className='mt-5 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>

@@ -1,0 +1,881 @@
+frontend\src\components\site\themes\themes.css
+  FAIL 2a :381 purple-to-pink gradient text on .tbft .footer .made b | fix: One anchor hue, solid ink
+  FAIL 7a :88 pure #fff: color: #fff (.tbft-passmodal p) | fix: Tint the base toward the anchor hue
+  FAIL 7a :89 pure #fff: color: #fff (.tbft-passmodal > div > button)
+  FAIL 7a :200 pure #fff: color: #fff (.tbft .inv-pick-label)
+  FAIL 7a :287 pure #fff: color: #fff (.tbft .arch-caption)
+  FAIL 7a :326 pure #fff: color: #fff (.tbft-lb button)
+  FAIL 7a :329 pure #fff: color: #fff (.tbft-lb .count)
+  FAIL 7a :1043 pure #fff: background: #fff (.tbft .inv-qr)
+  FAIL 20 :1 no Hallmark stamp on the first non-empty line of any CSS | fix: The stamp comment is line 1 of the CSS; only @charset may precede it
+  FAIL 48 :14 colour literal #fff outside tokens (--bg on .tbft) | fix: Lift the value into the token block
+  FAIL 48 :14 colour literal #fff outside tokens (--surface on .tbft)
+  FAIL 48 :14 colour literal #f5f5f5 outside tokens (--surface-2 on .tbft)
+  FAIL 48 :14 colour literal #111 outside tokens (--fg on .tbft)
+  FAIL 48 :14 colour literal #555 outside tokens (--muted on .tbft)
+  FAIL 48 :15 colour literal #6c4bf4 outside tokens (--accent on .tbft)
+  FAIL 48 :15 colour literal #ff7a3d outside tokens (--accent-2 on .tbft)
+  FAIL 48 :15 colour literal #fff outside tokens (--on-accent on .tbft)
+  FAIL 48 :15 colour literal #e5e5e5 outside tokens (--line on .tbft)
+  FAIL 48 :15 colour literal #ccc outside tokens (--motif on .tbft)
+  FAIL 48 :18 colour literal rgba(0, 0, 0, .35) outside tokens (--shadow on .tbft)
+  FAIL 48 :86 colour literal rgba(5, 5, 12, .82) outside tokens (background on .tbft-passmodal)
+  FAIL 48 :88 colour literal #fff outside tokens (color on .tbft-passmodal p)
+  FAIL 48 :89 colour literal rgba(255, 255, 255, .35) outside tokens (border on .tbft-passmodal > div > button)
+  FAIL 48 :89 colour literal #fff outside tokens (color on .tbft-passmodal > div > button)
+  FAIL 48 :148 colour literal #000 outside tokens (-webkit-mask-image on .tbft.motion .hero-names.ink)
+  FAIL 48 :148 colour literal #000 outside tokens (mask-image on .tbft.motion .hero-names.ink)
+  FAIL 48 :200 colour literal rgb(0 0 0 / .62) outside tokens (background on .tbft .inv-pick-label)
+  FAIL 48 :200 colour literal #fff outside tokens (color on .tbft .inv-pick-label)
+  FAIL 48 :277 colour literal rgba(0, 0, 0, .45) outside tokens (box-shadow on .tbft .arch-active)
+  FAIL 48 :286 colour literal rgba(0,0,0,.55) outside tokens (background on .tbft .arch-caption)
+  FAIL 48 :287 colour literal #fff outside tokens (color on .tbft .arch-caption)
+  FAIL 48 :323 colour literal rgba(5, 5, 10, .92) outside tokens (background on .tbft-lb)
+  FAIL 48 :326 colour literal rgba(255, 255, 255, .25) outside tokens (border on .tbft-lb button)
+  FAIL 48 :326 colour literal rgba(255, 255, 255, .08) outside tokens (background on .tbft-lb button)
+  FAIL 48 :326 colour literal #fff outside tokens (color on .tbft-lb button)
+  FAIL 48 :329 colour literal #fff outside tokens (color on .tbft-lb .count)
+  FAIL 48 :356 colour literal #d93636 outside tokens (color on .tbft .err)
+  FAIL 48 :381 colour literal #ff7a3d outside tokens (background on .tbft .footer .made b)
+  FAIL 48 :381 colour literal #e2337e outside tokens (background on .tbft .footer .made b)
+  FAIL 48 :381 colour literal #6c4bf4 outside tokens (background on .tbft .footer .made b)
+  FAIL 48 :426 colour literal rgba(0, 0, 0, .5) outside tokens (box-shadow on .tbft .env .back)
+  FAIL 48 :428 colour literal rgba(0, 0, 0, .12) outside tokens (box-shadow on .tbft .env .letter)
+  FAIL 48 :432 colour literal #fff outside tokens (background on .tbft .env .seal)
+  FAIL 48 :432 colour literal #000 outside tokens (background on .tbft .env .seal)
+  FAIL 48 :433 colour literal rgba(0, 0, 0, .5) outside tokens (box-shadow on .tbft .env .seal)
+  FAIL 48 :433 colour literal #000 outside tokens (box-shadow on .tbft .env .seal)
+  FAIL 48 :436 colour literal rgba(0, 0, 0, .5) outside tokens (box-shadow on 50%)
+  FAIL 48 :436 colour literal #000 outside tokens (box-shadow on 50%)
+  FAIL 48 :449 colour literal rgba(0, 0, 0, .6) outside tokens (box-shadow on .tbft .curtain .panel.l)
+  FAIL 48 :450 colour literal rgba(0, 0, 0, .6) outside tokens (box-shadow on .tbft .curtain .panel.r)
+  FAIL 48 :458 colour literal rgba(0, 0, 0, .6) outside tokens (box-shadow on .tbft .medal .seal-btn)
+  FAIL 48 :460 colour literal rgba(0, 0, 0, .6) outside tokens (box-shadow on 50%)
+  FAIL 48 :467 colour literal rgba(0, 0, 0, .12) outside tokens (box-shadow on .tbft .gift .box)
+  FAIL 48 :467 colour literal rgba(0, 0, 0, .4) outside tokens (box-shadow on .tbft .gift .box)
+  FAIL 48 :468 colour literal rgba(0, 0, 0, .08) outside tokens (box-shadow on .tbft .gift .lid)
+  FAIL 48 :483 colour literal rgba(0, 0, 0, .18) outside tokens (box-shadow on .tbft .bloom .petal)
+  FAIL 48 :490 colour literal rgba(0, 0, 0, .35) outside tokens (box-shadow on .tbft .bloom .seal-btn)
+  FAIL 48 :497 colour literal #000 outside tokens (-webkit-mask on .tbft .intro.iris)
+  FAIL 48 :498 colour literal #000 outside tokens (mask on .tbft .intro.iris)
+  FAIL 48 :555 colour literal #2e8b57 outside tokens (background on .tbft[data-tbft="toghu"] .top…)
+  FAIL 48 :559 colour literal #2e8b57 outside tokens (background on .tbft[data-tbft="toghu"] .car…)
+  FAIL 48 :590 colour literal #000 outside tokens (box-shadow on .tbft[data-tbft="fiesta"] .btn)
+  FAIL 48 :591 colour literal #000 outside tokens (box-shadow on .tbft[data-tbft="fiesta"] .bt…)
+  FAIL 48 :693 colour literal #fff outside tokens (background on .tbft .honour .medal)
+  FAIL 48 :696 colour literal #000 outside tokens (color on .tbft .honour .grade)
+  FAIL 48 :712 colour literal rgba(0, 0, 0, .35) outside tokens (filter on .tbft .tk-intro)
+  FAIL 48 :728 colour literal #000 outside tokens (-webkit-mask on .tbft .tk-body)
+  FAIL 48 :729 colour literal #000 outside tokens (mask on .tbft .tk-body)
+  FAIL 48 :742 colour literal #222 outside tokens (background on .tbft .candle-wrap .wick)
+  FAIL 48 :744 colour literal #fff outside tokens (background on .tbft .candle-wrap .flame)
+  FAIL 48 :744 colour literal #FFD27A outside tokens (background on .tbft .candle-wrap .flame)
+  FAIL 48 :744 colour literal #FF9A3C outside tokens (background on .tbft .candle-wrap .flame)
+  FAIL 48 :745 colour literal rgba(255, 200, 120, .35) outside tokens (background on .tbft .candle-wrap .halo)
+  FAIL 48 :756 colour literal rgba(0, 0, 0, .5) outside tokens (box-shadow on .tbft .badge)
+  FAIL 48 :758 colour literal rgba(0, 0, 0, .4) outside tokens (box-shadow on .tbft .badge .hole)
+  FAIL 48 :787 colour literal rgba(0, 0, 0, .4) outside tokens (box-shadow on .tbft[data-tbft="atelier"] .g…)
+  FAIL 48 :946 colour literal #007A5E outside tokens (background on .tbft[data-tbft="unite"] .top…)
+  FAIL 48 :946 colour literal #CE1126 outside tokens (background on .tbft[data-tbft="unite"] .top…)
+  FAIL 48 :946 colour literal #FCD116 outside tokens (background on .tbft[data-tbft="unite"] .top…)
+  FAIL 48 :991 colour literal #D9B567 outside tokens (--envol-gold on .tbft[data-tbft="envol"])
+  FAIL 48 :991 colour literal #C49A3C outside tokens (--envol-gold-deco on .tbft[data-tbft="envol"])
+  FAIL 48 :1002 colour literal #0F1F44 outside tokens (color on .tbft[data-tbft="envol"] .lan…)
+  FAIL 48 :1013 colour literal #0F1F44 outside tokens (color on .tbft[data-tbft="envol"] .her…)
+  FAIL 48 :1017 colour literal rgba(15, 31, 68, .14) outside tokens (box-shadow on .tbft[data-tbft="envol"] .her…)
+  FAIL 48 :1018 colour literal #86601A outside tokens (color on .tbft[data-tbft="envol"] .her…)
+  FAIL 48 :1030 colour literal #B8892E outside tokens (background on .tbft .foil)
+  FAIL 48 :1030 colour literal #F1D9A0 outside tokens (background on .tbft .foil)
+  FAIL 48 :1030 colour literal #D9B567 outside tokens (background on .tbft .foil)
+  FAIL 48 :1030 colour literal #9A6F1E outside tokens (background on .tbft .foil)
+  FAIL 48 :1043 colour literal #fff outside tokens (background on .tbft .inv-qr)
+  FAIL 48 :1052 colour literal #FFFDF8 outside tokens (--fg on .tbft[data-tbft="envol"] [dat…)
+  FAIL 48 :1052 colour literal #CDD1DE outside tokens (--muted on .tbft[data-tbft="envol"] [dat…)
+  FAIL 48 :1052 colour literal rgba(247, 242, 231, .32) outside tokens (--line on .tbft[data-tbft="envol"] [dat…)
+  FAIL 48 :1053 colour literal #0F1F44 outside tokens (--on-accent on .tbft[data-tbft="envol"] [dat…)
+  FAIL 48 :1054 colour literal #FFFDF8 outside tokens (color on .tbft[data-tbft="envol"] [dat…)
+  FAIL 48 :1055 colour literal #FFFDF8 outside tokens (color on .tbft[data-tbft="envol"] [dat…)
+  FAIL 48 :1055 colour literal rgba(255, 255, 255, .06) outside tokens (background on .tbft[data-tbft="envol"] [dat…)
+  FAIL 48 :1056 colour literal #1E2433 outside tokens (color on .tbft[data-tbft="envol"] [dat…)
+  FAIL 48 :1065 colour literal #B3261E outside tokens (background on .tbft .live-badge i)
+  FAIL 62 :126 .tbft.motion .hero .h-in is hidden at rest (opacity: 0) and depends on a script to appear | fix: Visible by default: scope the hidden state under a .js class the script adds, or animate from visible with @starting-style
+  FAIL 62 :144 .tbft.motion .hero-frame .fillin is hidden at rest (opacity: 0) and depends on a script to appear
+  FAIL 62 :214 .tbft.motion .words span is hidden at rest (opacity: 0) and depends on a script to appear
+  FAIL 62 :222 .tbft.motion .rv is hidden at rest (opacity: 0) and depends on a script to appear
+  FAIL 62 :439 .tbft .intro.opening .env .seal is hidden at rest (opacity: 0) and depends on a script to appear
+  FAIL 62 :462 .tbft .intro.opening .medal is hidden at rest (opacity: 0) and depends on a script to appear
+  FAIL 62 :492 .tbft .intro.opening .bloom .petal is hidden at rest (opacity: 0) and depends on a script to appear
+  FAIL 62 :493 .tbft .intro.opening .bloom .seal-btn is hidden at rest (opacity: 0) and depends on a script to appear
+  FAIL 62 :506 .tbft .intro.iris.opening .iris-medal is hidden at rest (opacity: 0) and depends on a script to appear
+  FAIL 62 :726 .tbft .intro.opening .tk-intro-card is hidden at rest (opacity: 0) and depends on a script to appear
+  FAIL 62 :744 .tbft .candle-wrap .flame is hidden at rest (opacity: 0) and depends on a script to appear
+  FAIL 62 :764 .tbft .intro.opening .badge is hidden at rest (opacity: 0) and depends on a script to appear
+  FAIL 67 :79 .tbft .kicker: uppercase tracked 0.28em in a label role | fix: Labels, captions, table heads, nav links and meta are the body face (or the theme's label face), a step smaller, sentence case, untracked
+  FAIL 67 :106 .tbft .countdown .label: uppercase tracked 0.22em in a label role
+  FAIL 67 :113 .tbft .cd small: uppercase tracked 0.12em in a label role
+  FAIL 67 :117 .tbft .cd-last small, .tbft .cd-new small: uppercase tracked 0.22em in a label role
+  FAIL 67 :211 .tbft .gal .ph.art .art-label: letter-spaced tracked 0.08em in a label role
+  FAIL 67 :329 .tbft-lb .count: letter-spaced tracked 0.14em in a label role
+  FAIL 67 :380 .tbft .footer .made: uppercase tracked 0.16em in a label role
+  FAIL 67 :416 .tbft .intro-hint: uppercase tracked 0.24em in a label role
+  FAIL 67 :526 .tbft[data-tbft="noor"] .kicker: letter-spaced tracked 0.32em in a label role
+  FAIL 67 :530 .tbft[data-tbft="noor"] .btn: uppercase control tracked 0.14em | fix: Controls follow the display voice: sentence case here, or tracking 0.04em at most where the display itself is uppercase
+  FAIL 67 :538 .tbft[data-tbft="bloom"] .kicker: letter-spaced tracked 0.24em in a label role
+  FAIL 67 :562 .tbft[data-tbft="toghu"] .btn: uppercase control tracked 0.12em
+  FAIL 67 :572 .tbft[data-tbft="ndop"] .hero-names: uppercase tracked 0.04em in a label role
+  FAIL 67 :580 .tbft[data-tbft="ndop"] .btn: uppercase control tracked 0.1em
+  FAIL 67 :604 .tbft[data-tbft="prestige"] .hero-big small: uppercase tracked 0.2em in a label role
+  FAIL 67 :605 .tbft[data-tbft="prestige"] .hero-pre: uppercase tracked 0.3em in a label role
+  FAIL 67 :613 .tbft[data-tbft="prestige"] .btn: uppercase control tracked 0.16em
+  FAIL 67 :651 .tbft .field > span:first-child: uppercase tracked 0.1em in a label role
+  FAIL 67 :709 .tbft .soldout: uppercase tracked 0.14em in a label role
+  FAIL 67 :721 .tbft .tk-back-details b: uppercase tracked 0.08em in a label role
+  FAIL 67 :731 .tbft .tk-body small: uppercase tracked 0.24em in a label role
+  FAIL 67 :734 .tbft .tk-stub: uppercase tracked 0.2em in a label role
+  FAIL 67 :759 .tbft .badge small: uppercase tracked 0.24em in a label role
+  FAIL 67 :774 .tbft[data-tbft="arena"] .kicker: letter-spaced tracked 0.3em in a label role
+  FAIL 67 :776 .tbft[data-tbft="arena"] .btn: uppercase control tracked 0.12em
+  FAIL 67 :827 .tbft[data-tbft="live"] .hero-pre: uppercase tracked 0.2em in a label role
+  FAIL 67 :840 .tbft[data-tbft="memoire"] .kicker: letter-spaced tracked 0.22em in a label role
+  FAIL 67 :876 .tbft[data-tbft="toge"] .hero-names: uppercase tracked 0.06em in a label role
+  FAIL 67 :885 .tbft[data-tbft="velvet"] .hero-big small: uppercase tracked 0.2em in a label role
+  FAIL 67 :886 .tbft[data-tbft="velvet"] .hero-names: uppercase tracked 0.12em in a label role
+  FAIL 67 :893 .tbft[data-tbft="douceur"] .hero-pre: uppercase tracked 0.16em in a label role
+  FAIL 67 :899 .tbft[data-tbft="souvenir"] .hero-pre: uppercase tracked 0.22em in a label role
+  FAIL 67 :906 .tbft[data-tbft="noel"] .hero-pre: uppercase tracked 0.18em in a label role
+  FAIL 67 :943 .tbft[data-tbft="unite"] .hero-names: uppercase in a label role
+  FAIL 67 :944 .tbft[data-tbft="unite"] .hero-pre: uppercase tracked 0.2em in a label role
+  FAIL 67 :947 .tbft[data-tbft="unite"] .btn: uppercase tracked 0.1em in a label role
+  FAIL 67 :952 .tbft[data-tbft="maman"] .hero-pre: uppercase tracked 0.16em in a label role
+  FAIL 67 :975 .tbft[data-tbft="minuit"] .minuit-ndop: letter-spaced tracked 0.42em at 15px in a label role
+  FAIL 67 :1005 .tbft[data-tbft="envol"] .hero-orgname: uppercase tracked 0.2em in a label role
+  FAIL 67 :1064 .tbft .live-badge: uppercase tracked 0.2em in a label role
+  REFLEX 2b :99 gradient text on .tbft .hero-big | fix: Solid ink; weight or a display face. Guard: a single-hue ramp from two tokens with 40 and 41 passing
+  REFLEX 2b :1030 gradient text on .tbft .foil
+  REFLEX 24b :308 gap: 10px (off the 4px scale) on .tbft .gal | fix: Use the 4px spacing scale
+  REFLEX 24b :397 gap: 3px (off the 4px scale) on .tbft .music-btn .eq
+  REFLEX 24b :469 margin-left: -15px (off the 4px scale) on .tbft .gift .rib-v
+  REFLEX 24b :470 margin-left: -45px (off the 4px scale) on .tbft .gift .bow
+  REFLEX 24b :481 margin: -112px 0 0 -31px (off the 4px scale) on .tbft .bloom .petal
+  REFLEX 24b :598 margin-top: -6px (off the 4px scale) on .tbft[data-tbft="fiesta"] .hero-frame svg
+  REFLEX 24b :682 padding: 5px (off the 4px scale) on .tbft .portrait
+  REFLEX 24b :740 margin-left: -23px (off the 4px scale) on .tbft .candle-wrap .candle
+  REFLEX 24b :745 margin-left: -130px (off the 4px scale) on .tbft .candle-wrap .halo
+  REFLEX 24b :964 padding: 3px (off the 4px scale) on .tbft[data-tbft="minuit"] .topbar .lang
+  REFLEX 24b :1000 padding: 3px (off the 4px scale) on .tbft[data-tbft="envol"] .lang
+  REFLEX 24b :1035 padding: 6px (off the 4px scale) on .tbft .inv-card
+  REFLEX 24b :1069 padding: 10px (off the 4px scale) on .tbft .live-wait svg
+  REFLEX 38ii :537 italic display type on .tbft[data-tbft="bloom"] .s-head h2 | fix: Roman headers; emphasis via weight or accent
+  REFLEX 38ii :785 italic display type on .tbft[data-tbft="atelier"] .s-head h2
+  REFLEX 38ii :919 italic display type on .tbft[data-tbft="coeur"] .s-head h2
+  WARN 11 :275 image transforms on hover (.tbft .arch-item:not(.arch-active):hover img) | fix: Imagery sits still; give the container the feedback
+  WARN 11 :280 image transforms on hover (.tbft .arch-active:hover img)
+  WARN 11 :314 image transforms on hover (.tbft .gal button:hover img)
+  WARN 11 :396 hover scale(1.06) on 3 selectors | fix: One hover signal per element
+  WARN 18 :130 infinite animation on .tbft.motion .scroll-hint::after with no pause state | fix: Pause on hover and focus
+  WARN 29 :86 glass panel: backdrop-filter blur over a translucent black on .tbft-passmodal | fix: Solid or grained surface; elevation by lightness
+  WARN F6 :106 numeric selector .tbft .countdown .label at display size without tabular figures | fix: Add font-variant-numeric: tabular-nums
+  WARN F6 :329 numeric selector .tbft-lb .count at display size without tabular figures
+  WARN F6 :368 numeric selector .tbft .ticket-card .price at display size without tabular figures
+  WARN F6 :671 numeric selector .tbft .room-table small at display size without tabular figures
+  WARN F6 :777 numeric selector .tbft[data-tbft="arena"] .cd .num s… at display size without tabular figures
+  WARN F7 :52 the pill radius on 14 non-control selectors (.tbft .mono, .tbft .hero-big small, .tbft .inv-…) | fix: Pills are for controls; boxes and media take the card radius
+  WARN F7 :352 same container recipe on 6 selectors (.tbft input, .tbft select, .tbft textarea, .tbf…...) | fix: Vary weight, radius, or fill by role; not every box is the same box
+  WARN F15 :1 2 container widths on one page (1120, 1080px) | fix: One container width, applied by the same two-element pattern in every section
+  WARN F15 :1 4 different column gaps across multi-column sections (.5rem, 5rem), .6rem, 1.5rem) | fix: One column gap for every multi-column section
+frontend\src\components\tickets\tickets.css
+  FAIL 2a :75 purple-to-pink gradient on .tbtk .tkc-holo | fix: One anchor hue; drop the gradient
+  FAIL 7a :42 pure #fff: background: #fff (.tbtk .tkc-qr .qr)
+  FAIL 7a :145 pure #fff: color: #fff (.tbtk .lv-ok)
+  FAIL 7a :167 pure #fff: background: #fff (.tk-qrbig)
+  FAIL 7a :169 pure #fff: background: #fff (.tk-qrbig .qr)
+  FAIL 7a :218 pure #fff: color: #fff (.tk-env.mourn .tk-env-seal)
+  FAIL 10a :132 transitioning width on .tbtk .tkc-qr .qr | fix: Animate transform or opacity instead
+  FAIL 10a :237 transitioning width on .tbtk .tkc-voice-bar i
+  FAIL 20 :1 no Hallmark stamp on the first non-empty line of any CSS
+  FAIL 48 :6 colour literal rgba(0, 0, 0, .35) outside tokens (filter on .tbtk .tkc)
+  FAIL 48 :20 colour literal #000 outside tokens (box-shadow on .tbtk .tkc-seal)
+  FAIL 48 :32 colour literal #000 outside tokens (-webkit-mask on .tbtk .tkc-perf)
+  FAIL 48 :33 colour literal #000 outside tokens (mask on .tbtk .tkc-perf)
+  FAIL 48 :42 colour literal #fff outside tokens (background on .tbtk .tkc-qr .qr)
+  FAIL 48 :45 colour literal #5f5880 outside tokens (color on .tbtk .tkc-qr .qr-status)
+  FAIL 48 :46 colour literal #b42318 outside tokens (color on .tbtk .tkc-qr .qr-error)
+  FAIL 48 :50 colour literal rgba(201, 163, 78, .35) outside tokens (filter on .tbtk.vip .tkc)
+  FAIL 48 :51 colour literal #9a772a outside tokens (color on .tbtk.vip .tkc-brand)
+  FAIL 48 :75 colour literal #ff5ea8 outside tokens (background on .tbtk .tkc-holo)
+  FAIL 48 :75 colour literal #ffd36e outside tokens (background on .tbtk .tkc-holo)
+  FAIL 48 :75 colour literal #5ef2d6 outside tokens (background on .tbtk .tkc-holo)
+  FAIL 48 :75 colour literal #7a8bff outside tokens (background on .tbtk .tkc-holo)
+  FAIL 48 :77 colour literal #000 outside tokens (background on .tbtk .tkc-stripes)
+  FAIL 48 :80 colour literal rgba(0, 0, 0, .35) outside tokens (box-shadow on .tbtk .tkc-slot)
+  FAIL 48 :82 colour literal rgba(255, 255, 255, .7) outside tokens (background on .tbtk .tkc-tape)
+  FAIL 48 :106 colour literal #000 outside tokens (-webkit-mask on .tbtk .tkb-perf)
+  FAIL 48 :107 colour literal #000 outside tokens (mask on .tbtk .tkb-perf)
+  FAIL 48 :143 colour literal #1FA35B outside tokens (background on .tbtk .lv-dot)
+  FAIL 48 :144 colour literal rgba(31, 163, 91, .55) outside tokens (box-shadow on 0%)
+  FAIL 48 :145 colour literal #187A41 outside tokens (background on .tbtk .lv-ok)
+  FAIL 48 :145 colour literal #fff outside tokens (color on .tbtk .lv-ok)
+  FAIL 48 :146 colour literal #1FA35B outside tokens (background on .tbtk.is-today .tkc-live)
+  FAIL 48 :147 colour literal #1F8A4C outside tokens (background on .tbtk.is-in .tkc-live)
+  FAIL 48 :156 colour literal #B3261E outside tokens (--stamp on .tbtk .tkc-stamp)
+  FAIL 48 :167 colour literal #fff outside tokens (background on .tk-qrbig)
+  FAIL 48 :167 colour literal #111 outside tokens (color on .tk-qrbig)
+  FAIL 48 :169 colour literal #fff outside tokens (background on .tk-qrbig .qr)
+  FAIL 48 :172 colour literal #555 outside tokens (color on .tk-qrbig p)
+  FAIL 48 :173 colour literal #ccc outside tokens (border on .tk-qrbig button)
+  FAIL 48 :173 colour literal #111 outside tokens (color on .tk-qrbig button)
+  FAIL 48 :188 colour literal #fff outside tokens (background on .tk-souv)
+  FAIL 48 :188 colour literal #1A1430 outside tokens (color on .tk-souv)
+  FAIL 48 :189 colour literal rgba(0, 0, 0, .18) outside tokens (box-shadow on .tk-souv)
+  FAIL 48 :195 colour literal #5F5880 outside tokens (color on .tk-souv p)
+  FAIL 48 :200 colour literal #F4EEE3 outside tokens (--env-paper on .tk-env)
+  FAIL 48 :200 colour literal #EBE2D3 outside tokens (--env-flap on .tk-env)
+  FAIL 48 :203 colour literal #F7F6F3 outside tokens (--env-paper on .tk-env.mourn)
+  FAIL 48 :203 colour literal #ECEAE5 outside tokens (--env-flap on .tk-env.mourn)
+  FAIL 48 :205 colour literal rgba(0, 0, 0, .45) outside tokens (box-shadow on .tk-env-back)
+  FAIL 48 :209 colour literal #2B2226 outside tokens (color on .tk-env-front)
+  FAIL 48 :211 colour literal #6B6070 outside tokens (color on .tk-env-front small)
+  FAIL 48 :214 colour literal #000 outside tokens (background on .tk-env-flap)
+  FAIL 48 :216 colour literal #fff outside tokens (background on .tk-env-seal)
+  FAIL 48 :216 colour literal #000 outside tokens (background on .tk-env-seal)
+  FAIL 48 :217 colour literal rgba(0, 0, 0, .35) outside tokens (box-shadow on .tk-env-seal)
+  FAIL 48 :217 colour literal #000 outside tokens (box-shadow on .tk-env-seal)
+  FAIL 48 :218 colour literal #2A2A2A outside tokens (background on .tk-env.mourn .tk-env-seal)
+  FAIL 48 :218 colour literal #fff outside tokens (color on .tk-env.mourn .tk-env-seal)
+  FAIL 67 :21 .tbtk .tkc-k: uppercase tracked 0.2em in a label role
+  FAIL 67 :28 .tbtk .tkc-pill: uppercase tracked 0.14em in a label role
+  FAIL 67 :38 .tbtk .tkc-lbl: uppercase tracked 0.18em in a label role
+  FAIL 67 :44 .tbtk .tkc-qr small: uppercase tracked 0.16em in a label role
+  FAIL 67 :52 .tbtk .tkc-bar: uppercase tracked 0.14em in a label role
+  FAIL 67 :112 .tbtk .tkb-url: uppercase tracked 0.1em in a label role
+  FAIL 67 :141 .tbtk .lv-cd small: uppercase tracked 0.14em in a label role
+  FAIL 67 :160 .tbtk .tkc-stamp b: uppercase tracked 0.16em at 21px in a label role
+  FAIL 67 :161 .tbtk .tkc-stamp i: uppercase tracked 0.1em in a label role
+  FAIL 67 :179 .tbtk .tkc-table small: uppercase tracked 0.18em in a label role
+  FAIL 67 :193 .tk-souv small: uppercase tracked 0.18em in a label role
+  FAIL 67 :211 .tk-env-front small: uppercase tracked 0.24em in a label role
+  REFLEX 7b :188 pure #fff: background: var(--surface, #fff) (.tk-souv) | fix: Tint the base toward the anchor hue
+  REFLEX 24b :42 padding: 5px (off the 4px scale) on .tbtk .tkc-qr .qr
+  REFLEX 24b :91 padding: 14px (off the 4px scale) on .tbtk .tkb-main
+  REFLEX 24b :118 padding: 9px (off the 4px scale) on .tbtk .tkb-main
+  REFLEX 24b :169 padding: 10px (off the 4px scale) on .tk-qrbig .qr
+  REFLEX 24b :215 margin: -30px 0 0 -30px (off the 4px scale) on .tk-env-seal
+  WARN F6 :45 numeric selector .tbtk .tkc-qr .qr-status at display size without tabular figures
+  WARN F6 :177 numeric selector .tbtk .tkc-table.soon at display size without tabular figures
+  WARN F6 :179 numeric selector .tbtk .tkc-table small at display size without tabular figures
+  WARN F6 :180 numeric selector .tbtk .tkc-table b at display size without tabular figures
+  WARN F6 :181 numeric selector .tbtk .tkc-table i at display size without tabular figures
+frontend\src\index.css
+  FAIL 2a :695 purple-to-pink gradient on .home-event-pattern-ribbon
+  FAIL 20 :1 no Hallmark stamp on the first non-empty line of any CSS
+  FAIL 39a :318 focus state via border on :is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"… | fix: Focus ring via outline, not border
+  FAIL 48 :136 colour literal #f5c451 outside tokens (fill on .brand-loader-dot)
+  FAIL 48 :455 colour literal #2a2360 outside tokens (background on .hero-phone)
+  FAIL 48 :455 colour literal #120e33 outside tokens (background on .hero-phone)
+  FAIL 48 :456 colour literal rgba(0, 0, 0, 0.7) outside tokens (box-shadow on .hero-phone)
+  FAIL 48 :456 colour literal #3a3176 outside tokens (box-shadow on .hero-phone)
+  FAIL 48 :471 colour literal #07051a outside tokens (background on .hero-phone::after)
+  FAIL 48 :481 colour literal #120e33 outside tokens (background on .hero-phone-screen)
+  FAIL 48 :553 colour literal rgba(255, 255, 255, 0.94) outside tokens (background on .hero-float)
+  FAIL 48 :554 colour literal #17123a outside tokens (color on .hero-float)
+  FAIL 48 :558 colour literal rgba(0, 0, 0, 0.6) outside tokens (box-shadow on .hero-float)
+  FAIL 48 :653 colour literal #000 outside tokens (mask-image on .home-event-marquee)
+  FAIL 48 :695 colour literal #ff7a3d outside tokens (background on .home-event-pattern-ribbon)
+  FAIL 48 :695 colour literal #e2337e outside tokens (background on .home-event-pattern-ribbon)
+  FAIL 48 :695 colour literal #6c4bf4 outside tokens (background on .home-event-pattern-ribbon)
+  FAIL 48 :702 colour literal #f5c451 outside tokens (background on .home-event-occasion-ribbon)
+  FAIL 48 :703 colour literal #1a1300 outside tokens (color on .home-event-occasion-ribbon)
+  FAIL 48 :714 colour literal #fff outside tokens (stroke on .home-event-pattern-ribbon svg)
+  FAIL 48 :719 colour literal #fff outside tokens (fill on .home-event-pattern-fill)
+  FAIL 48 :729 colour literal #f5c451 outside tokens (fill on .home-event-pattern-accent)
+  FAIL 48 :788 colour literal #000 outside tokens (mask-image on .template-rail)
+  FAIL 48 :827 colour literal #f5c451 outside tokens (fill on .festive-m-star)
+  FAIL 62 :415 [data-reveal]:not(.is-revealed) is hidden at rest (opacity: 0) and depends on a script to appear
+  FAIL 67 :189 .invitation-loader-eyebrow: uppercase tracked 0.18em at 11px in a label role
+  FAIL 67 :641 .home-event-strip > p: uppercase tracked 0.12em at 12px in a label role
+  REFLEX 2b :369 gradient text on .text-brand-gradient
+  REFLEX 7b :73 pure #fff: --color-surface: #ffffff (:root[data-theme="light"])
+  REFLEX 7b :75 pure #fff: --color-panel: #ffffff (:root[data-theme="light"])
+  REFLEX 24b :454 padding: 9px (off the 4px scale) on .hero-phone
+  REFLEX 37 :24 4 font families: inter, montserrat, plus jakarta sans, playfair display | fix: Drop the extra family; three is the ceiling
+  WARN 41 :481 dark surface (L 20%) on .hero-phone-screen sets no text colour | fix: Swap text to paper in the same rule
+  WARN F3 :344 no text-wrap: balance on any display head (1 head rule(s), e.g. h1, h2, h3) | fix: Add text-wrap: balance to h1/h2-level heads
+frontend\src\components\templates\premiumThumbs.css
+  FAIL 7a :18 pure #fff: background: #fff (.pt-bloom .fl b)
+  FAIL 20 :1 no Hallmark stamp on the first non-empty line of any CSS
+  FAIL 48 :7 colour literal #0C2620 outside tokens (background on .pt-noor)
+  FAIL 48 :8 colour literal #1A4339 outside tokens (background on .pt-noor .env)
+  FAIL 48 :8 colour literal #000 outside tokens (box-shadow on .pt-noor .env)
+  FAIL 48 :9 colour literal #163B32 outside tokens (background on .pt-noor .env::before)
+  FAIL 48 :10 colour literal #F3DDA6 outside tokens (background on .pt-noor .seal)
+  FAIL 48 :10 colour literal #D9B46A outside tokens (background on .pt-noor .seal)
+  FAIL 48 :10 colour literal #8E6E2E outside tokens (background on .pt-noor .seal)
+  FAIL 48 :10 colour literal #0C2620 outside tokens (color on .pt-noor .seal)
+  FAIL 48 :10 font-family literal "Georgia, serif" on .pt-noor .seal
+  FAIL 48 :11 font-family literal ""Pinyon Script", cursive" on .pt-noor .for
+  FAIL 48 :11 colour literal #D9B46A outside tokens (color on .pt-noor .for)
+  FAIL 48 :14 colour literal #FBF3EF outside tokens (background on .pt-bloom)
+  FAIL 48 :16 colour literal #B5616E outside tokens (background on .pt-bloom .fl i)
+  FAIL 48 :16 colour literal #F0D3D6 outside tokens (background on .pt-bloom .fl i)
+  FAIL 48 :17 colour literal #6F8F76 outside tokens (background on .pt-bloom .fl i:nth-child(eve…)
+  FAIL 48 :17 colour literal #DDE7D6 outside tokens (background on .pt-bloom .fl i:nth-child(eve…)
+  FAIL 48 :18 colour literal #fff outside tokens (background on .pt-bloom .fl b)
+  FAIL 48 :18 font-family literal ""Parisienne", cursive" on .pt-bloom .fl b
+  FAIL 48 :18 colour literal #3A2A2E outside tokens (color on .pt-bloom .fl b)
+  FAIL 48 :18 colour literal rgba(0, 0, 0, .3) outside tokens (box-shadow on .pt-bloom .fl b)
+  FAIL 48 :21 colour literal #0E0C0C outside tokens (background on .pt-toghu)
+  FAIL 48 :22 colour literal #262020 outside tokens (background on .pt-toghu .p)
+  FAIL 48 :23 colour literal #000 outside tokens (box-shadow on .pt-toghu .p.l)
+  FAIL 48 :23 colour literal #E9B526 outside tokens (border-right on .pt-toghu .p.l)
+  FAIL 48 :24 colour literal #000 outside tokens (box-shadow on .pt-toghu .p.r)
+  FAIL 48 :24 colour literal #C8312B outside tokens (border-left on .pt-toghu .p.r)
+  FAIL 48 :25 colour literal #0E0C0C outside tokens (background on .pt-toghu .m)
+  FAIL 48 :25 colour literal #E9B526 outside tokens (border on .pt-toghu .m)
+  FAIL 48 :25 font-family literal ""Yeseva One", serif" on .pt-toghu .m
+  FAIL 48 :25 colour literal #F4EDE1 outside tokens (color on .pt-toghu .m)
+  FAIL 48 :25 colour literal rgba(14, 12, 12, .6) outside tokens (box-shadow on .pt-toghu .m)
+  FAIL 48 :28 colour literal #14213D outside tokens (background on .pt-ndop)
+  FAIL 48 :29 colour literal #F3F1EA outside tokens (border on .pt-ndop .ring)
+  FAIL 48 :30 colour literal #1B2B4E outside tokens (background on .pt-ndop .m)
+  FAIL 48 :30 colour literal #F3F1EA outside tokens (border on .pt-ndop .m)
+  FAIL 48 :30 colour literal #F3F1EA outside tokens (color on .pt-ndop .m)
+  FAIL 48 :30 font-family literal ""Marcellus", serif" on .pt-ndop .m
+  FAIL 48 :30 colour literal rgba(20, 33, 61, .7) outside tokens (box-shadow on .pt-ndop .m)
+  FAIL 48 :33 colour literal #FFF6EE outside tokens (background on .pt-fiesta)
+  FAIL 48 :35 colour literal #6C4BF4 outside tokens (background on .pt-fiesta .box)
+  FAIL 48 :36 colour literal #7C5EF6 outside tokens (background on .pt-fiesta .lid)
+  FAIL 48 :37 colour literal #FF7A3D outside tokens (background on .pt-fiesta .rib)
+  FAIL 48 :44 colour literal #0D0D0F outside tokens (background on .pt-prestige)
+  FAIL 48 :45 colour literal rgba(212, 175, 97, .35) outside tokens (background on .pt-prestige .sun)
+  FAIL 48 :46 font-family literal ""Poiret One", sans-serif" on .pt-prestige b
+  FAIL 48 :46 colour literal #F1DCA7 outside tokens (background on .pt-prestige b)
+  FAIL 48 :46 colour literal #D4AF61 outside tokens (background on .pt-prestige b)
+  FAIL 48 :47 colour literal #D4AF61 outside tokens (color on .pt-prestige small)
+  FAIL 67 :47 .pt-prestige small: letter-spaced tracked 0.4em in a label role
+  FAIL 67 :51 .pt-type .sub: uppercase tracked 0.2em in a label role
+  REFLEX 2b :46 gradient text on .pt-prestige b
+  REFLEX 37 :25 6 font families: georgia, pinyon script, parisienne, yeseva one, marcell…
+frontend\src\components\seating\TableCard.jsx
+  FAIL 10a :31 transition-[width] on <div class="h-full rounded-full transition-…"> | fix: Name the properties: transition-colors, transition-opacity or transition-transform
+frontend\src\components\site\themes\envol\envolWall.css
+  FAIL 10a :39 transitioning width on .envol-wall-dots i
+  FAIL 48 :4 colour literal #F7F2E7 outside tokens (--ivoire on .envol-wall)
+  FAIL 48 :4 colour literal #FFFDF8 outside tokens (--carte on .envol-wall)
+  FAIL 48 :4 colour literal #1E2433 outside tokens (--texte on .envol-wall)
+  FAIL 48 :4 colour literal #5B6278 outside tokens (--doux on .envol-wall)
+  FAIL 48 :4 colour literal #C49A3C outside tokens (--or on .envol-wall)
+  FAIL 48 :4 colour literal #D9B567 outside tokens (--or-clair on .envol-wall)
+  FAIL 48 :6 font-family literal ""Geist", system-ui, sans-serif" on .envol-wall
+  FAIL 48 :17 colour literal #E5554B outside tokens (background on .envol-wall-live i)
+  FAIL 48 :22 colour literal #B8892E outside tokens (background on .envol-wall-year)
+  FAIL 48 :22 colour literal #F1D9A0 outside tokens (background on .envol-wall-year)
+  FAIL 48 :22 colour literal #D9B567 outside tokens (background on .envol-wall-year)
+  FAIL 48 :22 colour literal #9A6F1E outside tokens (background on .envol-wall-year)
+  FAIL 48 :27 colour literal #E4E6EE outside tokens (color on .envol-wall-send span)
+  FAIL 48 :30 colour literal rgba(0, 0, 0, .25) outside tokens (box-shadow on .envol-wall figure)
+  FAIL 48 :39 colour literal rgba(247, 242, 231, .3) outside tokens (background on .envol-wall-dots i)
+  FAIL 48 :41 colour literal #E4E6EE outside tokens (color on .envol-wall-empty)
+  FAIL 48 :43 colour literal rgba(247, 242, 231, .25) outside tokens (border on .envol-wall-full)
+  FAIL 48 :43 colour literal rgba(247, 242, 231, .8) outside tokens (color on .envol-wall-full)
+  FAIL 67 :16 .envol-wall-live: uppercase tracked 0.2em in a label role
+  REFLEX 2b :23 gradient text on .envol-wall-year
+  WARN F3 :8 no text-wrap: balance on any display head (2 head rule(s), e.g. .envol-wall h1, .envol-wall p, …)
+frontend\src\pages\CreateEvent.jsx
+  FAIL 10a :705 transition-[width] on <span class="block h-full rounded-full bg-[l…">
+  FAIL 48 :705 colour literal bg-[linear-gradient(100deg,#FF7A3D_0%,#E2337E_50%,#6C4BF4_100%)] in a class on <span class="block h-full… | fix: Lift the value into the token block (@theme or :root) and use its utility name
+  FAIL 48 :721 colour literal bg-[linear-gradient(100deg,#FF7A3D_0%,#E2337E_50%,#6C4BF4_100%)] in a class on <span class="h-1 rounded-…
+  FAIL 67 :700 "Étape sur" uppercase at 10.88px tracked 0.06em on <p class="font-mono text-[0.68rem] tracki…"> | fix: Sentence case in the body face, a step smaller, untracked: drop uppercase and the tracking-* class
+  FAIL 67 :726 "Étape" uppercase at 10.88px tracked 0.06em on <small class="font-mono text-[0.68rem] tracki…">
+  REFLEX 64 :700 font-mono on "Étape sur" at 10.88px (<p class="font-mono text-[0.68rem] tracki…">) | fix: Labels in the body face at a smaller size and normal case; font-mono only for code and figures
+  REFLEX 64 :726 font-mono on "Étape" at 10.88px (<small class="font-mono text-[0.68rem] tracki…">)
+frontend\src\pages\dashboard\CheckIn.jsx
+  FAIL 10a :776 transition-[width] on <div class="h-full rounded-full bg-brand-gr…">
+  FAIL 48 :683 colour literal bg-[linear-gradient(100deg,#FF7A3D_0%,#E2337E_50%,#6C4BF4_100%)] in a class on <button class="flex min-h…
+  FAIL 67 :836 uppercase at 12px on <span class="text-xs font-medium uppercase t…">
+  REFLEX 28b :694 video without poster | fix: Add a poster frame; guard: below the fold and not the LCP
+  WARN F1 :139 straight quote in prose x2 (first: é avait décliné l'invitation.) | fix: Use typographic quotes: “ ” ’
+frontend\src\components\conference\CertificatesTab.jsx
+  FAIL 19 :90 dash "—" in copy | fix: A comma, a colon, a full stop or parentheses; never a dash
+  WARN F1 :90 straight quote in prose x2 (first: cun participant "présent" pour l)
+frontend\src\components\settings\SubscriptionTab.jsx
+  FAIL 19 :41 dash "—" in copy
+  REFLEX 64 :50 font-mono on "Plan actuel ·" at 12px (<span class="font-mono text-xs font-semibold…">)
+frontend\src\components\site\themes\ThemedSitePage.jsx
+  FAIL 19 :1083 dash "—" in copy
+  FAIL 54 :1694 eyebrow "Hero" before <div> | fix: Cut it; the heading already says this (craft.md § 7 has twelve other openings)
+  FAIL 67 :1586 "TBF MOMENT" typed in capitals tracked 0.08em (<b>) | fix: Sentence case in the body face; capitals survive only as a wordmark or as the display voice
+  WARN 49 :1007 long clickable label "Remettre l’illustration du modèle" without nowrap | fix: Shorten the label or set nowrap
+  WARN F1 :588 straight quote in prose x5 (first: l sera scanné à l'entrée.)
+  WARN F4 :1784 two filled buttons side by side in the hero: "Réserver mes billets" and "" | fix: One filled primary per screen; the second action is outlined or a typographic link
+frontend\src\components\ui\Pagination.jsx
+  FAIL 19 :18 dash "–" in copy
+frontend\src\pages\Builder.jsx
+  FAIL 19 :828 dash "—" in copy
+  WARN F1 :694 straight quote in prose x2 (first: r le pass. Rien n'est envoyé.)
+frontend\src\pages\EventWall.jsx
+  FAIL 19 :106 dash "—" in copy
+  FAIL 48 :77 colour literal bg-[#0B0820] in a class on <div class="flex min-h-svh flex-col bg-[#0B…">
+frontend\src\pages\dashboard\Gallery.jsx
+  FAIL 19 :115 dash "—" in copy
+  FAIL 63 :182 arrow glued to the label "Ouvrir le mur →" | fix: A verb as the label; the link already says it goes somewhere
+  FAIL 63 :192 arrow glued to the label "Commander l’album →"
+  FAIL 63 :195 arrow glued to the label "Commander le cadre NFC →"
+  WARN 28a :158 lazy-loaded first image (likely LCP) | fix: fetchpriority=high on the LCP element
+  WARN F1 :105 straight quote in prose x1 (first: Créez d'abord un événe)
+frontend\src\pages\dashboard\Program.jsx
+  FAIL 19 :171 dash "—" in copy
+  WARN F1 :160 straight quote in prose x1 (first: Créez d'abord un événe)
+frontend\src\pages\dashboard\Ticketing.jsx
+  FAIL 19 :149 dash "—" in copy
+  FAIL 67 :228 "Type Prix Quota Statut" uppercase at 12px tracked 0.05em on <tr class="border-y border-border-soft tex…">
+  WARN F1 :137 straight quote in prose x7 (first: Créez d'abord un événe)
+frontend\src\components\site\themes\envol\envolCarton.css
+  FAIL 20 :1 no Hallmark stamp on the first non-empty line of any CSS
+  FAIL 48 :3 colour literal #F7F2E7 outside tokens (background on .envol-carton)
+  FAIL 48 :3 colour literal #1E2433 outside tokens (color on .envol-carton)
+  FAIL 48 :4 font-family literal ""Geist", system-ui, sans-serif" on .envol-carton
+  FAIL 48 :8 colour literal #C49A3C outside tokens (border on .envol-carton-f1)
+  FAIL 48 :9 colour literal #F7F2E7 outside tokens (background on .envol-carton-f1 > i)
+  FAIL 48 :9 colour literal #C49A3C outside tokens (border on .envol-carton-f1 > i)
+  FAIL 48 :14 colour literal #C49A3C outside tokens (border on .envol-carton-f2)
+  FAIL 48 :23 colour literal #9A6F1E outside tokens (background on .envol-carton-year)
+  FAIL 48 :23 colour literal #D9B567 outside tokens (background on .envol-carton-year)
+  FAIL 48 :23 colour literal #B8892E outside tokens (background on .envol-carton-year)
+  FAIL 48 :23 colour literal #86601A outside tokens (background on .envol-carton-year)
+  FAIL 48 :26 colour literal #5B6278 outside tokens (color on .envol-carton-muted)
+  FAIL 48 :27 colour literal #86601A outside tokens (color on .envol-carton-eyebrow)
+  FAIL 48 :29 colour literal #DCCFB2 outside tokens (border-top on .envol-carton-bottom)
+  FAIL 48 :30 colour literal #FFFDF8 outside tokens (background on .envol-carton-bottom .qr)
+  FAIL 67 :19 .envol-carton-org: uppercase tracked 0.24em at 19px in a label role
+  FAIL 67 :27 .envol-carton-eyebrow: uppercase tracked 0.2em at 15px in a label role
+  REFLEX 2b :23 gradient text on .envol-carton-year
+  REFLEX 24b :3 padding: 35px (off the 4px scale) on .envol-carton
+  REFLEX 24b :8 padding: 13px (off the 4px scale) on .envol-carton-f1
+  REFLEX 24b :14 padding: 59px 71px 35px (off the 4px scale) on .envol-carton-f2
+  REFLEX 24b :19 margin-top: 18px (off the 4px scale) on .envol-carton-org
+  REFLEX 24b :29 gap: 35px (off the 4px scale) on .envol-carton-bottom
+  REFLEX 24b :29 padding-top: 30px (off the 4px scale) on .envol-carton-bottom
+  REFLEX 24b :30 padding: 6px (off the 4px scale) on .envol-carton-bottom .qr
+http://localhost:5202/
+  FAIL 40 :1 [1280px] contrast 3.26:1 at best over the gradient behind span.hidden.sm:inline "Créer mon événement" | fix: Raise the contrast to threshold, or give the text its own ground
+  FAIL 40 :1 [1280px] contrast 3.26:1 at best over the gradient behind a.inline-flex.items-center "Créer mon événement grat"
+  FAIL 40 :1 [1280px] contrast 3.62:1 against the pixels behind < 4.5:1 on div.flex.items-center "Pass valide" | fix: Raise the contrast to threshold
+  FAIL 40 :1 [1280px] contrast 3.26:1 at best over the gradient behind span.bg-brand-gradient.absolute "Recommandé"
+  FAIL 40 :1 [1280px] contrast 3.26:1 at best over the gradient behind a.mt-6.block "Choisir Premium"
+  FAIL 58 :1 [1440px] 307 words on one screen (from y=4450) | fix: One idea per screen: cut to about 80 words, make the section an object
+  FAIL 58 :1 [1440px] hero carries 3 text blocks before its actions | fix: Headline, one sentence, actions; delete the rest
+  FAIL 73 :1 [1440px] text painted under another element: div.flex over "Voir la démo"; div.flex over "Voir la démo"; div.flex over … | fix: Give the text its own space, or put it above what covers it on a surface of its own
+  REFLEX 3 :1 [1440px] equal columns of icon-above-heading tiles (div.mt-10) | fix: Vary the widths, set the icon inline with the heading, or drop the icons
+  REFLEX 39b :1 [1440px] control height outside 44 to 52px: button.flex 56px, button.flex 56px, button.flex 56px | fix: Marketing controls stand 44 to 52px; app UI 32 to 40px with a 44px hit target
+  REFLEX 44c :1 [1440px] hero runs past the 1440x900 fold (hero ends at 947px) | fix: Size the display and the visual so the hero is one screen
+  REFLEX 44c :1 [1440px] hero visual centre is 83px from the text block centre | fix: Align the visual beside the text
+  REFLEX 44c :1 [1440px] hero visual sits 210px from the text and 274px from the viewport edge | fix: Bring the visual to within 48 to 120px of the text; never pin it to the corner
+  REFLEX 49b :1 [320px] link "Créer mon événement gratuitement" wraps to 2 lines (a.inline-flex.items-center) | fix: Shorten the label or set nowrap
+  REFLEX 49b :1 [320px] link "Nous écrire sur WhatsApp" wraps to 2 lines (a.inline-flex.items-center)
+  REFLEX 59 :1 [1440px] smallest gap between sections is 26px (gaps: 26, 72, 86, 166, 198, 150, 80, 166, 80, 80, 89, 129) | fix: 120px or more between sections, by the --section-gap steps
+  REFLEX 77 :1 [1440px] 1 thin section: "Combien coûtent vos invitati" (68% wide) | fix: Widen the body to ten of twelve columns and give it mass: a visual 300px tall or more, a set of three across, rows, or a statement (layout.md § 4 and § 5)
+  REFLEX 81 :1 [1440px] 6 empty pictures: div.absolute 720x520, a gradient with nothing in it; div.absolute 560x420, a gradient with n… | fix: Put the picture in: the user's image, a library photograph (theme.mjs photos) or the product built at full fidelity; the wash is only a loading colour (imagery.md § 3)
+  WARN 40 :1 [1280px] contrast drops to 2.59:1 over the gradient behind b.rounded-full.bg-[linear-gradient(100deg,#FF7A3D_0%,#E2337E… | fix: Check the text where the gradient is darkest or lightest; give the label its own ground
+  WARN 40 :1 [1280px] contrast drops to 1.10:1 over the gradient behind span.absolute.inset-x-0 "Voir la démo"
+  WARN 40 :1 [1280px] contrast drops to 3.59:1 over the gradient behind p.mx-auto.mt-4 "Créez votre page gratuit"
+  WARN 59 :1 [1440px] 13 sections | fix: Six to nine sections a page, hero and footer included; merge or cut
+  WARN F19 :1 [1440px] 5 font weights in running use (400, 500, 600, 700, 800) | fix: Three weights at most, display and body together, picked as extremes
+  WARN F20 :1 [1440px] ul.mt-5 leaves one item alone on its last row (2 + 1) | fix: Change the count or the columns so the last row is not an orphan
+  WARN F26 :1 [375px] h3 "Votre page est prête en 5 minute" ends on a stub; h3 "Un lien qui donne envie de cliqu" ends on a stub; h3 … | fix: text-wrap: balance on heads and pretty on body copy, or rewrite the line; a <br> goes only between phrases and is checked at 375
+  WARN F26 :1 [1280px] h3 "Votre page est prête en 5 minute" ends on a stub; h2 "Et après la fête ? On imprime vo" ends on a stub
+http://localhost:5202/billets
+  FAIL 40 :1 [1280px] contrast 3.26:1 at best over the gradient behind span.hidden.sm:inline "Créer mon événement"
+  FAIL 40 :1 [1280px] contrast 4.05:1 against the pixels behind < 4.5:1 on p.tkc-k "ARBRE DE NOËL · 19 DÉCEM"
+  FAIL 40 :1 [1280px] contrast 4.27:1 against the pixels behind < 4.5:1 on span.tkc-pill "INVITATION VALIDÉE"
+  FAIL 40 :1 [1280px] contrast 4.31:1 against the pixels behind < 4.5:1 on button.tkc-bar.tkc-dl "GARDER LE BILLET SUR MON"
+  FAIL 40 :1 [1280px] contrast 2.51:1 at best over the gradient behind p.tkc-hint "Après l’enregistrement, "
+  FAIL 40 :1 [1280px] contrast 2.51:1 at best over the gradient behind button "PDF pour impression"
+  FAIL 49a :1 [320px] control "Garder le billet sur mon télépho" wraps to 3 lines (button.tkc-bar.tkc-dl) | fix: Shorten the label or set nowrap
+  FAIL 49a :1 [320px] control "Garder le billet sur mon télépho" wraps to 2 lines (button.tkc-bar.tkc-dl)
+  FAIL 58 :1 [1440px] 192 words on one screen (from y=150)
+  REFLEX 39b :1 [1440px] control height outside 44 to 52px: button.tkc-bar 55px, button 18px, button.tkc-bar 55px
+  REFLEX 44c :1 [1440px] hero ends at 386px of a 900px screen | fix: Fill the first screen with the visual or the headline, not with copy
+  REFLEX 59 :1 [1440px] smallest gap between sections is 56px (gaps: 210, 56, 56, 237)
+  REFLEX 77 :1 [1440px] 1 thin section: "Badges" (49% wide)
+  REFLEX 78 :1 [1440px] section heads render at 24px under a 51px hero head | fix: h2 at --text-section (about 52px at 1440), item titles at --text-title (layout.md § 2)
+  REFLEX 79 :1 [1440px] 210px of nothing between the hero's last content (y 386) and the next section | fix: Centre the content in the screen and grow the visual or the head (layout.md § 6); never fill it with copy
+  WARN 40 :1 [1280px] contrast drops to 2.59:1 over the gradient behind a.inline-flex.min-h-11 "Créer mon événement"
+  WARN F19 :1 [1440px] 4 font weights in running use (400, 600, 700, 800)
+http://localhost:5202/cgu
+  FAIL 40 :1 [1280px] contrast 3.26:1 at best over the gradient behind span.hidden.sm:inline "Créer mon événement"
+  FAIL 44b :1 [1280px] primary CTA below the 1280x800 fold (bottom 1290px) | fix: Trim hero padding so the CTA fits the fold
+  FAIL 58 :1 [1440px] 363 words on one screen (from y=650)
+  REFLEX 25 :1 [1440px] running prose set too wide: p about 106 characters a line, p about 100 characters a line | fix: Cap the measure at 45 to 75ch
+  REFLEX 44c :1 [1440px] hero ends at 81px of a 900px screen
+  REFLEX 77 :1 [1440px] 1 thin section: "1. Objet" (58% wide)
+  REFLEX 78 :1 [1440px] section heads render at 18px under a 30px hero head
+  WARN 77 :1 [1440px] 2 sections, hero and footer included | fix: A landing strip, not a page: six to nine sections, five on a thin prompt (layout.md § 3)
+  WARN F26 :1 [375px] h2 "10. Suspension et suppression du" ends on a stub
+http://localhost:5202/connexion
+  FAIL 40 :1 [1280px] contrast 3.26:1 at best over the gradient behind button.inline-flex.items-center "Se connecter"
+  REFLEX 49b :1 [320px] link "Mot de passe oublié ?" wraps to 2 lines (a.text-brand-purple.hover:underline)
+  REFLEX 81 :1 [1440px] 2 empty pictures: div.absolute 720x520, a gradient with nothing in it; div.absolute 560x420, a gradient with n…
+  WARN 77 :1 [1440px] 0 sections, hero and footer included
+http://localhost:5202/modeles
+  FAIL 40 :1 [1280px] contrast 3.26:1 at best over the gradient behind span.hidden.sm:inline "Créer mon événement"
+  FAIL 40 :1 [1280px] contrast 3.91:1 against the pixels behind < 4.5:1 on span.sub "BAPTÊME"
+  FAIL 40 :1 [1280px] contrast 2.25:1 at best over the gradient behind span.text-[9px].font-semibold "NOUS NOUS MARIONS"
+  FAIL 40 :1 [1280px] contrast 2.25:1 against the pixels behind < 4.5:1 on div.mx-auto.mt-auto "Confirmer ma présence"
+  FAIL 58 :1 [1440px] 228 words on one screen (from y=800)
+  REFLEX 39b :1 [1440px] control height outside 44 to 52px: button.rounded-full 38px, button.rounded-full 38px, button.rounded-full 38px
+  REFLEX 44c :1 [1440px] hero ends at 81px of a 900px screen
+  REFLEX 59 :1 [1440px] smallest gap between sections is 40px (gaps: 110, 40, 113)
+  REFLEX 77 :1 [1440px] 2 thin sections: div.flex (97% wide, no mass); "Éclat · Mariage" (97% wide, no mass)
+  REFLEX 78 :1 [1440px] section heads render at 12px under a 30px hero head
+  REFLEX 81 :1 [1440px] 1 empty picture: span.sun 461x461, a gradient with nothing in it
+  WARN 40 :1 [1280px] contrast drops to 3.36:1 over the gradient behind span.seal "A&I"
+  WARN 40 :1 [1280px] contrast drops to 2.59:1 over the gradient behind a.flex.min-h-11 "Utiliser"
+  WARN 77 :1 [1440px] 4 sections, hero and footer included
+  WARN F19 :1 [1440px] 4 font weights in running use (400, 500, 600, 700)
+  WARN F20 :1 [1440px] div.mt-5 leaves one item alone on its last row (4 + 4 + 4 + 4 + 4 + 4 + 4 + 1)
+http://localhost:5202/tarifs
+  FAIL 40 :1 [1280px] contrast 3.26:1 at best over the gradient behind span.hidden.sm:inline "Créer mon événement"
+  FAIL 40 :1 [1280px] contrast 3.26:1 at best over the gradient behind span.bg-brand-gradient.absolute "Le plus choisi pour les "
+  FAIL 58 :1 [1440px] 243 words on one screen (from y=250)
+  FAIL 58 :1 [1440px] hero carries 3 text blocks before its actions
+  REFLEX 39b :1 [1440px] control height outside 44 to 52px: button.rounded-full 34px, button.rounded-full 34px, button.rounded-full 34px
+  REFLEX 44c :1 [1440px] hero ends at 323px of a 900px screen
+  REFLEX 59 :1 [1440px] smallest gap between sections is 29px (gaps: 29, 57, 97, 64, 113)
+  REFLEX 72 :1 [1440px] text crowds the edge of its box: details.group bottom -64px; details.group bottom -42px; details.group bottom … | fix: Pad the box: max(8px, 0.5em) at the sides, max(4px, 0.3em) above and below
+  REFLEX 77 :1 [1440px] 2 thin sections: "QUEL EST VOTRE ÉVÉNEMENT ?" (97% wide, no mass); section.mt-10 (100% wide, no mass)
+  REFLEX 78 :1 [1440px] section heads render at 24px under a 48px hero head
+  WARN 40 :1 [1280px] contrast drops to 3.15:1 over the gradient behind span.ml-1.text-sm "/30 jours"
+  WARN F19 :1 [1440px] 4 font weights in running use (400, 500, 600, 700)
+  WARN F20 :1 [1440px] div.mt-3 leaves one item alone on its last row (7 + 1)
+  WARN F25 :1 [375px] a table opens with 2 columns off-screen (from "Event Pro30 000 FCFA /30") | fix: Keep the column that names the row and the one that acts on it in view: restack each row, or pin the first column
+  WARN F26 :1 [375px] h1 "Un prix clair, en francs CFA." ends on a stub
+http://localhost:5202/xyz-404
+  FAIL 40 :1 [1280px] contrast 3.26:1 at best over the gradient behind span.hidden.sm:inline "Créer mon événement"
+  FAIL 40 :1 [1280px] contrast 3.26:1 at best over the gradient behind a.inline-flex.items-center "Retour à l'accueil"
+  FAIL 58 :1 [1440px] 111 words on one screen (from y=150)
+  REFLEX 44c :1 [1440px] hero ends at 81px of a 900px screen
+  REFLEX 77 :1 [1440px] 1 thin section: div.flex (44% wide, no mass)
+  REFLEX 79 :1 [1440px] 275px of nothing between the hero's last content (y 80) and the next section
+  WARN 77 :1 [1440px] 2 sections, hero and footer included
+  WARN F26 :1 [375px] h1 "Ce billet ne mène nulle part" ends on a stub
+frontend\src\components\ErrorBoundary.jsx
+  FAIL 48 :18 colour literal bg-[linear-gradient(100deg,#FF7A3D_0%,#E2337E_50%,#6C4BF4_100%)] in a class on <button class="rounded-fu…
+  REFLEX 64 :11 font-mono on "Erreur inattendue" at 14px (<p class="mt-6 font-mono text-sm text-fai…">)
+  WARN F1 :12 straight quote in prose x2 (first: , quelque chose s'est mal passé)
+frontend\src\components\events\EventCard.jsx
+  FAIL 48 :56 inline-style colour literal #12172a
+  WARN 28a :39 lazy-loaded first image (likely LCP)
+frontend\src\components\guests\GuestEditDialog.jsx
+  FAIL 48 :101 colour literal bg-[linear-gradient(100deg,#FF7A3D_0%,#E2337E_50%,#6C4BF4_100%)] in a class on <button class="rounded-xl…
+frontend\src\components\home\FinalCta.jsx
+  FAIL 48 :26 colour literal bg-[linear-gradient(100deg,#FF7A3D_0%,#E2337E_50%,#6C4BF4_100%)] in a class on <span class="bg-[linear-g…
+frontend\src\components\home\Hero.jsx
+  FAIL 48 :53 colour literal text-[#5B5680] in a class on <small class="text-[#5B5680]">
+  FAIL 48 :78 inline-style colour literal #FF7A3D26
+  FAIL 48 :88 colour literal bg-[linear-gradient(100deg,#FF7A3D_0%,#E2337E_50%,#6C4BF4_100%)] in a class on <b class="rounded-full bg…
+  FAIL 48 :96 colour literal bg-[linear-gradient(100deg,#FF7A3D_0%,#E2337E_50%,#6C4BF4_100%)] in a class on <span class="bg-[linear-g…
+  FAIL 48 :106 colour literal shadow-[0_14px_40px_-14px_#E2337E] in a class on <Button class="rounded-[14px] px-6 py-3.5 text…">
+  FAIL 48 :119 colour literal text-[#3DD68C] in a class on <Check class="h-4 w-4 text-[#3DD68C]">
+frontend\src\components\home\HowItWorks.jsx
+  FAIL 48 :16 colour literal text-[#3DD68C] in a class on <Check class="mt-0.5 h-5 w-5 text-[#3DD68C]">
+  FAIL 48 :48 colour literal bg-[linear-gradient(145deg,#2A2360,#120E33)] in a class on <div class="relative w-[230px] rounded-[38p…">
+  FAIL 48 :64 colour literal text-[#17123A] in a class on <div class="absolute right-[6%] top-[12%] w…">
+  FAIL 48 :67 colour literal border-[#6C4BF4] in a class on <div class="mt-1.5 flex items-center gap-2 …">
+  FAIL 48 :71 colour literal bg-[#EDE9FE] in a class on <span class="grid h-[22px] w-[22px] place-it…">
+  FAIL 48 :85 colour literal bg-[#0B141A] in a class on <div class="w-full max-w-[360px] overflow-h…">
+  FAIL 48 :86 colour literal bg-[#1F2C34] in a class on <div class="flex items-center gap-2.5 bg-[#…">
+  FAIL 48 :87 colour literal bg-[linear-gradient(100deg,#FF7A3D,#E2337E,#6C4BF4)] in a class on <span class="h-8 w-8 rounded-full bg-…
+  FAIL 48 :90 colour literal text-[#8696A0] in a class on <small class="block text-[0.72rem] text-[#869…">
+  FAIL 48 :93 colour literal text-[#E9EDEF] in a class on <div class="grid gap-2 px-3 pt-4 pb-5 text-…">
+  FAIL 48 :94 colour literal bg-[#005C4B] in a class on <div class="max-w-[88%] justify-self-end ro…">
+  FAIL 48 :95 colour literal bg-[#025144] in a class on <div class="mb-1.5 overflow-hidden rounded-…">
+  FAIL 48 :99 colour literal text-[#B6D8CF] in a class on <small class="text-[0.72rem] text-[#B6D8CF]">
+  FAIL 48 :105 colour literal text-[#C6E4DC] in a class on <span class="block pr-1 text-right text-[0.6…">
+  FAIL 48 :107 colour literal bg-[#1F2C34] in a class on <div class="max-w-[88%] rounded-xl rounded-…">
+  FAIL 48 :109 colour literal text-[#B7C7CF] in a class on <span class="block text-right text-[0.66rem]…">
+  FAIL 48 :111 colour literal bg-[#1F2C34] in a class on <div class="max-w-[88%] rounded-xl rounded-…">
+  FAIL 48 :113 colour literal text-[#B7C7CF] in a class on <span class="block text-right text-[0.66rem]…">
+  FAIL 48 :132 colour literal border-[#2E2663] in a class on <div class="w-[84%] overflow-hidden rounded…">
+  FAIL 48 :134 colour literal text-[#E2337E] in a class on <span class="text-[#E2337E]">
+  FAIL 48 :135 colour literal bg-[#6C4BF4] in a class on <span class="ml-auto rounded-md bg-[#6C4BF4]…">
+  FAIL 48 :137 colour literal text-[#A8A1D1] in a class on <p class="mt-3 font-mono text-[0.58rem] t…">
+  FAIL 48 :145 colour literal border-[#2E2663] in a class on <div class="rounded-lg border border-[#2E26…">
+  FAIL 48 :146 colour literal text-[#A8A1D1] in a class on <p class="font-mono text-[0.52rem] tracki…">
+  FAIL 48 :151 colour literal border-[#2E2663] in a class on <div class="mt-3 rounded-lg border border-[…">
+  FAIL 48 :153 colour literal border-[#2E2663] in a class on <div class="grid grid-cols-[minmax(0,1.6fr)…">
+  FAIL 48 :155 colour literal bg-[#211A52] in a class on <span class="grid h-6 w-6 flex-none place-it…">
+  FAIL 48 :163 colour literal text-[#A8A1D1] in a class on <span class="hidden truncate text-[#A8A1D1] …">
+  FAIL 48 :168 colour literal bg-[linear-gradient(145deg,#2A2360,#120E33)] in a class on <div class="absolute right-0 bottom-0 w-[13…">
+  FAIL 48 :169 colour literal bg-[#06041A] in a class on <div class="overflow-hidden rounded-[24px] …">
+  FAIL 48 :170 colour literal text-[#8F89BD] in a class on <div class="grid aspect-square place-items-…">
+  FAIL 48 :173 colour literal bg-[#1E8F59] in a class on <div class="flex items-center gap-2 bg-[#1E…">
+  FAIL 48 :178 colour literal text-[#A8A1D1] in a class on <p class="text-[0.6rem] text-[#A8A1D1]">
+  FAIL 54 :28 eyebrow "·" before <h3> (tracked 0.1em at 12.48px) | fix: Cut it; open the section another way (craft.md, Opening a section)
+  FAIL 67 :137 uppercase at 9.28px tracked 0.1em on <p class="mt-3 font-mono text-[0.58rem] t…">
+  FAIL 67 :146 uppercase at 8.32px tracked 0.05em on <p class="font-mono text-[0.52rem] tracki…">
+  WARN 28a :49 lazy-loaded first image (likely LCP)
+  WARN 54 :190 section labelled by <sectionheader> with no heading element | fix: Promote it to <h2>; a label doing heading duty should be a heading
+frontend\src\components\home\PopularTemplates.jsx
+  FAIL 48 :50 colour literal bg-[linear-gradient(transparent,rgba(0,0,0,.65))] in a class on <span class="absolute inset-x-0 bottom-0…
+  WARN 11 :41 group-hover:scale-[1.04] on <img class="h-full w-full object-cover tran…">: the image moves on hover
+  WARN 28a :41 lazy-loaded first image (likely LCP)
+  WARN 54 :85 section labelled by <sectionheader> with no heading element
+frontend\src\components\home\Souvenirs.jsx
+  FAIL 48 :102 colour literal bg-[#f4f1fa] in a class on <span class="mb-3 flex h-40 items-center jus…">
+  FAIL 63 :107 arrow glued to the label "WhatsApp →"
+  WARN 28a :103 lazy-loaded first image (likely LCP)
+frontend\src\components\plan\SasPayUpgradeDialog.jsx
+  FAIL 48 :200 colour literal bg-[linear-gradient(100deg,#FF7A3D_0%,#E2337E_50%,#6C4BF4_100%)] in a class on <button class="rounded-xl…
+  WARN 29 :86 glass: backdrop-blur-sm over bg-black/50 on <div class="fixed inset-0 z-100 flex items-…"> | fix: Solid or grained surface; elevation by lightness, shadows with offset and blur
+  WARN F24 :96 a hairline border under a wide soft shadow (border with shadow-xl or shadow-2xl) | fix: Commit to one: a defined edge, or elevation by shadow
+frontend\src\components\plan\UpgradeDialog.jsx
+  FAIL 48 :288 colour literal bg-[linear-gradient(100deg,#FF7A3D_0%,#E2337E_50%,#6C4BF4_100%)] in a class on <button class="rounded-xl…
+  WARN 29 :104 glass: backdrop-blur-sm over bg-black/50 on <div class="fixed inset-0 z-[100] flex item…">
+frontend\src\components\pricing\PricingCard.jsx
+  FAIL 48 :20 colour literal bg-[linear-gradient(155deg,_rgba(86,54,214,0.28),_var(--color-surface)_58%)] in a class on <div class="r…
+frontend\src\components\share\ShareKit.jsx
+  FAIL 48 :148 colour literal bg-[#e7f8d5] in a class on <div class="rounded-2xl bg-[#e7f8d5] p-1.5 …">
+  FAIL 48 :194 colour literal bg-[#25D366] in a class on <a class="inline-flex w-full items-center…">
+frontend\src\components\site\SitePage.jsx
+  FAIL 48 :179 colour literal shadow-[0_12px_30px_-18px_rgba(0,0,0,0.35)] in a class on <div class="rounded-2xl border border-borde…">
+  FAIL 48 :401 colour literal shadow-[0_12px_30px_-22px_rgba(0,0,0,0.45)] in a class on <div class="overflow-hidden rounded-2xl bor…">
+  FAIL 48 :622 colour literal shadow-[0_12px_30px_-22px_rgba(0,0,0,0.4)] in a class on <div class="rounded-2xl border border-borde…">
+  FAIL 48 :1199 colour literal shadow-[0_1px_8px_-4px_rgba(0,0,0,0.12)] in a class on <header class="fixed inset-x-0 top-0 z-30 tran…">
+  FAIL 54 :1598 eyebrow before <h1> (uppercase, tracked 0.2em at 10px)
+  FAIL 54 :1761 eyebrow before <h2> (uppercase, tracked 0.25em at 10px)
+  FAIL 67 :193 uppercase at 10px tracked 0.05em on <p class="truncate font-semibold text-fai…">
+  FAIL 67 :1761 uppercase at 10px tracked 0.25em on <p class="font-semibold tracking-[0.25em]…">
+  REFLEX 12 :1677 bounce animate-bounce on <button class="absolute bottom-8 left-1/2 hidd…"> | fix: Exponential ease-out on UI state; no bounce or overshoot
+  WARN 11 :300 group-hover:scale-105 on <img class="h-full w-full object-cover tran…">: the image moves on hover
+  WARN 28a :217 lazy-loaded first image (likely LCP)
+  WARN 29 :1082 glass: backdrop-blur-sm over bg-black/70 on <div class="fixed inset-0 z-[60] flex items…">
+  WARN 29 :1598 glass: backdrop-blur over bg-white/10 on <span class="rounded-full px-4 py-1.5 font-s…">
+  WARN F1 :333 straight quote in prose x14 (first: est vide : elle n'apparaîtra sur)
+frontend\src\components\site\modules\SiteModules.jsx
+  FAIL 48 :221 inline-style colour literal #000
+  FAIL 54 :638 eyebrow "Votre soirée" before <h3>
+  FAIL 67 :81 uppercase at 12px tracked 0.05em on <label class="field block text-xs font-semibo…">
+  FAIL 67 :194 "Votre prénom (facultati…" uppercase at 12px tracked 0.05em on <label class="field block text-left text-xs f…">
+  FAIL 67 :453 "Votre nom complet" uppercase at 12px tracked 0.05em on <label class="field block text-xs font-semibo…">
+  FAIL 67 :638 "Votre soirée" uppercase at 12px tracked 0.05em on <p class="kicker text-xs font-semibold up…">
+  FAIL 67 :816 uppercase at 12px tracked 0.05em on <label class="field block text-xs font-semibo…">
+  FAIL 67 :821 uppercase at 12px tracked 0.05em on <label class="field block text-xs font-semibo…">
+  FAIL 67 :825 uppercase at 12px tracked 0.05em on <label class="field block text-xs font-semibo…">
+  FAIL 67 :831 uppercase at 12px tracked 0.05em on <span class="text-xs font-semibold tracking-…">
+  FAIL 67 :842 uppercase at 12px tracked 0.05em on <label class="field block text-xs font-semibo…">
+  FAIL 67 :853 uppercase at 12px tracked 0.05em on <label class="field block text-xs font-semibo…">
+  FAIL 67 :974 uppercase at 12px tracked 0.05em on <span class="text-xs font-semibold tracking-…">
+  FAIL 67 :985 uppercase at 12px tracked 0.05em on <label class="field block text-xs font-semibo…">
+  FAIL 67 :998 uppercase at 12px tracked 0.05em on <label class="field block text-xs font-semibo…">
+  WARN 70 :1 a script prints success ("tag ${g.isReserved ? done : }") with no request behind it | fix: No success state until the form posts somewhere; an empty data-endpoint and a handoff note
+  WARN F1 :490 straight quote in prose x2 (first: e nom. Vérifiez l'orthographe co)
+frontend\src\components\site\themes\envol\EnvolCarton.jsx
+  FAIL 48 :23 inline-style colour literal #0F1F44
+frontend\src\components\templates\PremiumThumb.jsx
+  FAIL 48 :59 inline-style colour literal #F2387C
+  FAIL 48 :60 inline-style colour literal #FF7A3D
+  FAIL 48 :61 inline-style colour literal #6C4BF4
+  FAIL 48 :62 inline-style colour literal #FFC93C
+  FAIL 48 :63 inline-style colour literal #2EC4A6
+  FAIL 48 :64 inline-style colour literal #6C4BF4
+frontend\src\components\templates\TemplateCard.jsx
+  FAIL 48 :92 colour literal bg-[linear-gradient(100deg,#FF7A3D_0%,#E2337E_50%,#6C4BF4_100%)] in a class on <Link class="flex min-h-1…
+  WARN 28a :42 lazy-loaded first image (likely LCP)
+frontend\src\components\templates\TemplatePreview.jsx
+  FAIL 48 :60 colour literal text-[#1a1406] in a class on <span class="absolute top-3 right-3 z-10 rou…">
+  FAIL 67 :28 uppercase at 9px tracked 0.2em on <span class="text-[9px] font-semibold tracki…">
+  WARN 29 :60 glass: backdrop-blur over bg-white/90 on <span class="absolute top-3 right-3 z-10 rou…">
+frontend\src\components\ui\BrandBackdrop.jsx
+  FAIL 48 :12 colour literal bg-[radial-gradient(closest-side,_rgba(108,75,244,0.24),_transparent)] in a class on <div class="absolut…
+  FAIL 48 :17 colour literal bg-[radial-gradient(closest-side,_rgba(217,70,239,0.14),_transparent)] in a class on <div class="absolut…
+  FAIL 48 :24 colour literal [background-image:radial-gradient(rgba(248,249,252,0.14)_1px,transparent_1px)] in a class on <div class=…
+  WARN 29 :12 blurred orb: blur-2xl on a filled absolute element on <div class="absolute -top-32 h-[520px] w-[7…">
+  WARN 29 :17 blurred orb: blur-2xl on a filled absolute element on <div class="absolute top-10 h-[420px] w-[56…">
+frontend\src\components\wizard\InfoStep.jsx
+  FAIL 48 :144 colour literal bg-[#0F0B2E] in a class on <span class="grid h-[76px] place-items-cente…">
+  FAIL 63 :166 middle-dot meta string "ou cliquez pour choisir · PNG, JPG, WebP, SVG · 2…" | fix: Line breaks, columns or hairlines; one dot in a byline at most
+  FAIL 63 :182 middle-dot meta string "ou cliquez pour choisir · PNG, JPG, WebP, SVG · 2…"
+  FAIL 63 :186 middle-dot meta string "ou cliquez pour choisir · PNG, JPG, WebP, SVG · 2…"
+  FAIL 63 :188 middle-dot meta string "ou cliquez pour choisir · PNG, JPG, WebP, SVG · 2…"
+  FAIL 67 :87 uppercase at 11.52px tracked 0.1em on <p class="mt-2 border-t border-border-sof…">
+  WARN F1 :129 straight quote in prose x1 (first: Logo de l'organisateur)
+frontend\src\components\wizard\LivePreview.jsx
+  FAIL 48 :22 colour literal bg-[#05040F] in a class on <div class="relative h-[640px] w-[316px] ov…">
+  FAIL 48 :79 colour literal bg-[rgba(5,4,15,.55)] in a class on <div class="pointer-events-none absolute in…">
+  FAIL 67 :21 "Aperçu en direct" uppercase at 11.52px tracked 0.1em on <span class="font-mono text-[0.72rem] tracki…">
+  REFLEX 64 :21 font-mono on "Aperçu en direct" at 11.52px (<span class="font-mono text-[0.72rem] tracki…">)
+frontend\src\components\wizard\ModelStep.jsx
+  FAIL 48 :154 colour literal bg-[linear-gradient(100deg,#FF7A3D_0%,#E2337E_50%,#6C4BF4_100%)] in a class on <button class="min-h-11 r…
+  FAIL 67 :21 uppercase at 10.88px tracked 0.06em on <span class="rounded-full px-2.5 py-0.5 font…">
+  WARN 49 :118 long clickable label "gratuits et premium, adaptés ensuit…" without nowrap
+  WARN F1 :152 straight quote in prose x2 (first: Passez à l'offre Premium)
+frontend\src\pages\TemplateDemo.jsx
+  FAIL 48 :199 colour literal bg-[#0F0B2E] in a class on <header class="relative z-[60] flex flex-wrap …">
+  FAIL 48 :200 colour literal text-[#A8A1D1] in a class on <Link class="inline-flex items-center gap-1.…">
+  FAIL 48 :211 colour literal text-[#A8A1D1] in a class on <span class="hidden text-[#A8A1D1] 2xl:inline">
+  FAIL 48 :223 colour literal text-[#0F0B2E] in a class on <button class="inline-flex items-center gap-1.…">
+  FAIL 48 :238 colour literal text-[#F2EFFF] in a class on <button class="inline-flex items-center gap-1.…">
+  FAIL 48 :249 colour literal bg-[linear-gradient(100deg,#FF7A3D_0%,#E2337E_50%,#6C4BF4_100%)] in a class on <Link class="rounded-full…
+  FAIL 48 :258 colour literal bg-[#1B1450] in a class on <div class="relative z-[59] flex flex-wrap …">
+  FAIL 48 :260 colour literal text-[#A8A1D1] in a class on <span class="text-[#A8A1D1]">
+  FAIL 48 :262 colour literal text-[#0F0B2E] in a class on <Link class="rounded-full bg-white px-4 py-1…">
+  FAIL 48 :336 colour literal bg-[radial-gradient(60%_50%_at_50%_40%,#21195a,transparent_70%),#0B0824] in a class on <div class="flex …
+  FAIL 48 :338 colour literal bg-[linear-gradient(145deg,#2A2360,#120E33)] in a class on <div class="origin-top-left rounded-[48px] …">
+  FAIL 48 :350 colour literal text-[#A8A1D1] in a class on <p class="mt-4 text-center text-xs text-[…">
+  FAIL 48 :376 colour literal bg-[#19133F] in a class on <div class="absolute top-full right-0 z-[62…">
+  FAIL 48 :378 colour literal text-[#A8A1D1] in a class on <p class="mt-1 text-xs text-[#A8A1D1]">
+  FAIL 48 :383 colour literal text-[#FFE3A8] in a class on <p class="mt-3 text-left text-[11px] lead…">
+  WARN F1 :212 straight quote in prose x3 (first: · contenu d'exemple.)
+  WARN F24 :376 a hairline border under a wide soft shadow (border with shadow-xl or shadow-2xl)
+frontend\src\pages\TicketModels.jsx
+  FAIL 48 :101 colour literal bg-[radial-gradient(70%_70%_at_50%_40%,#2b2266,#100c2c)] in a class on <div class="bg-[radial-gradient(7…
+  FAIL 48 :130 colour literal bg-[linear-gradient(100deg,#FF7A3D_0%,#E2337E_50%,#6C4BF4_100%)] in a class on <Link class="inline-flex …
+  FAIL 54 :74 eyebrow before <h1> (uppercase, tracked 0.1em at 12px)
+  FAIL 67 :114 uppercase at 11px tracked 0.1em on <span class="block text-[11px] font-semibold…">
+frontend\src\pages\dashboard\GuestBook.jsx
+  FAIL 48 :512 colour literal bg-[#0F0B2E] in a class on <article class="flex items-start gap-3 rounded-…">
+  FAIL 48 :515 colour literal text-[#A9A4C9] in a class on <p class="mt-1 text-xs text-[#A9A4C9]">
+  WARN F1 :210 straight quote in prose x4 (first: Livre d'or)
+frontend\src\pages\dashboard\Invitations.jsx
+  FAIL 48 :303 colour literal bg-[#25D366] in a class on <a class="block rounded-lg px-4 py-3 text…">
+  WARN F1 :187 straight quote in prose x4 (first: Créez d'abord un événe)
+frontend\src\pages\dashboard\MyReview.jsx
+  FAIL 48 :163 colour literal bg-[linear-gradient(100deg,#FF7A3D_0%,#E2337E_50%,#6C4BF4_100%)] in a class on <button class="rounded-xl…
+frontend\src\components\home\SectionHeader.jsx
+  FAIL 54 :6 eyebrow before <h2> (uppercase, tracked 0.1em at 12px)
+frontend\src\components\program\ActivityDetailPanel.jsx
+  FAIL 54 :28 eyebrow "Détails de l'activité" before <h3> (uppercase, tracked 0.05em at 12px)
+  FAIL 67 :28 "Détails de l'activité" uppercase at 12px tracked 0.05em on <p class="text-xs font-semibold tracking-…">
+  FAIL 67 :36 "Intervenant" uppercase at 11px tracked 0.05em on <p class="text-[11px] font-semibold track…">
+  FAIL 67 :50 "Horaire" uppercase at 11px tracked 0.05em on <p class="text-[11px] font-semibold track…">
+  FAIL 67 :58 "Lieu" uppercase at 11px tracked 0.05em on <p class="text-[11px] font-semibold track…">
+  FAIL 67 :69 "Description" uppercase at 11px tracked 0.05em on <p class="text-[11px] font-semibold track…">
+  WARN F1 :29 straight quote in prose x1 (first: Détails de l'activité)
+frontend\src\components\site\InvitationLoader.jsx
+  FAIL 54 :49 eyebrow "Une invitation personnelle" before <h1>
+frontend\src\components\site\themes\envol\EnvolWall.jsx
+  FAIL 54 :37 eyebrow "Mur des vœux · en direct" before <div>
+frontend\src\components\wizard\GuestOnboardingStep.jsx
+  FAIL 54 :202 eyebrow "Étape 6 · Avant la publ…" before <h2> (uppercase at 14px)
+  WARN 49 :223 long clickable label "Choisir dans mes contacts Le plus r…" without nowrap
+  WARN 49 :242 long clickable label "Partager un lien d’inscription Un s…" without nowrap
+  WARN 49 :257 long clickable label "Coller une liste Copiée depuis What…" without nowrap
+frontend\src\pages\GiftRegistryPublic.jsx
+  FAIL 54 :85 eyebrow "Liste de cadeaux" before <h1> (uppercase, tracked 0.1em at 12px)
+frontend\src\pages\GuestInvitation.jsx
+  FAIL 54 :232 eyebrow "Invitation personnelle" before <h1> (uppercase, tracked 0.1em at 11px)
+  FAIL 63 :361 arrow glued to the label "Découvrir le site de l'événement →" (<Link>)
+  WARN 49 :325 long clickable label "Je ne peux finalement plus venir" without nowrap
+frontend\src\pages\Pricing.jsx
+  FAIL 54 :138 eyebrow before <h1> (uppercase, tracked 0.2em at 14px)
+  FAIL 67 :170 uppercase at 11px tracked 0.18em on <h2 class="text-center text-[11px] font-se…">
+  FAIL 67 :225 uppercase at 12px tracked 0.1em on <p class="mt-3 text-xs font-medium tracki…">
+  FAIL 67 :293 uppercase at 12px tracked 0.1em on <th class="px-4 pt-5 pb-2 text-xs font-bol…">
+frontend\src\components\wizard\ContentStep.jsx
+  FAIL 63 :50 arrow glued to the label "Passer et choisir le modèle →"
+  WARN 49 :50 long clickable label "Passer et choisir le modèle →" without nowrap
+frontend\src\pages\dashboard\Guests.jsx
+  FAIL 63 :497 middle-dot meta string "invités · confirmés · en attente · refus"
+  FAIL 67 :796 "Invité Contact Groupe S…" uppercase at 12px tracked 0.05em on <tr class="border-b border-border-soft tex…">
+  WARN 49 :822 long clickable label "Effacer la recherche et les filtres" without nowrap
+  WARN 70 :1 a script prints success ("} déjà présent${locallySkippe…") with no request behind it
+  WARN F1 :453 straight quote in prose x2 (first: Créez d'abord un événe)
+frontend\src\pages\dashboard\SeatingPlan.jsx
+  FAIL 63 :137 middle-dot meta string "/ invités placés · tables · places"
+  WARN F1 :126 straight quote in prose x1 (first: Créez d'abord un événe)
+frontend\src\components\builder\BlockLibrary.jsx
+  FAIL 67 :55 "Structure" uppercase at 12px tracked 0.05em on <p class="mt-5 text-xs font-semibold trac…">
+  WARN F1 :97 straight quote in prose x1 (first: ez un bloc pour l'ajouter à votr)
+frontend\src\components\builder\StylePanel.jsx
+  FAIL 67 :365 "Options d'affichage" uppercase at 12px tracked 0.05em on <p class="text-xs font-semibold tracking-…">
+  FAIL 67 :538 uppercase at 12px tracked 0.05em on <p class="text-xs font-semibold tracking-…">
+  REFLEX 64 :209 font-mono on "vh" at 14px (<span class="font-mono text-faint">)
+  WARN F1 :258 straight quote in prose x5 (first: modifient dans l'onglet)
+frontend\src\components\communication\CampaignsList.jsx
+  FAIL 67 :33 "Campagne Canal Audience…" uppercase at 12px tracked 0.05em on <tr class="border-b border-border-soft tex…">
+  WARN F1 :23 straight quote in prose x1 (first: e campagne pour l'instant.)
+frontend\src\components\conference\SessionsTab.jsx
+  FAIL 67 :105 "Heure Session Salle Int…" uppercase at 12px tracked 0.05em on <tr class="border-b border-border-soft tex…">
+frontend\src\components\conference\SponsorsTab.jsx
+  FAIL 67 :85 uppercase at 12px tracked 0.05em on <h3 class="text-xs font-semibold tracking-…">
+frontend\src\components\dashboard\RecentEventsTable.jsx
+  FAIL 67 :22 "Événement Date RSVP Sta…" uppercase at 12px tracked 0.05em on <tr class="border-y border-border-soft tex…">
+frontend\src\components\dashboard\StatCard.jsx
+  FAIL 67 :10 uppercase at 12px tracked 0.05em on <p class="text-xs font-semibold tracking-…">
+frontend\src\components\layout\DashboardSidebar.jsx
+  FAIL 67 :167 uppercase at 11px tracked 0.05em on <p class="mb-1 px-3 text-[11px] font-semi…">
+  REFLEX 64 :230 font-mono on "Plan" at 11px (<span class="font-mono text-[11px] font-semi…">)
+  WARN F1 :280 straight quote in prose x1 (first: Jusqu'au)
+frontend\src\components\layout\DashboardTopbar.jsx
+  FAIL 67 :121 "Notifications" uppercase at 12px tracked 0.05em on <p class="text-xs font-semibold tracking-…">
+frontend\src\components\layout\Footer.jsx
+  FAIL 67 :58 uppercase at 12px tracked 0.05em on <h3 class="text-xs font-semibold tracking-…">
+frontend\src\components\settings\DomainTab.jsx
+  FAIL 67 :16 "Adresse de vos événemen…" uppercase at 12px tracked 0.05em on <p class="text-xs font-semibold tracking-…">
+frontend\src\components\wizard\EventKindSteps.jsx
+  FAIL 67 :118 "Logo :" uppercase at 10.56px tracked 0.06em on <span class="mt-0.5 font-mono text-[0.66rem]…">
+  REFLEX 64 :118 font-mono on "Logo :" at 10.56px (<span class="mt-0.5 font-mono text-[0.66rem]…">)
+frontend\src\pages\Templates.jsx
+  FAIL 67 :102 uppercase at 12px tracked 0.1em on <h2 class="text-xs font-semibold tracking-…">
+frontend\src\pages\dashboard\Settings.jsx
+  FAIL 67 :39 "Réglages" uppercase at 12px tracked 0.05em on <p class="px-3 text-xs font-semibold trac…">
+http://localhost:5202/inscription
+  REFLEX 49b :1 [320px] link "politique de confidentialité" wraps to 2 lines (a.font-medium.text-brand-purple)
+  REFLEX 81 :1 [1440px] 2 empty pictures: div.absolute 720x520, a gradient with nothing in it; div.absolute 560x420, a gradient with n…
+  WARN 58 :1 [1440px] 81 words on one screen (from y=100) | fix: Close to the 80-word screen budget
+  WARN 77 :1 [1440px] 0 sections, hero and footer included
+frontend\src\components\billing\TicketSalesChart.jsx
+  REFLEX 64 :16 font-mono on "billets" at 12px (<p class="mt-0.5 font-mono font-semibold …">)
+  WARN F24 :14 a hairline border under a wide soft shadow (border with shadow-xl or shadow-2xl)
+frontend\src\components\builder\BuilderCanvas.jsx
+  REFLEX 64 :34 font-mono on "tbfmoment.com/" at 12px (<p class="truncate text-center font-mono …">)
+frontend\src\components\settings\DeleteAccountTab.jsx
+  REFLEX 64 :46 font-mono on "SUPPRIMER" at 14px (<span class="font-mono font-semibold">)
+frontend\src\pages\NotFound.jsx
+  REFLEX 64 :38 font-mono on "Erreur 404" at 14px (<p class="font-mono text-sm text-faint">)
+  WARN F1 :41 straight quote in prose x3 (first: e vous cherchez n'existe pas, ou)
+frontend\src\components\ui\PhoneInput.jsx
+  WARN 28a :21 lazy-loaded first image (likely LCP)
+  WARN F24 :64 a hairline border under a wide soft shadow (border with shadow-xl or shadow-2xl)
+frontend\src\components\ui\Dialog.jsx
+  WARN 29 :32 glass: backdrop-blur-sm over bg-black/50 on <div class="fixed inset-0 z-[100] flex item…">
+frontend\src\pages\CookiesPolicy.jsx
+  WARN 49 :85 long clickable label "Refuser les cookies optionnels" without nowrap
+  WARN 49 :92 long clickable label "Accepter les cookies optionnels" without nowrap
+frontend\src\components\site\BlockToolbar.jsx
+  WARN 74 :15 default palette instead of theme tokens: 8 distinct palette classes (bg-violet-700 border-slate-200 text-slate-700 bg-s… | fix: Extend the Tailwind theme with the Hallmark tokens and use those names
+frontend\src\components\builder\FaqEditor.jsx
+  WARN F1 :33 straight quote in prose x1 (first: e question pour l'instant. Ajout)
+frontend\src\components\builder\ModuleEditors.jsx
+  WARN F1 :32 straight quote in prose x6 (first: La salutation s'adapte à la fa)
+frontend\src\components\builder\PremiumThemeFields.jsx
+  WARN F1 :50 straight quote in prose x2 (first: Motif d'arrière-plan)
+frontend\src\components\builder\VoiceMessageField.jsx
+  WARN F1 :207 straight quote in prose x1 (first: er la page pour l'envoyer aux in)
+frontend\src\components\settings\LanguageTab.jsx
+  WARN F1 :26 straight quote in prose x5 (first: Ces réglages s'appliquent à v)
+frontend\src\components\settings\SecurityTab.jsx
+  WARN F1 :41 straight quote in prose x2 (first: Protégez l'accès à votre)
+frontend\src\components\site\ReportPage.jsx
+  WARN F1 :83 straight quote in prose x2 (first: F MOMENT, pas à l'organisateur.)
+frontend\src\components\tickets\TicketLive.jsx
+  WARN F1 :40 straight quote in prose x6 (first: C'est maintenant)
+frontend\src\components\wizard\CreatedStep.jsx
+  WARN F1 :91 straight quote in prose x1 (first: rénom, son pass d'entrée, et vou)
+frontend\src\pages\LegalNotice.jsx
+  WARN F1 :53 straight quote in prose x4 (first: isation dispose d'un espace isol)
+frontend\src\pages\TermsOfService.jsx
+  WARN F1 :37 straight quote in prose x48 (first: Agent d'accueil)
+frontend\src\pages\dashboard\Communication.jsx
+  WARN F1 :128 straight quote in prose x1 (first: Créez d'abord un événe)
+frontend\src\pages\dashboard\Conference.jsx
+  WARN F1 :158 straight quote in prose x1 (first: Créez d'abord un événe)
+frontend\src\pages\dashboard\GiftRegistry.jsx
+  WARN F1 :93 straight quote in prose x1 (first: Créez d'abord un événe)
+frontend\src\components\analytics\RsvpDonut.jsx
+  WARN F24 :7 a hairline border under a wide soft shadow (border with shadow-xl or shadow-2xl)
+frontend\src\components\layout\CookieConsent.jsx
+  WARN F24 :39 a hairline border under a wide soft shadow (border with shadow-xl or shadow-2xl)
+frontend\src\components\seating\GuestPicker.jsx
+  WARN F24 :28 a hairline border under a wide soft shadow (border with shadow-xl or shadow-2xl)
+sloplint: 556 FAIL, 93 REFLEX, 128 WARN across 168 file(s) and 8 URL(s).

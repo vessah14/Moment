@@ -34,6 +34,8 @@
   --color-ink: #f8f9fc; /* Soft White, texte sur fond sombre */
   --color-muted: #9ba3c2;
   --color-faint: #7883a8; /* eclairci vs #6b7290 pour repasser le seuil WCAG AA (4.5:1) */
+  --color-field-border: #626a8c; /* bord des champs : 3:1 minimum contre la surface (WCAG 1.4.11) */
+  --color-gold-text: #d6b36a; /* or en texte, lisible sur la nuit */
   --color-dark-gray: #1f2937; /* reserve aux surfaces claires (texte secondaire) */
 
   --color-brand-purple: #6c4bf4; /* Electric Purple officiel */
@@ -76,7 +78,9 @@
 
   --color-ink: #12172a;
   --color-muted: #4b5170;
-  --color-faint: #6b7290;
+  --color-faint: #636a87; /* 4.42:1 -> ~5:1 sur --color-bg */
+  --color-field-border: #7e85a1;
+  --color-gold-text: #8a6a1f; /* l'or clair ne fait que 1.9:1 sur fond clair */
 
   /* Variantes plus foncées pour rester lisibles (AA) en texte sur fond clair */
   --color-success: #047857;
@@ -306,6 +310,13 @@ body {
 
 #root {
   min-height: 100svh;
+}
+
+/* Bord des champs à 3:1 (WCAG 1.4.11) : remplace seulement le bord neutre (border-border /
+   border-border-soft), jamais un bord d'erreur, de succès ou de marque, ni l'état focus.
+   Hors couche exprès : il doit passer devant l'utilitaire border-border. */
+:is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"], [type="hidden"]), select, textarea):is(.border-border, .border-border-soft):not(:focus) {
+  border-color: var(--color-field-border);
 }
 
 /* Garde-fous responsive : un <select> ne s'élargit plus au nom d'événement le plus long,
