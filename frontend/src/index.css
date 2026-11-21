@@ -537,7 +537,6 @@ h3 {
   display: flex;
   align-items: center;
   gap: 0.7rem;
-  max-width: 240px;
   padding: 0.7rem 0.9rem;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.94);
@@ -549,21 +548,40 @@ h3 {
   animation: hero-bob 6s ease-in-out infinite;
 }
 
+/* Bulles ancrées aux bords du téléphone : elles ne mordent que d'environ 40px sur l'écran,
+   sur la barre du haut ou celle du bas, jamais sur le titre de l'invitation. */
+.hero-stage {
+  --hero-phone-w: 250px;
+  --hero-float-w: 220px;
+  --hero-float-x: max(0px, calc(50% - var(--hero-phone-w) / 2 - var(--hero-float-w) + 40px));
+}
+
+.hero-float {
+  max-width: var(--hero-float-w);
+}
+
 .hero-float-1 {
-  left: -2%;
-  top: 18%;
+  left: var(--hero-float-x);
+  top: 7%;
 }
 
 .hero-float-2 {
-  right: -1%;
-  bottom: 16%;
+  right: var(--hero-float-x);
+  bottom: 5%;
   animation-delay: -3s;
 }
 
 .hero-float-3 {
-  left: 6%;
-  bottom: 6%;
+  left: var(--hero-float-x);
+  bottom: 5%;
   animation-delay: -1.5s;
+}
+
+/* Sous 1280px la colonne est trop étroite pour trois bulles sans masquer l'écran. */
+@media (max-width: 1279px) {
+  .hero-float-3 {
+    display: none;
+  }
 }
 
 @keyframes hero-bob {
@@ -576,25 +594,16 @@ h3 {
   .hero-stage {
     height: 520px;
   }
-  .hero-float-1 {
-    left: 2%;
-    top: 6%;
-  }
-  .hero-float-2 {
-    right: 2%;
-    bottom: 10%;
-  }
-  .hero-float-3 {
-    display: none;
-  }
 }
 
 @media (max-width: 520px) {
   .hero-stage {
+    --hero-phone-w: 200px;
+    --hero-float-w: 180px;
     height: 440px;
   }
   .hero-phone {
-    width: 200px;
+    width: var(--hero-phone-w);
   }
   .hero-phone-left {
     transform: translate(-100%, -46%) rotate(-8deg) scale(0.82);
@@ -603,7 +612,6 @@ h3 {
     transform: translate(0%, -46%) rotate(8deg) scale(0.82);
   }
   .hero-float {
-    max-width: 200px;
     padding: 0.55rem 0.7rem;
     font-size: 0.72rem;
   }
