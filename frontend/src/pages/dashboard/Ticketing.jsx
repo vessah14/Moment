@@ -1,4 +1,5 @@
 import { Fragment, lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { pickCurrentEvent, useCurrentEventId } from '../../utils/currentEvent'
 import { useToast } from '../../utils/useToast'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import StatCard from '../../components/dashboard/StatCard'
@@ -25,7 +26,7 @@ function statusFor(type) {
 export default function Ticketing() {
   const toast = useToast()
   const [events, setEvents] = useState([])
-  const [selectedEventId, setSelectedEventId] = useState('')
+  const [selectedEventId, setSelectedEventId] = useCurrentEventId()
   const [ticketTypes, setTicketTypes] = useState([])
   const [sales, setSales] = useState([])
   const [loading, setLoading] = useState(true)
@@ -37,14 +38,14 @@ export default function Ticketing() {
     listEvents()
       .then((data) => {
         setEvents(data ?? [])
-        if (data?.length) setSelectedEventId(data[0].id)
+        if (data?.length) setSelectedEventId(pickCurrentEvent(data))
         else setLoading(false)
       })
       .catch((err) => {
         setError(err.message || 'Impossible de charger vos événements.')
         setLoading(false)
       })
-  }, [])
+  }, [setSelectedEventId])
 
   const reload = (eventId) => {
     setLoading(true)

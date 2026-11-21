@@ -10,6 +10,7 @@ import {
   X
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { pickCurrentEvent, useCurrentEventId } from '../../utils/currentEvent'
 import Avatar from '../../components/ui/Avatar'
 import StatusBadge from '../../components/ui/StatusBadge'
 import DashboardLayout from '../../components/layout/DashboardLayout'
@@ -152,7 +153,7 @@ function ScanResult ({ result }) {
 export default function CheckIn () {
   const toast = useToast()
   const [events, setEvents] = useState([])
-  const [selectedEventId, setSelectedEventId] = useState('')
+  const [selectedEventId, setSelectedEventId] = useCurrentEventId()
   const [eventTypeFilter, setEventTypeFilter] = useState('all')
   const [guests, setGuests] = useState([])
   const [loading, setLoading] = useState(true)
@@ -191,14 +192,14 @@ export default function CheckIn () {
     listEvents()
       .then(data => {
         setEvents(data ?? [])
-        if (data?.length) setSelectedEventId(data[0].id)
+        if (data?.length) setSelectedEventId(pickCurrentEvent(data))
         else setLoading(false)
       })
       .catch(err => {
         setError(err.message || 'Impossible de charger vos événements.')
         setLoading(false)
       })
-  }, [])
+  }, [setSelectedEventId])
 
   const reloadGuests = eventId => {
     setLoading(true)

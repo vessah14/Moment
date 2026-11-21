@@ -1,5 +1,6 @@
 import { Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { pickCurrentEvent, useCurrentEventId } from '../../utils/currentEvent'
 import GiftCard from '../../components/gifts/GiftCard'
 import StatCard from '../../components/dashboard/StatCard'
 import DashboardLayout from '../../components/layout/DashboardLayout'
@@ -10,7 +11,7 @@ import { SkeletonGrid } from '../../components/ui/Skeleton'
 
 export default function GiftRegistry() {
   const [events, setEvents] = useState([])
-  const [selectedEventId, setSelectedEventId] = useState('')
+  const [selectedEventId, setSelectedEventId] = useCurrentEventId()
   const [gifts, setGifts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -20,14 +21,14 @@ export default function GiftRegistry() {
     listEvents()
       .then((data) => {
         setEvents(data ?? [])
-        if (data?.length) setSelectedEventId(data[0].id)
+        if (data?.length) setSelectedEventId(pickCurrentEvent(data))
         else setLoading(false)
       })
       .catch((err) => {
         setError(err.message || 'Impossible de charger vos événements.')
         setLoading(false)
       })
-  }, [])
+  }, [setSelectedEventId])
 
   const reload = (eventId) => {
     setLoading(true)

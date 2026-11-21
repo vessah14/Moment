@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { pickCurrentEvent, useCurrentEventId } from '../../utils/currentEvent'
 import CertificatesTab from '../../components/conference/CertificatesTab'
 import SessionsTab from '../../components/conference/SessionsTab'
 import SpeakersTab from '../../components/conference/SpeakersTab'
@@ -22,7 +23,7 @@ const TABS = ['Intervenants', 'Sessions', 'Sponsors', 'Certificats']
 
 export default function Conference() {
   const [events, setEvents] = useState([])
-  const [selectedEventId, setSelectedEventId] = useState('')
+  const [selectedEventId, setSelectedEventId] = useCurrentEventId()
   const [tab, setTab] = useState('Intervenants')
   const [speakers, setSpeakers] = useState([])
   const [sessions, setSessions] = useState([])
@@ -35,14 +36,14 @@ export default function Conference() {
     listEvents()
       .then((data) => {
         setEvents(data ?? [])
-        if (data?.length) setSelectedEventId(data[0].id)
+        if (data?.length) setSelectedEventId(pickCurrentEvent(data))
         else setLoading(false)
       })
       .catch((err) => {
         setError(err.message || 'Impossible de charger vos événements.')
         setLoading(false)
       })
-  }, [])
+  }, [setSelectedEventId])
 
   const reload = (eventId) => {
     setLoading(true)

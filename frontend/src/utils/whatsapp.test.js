@@ -26,7 +26,8 @@ describe('internationalNumber', () => {
 describe('guestMessageUrl', () => {
   it('opens the guest chat when the number is known', () => {
     expect(guestMessageUrl('WhatsApp', '690000000', 'Salut')).toBe('https://wa.me/237690000000?text=Salut')
-    expect(guestMessageUrl('WhatsApp', '', 'Salut')).toBe('https://wa.me/?text=Salut')
+    expect(guestMessageUrl('WhatsApp', '', 'Salut')).toBe('')
+    expect(guestMessageUrl('WhatsApp', '12345', 'Salut')).toBe('')
     expect(guestMessageUrl('SMS', '690000000', 'Salut')).toBe('sms:+237690000000?body=Salut')
     expect(guestMessageUrl('SMS', '', 'Salut')).toBe('')
   })

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { pickCurrentEvent, useCurrentEventId } from '../../utils/currentEvent'
 import { Link } from 'react-router-dom'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import Button from '../../components/ui/Button'
@@ -10,7 +11,7 @@ import {
   guestsForAudience,
   personalizeMessage,
 } from '../../utils/invitationMessage'
-import { guestMessageUrl, internationalNumber, nextUnsent, readSent, writeSent } from '../../utils/whatsapp'
+import { guestMessageUrl, nextUnsent, readSent, writeSent } from '../../utils/whatsapp'
 
 const CHANNELS = ['WhatsApp', 'E-mail', 'SMS']
 const TAGS = ['prénom', 'nom', 'date', 'lieu', 'lien']
@@ -20,7 +21,7 @@ const AUDIENCES = ['Tous les invités', 'Confirmés', 'En attente', 'Refus']
 
 export default function Invitations () {
   const [events, setEvents] = useState([])
-  const [selectedEventId, setSelectedEventId] = useState('')
+  const [selectedEventId, setSelectedEventId] = useCurrentEventId()
   const [guests, setGuests] = useState([])
   const [campaigns, setCampaigns] = useState([])
   const [locationResult, setLocationResult] = useState(null)
@@ -49,14 +50,14 @@ export default function Invitations () {
     listEvents()
       .then(data => {
         setEvents(data ?? [])
-        if (data?.length) setSelectedEventId(data[0].id)
+        if (data?.length) setSelectedEventId(pickCurrentEvent(data))
         else setLoading(false)
       })
       .catch(err => {
         setError(err.message || 'Impossible de charger vos événements.')
         setLoading(false)
       })
-  }, [])
+  }, [setSelectedEventId])
 
   const reload = eventId => {
     setLoading(true)
@@ -144,9 +145,12 @@ export default function Invitations () {
         ? Boolean(guest.phone?.trim())
         : true,
   )
-  const selectedGuest =
-    shareGuests.find(guest => guest.id === selectedGuestId) ?? shareGuests[0]
-  const personalizedPreview = personalizeMessage(message, selectedGuest, previewEvent, window.location.origin)
+  const selectedGuest = selectedGuestId
+    ? shareGuests.find(guest => guest.id === selectedGuestId) ?? null
+    : shareGuests[0] ?? null
+  const personalizedPreview = selectedGuest
+    ? personalizeMessage(message, selectedGuest, previewEvent, window.location.origin)
+    : ''
   const shareUrl = selectedGuest && channel !== 'E-mail'
     ? guestMessageUrl(channel, selectedGuest.phone, personalizedPreview)
     : ''
@@ -281,16 +285,22 @@ export default function Invitations () {
 
         <div className='mt-5'>
           <label className='block text-sm font-medium text-ink' htmlFor='share-guest'>
-              Aperçu personnalisé pour
-            </label>
+            {channel === 'E-mail' ? 'Aperçu personnalisé pour' : 'Invité destinataire'}
+          </label>
           <select
             id='share-guest'
             value={selectedGuest?.id ?? ''}
             onChange={e => setSelectedGuestId(e.target.value)}
             className='mt-2 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-brand-purple'
           >
+            <option value=''>Choisir un invité...</option>
             {shareGuests.map(guest => <option key={guest.id} value={guest.id}>{sentIds.has(guest.id) ? '✓ ' : ''}{guest.fullName}</option>)}
           </select>
+          {selectedGuestId && !selectedGuest && (
+            <p className='mt-2 text-xs text-danger'>
+              Cet invité n'est pas disponible pour l'audience ou le canal sélectionné. Choisissez-en un autre dans la liste.
+            </p>
+          )}
           <p className='mt-2 rounded-lg bg-surface-2 p-3 text-sm text-muted'>
             {personalizedPreview || 'Aucun invité éligible dans cette audience pour afficher un aperçu.'}
           </p>
@@ -310,10 +320,9 @@ export default function Invitations () {
                   Envoyer à {selectedGuest.fullName} {channel === 'WhatsApp' ? 'sur WhatsApp' : 'par SMS'}
                 </a>
               ) : (
-                <p className='text-xs text-danger'>Pas de numéro pour {selectedGuest.fullName} : ajoutez-le dans Invités & RSVP.</p>
-              )}
-              {channel === 'WhatsApp' && !internationalNumber(selectedGuest.phone) && (
-                <p className='text-xs text-faint'>Pas de numéro enregistré : WhatsApp vous laissera choisir le contact.</p>
+                <p className='text-xs text-danger'>
+                  Envoi bloqué : aucun numéro valide n'est enregistré pour {selectedGuest.fullName}. Ajoutez ou corrigez son numéro dans Invités & RSVP.
+                </p>
               )}
               <p className='flex flex-wrap items-center justify-between gap-2 text-xs text-muted'>
                 <span>
@@ -351,7 +360,7 @@ export default function Invitations () {
 
         <p className='mt-4 text-xs text-faint'>
           {channel === 'E-mail'
-            ? "Envoie un e-mail réel à chaque invité disposant d'une adresse e-mail."
+            ? "Le destinataire sélectionné sert uniquement à l'aperçu : un e-mail est envoyé à chaque invité de l'audience sélectionnée qui possède une adresse e-mail."
             : `Les messages ${channel} partent de votre téléphone, un invité après l'autre, chacun avec son lien personnel.`}
         </p>
 

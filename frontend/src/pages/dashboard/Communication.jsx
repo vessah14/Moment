@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { pickCurrentEvent, useCurrentEventId } from '../../utils/currentEvent'
 import { Link } from 'react-router-dom'
 import AutoReminders from '../../components/communication/AutoReminders'
 import CampaignComposer from '../../components/communication/CampaignComposer'
@@ -19,7 +20,7 @@ const TAB_CHANNEL = { Email: 'E-mail' }
 
 export default function Communication() {
   const [events, setEvents] = useState([])
-  const [selectedEventId, setSelectedEventId] = useState('')
+  const [selectedEventId, setSelectedEventId] = useCurrentEventId()
   const [campaigns, setCampaigns] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -33,14 +34,14 @@ export default function Communication() {
     listEvents()
       .then((data) => {
         setEvents(data ?? [])
-        if (data?.length) setSelectedEventId(data[0].id)
+        if (data?.length) setSelectedEventId(pickCurrentEvent(data))
         else setLoading(false)
       })
       .catch((err) => {
         setError(err.message || 'Impossible de charger vos événements.')
         setLoading(false)
       })
-  }, [])
+  }, [setSelectedEventId])
 
   const reload = (eventId) => {
     setLoading(true)

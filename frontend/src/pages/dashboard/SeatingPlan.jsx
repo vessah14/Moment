@@ -1,5 +1,6 @@
 import { Plus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { pickCurrentEvent, useCurrentEventId } from '../../utils/currentEvent'
 import TableCard from '../../components/seating/TableCard'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import Button from '../../components/ui/Button'
@@ -10,7 +11,7 @@ import { SkeletonGrid } from '../../components/ui/Skeleton'
 
 export default function SeatingPlan() {
   const [events, setEvents] = useState([])
-  const [selectedEventId, setSelectedEventId] = useState('')
+  const [selectedEventId, setSelectedEventId] = useCurrentEventId()
   const [guests, setGuests] = useState([])
   const [tables, setTables] = useState([])
   const [assignments, setAssignments] = useState([])
@@ -22,14 +23,14 @@ export default function SeatingPlan() {
     listEvents()
       .then((data) => {
         setEvents(data ?? [])
-        if (data?.length) setSelectedEventId(data[0].id)
+        if (data?.length) setSelectedEventId(pickCurrentEvent(data))
         else setLoading(false)
       })
       .catch((err) => {
         setError(err.message || 'Impossible de charger vos événements.')
         setLoading(false)
       })
-  }, [])
+  }, [setSelectedEventId])
 
   const reload = (eventId) => {
     setLoading(true)

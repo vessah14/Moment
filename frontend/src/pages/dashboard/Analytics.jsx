@@ -1,5 +1,6 @@
 import { FileDown } from 'lucide-react'
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { pickCurrentEvent, useCurrentEventId } from '../../utils/currentEvent'
 import StatCard from '../../components/dashboard/StatCard'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import { listEvents } from '../../api/events'
@@ -13,7 +14,7 @@ const VisitsChart = lazy(() => import('../../components/analytics/VisitsChart'))
 
 export default function Analytics() {
   const [events, setEvents] = useState([])
-  const [selectedEventId, setSelectedEventId] = useState('')
+  const [selectedEventId, setSelectedEventId] = useCurrentEventId()
   const [stats, setStats] = useState(null)
   const [guests, setGuests] = useState([])
   const [loading, setLoading] = useState(true)
@@ -23,14 +24,14 @@ export default function Analytics() {
     listEvents()
       .then((data) => {
         setEvents(data ?? [])
-        if (data?.length) setSelectedEventId(data[0].id)
+        if (data?.length) setSelectedEventId(pickCurrentEvent(data))
         else setLoading(false)
       })
       .catch((err) => {
         setError(err.message || 'Impossible de charger vos événements.')
         setLoading(false)
       })
-  }, [])
+  }, [setSelectedEventId])
 
   useEffect(() => {
     if (!selectedEventId) return

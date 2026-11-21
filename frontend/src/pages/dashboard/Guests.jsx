@@ -1,5 +1,6 @@
 import { Eye, Link2, Mail, MessageCircle, Pencil, Plus, Printer, Search, Send, Share2, Trash2, Upload, Users } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { pickCurrentEvent, useCurrentEventId } from '../../utils/currentEvent'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Avatar from '../../components/ui/Avatar'
 import Button from '../../components/ui/Button'
@@ -32,7 +33,7 @@ export default function Guests() {
   const navigate = useNavigate()
   const requestedEventId = searchParams.get('eventId')
   const [events, setEvents] = useState([])
-  const [selectedEventId, setSelectedEventId] = useState(requestedEventId || '')
+  const [selectedEventId, setSelectedEventId] = useCurrentEventId(requestedEventId || '')
   const [groups, setGroups] = useState([])
   const [guests, setGuests] = useState([])
   const [accompanyingByGuest, setAccompanyingByGuest] = useState({})
@@ -69,7 +70,7 @@ export default function Guests() {
         setEvents(data ?? [])
         if (data?.length) {
           const matchingEvent = data.find((event) => event.id === requestedEventId)
-          setSelectedEventId(matchingEvent?.id ?? data[0].id)
+          setSelectedEventId(matchingEvent?.id ?? pickCurrentEvent(data))
         }
         else setLoading(false)
       })
@@ -77,7 +78,7 @@ export default function Guests() {
         setError(err.message || 'Impossible de charger vos événements.')
         setLoading(false)
       })
-  }, [requestedEventId])
+  }, [requestedEventId, setSelectedEventId])
 
   useEffect(() => {
     if (!selectedEventId) return

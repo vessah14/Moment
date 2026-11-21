@@ -17,7 +17,8 @@ export function internationalNumber(phone) {
 export function guestMessageUrl(channel, phone, text) {
   const number = internationalNumber(phone)
   if (channel === 'SMS') return number ? `sms:+${number}?body=${encodeURIComponent(text)}` : ''
-  return `https://wa.me/${number ?? ''}?text=${encodeURIComponent(text)}`
+  if (channel === 'WhatsApp') return number ? `https://wa.me/${number}?text=${encodeURIComponent(text)}` : ''
+  return ''
 }
 
 // Invités déjà contactés, par événement et par canal, gardés sur cet appareil.
