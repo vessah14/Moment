@@ -1,0 +1,552 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-20T22:37:03.964Z",
+  "title": "Design System: TBF MOMENT",
+  "extensions": {
+    "colorMeta": {
+      "night": {
+        "role": "neutral",
+        "displayName": "Night",
+        "canonical": "#0b1020",
+        "tonalRamp": [
+          "#030408",
+          "#05070e",
+          "#070a15",
+          "#090e1b",
+          "#3c404d",
+          "#797c84",
+          "#b6b7bc",
+          "#e7e7e9"
+        ]
+      },
+      "night-surface": {
+        "role": "neutral",
+        "displayName": "Night Surface",
+        "canonical": "#12172a",
+        "tonalRamp": [
+          "#05060b",
+          "#080a13",
+          "#0c0f1b",
+          "#0f1424",
+          "#414555",
+          "#7d7f8a",
+          "#b8b9bf",
+          "#e7e8ea"
+        ]
+      },
+      "night-surface-raised": {
+        "role": "neutral",
+        "displayName": "Night Surface Raised",
+        "canonical": "#1a2036",
+        "tonalRamp": [
+          "#07080e",
+          "#0c0e18",
+          "#111523",
+          "#161b2e",
+          "#484d5e",
+          "#818490",
+          "#babcc3",
+          "#e8e9eb"
+        ]
+      },
+      "night-panel": {
+        "role": "neutral",
+        "displayName": "Night Panel",
+        "canonical": "#1e2540",
+        "tonalRamp": [
+          "#080910",
+          "#0e111d",
+          "#14182a",
+          "#1a1f36",
+          "#4b5166",
+          "#838796",
+          "#bcbec6",
+          "#e9e9ec"
+        ]
+      },
+      "night-border": {
+        "role": "neutral",
+        "displayName": "Night Border",
+        "canonical": "#2c3352",
+        "tonalRamp": [
+          "#0b0d15",
+          "#141725",
+          "#1d2135",
+          "#252b46",
+          "#565c75",
+          "#8b8fa0",
+          "#c0c2cb",
+          "#eaebee"
+        ]
+      },
+      "night-border-soft": {
+        "role": "neutral",
+        "displayName": "Night Border Soft",
+        "canonical": "#232a45",
+        "tonalRamp": [
+          "#090b11",
+          "#10131f",
+          "#171b2d",
+          "#1e243b",
+          "#4f556a",
+          "#868a99",
+          "#bdbfc7",
+          "#e9eaec"
+        ]
+      },
+      "soft-white": {
+        "role": "neutral",
+        "displayName": "Soft White",
+        "canonical": "#f8f9fc",
+        "tonalRamp": [
+          "#3e3e3f",
+          "#707071",
+          "#a1a2a4",
+          "#d3d4d6",
+          "#f9fafd",
+          "#fbfcfd",
+          "#fdfdfe",
+          "#fefeff"
+        ]
+      },
+      "mist": {
+        "role": "neutral",
+        "displayName": "Mist",
+        "canonical": "#9ba3c2",
+        "tonalRamp": [
+          "#272931",
+          "#464957",
+          "#656a7e",
+          "#848ba5",
+          "#afb5ce",
+          "#c8ccdd",
+          "#e1e3ed",
+          "#f5f6f9"
+        ]
+      },
+      "dusk": {
+        "role": "neutral",
+        "displayName": "Dusk",
+        "canonical": "#7883a8",
+        "tonalRamp": [
+          "#1e212a",
+          "#363b4c",
+          "#4e556d",
+          "#666f8f",
+          "#939cb9",
+          "#b5bbcf",
+          "#d7dae5",
+          "#f2f3f6"
+        ]
+      },
+      "electric-purple": {
+        "role": "primary",
+        "displayName": "Electric Purple",
+        "canonical": "#6c4bf4",
+        "tonalRamp": [
+          "#1b133d",
+          "#31226e",
+          "#46319f",
+          "#5c40cf",
+          "#896ff6",
+          "#ae9cf9",
+          "#d3c9fc",
+          "#f0edfe"
+        ]
+      },
+      "deep-indigo": {
+        "role": "primary",
+        "displayName": "Deep Indigo",
+        "canonical": "#5636d6",
+        "tonalRamp": [
+          "#160e36",
+          "#271860",
+          "#38238b",
+          "#492eb6",
+          "#785ede",
+          "#a290e8",
+          "#ccc3f3",
+          "#eeebfb"
+        ]
+      },
+      "festive-magenta": {
+        "role": "secondary",
+        "displayName": "Festive Magenta",
+        "canonical": "#d946ef",
+        "tonalRamp": [
+          "#36123c",
+          "#62206c",
+          "#8d2e9b",
+          "#b83ccb",
+          "#e16bf2",
+          "#ea99f6",
+          "#f4c8fa",
+          "#fbedfd"
+        ]
+      },
+      "sunset-orange": {
+        "role": "secondary",
+        "displayName": "Sunset Orange",
+        "canonical": "#ff7a3d",
+        "tonalRamp": [
+          "#401f0f",
+          "#73371b",
+          "#a64f28",
+          "#d96834",
+          "#ff9564",
+          "#ffb694",
+          "#ffd7c5",
+          "#fff2ec"
+        ]
+      },
+      "party-pink": {
+        "role": "secondary",
+        "displayName": "Party Pink",
+        "canonical": "#ec4ec2",
+        "tonalRamp": [
+          "#3b1431",
+          "#6a2357",
+          "#99337e",
+          "#c942a5",
+          "#f071ce",
+          "#f59edd",
+          "#f9caed",
+          "#fdedf9"
+        ]
+      },
+      "champagne-gold": {
+        "role": "tertiary",
+        "displayName": "Champagne Gold",
+        "canonical": "#d6b36a",
+        "tonalRamp": [
+          "#362d1b",
+          "#605130",
+          "#8b7445",
+          "#b6985a",
+          "#dec288",
+          "#e8d5ad",
+          "#f3e8d2",
+          "#fbf7f0"
+        ]
+      },
+      "success-mint": {
+        "role": "semantic",
+        "displayName": "Success Mint",
+        "canonical": "#34d399",
+        "tonalRamp": [
+          "#0d3526",
+          "#175f45",
+          "#228963",
+          "#2cb382",
+          "#5ddcad",
+          "#8fe7c7",
+          "#c2f2e0",
+          "#ebfbf5"
+        ]
+      },
+      "danger-coral": {
+        "role": "semantic",
+        "displayName": "Danger Coral",
+        "canonical": "#f4574c",
+        "tonalRamp": [
+          "#3d1613",
+          "#6e2722",
+          "#9f3931",
+          "#cf4a41",
+          "#f67970",
+          "#f9a39d",
+          "#fccdc9",
+          "#feeeed"
+        ]
+      },
+      "day": {
+        "role": "neutral",
+        "displayName": "Day",
+        "canonical": "#f6f7fb",
+        "tonalRamp": [
+          "#3e3e3f",
+          "#6f6f71",
+          "#a0a1a3",
+          "#d1d2d5",
+          "#f8f9fc",
+          "#fafbfd",
+          "#fcfdfe",
+          "#fefeff"
+        ]
+      },
+      "day-surface": {
+        "role": "neutral",
+        "displayName": "Day Surface",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#404040",
+          "#737373",
+          "#a6a6a6",
+          "#d9d9d9",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff",
+          "#ffffff"
+        ]
+      },
+      "day-surface-raised": {
+        "role": "neutral",
+        "displayName": "Day Surface Raised",
+        "canonical": "#eef0f6",
+        "tonalRamp": [
+          "#3c3c3e",
+          "#6b6c6f",
+          "#9b9ca0",
+          "#caccd1",
+          "#f1f3f8",
+          "#f6f7fa",
+          "#fafbfc",
+          "#fdfefe"
+        ]
+      },
+      "day-border": {
+        "role": "neutral",
+        "displayName": "Day Border",
+        "canonical": "#dde1ec",
+        "tonalRamp": [
+          "#37383b",
+          "#63656a",
+          "#909299",
+          "#bcbfc9",
+          "#e4e7f0",
+          "#eceff5",
+          "#f5f6f9",
+          "#fcfcfd"
+        ]
+      },
+      "day-ink": {
+        "role": "neutral",
+        "displayName": "Day Ink",
+        "canonical": "#12172a",
+        "tonalRamp": [
+          "#05060b",
+          "#080a13",
+          "#0c0f1b",
+          "#0f1424",
+          "#414555",
+          "#7d7f8a",
+          "#b8b9bf",
+          "#e7e8ea"
+        ]
+      },
+      "day-muted": {
+        "role": "neutral",
+        "displayName": "Day Muted",
+        "canonical": "#4b5170",
+        "tonalRamp": [
+          "#13141c",
+          "#222432",
+          "#313549",
+          "#40455f",
+          "#6f748d",
+          "#9c9fb0",
+          "#c9cbd4",
+          "#edeef1"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Marketing hero and section titles."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Dashboard page titles."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Dialog and card titles."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Almost all interface text, fields and buttons."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Uppercase sidebar section headers and small table headers."
+      },
+      "eyebrow": {
+        "displayName": "Eyebrow",
+        "purpose": "Purple uppercase line above marketing section titles."
+      },
+      "premium-display": {
+        "displayName": "Premium Display",
+        "purpose": "Premium touches only."
+      }
+    },
+    "shadows": [
+      {
+        "name": "gradient-glow",
+        "value": "0 10px 15px -3px rgb(236 78 194 / 0.2)",
+        "purpose": "Under the gradient button only."
+      },
+      {
+        "name": "dialog-lift",
+        "value": "0 25px 50px -12px rgb(0 0 0 / 0.25)",
+        "purpose": "Dialogs and floating menus."
+      },
+      {
+        "name": "hero-device",
+        "value": "0 40px 80px -30px rgba(0,0,0,0.7)",
+        "purpose": "Home page phone mock-ups."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-device",
+        "value": "cubic-bezier(0.2, 0.8, 0.2, 1)",
+        "purpose": "Hero phone transitions (0.9s)."
+      },
+      {
+        "name": "ease-draw",
+        "value": "cubic-bezier(0.6, 0.1, 0.2, 1)",
+        "purpose": "Brand loader stroke drawing (0.4s)."
+      },
+      {
+        "name": "ease-pop",
+        "value": "cubic-bezier(0.3, 1.6, 0.5, 1)",
+        "purpose": "Overshoot pop for the loader gold dot (0.25s)."
+      },
+      {
+        "name": "lift-hover",
+        "value": "translate: 0 -4px",
+        "purpose": "Marketing grid cards on hover, hover-capable devices only."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Gradient Button",
+      "kind": "button",
+      "refersTo": "button-gradient",
+      "description": "The single primary action of a view.",
+      "html": "<button class=\"ds-btn-gradient\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M12 5v14M5 12h14\"/></svg>Ajouter une activité</button>",
+      "css": ".ds-btn-gradient{font-family:\"Inter\",system-ui,sans-serif;display:inline-flex;align-items:center;gap:8px;border:none;border-radius:9999px;padding:12px 24px;font-size:14px;font-weight:600;color:#fff;background-image:linear-gradient(92deg,var(--color-brand-orange,#ff7a3d),var(--color-brand-pink,#ec4ec2));box-shadow:0 10px 15px -3px rgb(236 78 194 / .2);cursor:pointer;transition:opacity .15s}.ds-btn-gradient:hover{opacity:.9}.ds-btn-gradient:focus-visible{outline:2px solid var(--color-brand-purple,#6c4bf4);outline-offset:2px}"
+    },
+    {
+      "name": "Solid Button",
+      "kind": "button",
+      "refersTo": "button-solid",
+      "description": "Secondary emphasis action.",
+      "html": "<button class=\"ds-btn-solid\">Enregistrer</button>",
+      "css": ".ds-btn-solid{font-family:\"Inter\",system-ui,sans-serif;border:none;border-radius:9999px;padding:12px 24px;font-size:14px;font-weight:600;color:#fff;background:var(--color-brand-indigo,#5636d6);cursor:pointer;transition:background .15s}.ds-btn-solid:hover{background:var(--color-brand-purple,#6c4bf4)}.ds-btn-solid:focus-visible{outline:2px solid var(--color-brand-purple,#6c4bf4);outline-offset:2px}"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Neutral action next to a primary one.",
+      "html": "<button class=\"ds-btn-outline\">Annuler</button>",
+      "css": ".ds-btn-outline{font-family:\"Inter\",system-ui,sans-serif;border:1px solid var(--color-border,#2c3352);border-radius:9999px;padding:12px 24px;font-size:14px;font-weight:600;color:var(--color-ink,#f8f9fc);background:transparent;cursor:pointer;transition:border-color .15s}.ds-btn-outline:hover{border-color:var(--color-faint,#7883a8)}.ds-btn-outline:focus-visible{outline:2px solid var(--color-brand-purple,#6c4bf4);outline-offset:2px}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Labelled field used across dashboard forms.",
+      "html": "<label class=\"ds-field\"><span>Titre</span><input placeholder=\"Cérémonie religieuse\"></label>",
+      "css": ".ds-field{font-family:\"Inter\",system-ui,sans-serif;display:block;max-width:320px}.ds-field span{font-size:12px;font-weight:500;color:var(--color-ink,#f8f9fc)}.ds-field input{margin-top:6px;width:100%;box-sizing:border-box;border:1px solid var(--color-border,#2c3352);border-radius:8px;background:var(--color-surface,#12172a);padding:10px 12px;font-size:14px;color:var(--color-ink,#f8f9fc);outline:none;transition:border-color .15s}.ds-field input::placeholder{color:var(--color-faint,#7883a8)}.ds-field input:hover{border-color:var(--color-faint,#7883a8)}.ds-field input:focus-visible{border-color:var(--color-brand-purple,#6c4bf4)}"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Default container, flat with a soft border.",
+      "html": "<div class=\"ds-card\"><p class=\"ds-card-label\">Invités</p><p class=\"ds-card-value\">128</p><p class=\"ds-card-note\">92 ont répondu</p></div>",
+      "css": ".ds-card{font-family:\"Inter\",system-ui,sans-serif;max-width:260px;border:1px solid var(--color-border-soft,#232a45);border-radius:16px;background:var(--color-surface,#12172a);padding:20px;transition:border-color .15s}.ds-card:hover{border-color:var(--color-brand-purple,#6c4bf4)}.ds-card-label{margin:0;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--color-faint,#7883a8)}.ds-card-value{margin:8px 0 0;font-family:\"Plus Jakarta Sans\",sans-serif;font-size:24px;font-weight:700;color:var(--color-ink,#f8f9fc)}.ds-card-note{margin:4px 0 0;font-size:14px;color:var(--color-muted,#9ba3c2)}"
+    },
+    {
+      "name": "Sidebar Navigation",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "Dashboard sidebar items with active state and count badge.",
+      "html": "<nav class=\"ds-nav\"><p class=\"ds-nav-label\">Événement</p><a class=\"ds-nav-item is-active\" href=\"#\">Programme</a><a class=\"ds-nav-item\" href=\"#\">Invités <span class=\"ds-nav-count\">12</span></a><a class=\"ds-nav-item\" href=\"#\">Galerie</a></nav>",
+      "css": ".ds-nav{font-family:\"Inter\",system-ui,sans-serif;width:224px;display:flex;flex-direction:column;gap:2px;background:var(--color-bg,#0b1020);padding:12px}.ds-nav-label{margin:0 0 4px;padding:0 12px;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--color-faint,#7883a8)}.ds-nav-item{display:flex;align-items:center;justify-content:space-between;border-radius:8px;padding:8px 12px;font-size:14px;font-weight:500;color:var(--color-muted,#9ba3c2);text-decoration:none;transition:background .15s,color .15s}.ds-nav-item:hover{background:var(--color-surface-2,#1a2036);color:var(--color-ink,#f8f9fc)}.ds-nav-item.is-active{background:var(--color-brand-indigo,#5636d6);color:#fff}.ds-nav-item:focus-visible{outline:2px solid var(--color-brand-purple,#6c4bf4);outline-offset:2px}.ds-nav-count{border-radius:9999px;background:rgb(108 75 244 / .2);padding:2px 8px;font-size:12px;font-weight:600;color:var(--color-brand-purple,#6c4bf4)}"
+    },
+    {
+      "name": "Date Pills",
+      "kind": "chip",
+      "refersTo": "chip-count",
+      "description": "Filter pills; the selected one uses the indigo to purple gradient.",
+      "html": "<div class=\"ds-pills\"><button class=\"ds-pill is-on\">14 février</button><button class=\"ds-pill\">15 février</button></div>",
+      "css": ".ds-pills{font-family:\"Inter\",system-ui,sans-serif;display:flex;gap:8px}.ds-pill{border:1px solid var(--color-border,#2c3352);border-radius:9999px;background:transparent;padding:8px 16px;font-size:14px;font-weight:500;color:var(--color-muted,#9ba3c2);cursor:pointer;transition:border-color .15s,color .15s}.ds-pill:hover{border-color:var(--color-faint,#7883a8);color:var(--color-ink,#f8f9fc)}.ds-pill.is-on{border-color:transparent;color:#fff;background:linear-gradient(92deg,var(--color-brand-indigo,#5636d6),var(--color-brand-purple,#6c4bf4))}.ds-pill:focus-visible{outline:2px solid var(--color-brand-purple,#6c4bf4);outline-offset:2px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "La nuit de fête",
+    "overview": "TBF MOMENT is a reception hall at night. The ground is a deep navy night (`night`), layered surfaces are the tables and stages of the room, and colour arrives the way party lights do: electric purple marks what is selected or in focus, and a warm orange-to-pink gradient lights up the one action that moves the event forward. Champagne gold is the jewellery: rare, reserved for premium and VIP moments.\n\nThe interface takes part in the celebration. Buttons are soft pills, cards have generous rounded corners, and small movements (a card that lifts on hover, a logo that draws itself, a \"M\" that traces across the home page) keep it alive. That liveliness never costs clarity: the organiser dashboard stays calm and scannable, and every animation has a `prefers-reduced-motion` fallback. Event sites themselves use a separate theme system (`components/site/themes/`) with their own fonts and palettes; this document covers the platform around them (marketing pages, auth, dashboard).\n\nThe system ships dark by default, with a light theme (`[data-theme=\"light\"]`) that swaps only surface and text tokens; brand colours stay the same.",
+    "keyCharacteristics": [
+      "Dark night ground with tonal layering; borders, not shadows, separate surfaces.",
+      "One warm gradient for the primary action; electric purple for selection, focus and links.",
+      "Pill buttons, 16px card corners, 8px field corners.",
+      "Plus Jakarta Sans headings over Inter body text, compact sizes (body at 14px).",
+      "Festive motion, always with a reduced-motion fallback."
+    ],
+    "rules": [
+      {
+        "name": "The One Gradient Rule",
+        "body": "The orange-to-pink gradient marks the single primary action of a view (or a highlighted word in a marketing headline). Two gradient buttons side by side means one of them is wrong.",
+        "section": "colors"
+      },
+      {
+        "name": "The Purple Means Here Rule",
+        "body": "Electric Purple signals focus, selection and \"you are here\". Don't use it as decoration.",
+        "section": "colors"
+      },
+      {
+        "name": "The Gold Is Jewellery Rule",
+        "body": "Champagne Gold appears only on premium or VIP elements. It never becomes a general accent.",
+        "section": "colors"
+      },
+      {
+        "name": "The Compact Body Rule",
+        "body": "Interface text is 14px. Don't inflate dashboard copy to 16px; hierarchy comes from weight and the heading font, not size jumps.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tone Before Shadow Rule",
+        "body": "Separate surfaces with a lighter tone and a soft border first. Reach for a shadow only when an element floats above the page (dialog, menu, toast) or is the primary action.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do keep the night (`night`) as the ground and lift surfaces with `night-surface` / `night-surface-raised` plus a 1px soft border.",
+      "Do give each view one gradient primary action; use solid, outline or ghost buttons for the rest.",
+      "Do use `electric-purple` for focus borders, links, selected states and eyebrows.",
+      "Do use pill buttons, 16px cards and 8px fields.",
+      "Do add life with small, purposeful motion (lift on hover, staged entrances), each with a `prefers-reduced-motion` fallback.",
+      "Do define any new colour as a token in `@theme` and its light-theme value under `:root[data-theme=\"light\"]`."
+    ],
+    "donts": [
+      "Don't put champagne gold on ordinary UI; it is for premium and VIP only.",
+      "Don't stack shadows on cards at rest; use tone and borders.",
+      "Don't use the orange-to-pink gradient as a background for large areas or for more than one action in a view.",
+      "Don't hard-code hex colours in components; use the tokens so both themes work.",
+      "Don't use `dusk` or `mist` text for anything smaller than 11px or below AA contrast."
+    ]
+  }
+}

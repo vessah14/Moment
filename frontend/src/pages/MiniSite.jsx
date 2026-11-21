@@ -438,7 +438,7 @@ export default function MiniSite () {
       {ownEventId && (
         <Link
           to={`/builder/${ownEventId}`}
-          className={`fixed bottom-[calc(1rem+var(--site-bottom-bar,0px))] ${musicStyle && !premiumTheme ? 'left-[4.25rem]' : 'left-4'} z-50 inline-flex transition-[bottom] duration-300 sm:bottom-4 items-center gap-1.5 rounded-full border border-border-soft bg-surface/90 px-3.5 py-2 text-xs font-semibold text-ink shadow-lg backdrop-blur transition hover:border-brand-purple`}
+          className={`fixed bottom-4 translate-y-[calc(-1*var(--site-bottom-bar,0px))] sm:translate-y-0 ${musicStyle && !premiumTheme ? 'left-[4.25rem]' : 'left-4'} z-50 inline-flex transition-transform duration-300 items-center gap-1.5 rounded-full border border-border-soft bg-surface/90 px-3.5 py-2 text-xs font-semibold text-ink shadow-lg backdrop-blur hover:border-brand-purple`}
           title='Visible uniquement par vous'
         >
           <PencilLine className='h-4 w-4' />

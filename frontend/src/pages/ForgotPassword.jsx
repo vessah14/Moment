@@ -32,7 +32,7 @@ export default function ForgotPassword() {
       setSent(true)
       setWait(RESEND_DELAY_S)
     } catch (err) {
-      setError(err.message || t("L'envoi a échoué."))
+      setError(t(err.message) || t("L'envoi a échoué."))
     } finally {
       setSubmitting(false)
     }

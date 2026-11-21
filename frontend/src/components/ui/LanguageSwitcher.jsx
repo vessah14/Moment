@@ -36,7 +36,7 @@ export default function LanguageSwitcher({ className = '', floating = false, ali
       ref={rootRef}
       translate="no"
       className={mergeClasses(
-        `notranslate ${floating ? 'fixed right-4 bottom-[calc(1rem+var(--site-bottom-bar,0px))] z-50 transition-[bottom] duration-300 sm:bottom-4' : 'relative inline-flex'}`,
+        `notranslate ${floating ? 'fixed right-4 bottom-4 translate-y-[calc(-1*var(--site-bottom-bar,0px))] sm:translate-y-0 z-50 transition-transform duration-300' : 'relative inline-flex'}`,
         className,
       )}
     >

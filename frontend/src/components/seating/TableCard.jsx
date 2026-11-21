@@ -29,7 +29,7 @@ export default function TableCard({ table, guests, availableGuests, onSeat, onUn
 
       <div className="mt-3 h-1.5 rounded-full bg-border-soft">
         <div
-          className={`h-full rounded-full transition-all ${isFull ? 'bg-brand-orange' : 'bg-brand-gradient'}`}
+          className={`h-full rounded-full transition-[width] ${isFull ? 'bg-brand-orange' : 'bg-brand-gradient'}`}
           style={{ width: `${Math.min((seated.length / table.capacity) * 100, 100)}%` }}
         />
       </div>

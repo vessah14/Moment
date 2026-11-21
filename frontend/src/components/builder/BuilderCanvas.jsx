@@ -43,7 +43,7 @@ export default function BuilderCanvas({
         blocks={blocks}
         blockContent={blockContent}
         data={{ ...data, slug }}
-        className={`mx-auto mt-3 w-full rounded-xl shadow-xl transition-all sm:mt-4 ${
+        className={`mx-auto mt-3 w-full rounded-xl shadow-xl sm:mt-4 ${
           device === 'mobile' ? 'max-w-[390px]' : 'max-w-2xl'
         }`}
         editor={

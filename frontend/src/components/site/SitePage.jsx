@@ -423,7 +423,7 @@ function FaqAccordion({ items, animate }) {
                 </span>
               </button>
               <div
-                className={`grid transition-all duration-300 ease-out ${
+                className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${
                   isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
                 }`}
               >
@@ -1053,7 +1053,7 @@ function SiteMusicButton({ styleId, customAudioUrl }) {
       aria-pressed={playing}
       aria-label={playing ? 'Couper la musique' : 'Lancer la musique'}
       title={playing ? 'Couper la musique' : 'Lancer la musique'}
-      className="fixed bottom-[calc(1rem+var(--site-bottom-bar,0px))] left-4 z-50 flex h-11 w-11 items-center justify-center rounded-full border border-border-soft bg-surface/90 text-ink shadow-lg backdrop-blur transition-[bottom] duration-300 hover:border-brand-purple sm:bottom-4"
+      className="fixed bottom-4 translate-y-[calc(-1*var(--site-bottom-bar,0px))] sm:translate-y-0 left-4 z-50 flex h-11 w-11 items-center justify-center rounded-full border border-border-soft bg-surface/90 text-ink shadow-lg backdrop-blur transition-[transform,border-color] duration-300 hover:border-brand-purple"
     >
       {playing ? (
         <Music className="h-5 w-5 animate-pulse motion-reduce:animate-none" style={{ color: 'var(--color-brand-purple)' }} />
@@ -1198,7 +1198,7 @@ function SiteNav({ title, logoSrc, monogram, links, cta, answered, onOpenPass, o
     <>
     <header
       data-site-nav
-      className={`fixed inset-x-0 top-0 z-30 transition-all duration-300 ${
+      className={`fixed inset-x-0 top-0 z-30 transition-[background-color,border-color,box-shadow] duration-300 ${
         solid
           ? 'border-b border-border-soft bg-bg/95 shadow-[0_1px_8px_-4px_rgba(0,0,0,0.12)] backdrop-blur-md'
           : 'bg-transparent'

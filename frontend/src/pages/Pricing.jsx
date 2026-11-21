@@ -75,7 +75,7 @@ const COMPARISON_SECTIONS = [
     ],
   },
   {
-    name: t("Image"),
+    name: t("Image de marque"),
     rows: [
       { name: t("Logo de l’organisateur"), values: [true, true, true, true, true] },
       { name: t("Sans la mention « Créé avec TBF MOMENT »"), values: ['—', '—', true, true, true] },

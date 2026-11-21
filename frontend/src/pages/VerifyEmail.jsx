@@ -40,7 +40,7 @@ export default function VerifyEmail() {
         else return goHomeAfterLogin(navigate)
       })
       .catch((err) => {
-        setError(err.message || t("La vérification a échoué."))
+        setError(t(err.message) || t("La vérification a échoué."))
         setState('invalid')
       })
   }, [token, navigate])

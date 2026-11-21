@@ -37,7 +37,7 @@ export default function LoginForm() {
       if (returnPath ?? storedReturnPath) navigate(returnPath ?? storedReturnPath, { replace: true })
       else await goHomeAfterLogin(navigate)
     } catch (err) {
-      setError(err.message || t("Connexion impossible."))
+      setError(t(err.message) || t("Connexion impossible."))
     } finally {
       setSubmitting(false)
     }

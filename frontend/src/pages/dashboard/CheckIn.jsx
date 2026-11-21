@@ -738,7 +738,7 @@ export default function CheckIn () {
               )}
             </div>
           )}
-          <canvas ref={canvasRef} className='hidden' />
+          <canvas ref={canvasRef} className='hidden' aria-hidden='true' />
           {scanError && (
             <p className='mt-2 text-center text-sm text-danger'>{scanError}</p>
           )}

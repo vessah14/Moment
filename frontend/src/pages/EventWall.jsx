@@ -1,5 +1,5 @@
 import QRCode from 'qrcode'
-import { Maximize } from 'lucide-react'
+import { Camera, Maximize } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { eventShareUrl, mediaUrl } from '../api/client'
@@ -98,7 +98,7 @@ export default function EventWall() {
         ) : slide.kind === 'photo' ? (
           <figure key={slide.key} className="flex h-full max-h-[75svh] flex-col items-center gap-3 animate-[fadeIn_.8s_ease]">
             <img src={slide.url} alt="" className="max-h-[68svh] max-w-full rounded-2xl object-contain shadow-2xl" />
-            {slide.by && <figcaption className="text-lg text-white/70">📸 {slide.by}</figcaption>}
+            {slide.by && <figcaption className="inline-flex items-center gap-2 text-lg text-white/70"><Camera aria-hidden="true" size={18} /> {slide.by}</figcaption>}
           </figure>
         ) : (
           <blockquote key={slide.key} className="max-w-4xl text-center animate-[fadeIn_.8s_ease]">

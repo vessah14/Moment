@@ -333,7 +333,7 @@ export default function TicketCard({ style, note, event, guest, look: lookIn, th
           ref={card}
           className={`tkc tkc-billet tks-${style} ${ticketOrigin ? 'tkc-emerging' : ''}`}
           style={ticketMotionStyle}
-          aria-label={tk('{kind} de {name}', { kind: t.kind, name: guest.name })}
+          aria-label={`${t.kind} · ${guest.name}`}
         >
           <div className="tkb-main">
             <span className="tkc-motif" style={motifCss} aria-hidden="true" />
@@ -391,7 +391,7 @@ export default function TicketCard({ style, note, event, guest, look: lookIn, th
         ref={card}
         className={`tkc tkc-${format} tks-${style} ${ticketOrigin ? 'tkc-emerging' : ''}`}
         style={ticketMotionStyle}
-        aria-label={tk('{kind} de {name}', { kind: t.kind, name: guest.name })}
+        aria-label={`${t.kind} · ${guest.name}`}
       >
         {style === 'pagne' && <span className="tkc-saw top" aria-hidden="true" />}
         <div className="tkc-top">

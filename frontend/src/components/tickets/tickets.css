@@ -142,7 +142,7 @@
 .tbtk .lv-cap { display: block; margin-top: .45rem; font-size: .72rem; opacity: .8 }
 .tbtk .lv-dot { display: inline-block; width: .55rem; height: .55rem; margin-right: .2rem; border-radius: 50%; background: #1FA35B; vertical-align: .05em; animation: tk-lv-pulse 1.6s infinite }
 @keyframes tk-lv-pulse { 0% { box-shadow: 0 0 0 0 rgba(31, 163, 91, .55) } 70%, 100% { box-shadow: 0 0 0 9px rgba(31, 163, 91, 0) } }
-.tbtk .lv-ok { display: inline-grid; place-items: center; width: 1.25rem; height: 1.25rem; margin-right: .15rem; border-radius: 50%; background: #1F8A4C; color: #fff; font-size: .72rem; font-weight: 800 }
+.tbtk .lv-ok { display: inline-grid; place-items: center; width: 1.25rem; height: 1.25rem; margin-right: .15rem; border-radius: 50%; background: #187A41; color: #fff; font-size: .72rem; font-weight: 800 }
 .tbtk.is-today .tkc-live { background: color-mix(in srgb, #1FA35B 14%, transparent) }
 .tbtk.is-in .tkc-live { background: color-mix(in srgb, #1F8A4C 13%, transparent) }
 /* Jour J : le QR passe en grand */

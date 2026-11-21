@@ -641,6 +641,10 @@ h3 {
   animation: home-event-marquee-scroll 60s linear infinite;
 }
 
+.home-event-marquee:hover .home-event-marquee-track {
+  animation-play-state: paused;
+}
+
 .home-event-marquee-track > span {
   white-space: nowrap;
   padding: 0.5rem 1rem;

@@ -34,7 +34,7 @@ export default function ResetPassword() {
       // La page de connexion confirme le changement : pas d'attente inutile ici.
       navigate('/connexion', { replace: true, state: { passwordReset: true } })
     } catch (err) {
-      setError(err.message || t("La réinitialisation a échoué."))
+      setError(t(err.message) || t("La réinitialisation a échoué."))
       setLinkDead(err.status === 400 && /lien/i.test(err.message ?? ''))
     } finally {
       setSubmitting(false)

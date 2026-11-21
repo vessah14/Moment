@@ -71,7 +71,7 @@ export default function SignupForm() {
       if (returnPath) params.set('retour', returnPath)
       navigate(`/inscription/verifiez-vos-emails?${params}`)
     } catch (err) {
-      setError(err.message || t("Inscription impossible."))
+      setError(t(err.message) || t("Inscription impossible."))
     } finally {
       setSubmitting(false)
     }
@@ -101,7 +101,7 @@ export default function SignupForm() {
             />
           </label>
           <label className="block">
-            <span className="text-sm font-medium text-ink">{t("Nom")}</span>
+            <span className="text-sm font-medium text-ink">{t("Nom de famille")}</span>
             <input
               type="text"
               required

@@ -23,7 +23,7 @@ export default function CheckEmail() {
       await resendVerificationByEmail(email)
       setState('sent')
     } catch (err) {
-      setError(err.message || t("L'envoi a échoué."))
+      setError(t(err.message) || t("L'envoi a échoué."))
       setState('idle')
     }
   }

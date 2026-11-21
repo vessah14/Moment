@@ -82,7 +82,7 @@ export default function GoogleSignInButton({ onError }) {
           if (target ?? storedReturnPath) navigate(target ?? storedReturnPath, { replace: true })
           else await goHomeAfterLogin(navigate)
         } catch (err) {
-          onError?.(err.message || t("Connexion Google impossible."))
+          onError?.(t(err.message) || t("Connexion Google impossible."))
         } finally {
           setBusy(false)
         }

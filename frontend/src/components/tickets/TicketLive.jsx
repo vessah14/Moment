@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { Armchair } from 'lucide-react'
 import { markEnvelopeSeen, envelopeSeen, ticketLiveState } from '../../utils/ticketLive'
 
 const pad2 = (n) => String(n).padStart(2, '0')
@@ -191,7 +192,7 @@ export function TableReveal({ seat, state, code, mourn }) {
   if (!revealed)
     return (
       <p className="tkc-table soon" data-print-hide>
-        <span aria-hidden="true">🪑</span> Votre place est prête : {mourn ? 'elle vous sera indiquée' : 'votre table sera révélée'} le jour J.
+        <Armchair aria-hidden="true" size={14} style={{ display: 'inline', verticalAlign: '-2px' }} /> Votre place est prête : {mourn ? 'elle vous sera indiquée' : 'votre table sera révélée'} le jour J.
       </p>
     )
   return (
