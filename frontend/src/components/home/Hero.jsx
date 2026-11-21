@@ -1,4 +1,4 @@
-import { Check, QrCode, Ticket } from 'lucide-react'
+import { Check, Ticket } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import campusShot from '../../assets/home/campus.webp'
@@ -129,7 +129,6 @@ export default function Hero() {
           <Phone active={k} className="hero-phone-main" />
           <Float className="hero-float-1" color="#25A86A" icon={Check} title={t("Brenda a répondu oui")} text={t("3 personnes · Famille de la mariée")} />
           <Float className="hero-float-2" color="#FF7900" icon={Ticket} title={t("2 billets Gradins vendus")} text={t("20 000 FCFA · Orange Money")} />
-          <Float className="hero-float-3" color="#6C4BF4" icon={QrCode} title={t("Pass valide")} text={t("Laure Ndjock · 4 places")} />
         </div>
       </div>
 
